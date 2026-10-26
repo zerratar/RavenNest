@@ -439,9 +439,24 @@ namespace RavenNest.BusinessLogic.Game
             quest.Completed = DateTime.UtcNow;
             var session = gameData.GetSessionByCharacterId(character.Id);
             var decor = session != null ? decorManager.UnlockForQuest(session.Id, quest.Key) : null;
+            // the shipwright's chain ends with the character's own boat (docs/own-boats.md in the game)
+            if (quest.Key == "shipwright") GiveBoat(character);
             Reward(character, quest, done, decor);
             QuestTracker.Achievements?.Set(character, "storyteller",
                 gameData.GetCharacterQuests(character.Id).Count(q => q.Kind == Chain && q.State == Done));
+        }
+
+        /// <summary>
+        /// The Rowboat, soulbound (decided 2026-10-26), unless the character has one already. It waits in the inventory
+        /// unequipped; equipped, !sail takes it instead of the ferry. The inventory feed tells the game.
+        /// </summary>
+        private void GiveBoat(Character character)
+        {
+            var rowboat = gameData.GetKnownItems().Rowboat;
+            var inventory = inventoryProvider.Get(character.Id);
+            if (rowboat == null || inventory == null) return;
+            if (inventory.GetAllItems().Any(i => i.ItemId == rowboat.Id)) return;
+            inventory.AddItem(rowboat.Id, 1, equipped: false, soulbound: true);
         }
 
         private static void SetStep(CharacterQuest quest, QuestChains.Chain definition, int index)

@@ -90,6 +90,7 @@ namespace RavenNest.BusinessLogic.Game
                 case ItemType.TwoHandedSword: return EquipmentSlot.MeleeWeapon;
                 case ItemType.TwoHandedStaff: return EquipmentSlot.MagicWeapon;
                 case ItemType.TwoHandedBow: return EquipmentSlot.RangedWeapon;
+                case ItemType.Boat: return EquipmentSlot.Boat;
             }
 
             return EquipmentSlot.None;

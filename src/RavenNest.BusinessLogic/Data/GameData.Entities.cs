@@ -275,6 +275,12 @@ namespace RavenNest.BusinessLogic.Data
                     FerryScroll = GetOrCreateItem(i, "Ferry Scroll", "A scroll that will temporarily increase the speed of the ferry for 15 minutes. This effect cannot  be stacked.", ItemCategory.Scroll, ItemType.Scroll),
                     ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
+                    // own boats (docs/own-boats.md in the game): the rowboat is the shipwright chain's reward, the
+                    // other two come from the shipwright later
+                    Rowboat = GetOrCreateItem(i, "Rowboat", "Your own little boat, from the shipwright on Away. Equip it and !sail takes it straight to the island you name.", ItemCategory.Vehicle, ItemType.Boat),
+                    FishingBoat = GetOrCreateItem(i, "Fishing Boat", "A sturdy fishing boat with a sail. Faster than a rowboat, and made for fishing at sea.", ItemCategory.Vehicle, ItemType.Boat),
+                    Sloop = GetOrCreateItem(i, "Sloop", "A swift sloop, the fastest boat the shipwright makes.", ItemCategory.Vehicle, ItemType.Boat),
+
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // accessories

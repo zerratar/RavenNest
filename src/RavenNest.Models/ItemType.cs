@@ -45,6 +45,9 @@
 
         Hat = 30,
         Mask = 31,
-        HeadCovering = 32
+        HeadCovering = 32,
+
+        // a player's own boat (docs/own-boats.md in the game); older games know no slot for it and leave it unequipped
+        Boat = 37
     }
 }

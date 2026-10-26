@@ -16,6 +16,7 @@
         RangedWeapon,
         Shield,
         Pet,
-        Cape
+        Cape,
+        Boat
     }
 }

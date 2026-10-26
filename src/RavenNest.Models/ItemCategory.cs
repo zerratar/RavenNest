@@ -16,5 +16,6 @@
         Cosmetic,
         QuestItem,
         LootBox,
+        Vehicle,
     }
 }
