@@ -5565,6 +5565,11 @@ namespace RavenNest.BusinessLogic.Data
         public Item BlackSantaHat;
 
         public Item FerryScroll;
+        public Item Rope;
+        public Item Sailcloth;
+        public Item BoatHull;
+        public Item Mast;
+        public Item LargeHull;
         public Item Rowboat;
         public Item FishingBoat;
         public Item Sloop;

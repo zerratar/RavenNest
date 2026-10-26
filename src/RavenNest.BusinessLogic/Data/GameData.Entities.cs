@@ -277,6 +277,13 @@ namespace RavenNest.BusinessLogic.Data
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
                     // own boats (docs/own-boats.md in the game): the rowboat is the shipwright chain's reward, the
                     // other two come from the shipwright later
+                    // the shipwright's parts (phase 4): crafted, then built into a boat on Away with !boat build
+                    Rope = GetOrCreateItem(i, "Rope", "Strong rope twisted from string. Ships need a lot of it.", ItemCategory.Resource, ItemType.Crafting),
+                    Sailcloth = GetOrCreateItem(i, "Sailcloth", "Heavy cloth woven from hemp and string, made to catch the wind.", ItemCategory.Resource, ItemType.Crafting),
+                    BoatHull = GetOrCreateItem(i, "Boat Hull", "A small wooden hull, sealed with resin. Bring it to the shipwright on Away.", ItemCategory.Resource, ItemType.Crafting),
+                    Mast = GetOrCreateItem(i, "Mast", "A tall pine mast with iron fittings.", ItemCategory.Resource, ItemType.Crafting),
+                    LargeHull = GetOrCreateItem(i, "Large Hull", "A big hull of ironbark, banded with steel, for a sloop.", ItemCategory.Resource, ItemType.Crafting),
+
                     Rowboat = GetOrCreateItem(i, "Rowboat", "Your own little boat, from the shipwright on Away. Equip it and !sail takes it straight to the island you name.", ItemCategory.Vehicle, ItemType.Boat),
                     FishingBoat = GetOrCreateItem(i, "Fishing Boat", "A sturdy fishing boat with a sail. Faster than a rowboat, and made for fishing at sea.", ItemCategory.Vehicle, ItemType.Boat),
                     Sloop = GetOrCreateItem(i, "Sloop", "A swift sloop, the fastest boat the shipwright makes.", ItemCategory.Vehicle, ItemType.Boat),
@@ -1298,6 +1305,13 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCraftingRecipe(70, items.RubyAmulet, items.GoldAmulet, items.Ruby);
             EnsureCraftingRecipe(100, items.DragonRing, items.GoldRing, items.DragonOre);
             EnsureCraftingRecipe(100, items.DragonAmulet, items.GoldAmulet, items.DragonOre);
+
+            // the shipwright's parts (own boats, phase 4); the boats themselves are built with !boat build on Away
+            EnsureCraftingRecipe(20, items.Rope, Ingredient(items.String, 3));
+            EnsureCraftingRecipe(30, items.Sailcloth, Ingredient(items.String, 4), Ingredient(items.Hemp, 6));
+            EnsureCraftingRecipe(30, items.BoatHull, Ingredient(items.MystwoodLogs, 20), Ingredient(items.Resin, 6), Ingredient(items.IronBar, 2));
+            EnsureCraftingRecipe(35, items.Mast, Ingredient(items.PineheartLogs, 8), Ingredient(items.Rope, 1), Ingredient(items.IronBar, 1));
+            EnsureCraftingRecipe(60, items.LargeHull, Ingredient(items.IronbarkLogs, 25), Ingredient(items.Resin, 12), Ingredient(items.SteelBar, 4));
             EnsureCraftingRecipe(130, items.PhantomRing, items.GoldRing, items.PhantomOre);
             EnsureCraftingRecipe(130, items.PhantomAmulet, items.GoldAmulet, items.PhantomOre);
 
