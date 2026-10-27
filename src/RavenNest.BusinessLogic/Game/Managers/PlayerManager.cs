@@ -2937,42 +2937,49 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool[] AutoJoinRaid(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
-            var successCount = 0;
-            var arr = new bool[characters.Count];
-            for (var i = 0; i < arr.Length; ++i)
-            {
-                arr[i] = AutoJoinRaid(sessionToken, characters[i]);
-                if (arr[i]) successCount++;
-            }
-            if (characters.Count > successCount)
-            {
-                logger.LogWarning("Auto Join Raid failed for {0} characters, out of a total {1}, session {2}", characters.Count - successCount, characters.Count, sessionToken.UserName);
-            }
-            else
-            {
-                logger.LogWarning("[{0}] {1} characters auto joined raid.", sessionToken.UserName, characters.Count);
-            }
-            return arr;
+            return AutoJoin(sessionToken, characters, AutoJoinRaidCost, "raid");
         }
 
         public bool[] AutoJoinDungeon(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
-            var successCount = 0;
-            var arr = new bool[characters.Count];
-            for (var i = 0; i < arr.Length; ++i)
+            return AutoJoin(sessionToken, characters, AutoJoinDungeonCost, "dungeon");
+        }
+
+        // One call for everyone the game auto joins when a raid or dungeon starts: takes the cost from each character that
+        // has it and says who paid. The session's characters are looked up once; looking them up per character sorted the
+        // whole session again for each one, which made a big stream's batch slow.
+        private bool[] AutoJoin(SessionToken sessionToken, IReadOnlyList<Guid> characters, int cost, string what)
+        {
+            var paid = new bool[characters.Count];
+            if (paid.Length == 0) return paid;
+            try
             {
-                arr[i] = AutoJoinDungeon(sessionToken, characters[i]);
-                if (arr[i]) successCount++;
+                var session = gameData.GetSession(sessionToken.SessionId);
+                var sessionCharacters = gameData.GetActiveSessionCharacters(session);
+                if (sessionCharacters == null) return paid;
+
+                var byId = new Dictionary<Guid, Character>(sessionCharacters.Count);
+                foreach (var c in sessionCharacters) byId[c.Id] = c;
+
+                var paidCount = 0;
+                for (var i = 0; i < paid.Length; ++i)
+                {
+                    if (!byId.TryGetValue(characters[i], out var character)) continue;
+                    var res = gameData.GetResources(character);
+                    if (res == null || res.Coins < cost) continue;
+                    res.Coins -= cost;
+                    paid[i] = true;
+                    paidCount++;
+                }
+
+                if (paidCount < paid.Length)
+                    logger.LogInformation($"[{sessionToken.UserName}] {paidCount} of {paid.Length} characters paid to auto join the {what}.");
             }
-            if (characters.Count > successCount)
+            catch (Exception exc)
             {
-                logger.LogWarning("Auto Join Dungeon failed for {0} characters, out of a total {1}, session {2}", characters.Count - successCount, characters.Count, sessionToken.UserName);
+                logger.LogError($"[{sessionToken.UserName}] auto join {what} failed for {characters.Count} characters: {exc}");
             }
-            else
-            {
-                logger.LogWarning("[{0}] {1} characters auto joined dungeon.", sessionToken.UserName, characters.Count);
-            }
-            return arr;
+            return paid;
         }
 
         public bool AutoJoinDungeon(SessionToken sessionToken, Guid characterId)
@@ -5224,15 +5231,7 @@ namespace RavenNest.BusinessLogic.Game
             state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
             state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
 
-            var coinCost = AutoJoinCharge(character, "raid", state.AutoJoinRaidCount, update.AutoJoinRaidCount, AutoJoinRaidCost)
-                + AutoJoinCharge(character, "dungeon", state.AutoJoinDungeonCount, update.AutoJoinDungeonCount, AutoJoinDungeonCost);
-
-            //if (update.AutoRestCount > state.IsAutoResting)
-            //{
-            //    var delta = update.AutoRestCount - state.IsAutoResting;
-            //    coinCost += delta * AutoRestCost;
-            //}
-
+            // the counts are statistics only; the coins are taken by AutoJoinRaid/AutoJoinDungeon when the game joins
             state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
             state.AutoJoinRaidCount = update.AutoJoinRaidCount;
             state.IsAutoResting = update.IsAutoResting;
@@ -5245,8 +5244,6 @@ namespace RavenNest.BusinessLogic.Game
             state.AutoRestStart = update.AutoRestStart;
             state.DungeonCombatStyle = update.DungeonCombatStyle;
             state.RaidCombatStyle = update.RaidCombatStyle;
-
-            TakeAutoJoinCoins(character, coinCost);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -5305,33 +5302,17 @@ namespace RavenNest.BusinessLogic.Game
                 state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             }
 
-
-            var coinCost = 0L;
-
-            //if (update.AutoRestCount > state.IsAutoResting)
-            //{
-            //    var delta = update.AutoRestCount - state.IsAutoResting;
-            //    coinCost += delta * AutoRestCost;
-            //}
-
+            // the counts are statistics only; the coins are taken by AutoJoinRaid/AutoJoinDungeon when the game joins
             if (update.HasValue(CharacterStateFields.AutoJoinRaid))
             {
                 state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
-                coinCost += AutoJoinCharge(character, "raid", state.AutoJoinRaidCount, update.AutoJoinRaidCount, AutoJoinRaidCost);
-
-                // the raid count (it set the dungeon count here, so the raid count never moved and every change
-                // charged the auto-join cost again from the stale value)
                 state.AutoJoinRaidCount = update.AutoJoinRaidCount;
             }
-
-
 
             if (update.HasValue(CharacterStateFields.AutoJoinDungeon))
             {
                 state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
-                coinCost += AutoJoinCharge(character, "dungeon", state.AutoJoinDungeonCount, update.AutoJoinDungeonCount, AutoJoinDungeonCost);
                 state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
-
             }
 
             if (update.HasValue(CharacterStateFields.IsAutoResting))
@@ -5375,33 +5356,6 @@ namespace RavenNest.BusinessLogic.Game
             {
                 state.RaidCombatStyle = update.RaidCombatStyle;
             }
-
-            TakeAutoJoinCoins(character, coinCost);
-        }
-
-        // The game joins raids and dungeons for players with auto join on and counts each join; the coins are taken here,
-        // when the count in the saved state goes up. A big jump is not joins but an old count catching up (before
-        // 80e26cd9 the raid count was stored in the dungeon's place), so it is taken as is without charging.
-        private const int MaxAutoJoinsPerSave = 10;
-
-        private long AutoJoinCharge(Character character, string what, long stored, long reported, int cost)
-        {
-            var joins = reported - stored;
-            if (joins <= 0) return 0;
-            if (joins > MaxAutoJoinsPerSave)
-            {
-                logger.LogWarning($"{character.Name} reported {joins} {what} auto joins in one save ({stored} -> {reported}); taken as a resync, not charged.");
-                return 0;
-            }
-            return joins * cost;
-        }
-
-        private void TakeAutoJoinCoins(Character character, long coinCost)
-        {
-            if (coinCost <= 0) return;
-            var res = gameData.GetResources(character);
-            if (res == null) return;
-            res.Coins = Math.Max(0, res.Coins - coinCost);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
