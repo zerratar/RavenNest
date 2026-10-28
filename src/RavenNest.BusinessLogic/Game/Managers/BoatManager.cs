@@ -53,6 +53,81 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
             this.inventoryProvider = inventoryProvider;
             this.logger = logger;
+            Processors.Tasks.FishingTaskProcessor.Boats = this;
+        }
+
+        // ---- Guests aboard (docs/own-boats.md in the game, "Guests aboard") ------------------------------------
+        //
+        // The game keeps who sails with whom, and tells the server when a guest climbs aboard and steps off: for the
+        // owner's cut of their guests' fish at sea, and the trips that earn the Ferryman titles.
+
+        /// <summary>
+        /// Each fish a guest lands at sea gives the owner, fishing at anchor with them, this chance of one of their own,
+        /// before the usual drop roll (one in two): about one in ten (decided 2026-10-28). Taken from nobody.
+        /// </summary>
+        public const double CaptainsCutChance = 0.2;
+
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, Guid> ownerOfGuest = new System.Collections.Concurrent.ConcurrentDictionary<Guid, Guid>();
+
+        /// <summary>Seats on each boat, the owner's included (the game's BoatCrews.Seats).</summary>
+        public static int Seats(string boat) =>
+            string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? 4 :
+            string.Equals(boat, "Fishing Boat", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
+
+        /// <summary>A guest climbed aboard the owner's boat; both must be playing in the calling stream.</summary>
+        public bool GuestAboard(SessionToken token, Guid ownerId, Guid guestId)
+        {
+            var owner = InSession(token, ownerId);
+            var guest = InSession(token, guestId);
+            if (owner == null || guest == null || owner.Id == guest.Id) return false;
+
+            var boat = inventoryProvider.Get(owner.Id).GetEquippedItem(EquipmentSlot.Boat);
+            var boatName = boat.ItemId != Guid.Empty ? gameData.GetItem(boat.ItemId)?.Name : null; // an empty slot is the default item
+            if (Seats(boatName) <= 1) return false;
+
+            ownerOfGuest[guest.Id] = owner.Id;
+            return true;
+        }
+
+        /// <summary>A guest stepped off; a whole trip counts towards the owner's Ferryman achievement.</summary>
+        public bool GuestAshore(SessionToken token, Guid ownerId, Guid guestId, bool trip)
+        {
+            var owner = InSession(token, ownerId);
+            if (owner == null) return false;
+            if (!ownerOfGuest.TryGetValue(guestId, out var aboard) || aboard != owner.Id) return false;
+            ownerOfGuest.TryRemove(guestId, out _);
+            if (trip) QuestTracker.Achievements?.Add(owner, "ferryman", 1);
+            return true;
+        }
+
+        /// <summary>
+        /// The captain's cut: a guest landed a fish at sea (FishingTaskProcessor). If their boat's owner is fishing at
+        /// anchor in the same stream, the owner may catch one of their own: their level, their chosen fish.
+        /// </summary>
+        internal void GuestCaught(Processors.Tasks.ResourceTaskProcessor processor, ILogger processorLogger, DataModels.GameSession session, DataModels.Character guest)
+        {
+            if (guest == null || !ownerOfGuest.TryGetValue(guest.Id, out var ownerId)) return;
+            if (processor.Random.NextDouble() >= CaptainsCutChance) return;
+
+            var owner = gameData.GetCharacter(ownerId);
+            if (owner == null || owner.UserIdLock != guest.UserIdLock) return;
+            var state = gameData.GetCharacterState(owner.StateId);
+            if (state == null || !string.Equals(state.Island, Processors.Tasks.FishingTaskProcessor.AtSea, StringComparison.OrdinalIgnoreCase)) return;
+
+            var skills = gameData.GetCharacterSkills(owner.SkillsId);
+            if (skills == null) return;
+            var inventory = inventoryProvider.Get(owner.Id);
+            if (Processors.Tasks.FishingTaskProcessor.Drops.TryDropItem(processor, processorLogger, gameData, inventory, session, owner,
+                skills.FishingLevel + inventory.GetFishingBonus(), state.TaskArgument))
+            {
+                logger.LogInformation("Captain's cut: " + owner.Name + " caught a fish with their guest " + guest.Name);
+            }
+        }
+
+        private DataModels.Character InSession(SessionToken token, Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            return character == null || token == null || character.UserIdLock != token.UserId ? null : character;
         }
 
         public BoatBlueprint[] GetBlueprints() => Blueprints.Select(b => new BoatBlueprint

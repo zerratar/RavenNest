@@ -12,6 +12,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         /// <summary>The island a player at anchor on their own boat is on, as far as the server knows (Island.Sea).</summary>
         public const string AtSea = "Sea";
 
+        /// <summary>Own boats' guests, for the owner's cut of their fish (set by BoatManager when it is made).</summary>
+        internal static BoatManager Boats;
+
         /// <summary>Fish only caught at sea (decided 2026-10-26); never from an island's fishing spots.</summary>
         public static readonly System.Collections.Generic.HashSet<string> SeaOnly = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -44,7 +47,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     if (village != null) ++village.Fish;
                     session.Updated = DateTime.UtcNow;
                     QuestTracker.Gathered(character, RavenNest.Models.Skill.Fishing);
-                    Drops.TryDropItem(this, logger, gameData, inventory, session, character, seaLevel, state.TaskArgument);
+                    // a guest aboard someone's boat: their catch may bring the owner one too (the captain's cut)
+                    if (Drops.TryDropItem(this, logger, gameData, inventory, session, character, seaLevel, state.TaskArgument))
+                        Boats?.GuestCaught(this, logger, session, character);
                     return;
                 }
 

@@ -48,5 +48,25 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return boatManager.Build(sessionToken, characterId, request?.Boat);
         }
+
+        /// <summary>A guest climbed aboard the owner's boat (the game's "Guests aboard").</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{ownerId}/guest-aboard/{guestId}")]
+        public bool GuestAboard(Guid ownerId, Guid guestId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return boatManager.GuestAboard(sessionToken, ownerId, guestId);
+        }
+
+        /// <summary>A guest stepped off; "trip" when they sailed a fair way, for the owner's Ferryman titles.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{ownerId}/guest-ashore/{guestId}/{trip}")]
+        public bool GuestAshore(Guid ownerId, Guid guestId, string trip)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return boatManager.GuestAshore(sessionToken, ownerId, guestId, trip == "trip");
+        }
     }
 }

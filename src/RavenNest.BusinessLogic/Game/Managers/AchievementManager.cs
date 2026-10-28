@@ -48,6 +48,8 @@ namespace RavenNest.BusinessLogic.Game
             Tiers("quester", 10, 100, 1_000),
             Tiers("helper", 5, 50, 500),
             Tiers("generous", 1, 10, 100),
+            // guests carried in an own boat, a whole trip each (BoatManager): the Ferryman, then the Sea Captain
+            new Definition { Key = "ferryman", Targets = new long[] { 50, 500 } },
             new Definition { Key = "allround", Targets = new long[] { 50, 200, 999 }, Mode = Mode.Highest },
             new Definition { Key = "storyteller", Targets = new long[] { 1, 3, 5 }, Mode = Mode.Highest },
             new Definition { Key = "wrong", Targets = new long[] { 5 }, Hidden = true },

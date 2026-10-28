@@ -461,6 +461,8 @@ namespace RavenNest.Blazor
             app.ApplicationServices.GetService<AchievementManager>();
             app.ApplicationServices.GetService<StreamerQuestManager>();
             app.ApplicationServices.GetService<VillageStoryManager>();
+            // made now, so the fishing processor knows the own boats' guests (the captain's cut)
+            app.ApplicationServices.GetService<BoatManager>();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
