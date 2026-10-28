@@ -115,7 +115,12 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
             Task.Run(AcceptLoop);
         }
 
-        public void Stop() => _cts.Cancel();
+        // disposed twice on shutdown (the host disposes it after it was already stopped): the second time is a no-op,
+        // not an ObjectDisposedException that crashed every graceful stop after the last save
+        public void Stop()
+        {
+            try { _cts?.Cancel(); } catch (ObjectDisposedException) { }
+        }
 
         private async Task AcceptLoop()
         {
