@@ -1957,6 +1957,22 @@ namespace RavenNest.BusinessLogic.Data
             return ItemMaterial.None;
         }
 
+        private const long UncraftableGearCoinsPerStat = 110;
+
+        /// <summary>The combat stats an item gives, summed; zero for anything that is not gear.</summary>
+        private static long GearStats(Item item)
+        {
+            var category = (ItemCategory)item.Category;
+            if (category != ItemCategory.Weapon && category != ItemCategory.Armor
+                && category != ItemCategory.Ring && category != ItemCategory.Amulet)
+            {
+                return 0;
+            }
+
+            return (long)item.WeaponPower + item.WeaponAim + item.MagicPower + item.MagicAim
+                + item.RangedPower + item.RangedAim + item.ArmorPower;
+        }
+
         private static long RoundTo1000(long value)
         {
             if (value < 10000L) return value;
@@ -2009,6 +2025,16 @@ namespace RavenNest.BusinessLogic.Data
                     if (resourceCost > 1)
                     {
                         item.ShopSellPrice = (long)resourceCost;
+                    }
+                    else if (item.ShopSellPrice <= 1 && GearStats(item) > 0)
+                    {
+                        // Gear nobody can craft has no ingredients to be priced from, so it was left at
+                        // the 1 coin minimum: Mages Ring III and IV, the slayer rings and amulets. Those
+                        // are drops, and worth something. Priced like the gear that was priced by hand
+                        // (Mages Ring II, Ghrims Stick, Pickle Rick: about 110 coins a stat point).
+                        // Hats, masks and other event items have no stats, so they stay at 1 coin and
+                        // out of the economy, as they were meant to.
+                        item.ShopSellPrice = RoundTo1000(GearStats(item) * UncraftableGearCoinsPerStat);
                     }
                     continue;
                 }
