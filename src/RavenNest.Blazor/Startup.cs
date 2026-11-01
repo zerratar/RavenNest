@@ -583,6 +583,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<VillageRoadManager>();
             services.AddSingleton<VillageDecorManager>();
             services.AddSingleton<BoatManager>();
+            services.AddSingleton<MangroveManager>();
             services.AddSingleton<QuestManager>();
             services.AddSingleton<StreamQuestManager>();
             services.AddSingleton<AchievementManager>();

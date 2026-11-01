@@ -9,6 +9,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Gathering));
 
+        /// <summary>What only grows on the Mangrove island (docs/banana-island.md in the game): never gathered elsewhere.</summary>
+        public static readonly System.Collections.Generic.HashSet<string> MangroveOnly = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Banana",
+        };
+
         public override void Process(
             ILogger logger,
             GameData gameData,
@@ -46,7 +52,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                 session.Updated = DateTime.UtcNow;
                 QuestTracker.Gathered(character, RavenNest.Models.Skill.Gathering);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
+                var onMangrove = island == RavenNest.Models.Island.Mangrove;
+                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument, d => onMangrove || !MangroveOnly.Contains(d.Name ?? ""));
             });
         }
     }

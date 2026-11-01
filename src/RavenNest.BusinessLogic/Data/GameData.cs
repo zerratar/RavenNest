@@ -5724,6 +5724,12 @@ namespace RavenNest.BusinessLogic.Data
         public Item SeaSerpent;
         public Item BurnedSeaSerpent;
         public Item MessageInABottle;
+        public Item Banana;
+        public Item GoldenBanana;
+        public Item BananaBread;
+        public Item BurnedBananaBread;
+        public Item BananaSplit;
+        public Item Bananarang;
 
         // Cooking
         public Item Flour;
@@ -5946,6 +5952,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item PolarBearPet;
         public Item RedOrbPet;
         public Item RedPandaPet;
+        public Item MonkeyPet;
 
         // redeemable (Loyalty points)
         public Item DiscoRavenPet;

@@ -272,6 +272,12 @@ namespace RavenNest.BusinessLogic.Data
                     BrownScarf = GetOrCreateItem(i, "Brown Scarf", "A brown scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Brown Neckwrap"),
                     GreenScarf = GetOrCreateItem(i, "Green Scarf", "A green scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Green Neckwrap"),
 
+                    // pirate treasure on the Mangrove island: a banana held and loosed like a bow; it comes back
+                    Bananarang = GetOrCreateItem(i, "Bananarang", "It always comes back. Nobody knows how it shoots arrows.", ItemCategory.Weapon, ItemType.TwoHandedBow)
+                        .GenericPrefab("Character/Weapons/Bows/Bananarang")
+                        .LevelRequirement(60)
+                        .SetStats(rangedAim: 60, rangedPower: 50),
+
                     FerryScroll = GetOrCreateItem(i, "Ferry Scroll", "A scroll that will temporarily increase the speed of the ferry for 15 minutes. This effect cannot  be stacked.", ItemCategory.Scroll, ItemType.Scroll),
                     ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
@@ -442,6 +448,11 @@ namespace RavenNest.BusinessLogic.Data
                     RawSeaSerpent = GetOrCreateItem(i, "Raw Sea Serpent", "The thing sailors swear they saw. Now you have seen it too.", ItemCategory.Resource, ItemType.Fishing),
                     MessageInABottle = GetOrCreateItem(i, "Message in a Bottle", "A rolled up note inside reads: \"If found, please return to zerratar. Or keep it, I have more bottles.\"", ItemCategory.Resource, ItemType.Fishing),
 
+                    // the Mangrove island (docs/banana-island.md in the game): bananas only grow there, the rest
+                    // comes from its pirates' treasure
+                    Banana = GetOrCreateItem(i, "Banana", "A wild banana from the Mangrove island. The monkeys are watching you hold it.", ItemCategory.Resource, ItemType.Gathering),
+                    GoldenBanana = GetOrCreateItem(i, "Golden Banana", "Dug up with pirate treasure. The monkeys would give anything for it. So would the pirates.", ItemCategory.Resource, ItemType.Gathering),
+
                     RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidons Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
 
                     // Cooking - Resource Creation
@@ -533,6 +544,9 @@ namespace RavenNest.BusinessLogic.Data
                     BurnedMantaRay = GetOrCreateItem(i, "Burned Manta Ray", "From the grace of the oceans to the tragedy of the grill.", ItemCategory.Food, ItemType.Food),
                     BurnedKraken = GetOrCreateItem(i, "Burned Kraken", "Such a legendary creature deserved a better culinary fate.", ItemCategory.Food, ItemType.Food),
                     BurnedMackerel = GetOrCreateItem(i, "Burned Mackerel", "It was a mackerel once.", ItemCategory.Food, ItemType.Food),
+                    BananaBread = GetOrCreateItem(i, "Banana Bread", "Moist, sweet and still warm. A monkey's idea of a perfect loaf.", ItemCategory.Food, ItemType.Food),
+                    BurnedBananaBread = GetOrCreateItem(i, "Burned Banana Bread", "Even the monkeys will not touch it.", ItemCategory.Food, ItemType.Food),
+                    BananaSplit = GetOrCreateItem(i, "Banana Split", "A banana, split, with chocolate on top. Eaten fast, before the monkeys notice.", ItemCategory.Food, ItemType.Food),
                     BurnedTuna = GetOrCreateItem(i, "Burned Tuna", "Tuna jerky, but not on purpose.", ItemCategory.Food, ItemType.Food),
                     BurnedMarlin = GetOrCreateItem(i, "Burned Marlin", "All that fighting, for this.", ItemCategory.Food, ItemType.Food),
                     BurnedAnglerfish = GetOrCreateItem(i, "Burned Anglerfish", "Now it is ugly and burned.", ItemCategory.Food, ItemType.Food),
@@ -698,6 +712,8 @@ namespace RavenNest.BusinessLogic.Data
                 RavenPet = GetOrCreateItem(i, "Raven Pet", ItemCategory.Pet, ItemType.Pet),
                 RedOrbPet = GetOrCreateItem(i, "Red Orb Pet", ItemCategory.Pet, ItemType.Pet),
                 RedPandaPet = GetOrCreateItem(i, "Red Panda Pet", ItemCategory.Pet, ItemType.Pet),
+                // pirate treasure on the Mangrove island (docs/banana-island.md in the game)
+                MonkeyPet = GetOrCreateItem(i, "Monkey Pet", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/MonkeyPet"),
                 RedSantaMetalon = GetOrCreateItem(i, "Red Santa Metalon", ItemCategory.Pet, ItemType.Pet),
                 SantaRaven = GetOrCreateItem(i, "Santa Raven", ItemCategory.Pet, ItemType.Pet),
                 SpiderPet = GetOrCreateItem(i, "Spider Pet", ItemCategory.Pet, ItemType.Pet),
@@ -1150,6 +1166,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(50, items.Paprika, 120, 0.10, farming);
             EnsureDropRate(60, items.Turmeric, 150, 0.10, farming);
             EnsureDropRate(100, items.Sugar, 360, 0.09, gathering);
+            EnsureDropRate(1, items.Banana, 30, 0.25, gathering); // the Mangrove island only
             EnsureDropRate(120, items.Cinnamon, 360, 0.09, gathering);
             EnsureDropRate(70, items.Apple, 200, 0.10, farming);
             EnsureDropRate(80, items.Carrots, 250, 0.10, farming);
@@ -1416,6 +1433,8 @@ namespace RavenNest.BusinessLogic.Data
 
             // cooking various meats and stuff
             EnsureCookingRecipeGuaranteed(10, items.Flour, Ingredient(items.Wheat));
+            EnsureCookingRecipe(60, items.BananaBread, items.BurnedBananaBread, 0.2, 1, items.Banana, items.Flour, items.Sugar, items.Eggs);
+            EnsureCookingRecipeGuaranteed(320, items.BananaSplit, Ingredients(items.Banana, items.Milk, items.Chocolate, items.Sugar));
             EnsureCookingRecipe(30, items.Bread, items.BurnedBread, 0.2, 1, items.Flour, items.Water, items.Salt, items.Yeast);
             EnsureCookingRecipeGuaranteed(60, items.HamSandwich, Ingredients(items.Bread, items.Butter, items.Ham));
             EnsureCookingRecipeGuaranteed(70, items.Butter, Ingredients(items.Milk));
@@ -1531,6 +1550,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.GrilledCheese, Effect(StatusEffectType.Heal, 0.09f, 12), Effect(StatusEffectType.IncreasedDefense, 100, 0.05f, 2));
             EnsureItemStatusEffects(typedItems.ApplePie, Effect(StatusEffectType.Heal, 0.14f, 22), Effect(StatusEffectType.IncreasedMagicPower, 150, 0.05f, 3));
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
+            EnsureItemStatusEffects(typedItems.BananaBread, Effect(StatusEffectType.Heal, 0.09f, 12), Effect(StatusEffectType.IncreasedAttackSpeed, 120, 0.05f, 2));
+            EnsureItemStatusEffects(typedItems.BananaSplit, Effect(StatusEffectType.Heal, 0.15f, 24), Effect(StatusEffectType.IncreasedAttackSpeed, 180, 0.08f, 3));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
             EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 120, 0.05f, 0));
             EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
@@ -1544,6 +1565,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.BurnedSteak, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedApplePie, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedBread, Effect(StatusEffectType.Heal, 0.02f, 2));
+            EnsureItemStatusEffects(typedItems.BurnedBananaBread, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedSkewers, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedChocolateChipCookies, Effect(StatusEffectType.Heal, 0.02f, 2));
 
