@@ -5605,9 +5605,14 @@ namespace RavenNest.BusinessLogic.Data
         public Item BoatHull;
         public Item Mast;
         public Item LargeHull;
+        public Item Keel;
+        public Item Canvas;
+        public Item IronFittings;
         public Item Rowboat;
         public Item FishingBoat;
         public Item Sloop;
+        public Item Brigantine;
+        public Item Galleon;
         public Item ExpMultiplierScroll;
         public Item RaidScroll;
         public Item DungeonScroll;

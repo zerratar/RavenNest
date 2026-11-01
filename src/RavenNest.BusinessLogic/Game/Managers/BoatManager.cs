@@ -42,6 +42,19 @@ namespace RavenNest.BusinessLogic.Game
                 Sailing = 60, Crafting = 50, Fee = 250_000,
                 Parts = new[] { ("Large Hull", 1L), ("Mast", 2L), ("Sailcloth", 3L), ("Rope", 8L) },
             },
+            // the bigger ships (customizing phase 3): Pirate Realm's medium and large ships in the game
+            new Blueprint
+            {
+                Boat = "Brigantine", Names = new[] { "brigantine", "brig" },
+                Sailing = 100, Crafting = 120, Fee = 1_000_000,
+                Parts = new[] { ("Keel", 1L), ("Mast", 2L), ("Canvas", 4L), ("Iron Fittings", 2L), ("Rope", 12L) },
+            },
+            new Blueprint
+            {
+                Boat = "Galleon", Names = new[] { "galleon" },
+                Sailing = 200, Crafting = 200, Fee = 5_000_000,
+                Parts = new[] { ("Keel", 2L), ("Large Hull", 1L), ("Mast", 3L), ("Canvas", 8L), ("Iron Fittings", 6L), ("Rope", 24L) },
+            },
         };
 
         private readonly GameData gameData;
@@ -72,6 +85,8 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>Seats on each boat, the owner's included (the game's BoatCrews.Seats).</summary>
         public static int Seats(string boat) =>
+            string.Equals(boat, "Galleon", StringComparison.OrdinalIgnoreCase) ? 10 :
+            string.Equals(boat, "Brigantine", StringComparison.OrdinalIgnoreCase) ? 6 :
             string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? 4 :
             string.Equals(boat, "Fishing Boat", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
 

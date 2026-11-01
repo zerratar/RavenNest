@@ -42,6 +42,34 @@ namespace RavenNest.BusinessLogic.Game
             S("wood", 5, false, 1, 1, 2),
         };
 
+        /// <summary>Pirate Realm's medium ship (the Brigantine): one hull (its rigging is made for it), the rest as the Sloop.</summary>
+        private static readonly Slot[] MediumShip =
+        {
+            S("hull", 1, false, 1, 1),
+            S("front", 3, false, 1, 1),
+            S("middle", 4, false, 1, 1),
+            S("back", 4, false, 1, 1),
+            S("figurehead", 7, true, 0, 0),
+            S("ram", 4, true, 0, 0),
+            S("sails", 14, false, 1, 1, 2),
+            S("flag", 17, true, 0, 0, 1, 2, 3),
+            S("wood", 5, false, 1, 1, 2),
+        };
+
+        /// <summary>Pirate Realm's large ship (the Galleon).</summary>
+        private static readonly Slot[] LargeShip =
+        {
+            S("hull", 1, false, 1, 1),
+            S("front", 3, false, 1, 1),
+            S("middle", 3, false, 1, 1),
+            S("back", 3, false, 1, 1),
+            S("figurehead", 7, true, 0, 0),
+            S("ram", 4, true, 0, 0),
+            S("sails", 14, false, 1, 1, 2),
+            S("flag", 17, true, 0, 0, 1, 2, 3),
+            S("wood", 5, false, 1, 1, 2),
+        };
+
         /// <summary>The Rowboat and the Fishing Boat keep their models: a flag at the stern only.</summary>
         private static readonly Slot[] FlagOnly =
         {
@@ -95,7 +123,10 @@ namespace RavenNest.BusinessLogic.Game
         public const string PirateFlag = "flag_7";
 
         public static IReadOnlyList<Slot> SlotsFor(string boat) =>
-            string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? SmallShip : FlagOnly;
+            string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? SmallShip
+            : string.Equals(boat, "Brigantine", StringComparison.OrdinalIgnoreCase) ? MediumShip
+            : string.Equals(boat, "Galleon", StringComparison.OrdinalIgnoreCase) ? LargeShip
+            : FlagOnly;
 
         public static Slot Find(string boat, string slot) =>
             SlotsFor(boat).FirstOrDefault(s => string.Equals(s.Name, slot, StringComparison.OrdinalIgnoreCase));

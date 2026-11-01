@@ -289,10 +289,16 @@ namespace RavenNest.BusinessLogic.Data
                     BoatHull = GetOrCreateItem(i, "Boat Hull", "A small wooden hull, sealed with resin. Bring it to the shipwright on Away.", ItemCategory.Resource, ItemType.Crafting),
                     Mast = GetOrCreateItem(i, "Mast", "A tall pine mast with iron fittings.", ItemCategory.Resource, ItemType.Crafting),
                     LargeHull = GetOrCreateItem(i, "Large Hull", "A big hull of ironbark, banded with steel, for a sloop.", ItemCategory.Resource, ItemType.Crafting),
+                    // the bigger ships' parts (customizing phase 3): the Brigantine and the Galleon
+                    Keel = GetOrCreateItem(i, "Keel", "The long spine of a ship, of ebonshade bound in steel. Everything else is built on it.", ItemCategory.Resource, ItemType.Crafting),
+                    Canvas = GetOrCreateItem(i, "Canvas", "Sailcloth doubled and roped at the edges, big enough for a square sail.", ItemCategory.Resource, ItemType.Crafting),
+                    IronFittings = GetOrCreateItem(i, "Iron Fittings", "Bolts, chains, hinges and cleats: all the iron a ship needs to hold together.", ItemCategory.Resource, ItemType.Crafting),
 
                     Rowboat = GetOrCreateItem(i, "Rowboat", "Your own little boat, from the shipwright on Away. Equip it and !sail takes it straight to the island you name.", ItemCategory.Vehicle, ItemType.Boat),
                     FishingBoat = GetOrCreateItem(i, "Fishing Boat", "A sturdy fishing boat with a sail. Faster than a rowboat, and made for fishing at sea.", ItemCategory.Vehicle, ItemType.Boat),
-                    Sloop = GetOrCreateItem(i, "Sloop", "A swift sloop, the fastest boat the shipwright makes.", ItemCategory.Vehicle, ItemType.Boat),
+                    Sloop = GetOrCreateItem(i, "Sloop", "A swift single-masted ship, quick to turn.", ItemCategory.Vehicle, ItemType.Boat),
+                    Brigantine = GetOrCreateItem(i, "Brigantine", "A two-masted ship with room for six. Fast on the open sea.", ItemCategory.Vehicle, ItemType.Boat),
+                    Galleon = GetOrCreateItem(i, "Galleon", "Three masts, ten aboard and a captain's cabin. The fastest thing at sea after the ferry.", ItemCategory.Vehicle, ItemType.Boat),
 
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 
@@ -1329,6 +1335,9 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCraftingRecipe(30, items.BoatHull, Ingredient(items.MystwoodLogs, 20), Ingredient(items.Resin, 6), Ingredient(items.IronBar, 2));
             EnsureCraftingRecipe(35, items.Mast, Ingredient(items.PineheartLogs, 8), Ingredient(items.Rope, 1), Ingredient(items.IronBar, 1));
             EnsureCraftingRecipe(60, items.LargeHull, Ingredient(items.IronbarkLogs, 25), Ingredient(items.Resin, 12), Ingredient(items.SteelBar, 4));
+            EnsureCraftingRecipe(120, items.Keel, Ingredient(items.EbonshadeLogs, 40), Ingredient(items.Resin, 16), Ingredient(items.SteelBar, 8));
+            EnsureCraftingRecipe(140, items.Canvas, Ingredient(items.Sailcloth, 3), Ingredient(items.Rope, 2));
+            EnsureCraftingRecipe(160, items.IronFittings, Ingredient(items.IronBar, 6), Ingredient(items.SteelBar, 4), Ingredient(items.MithrilBar, 2));
             EnsureCraftingRecipe(130, items.PhantomRing, items.GoldRing, items.PhantomOre);
             EnsureCraftingRecipe(130, items.PhantomAmulet, items.GoldAmulet, items.PhantomOre);
 
