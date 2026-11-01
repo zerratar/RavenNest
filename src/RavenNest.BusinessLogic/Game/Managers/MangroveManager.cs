@@ -30,12 +30,19 @@ namespace RavenNest.BusinessLogic.Game
         private readonly GameData gameData;
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly ILogger<MangroveManager> logger;
+        private readonly BoatManager boats;
         private readonly ConcurrentDictionary<string, DateTime> lastPaid = new ConcurrentDictionary<string, DateTime>();
 
-        public MangroveManager(GameData gameData, PlayerInventoryProvider inventoryProvider, ILogger<MangroveManager> logger)
+        /// <summary>Boat looks found digging (docs/own-boats.md in the game, "Customizing boats"): a flag, rarely a figurehead.</summary>
+        private const double TreasureFlagChance = 0.12, TreasureFigureheadChance = 0.04;
+        /// <summary>A regatta finisher other than the winner, now and then a sail too.</summary>
+        private const double RegattaSailChance = 0.1;
+
+        public MangroveManager(GameData gameData, PlayerInventoryProvider inventoryProvider, BoatManager boats, ILogger<MangroveManager> logger)
         {
             this.gameData = gameData;
             this.inventoryProvider = inventoryProvider;
+            this.boats = boats;
             this.logger = logger;
         }
 
@@ -77,6 +84,20 @@ namespace RavenNest.BusinessLogic.Game
                     given.Add(new EventItemReward { CharacterId = character.Id, ItemId = item.Id, InventoryItemId = stack?.Id ?? Guid.Empty, Amount = amount });
                 }
                 reward.Items = given.ToArray();
+
+                // boat looks: the pirates' own colours for holding their raid; a flag or figurehead found digging
+                var looks = new List<string>();
+                if (pirates)
+                {
+                    if (boats.GrantLook(character.UserId, BoatLooks.PirateSails, "pirates")) looks.Add(BoatLooks.PirateSails);
+                    if (boats.GrantLook(character.UserId, BoatLooks.PirateFlag, "pirates")) looks.Add(BoatLooks.PirateFlag);
+                }
+                else
+                {
+                    if (rng.NextDouble() < TreasureFlagChance) looks.Add(boats.GrantNew(character.UserId, "flag", BoatLooks.TreasureFlags, "treasure", rng));
+                    if (rng.NextDouble() < TreasureFigureheadChance) looks.Add(boats.GrantNew(character.UserId, "figurehead", BoatLooks.TreasureFigureheads, "treasure", rng));
+                }
+                reward.Looks = looks.Where(l => l != null).ToArray();
                 rewards.Add(reward);
             }
             gameData.Touch();
@@ -107,6 +128,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
             var rewards = new List<MangroveReward>();
+            var rng = Random.Shared;
             var place = 0;
             foreach (var id in finishers.Distinct().Take(MostPaid))
             {
@@ -118,7 +140,9 @@ namespace RavenNest.BusinessLogic.Game
                 var coins = (long)Math.Round((300 + (skills?.SailingLevel ?? 1) * 10) * factor / 10) * 10;
                 var resources = gameData.GetResources(character);
                 if (resources != null) resources.Coins += coins;
-                rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0] });
+                // the regatta's sails: the winner one not yet owned, the others now and then
+                var sail = place == 1 || rng.NextDouble() < RegattaSailChance ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
+                rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0], Looks = sail != null ? new[] { sail } : new string[0] });
             }
             gameData.Touch();
             return rewards.ToArray();

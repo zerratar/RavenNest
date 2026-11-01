@@ -48,6 +48,52 @@ namespace RavenNest.BusinessLogic.Game
             S("flag", 17, true, 0, 0, 1, 2, 3),
         };
 
+        // ---- Earning (phase 2) ---------------------------------------------------------------------------------
+        //
+        // Nothing is bought (decided 2026-11-01). Some looks come with how far a player has come at sea, counted over
+        // all their characters: these are owned while the condition holds, no row needed. The rest are found and won
+        // (BoatLookUnlock rows): the regatta's sails, the treasure's flags and figureheads, the pirates' colours.
+
+        public sealed class Earned
+        {
+            public string Key;
+            /// <summary>The highest Sailing level among the player's characters, at least this.</summary>
+            public int Sailing;
+            /// <summary>Or an achievement's tier reached ("ferryman" 1 is the Ferryman, 2 the Sea Captain).</summary>
+            public string Achievement;
+            public int Tier;
+            /// <summary>Or a quest chain finished ("shipwright").</summary>
+            public string Chain;
+            public string How;
+        }
+
+        private static Earned AtSailing(string key, int level) => new Earned { Key = key, Sailing = level, How = "Sailing " + level };
+
+        public static readonly Earned[] ByProgress =
+        {
+            AtSailing("wood_3", 50),
+            AtSailing("ram_1", 100), AtSailing("back_2", 100),
+            AtSailing("front_2", 150),
+            AtSailing("wood_4", 200), AtSailing("ram_2", 200), AtSailing("hull_2", 200),
+            AtSailing("middle_2", 250), AtSailing("front_3", 250),
+            AtSailing("wood_5", 300), AtSailing("ram_3", 300),
+            AtSailing("middle_3", 400), AtSailing("front_4", 400), AtSailing("back_4", 400),
+            AtSailing("ram_4", 500),
+            new Earned { Key = "flag_13", Chain = "shipwright", How = "the shipwright's chain" },
+            new Earned { Key = "figurehead_2", Achievement = "ferryman", Tier = 1, How = "the Ferryman" },
+            new Earned { Key = "figurehead_6", Achievement = "ferryman", Tier = 2, How = "the Sea Captain" },
+            new Earned { Key = "flag_10", Achievement = "ferryman", Tier = 2, How = "the Sea Captain" },
+        };
+
+        /// <summary>The regatta's sails: a winner gets one not yet owned (and any finisher, now and then).</summary>
+        public static readonly int[] RegattaSails = { 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14 };
+        /// <summary>The treasure's flags and figureheads, found while digging.</summary>
+        public static readonly int[] TreasureFlags = { 8, 9, 11, 12, 14, 15, 16, 17 };
+        public static readonly int[] TreasureFigureheads = { 1, 3, 4, 5, 7 };
+        /// <summary>The pirates' own colours, for holding their raid: the black sails and the skull and bones.</summary>
+        public const string PirateSails = "sails_6";
+        public const string PirateFlag = "flag_7";
+
         public static IReadOnlyList<Slot> SlotsFor(string boat) =>
             string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? SmallShip : FlagOnly;
 

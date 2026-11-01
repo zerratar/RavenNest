@@ -178,8 +178,46 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private bool Owns(Guid userId, BoatLooks.Slot slot, int variant) =>
-            slot.Free.Contains(variant) || gameData.GetBoatLookUnlocks(userId).Any(u => string.Equals(u.Key, BoatLooks.Key(slot.Name, variant), StringComparison.OrdinalIgnoreCase));
+        private bool Owns(Guid userId, BoatLooks.Slot slot, int variant) => OwnedKeys(userId).Contains(BoatLooks.Key(slot.Name, variant)) || slot.Free.Contains(variant);
+
+        /// <summary>
+        /// Every look key the player owns: found and won (rows), and those their progress at sea brings (the highest
+        /// Sailing level among their characters, the Ferryman titles, the shipwright's chain).
+        /// </summary>
+        public HashSet<string> OwnedKeys(Guid userId)
+        {
+            var keys = new HashSet<string>(gameData.GetBoatLookUnlocks(userId).Select(u => u.Key), StringComparer.OrdinalIgnoreCase);
+            var sailing = 0;
+            var tiers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var chains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in gameData.GetCharactersByUserId(userId))
+            {
+                var skills = gameData.GetCharacterSkills(c.SkillsId);
+                if (skills != null) sailing = Math.Max(sailing, skills.SailingLevel);
+                foreach (var a in gameData.GetCharacterAchievements(c.Id))
+                    if (!tiers.TryGetValue(a.Key, out var t) || a.Tier > t) tiers[a.Key] = a.Tier;
+                foreach (var q in gameData.GetCharacterQuests(c.Id))
+                    if (q.Kind == QuestManager.Chain && q.State == QuestManager.Done) chains.Add(q.Key);
+            }
+            foreach (var e in BoatLooks.ByProgress)
+            {
+                var has = e.Sailing > 0 ? sailing >= e.Sailing
+                    : e.Achievement != null ? tiers.TryGetValue(e.Achievement, out var t) && t >= e.Tier
+                    : e.Chain != null && chains.Contains(e.Chain);
+                if (has) keys.Add(e.Key);
+            }
+            return keys;
+        }
+
+        /// <summary>One of these looks the player does not own yet, at random, granted; null when they own them all.</summary>
+        public string GrantNew(Guid userId, string slot, int[] variants, string source, Random rng)
+        {
+            var owned = OwnedKeys(userId);
+            var open = variants.Select(v => BoatLooks.Key(slot, v)).Where(k => !owned.Contains(k)).ToList();
+            if (open.Count == 0) return null;
+            var key = open[rng.Next(open.Count)];
+            return GrantLook(userId, key, source) ? key : null;
+        }
 
         private BoatLookResult Fail(DataModels.Character character, ReadOnlyInventoryItem stack, string error)
         {
@@ -193,7 +231,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var boat = stack.Item?.Name ?? "";
             var look = BoatLooks.Parse(boat, tag);
-            var unlocked = gameData.GetBoatLookUnlocks(character.UserId);
+            var owned = OwnedKeys(character.UserId);
             return new BoatLookResult
             {
                 Ok = true,
@@ -207,7 +245,7 @@ namespace RavenNest.BusinessLogic.Game
                     CanBeNone = s.CanBeNone,
                     Current = look[s.Name],
                     Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
-                        .Where(v => s.Free.Contains(v) || unlocked.Any(u => string.Equals(u.Key, BoatLooks.Key(s.Name, v), StringComparison.OrdinalIgnoreCase)))
+                        .Where(v => s.Free.Contains(v) || owned.Contains(BoatLooks.Key(s.Name, v)))
                         .ToArray(),
                 }).ToArray(),
             };

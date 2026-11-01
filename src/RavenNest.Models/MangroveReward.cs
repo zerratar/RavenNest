@@ -8,5 +8,7 @@ namespace RavenNest.Models
         public Guid CharacterId { get; set; }
         public long Coins { get; set; }
         public EventItemReward[] Items { get; set; }
+        /// <summary>Boat looks earned with it (docs/own-boats.md in the game): "sails_9", "flag_12".</summary>
+        public string[] Looks { get; set; }
     }
 }
