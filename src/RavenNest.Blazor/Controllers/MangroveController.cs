@@ -59,5 +59,15 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return mangroveManager.Feed(sessionToken, characterId, kind, amount);
         }
+
+        /// <summary>Coins a character pays on the island (meddling in the regatta): the coins left, or -1 when they had too few.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/spend/{coins}")]
+        public long Spend(Guid characterId, long coins)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return mangroveManager.Spend(sessionToken, characterId, coins);
+        }
     }
 }

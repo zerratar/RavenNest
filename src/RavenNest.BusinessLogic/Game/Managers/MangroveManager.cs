@@ -27,6 +27,9 @@ namespace RavenNest.BusinessLogic.Game
         // diggers and defenders paid per chest, finishers per race
         private const int MostPaid = 50;
 
+        // the game's prices for meddling in the regatta are 500 and 2000 coins; nothing on the island costs more
+        private const long MostSpent = 10_000;
+
         private readonly GameData gameData;
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly ILogger<MangroveManager> logger;
@@ -176,6 +179,23 @@ namespace RavenNest.BusinessLogic.Game
             }
             if (taken > 0) logger.LogInformation(character.Name + " fed the monkeys " + taken + " " + item.Name);
             return taken;
+        }
+
+        /// <summary>
+        /// Coins a character playing in the calling stream pays on the island (the game's regatta meddling: a powder keg
+        /// or wind before the free one is back, or aimed at a racer). Returns the coins left, or -1 when they had too few.
+        /// </summary>
+        public long Spend(SessionToken session, Guid characterId, long coins)
+        {
+            if (coins <= 0 || coins > MostSpent) return -1;
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || session == null || character.UserIdLock != session.UserId) return -1;
+            var resources = gameData.GetResources(character);
+            if (resources == null || resources.Coins < coins) return -1;
+            resources.Coins -= coins;
+            gameData.Touch();
+            logger.LogInformation(character.Name + " paid " + coins + " coins to meddle in the regatta");
+            return (long)resources.Coins;
         }
 
         private bool Due(string key, TimeSpan every)
