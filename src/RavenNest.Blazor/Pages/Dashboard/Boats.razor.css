@@ -1,0 +1,166 @@
+/* The boat designer: the boats as tabs, the 3D view beside the parts (stacked on narrow screens). */
+
+.boats-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-3);
+}
+
+.boats-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    cursor: pointer;
+    text-align: left;
+}
+
+.boats-pick:hover,
+.boats-pick:focus-visible {
+    border-color: var(--rf-line-strong);
+}
+
+.boats-pick.is-active {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold-wash);
+}
+
+.boats-pick__name {
+    font-weight: 600;
+}
+
+.boats-pick__who {
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.boats-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .boats-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.boats-view {
+    position: sticky;
+    top: var(--rf-space-3);
+}
+
+.boats-canvas {
+    height: 460px;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    overflow: hidden;
+    background: #bcd6e4;
+}
+
+@media (max-width: 900px) {
+    .boats-view {
+        position: static;
+    }
+
+    .boats-canvas {
+        height: 320px;
+    }
+}
+
+.boats-hint {
+    margin: var(--rf-space-1) 0 0;
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+}
+
+.boats-trying {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-top: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-warn-wash);
+    border: 1px solid var(--rf-warn);
+    border-radius: var(--rf-radius-sm);
+}
+
+.boats-trying p {
+    margin: 0;
+    flex: 1 1 14rem;
+}
+
+.boats-slot {
+    margin-bottom: var(--rf-space-3);
+}
+
+.boats-slot__title {
+    font-size: var(--rf-size-heading);
+    margin: 0 0 var(--rf-space-2);
+}
+
+.boats-slot__title .rf-meta {
+    font-size: var(--rf-size-small);
+    font-weight: normal;
+}
+
+.boats-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1);
+}
+
+.boats-variant {
+    position: relative;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rf-surface-2);
+    border: 2px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.boats-variant:hover,
+.boats-variant:focus-visible {
+    border-color: var(--rf-line-strong);
+}
+
+.boats-variant.is-current {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 1px var(--rf-gold);
+}
+
+.boats-variant img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.boats-variant.is-locked img,
+.boats-variant.is-locked span {
+    opacity: 0.45;
+}
+
+.boats-variant__lock {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    font-size: 0.7rem;
+    color: var(--rf-ink);
+    text-shadow: 0 0 3px #000;
+}

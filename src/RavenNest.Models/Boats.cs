@@ -57,6 +57,8 @@ namespace RavenNest.Models
         public bool CanBeNone { get; set; }
         public int Current { get; set; }
         public int[] Owned { get; set; }
+        /// <summary>For the website's designer: where each variant comes from (index 0 is none), owned or not.</summary>
+        public string[] How { get; set; }
     }
 
     /// <summary>!boat look: the equipped boat's look, or why it cannot be shown or changed.</summary>
@@ -70,5 +72,10 @@ namespace RavenNest.Models
         public string Look { get; set; }
         public Guid InventoryItemId { get; set; }
         public BoatLookSlot[] Slots { get; set; }
+        /// <summary>Whose boat it is, for the website's designer (which lists all of a player's boats).</summary>
+        public Guid CharacterId { get; set; }
+        public string CharacterName { get; set; }
+        public int CharacterIndex { get; set; }
+        public bool Equipped { get; set; }
     }
 }

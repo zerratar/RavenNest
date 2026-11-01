@@ -165,21 +165,53 @@ namespace RavenNest.BusinessLogic.Game
                 var inventory = inventoryProvider.Get(character.Id);
                 var equipped = inventory.GetEquippedItem(EquipmentSlot.Boat);
                 if (equipped.IsNull()) return new BoatLookResult { Error = "noboat" };
-                var boat = equipped.Item?.Name ?? "";
-                var slot = BoatLooks.Find(boat, slotName);
-                if (slot == null) return Fail(character, equipped, "slot");
-                if (variant < (slot.CanBeNone ? 0 : 1) || variant > slot.Count) return Fail(character, equipped, "range");
-                if (!Owns(character.UserId, slot, variant)) return Fail(character, equipped, "locked");
-
-                var look = BoatLooks.Parse(boat, equipped.Tag);
-                look[slot.Name] = variant;
-                var tag = BoatLooks.Format(boat, look);
-                var stack = inventory.Get(equipped);
-                if (stack == null) return Fail(character, equipped, "noboat");
-                stack.Tag = tag;
-                gameData.Touch();
-                return Describe(character, equipped, tag);
+                return Change(character, inventory, equipped, slotName, variant);
             }
+        }
+
+        /// <summary>The website's boat designer: every boat the player's characters carry, each with its look.</summary>
+        public IReadOnlyList<BoatLookResult> GetBoats(Guid userId)
+        {
+            var boats = new List<BoatLookResult>();
+            foreach (var c in gameData.GetCharactersByUserId(userId).OrderBy(c => c.CharacterIndex))
+                foreach (var stack in inventoryProvider.Get(c.Id).GetAllItems())
+                    if (stack.Item != null && stack.Item.Type == (int)ItemType.Boat) boats.Add(Describe(c, stack, stack.Tag));
+            return boats;
+        }
+
+        /// <summary>
+        /// The website's boat designer: one part of any of the player's boats, equipped or not. A boat that is out at
+        /// sea shows it the next time it is launched.
+        /// </summary>
+        public BoatLookResult SetLook(Guid userId, Guid characterId, Guid inventoryItemId, string slotName, int variant)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || character.UserId != userId) return new BoatLookResult { Error = "nocharacter" };
+            lock (mutex)
+            {
+                var inventory = inventoryProvider.Get(character.Id);
+                var boat = inventory.Get(inventoryItemId);
+                if (boat.IsNull() || boat.Item == null || boat.Item.Type != (int)ItemType.Boat) return new BoatLookResult { Error = "noboat" };
+                return Change(character, inventory, boat, slotName, variant);
+            }
+        }
+
+        private BoatLookResult Change(DataModels.Character character, PlayerInventory inventory, ReadOnlyInventoryItem boatStack, string slotName, int variant)
+        {
+            var boat = boatStack.Item?.Name ?? "";
+            var slot = BoatLooks.Find(boat, slotName);
+            if (slot == null) return Fail(character, boatStack, "slot");
+            if (variant < (slot.CanBeNone ? 0 : 1) || variant > slot.Count) return Fail(character, boatStack, "range");
+            if (!Owns(character.UserId, slot, variant)) return Fail(character, boatStack, "locked");
+
+            var look = BoatLooks.Parse(boat, boatStack.Tag);
+            look[slot.Name] = variant;
+            var tag = BoatLooks.Format(boat, look);
+            var stack = inventory.Get(boatStack);
+            if (stack == null) return Fail(character, boatStack, "noboat");
+            stack.Tag = tag;
+            gameData.Touch();
+            return Describe(character, boatStack, tag);
         }
 
         /// <summary>A look earned (the regatta, treasure, quests): once per player and key.</summary>
@@ -253,6 +285,10 @@ namespace RavenNest.BusinessLogic.Game
                 Boat = boat,
                 Look = BoatLooks.Format(boat, look),
                 InventoryItemId = stack.Id,
+                CharacterId = character.Id,
+                CharacterName = character.Name,
+                CharacterIndex = character.CharacterIndex,
+                Equipped = stack.Equipped,
                 Slots = BoatLooks.SlotsFor(boat).Select(s => new BoatLookSlot
                 {
                     Slot = s.Name,
@@ -261,6 +297,9 @@ namespace RavenNest.BusinessLogic.Game
                     Current = look[s.Name],
                     Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
                         .Where(v => s.Free.Contains(v) || owned.Contains(BoatLooks.Key(s.Name, v)))
+                        .ToArray(),
+                    How = Enumerable.Range(0, s.Count + 1)
+                        .Select(v => v == 0 && !s.CanBeNone ? null : s.Free.Contains(v) ? "Every boat has it" : BoatLooks.HowToEarn(s.Name, v))
                         .ToArray(),
                 }).ToArray(),
             };

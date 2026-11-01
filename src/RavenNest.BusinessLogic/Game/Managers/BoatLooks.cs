@@ -122,6 +122,22 @@ namespace RavenNest.BusinessLogic.Game
         public const string PirateSails = "sails_6";
         public const string PirateFlag = "flag_7";
 
+        /// <summary>Where a look comes from, for the website's designer (the free ones are told apart by the caller).</summary>
+        public static string HowToEarn(string slot, int variant)
+        {
+            var key = Key(slot, variant);
+            var progress = ByProgress.FirstOrDefault(e => e.Key == key);
+            if (progress != null)
+                return progress.Sailing > 0 ? "Reach Sailing level " + progress.Sailing
+                    : progress.Chain != null ? "Finish " + progress.How
+                    : "Become " + progress.How;
+            if (key == PirateSails || key == PirateFlag) return "Hold off the pirates' raid on the banana island";
+            if (slot == "sails" && RegattaSails.Contains(variant)) return "Win the regatta at the banana island";
+            if ((slot == "flag" && TreasureFlags.Contains(variant)) || (slot == "figurehead" && TreasureFigureheads.Contains(variant)))
+                return "Dig for treasure on the banana island";
+            return "Kept for events still to come";
+        }
+
         public static IReadOnlyList<Slot> SlotsFor(string boat) =>
             string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? SmallShip
             : string.Equals(boat, "Brigantine", StringComparison.OrdinalIgnoreCase) ? MediumShip
