@@ -42,6 +42,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<VillageStory> VillageStory { get; set; }
         public virtual DbSet<VillageStoryHelper> VillageStoryHelper { get; set; }
         public virtual DbSet<StreamerUnlock> StreamerUnlock { get; set; }
+        public virtual DbSet<BoatLookUnlock> BoatLookUnlock { get; set; }
         public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
         public virtual DbSet<Pet> Pet { get; set; }
         public virtual DbSet<RedeemableItem> RedeemableItem { get; set; }
@@ -179,6 +180,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<VillageStory>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<VillageStoryHelper>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<StreamerUnlock>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<BoatLookUnlock>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserAccess>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<RedeemableItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

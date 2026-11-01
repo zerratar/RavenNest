@@ -84,6 +84,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<VillageStory> villageStories;
         private readonly EntitySet<VillageStoryHelper> villageStoryHelpers;
         private readonly EntitySet<StreamerUnlock> streamerUnlocks;
+        private readonly EntitySet<BoatLookUnlock> boatLookUnlocks;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -207,6 +208,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(VillageStory),
                 typeof(VillageStoryHelper),
                 typeof(StreamerUnlock),
+                typeof(BoatLookUnlock),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -380,6 +382,9 @@ namespace RavenNest.BusinessLogic.Data
                     villageStoryHelpers.RegisterLookupGroup(nameof(VillageStory), x => x.VillageStoryId);
                     streamerUnlocks = new EntitySet<StreamerUnlock>(restorePoint?.Get<StreamerUnlock>() ?? ctx.StreamerUnlock.ToList());
                     streamerUnlocks.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
+
+                    boatLookUnlocks = new EntitySet<BoatLookUnlock>(restorePoint?.Get<BoatLookUnlock>() ?? ctx.BoatLookUnlock.ToList());
+                    boatLookUnlocks.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -568,6 +573,7 @@ namespace RavenNest.BusinessLogic.Data
                         villageStories,
                         villageStoryHelpers,
                         streamerUnlocks,
+                        boatLookUnlocks,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4231,6 +4237,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(StreamerUnlock item) => Update(() => streamerUnlocks.Add(item));
+
+        public IReadOnlyList<BoatLookUnlock> GetBoatLookUnlocks(Guid userId) => boatLookUnlocks[nameof(User), userId];
+        public AddEntityResult Add(BoatLookUnlock item) => Update(() => boatLookUnlocks.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

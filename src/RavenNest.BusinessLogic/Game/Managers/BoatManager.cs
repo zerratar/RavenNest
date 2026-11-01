@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.Models;
 using RavenNest.Sessions;
 
@@ -122,6 +123,94 @@ namespace RavenNest.BusinessLogic.Game
             {
                 logger.LogInformation("Captain's cut: " + owner.Name + " caught a fish with their guest " + guest.Name);
             }
+        }
+
+        // ---- Looks (docs/own-boats.md in the game, "Customizing boats") ----------------------------------------
+        //
+        // A boat's look is a recipe in its stack's Tag (BoatLooks); the parts a player may pick are what every boat
+        // comes with plus what they have earned (BoatLookUnlock, per user). Nothing is bought.
+
+        /// <summary>!boat look: the character's equipped boat and its look, with what the player owns of each part.</summary>
+        public BoatLookResult GetLook(SessionToken token, Guid characterId)
+        {
+            var character = InSession(token, characterId);
+            if (character == null) return new BoatLookResult { Error = "notinsession" };
+            var stack = inventoryProvider.Get(character.Id).GetEquippedItem(EquipmentSlot.Boat);
+            if (stack.IsNull()) return new BoatLookResult { Error = "noboat" };
+            return Describe(character, stack, stack.Tag);
+        }
+
+        /// <summary>!boat sails 7: one part of the equipped boat's look, if the player owns it.</summary>
+        public BoatLookResult SetLook(SessionToken token, Guid characterId, string slotName, int variant)
+        {
+            var character = InSession(token, characterId);
+            if (character == null) return new BoatLookResult { Error = "notinsession" };
+            lock (mutex)
+            {
+                var inventory = inventoryProvider.Get(character.Id);
+                var equipped = inventory.GetEquippedItem(EquipmentSlot.Boat);
+                if (equipped.IsNull()) return new BoatLookResult { Error = "noboat" };
+                var boat = equipped.Item?.Name ?? "";
+                var slot = BoatLooks.Find(boat, slotName);
+                if (slot == null) return Fail(character, equipped, "slot");
+                if (variant < (slot.CanBeNone ? 0 : 1) || variant > slot.Count) return Fail(character, equipped, "range");
+                if (!Owns(character.UserId, slot, variant)) return Fail(character, equipped, "locked");
+
+                var look = BoatLooks.Parse(boat, equipped.Tag);
+                look[slot.Name] = variant;
+                var tag = BoatLooks.Format(boat, look);
+                var stack = inventory.Get(equipped);
+                if (stack == null) return Fail(character, equipped, "noboat");
+                stack.Tag = tag;
+                gameData.Touch();
+                return Describe(character, equipped, tag);
+            }
+        }
+
+        /// <summary>A look earned (the regatta, treasure, quests): once per player and key.</summary>
+        public bool GrantLook(Guid userId, string key, string source)
+        {
+            lock (mutex)
+            {
+                if (gameData.GetBoatLookUnlocks(userId).Any(u => string.Equals(u.Key, key, StringComparison.OrdinalIgnoreCase))) return false;
+                gameData.Add(new DataModels.BoatLookUnlock { Id = Guid.NewGuid(), UserId = userId, Key = key.ToLowerInvariant(), Source = source, Created = DateTime.UtcNow });
+                return true;
+            }
+        }
+
+        private bool Owns(Guid userId, BoatLooks.Slot slot, int variant) =>
+            slot.Free.Contains(variant) || gameData.GetBoatLookUnlocks(userId).Any(u => string.Equals(u.Key, BoatLooks.Key(slot.Name, variant), StringComparison.OrdinalIgnoreCase));
+
+        private BoatLookResult Fail(DataModels.Character character, ReadOnlyInventoryItem stack, string error)
+        {
+            var result = Describe(character, stack, stack.Tag);
+            result.Ok = false;
+            result.Error = error;
+            return result;
+        }
+
+        private BoatLookResult Describe(DataModels.Character character, ReadOnlyInventoryItem stack, string tag)
+        {
+            var boat = stack.Item?.Name ?? "";
+            var look = BoatLooks.Parse(boat, tag);
+            var unlocked = gameData.GetBoatLookUnlocks(character.UserId);
+            return new BoatLookResult
+            {
+                Ok = true,
+                Boat = boat,
+                Look = BoatLooks.Format(boat, look),
+                InventoryItemId = stack.Id,
+                Slots = BoatLooks.SlotsFor(boat).Select(s => new BoatLookSlot
+                {
+                    Slot = s.Name,
+                    Count = s.Count,
+                    CanBeNone = s.CanBeNone,
+                    Current = look[s.Name],
+                    Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
+                        .Where(v => s.Free.Contains(v) || unlocked.Any(u => string.Equals(u.Key, BoatLooks.Key(s.Name, v), StringComparison.OrdinalIgnoreCase)))
+                        .ToArray(),
+                }).ToArray(),
+            };
         }
 
         private DataModels.Character InSession(SessionToken token, Guid characterId)

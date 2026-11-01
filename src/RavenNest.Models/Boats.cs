@@ -1,3 +1,4 @@
+using System;
 namespace RavenNest.Models
 {
     /// <summary>!boat build: a boat from the shipwright on Away, built from crafted parts and paid for in coins.</summary>
@@ -46,5 +47,28 @@ namespace RavenNest.Models
 
         /// <summary>What the shipwright builds (for unknown, and for !boat with nothing more).</summary>
         public BoatBlueprint[] Blueprints { get; set; }
+    }
+
+    /// <summary>One part of a boat's look: what it wears, how many there are and which of them the player owns.</summary>
+    public class BoatLookSlot
+    {
+        public string Slot { get; set; }
+        public int Count { get; set; }
+        public bool CanBeNone { get; set; }
+        public int Current { get; set; }
+        public int[] Owned { get; set; }
+    }
+
+    /// <summary>!boat look: the equipped boat's look, or why it cannot be shown or changed.</summary>
+    public class BoatLookResult
+    {
+        public bool Ok { get; set; }
+        /// <summary>Why not: notinsession, noboat, slot, range, locked.</summary>
+        public string Error { get; set; }
+        public string Boat { get; set; }
+        /// <summary>The look's recipe, as kept in the boat stack's Tag.</summary>
+        public string Look { get; set; }
+        public Guid InventoryItemId { get; set; }
+        public BoatLookSlot[] Slots { get; set; }
     }
 }

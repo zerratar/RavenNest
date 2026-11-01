@@ -49,6 +49,26 @@ namespace RavenNest.Controllers
             return boatManager.Build(sessionToken, characterId, request?.Boat);
         }
 
+        /// <summary>!boat look: the equipped boat's look and what the player owns of each part.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/look")]
+        public BoatLookResult GetLook(Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return boatManager.GetLook(sessionToken, characterId);
+        }
+
+        /// <summary>!boat sails 7: changes one part of the equipped boat's look to one the player owns.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/look/{slot}/{variant}")]
+        public BoatLookResult SetLook(Guid characterId, string slot, int variant)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return boatManager.SetLook(sessionToken, characterId, slot, variant);
+        }
+
         /// <summary>A guest climbed aboard the owner's boat (the game's "Guests aboard").</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{ownerId}/guest-aboard/{guestId}")]
