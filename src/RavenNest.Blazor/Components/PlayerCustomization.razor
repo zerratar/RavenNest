@@ -99,15 +99,19 @@ else
             <div class="cz-foot">
                 @if (message != null)
                 {
-                    <p class="cz-msg @(messageIsBad ? "is-bad" : "is-good")" role="status">@message</p>
+                    <p class="cz-msg @(messageIsBad ? "is-bad" : "is-good")" role="status">
+                        <i class="fas @(messageIsBad ? "fa-exclamation-circle" : "fa-check-circle")" aria-hidden="true"></i>
+                        <span>@message</span>
+                    </p>
                 }
                 <div class="cz-actions">
                     <button type="button" class="rf-btn" title="A random look" @onclick="Randomize">
                         <i class="fas fa-dice" aria-hidden="true"></i> Surprise me
                     </button>
-                    <span class="cz-spacer"></span>
-                    <button type="button" class="rf-btn" disabled="@(!Dirty)" @onclick="Undo">Undo changes</button>
-                    <button type="button" class="rf-btn rf-btn--primary" disabled="@(!Dirty || saving)" @onclick="Save">
+                    <button type="button" class="rf-btn" disabled="@(!Dirty)" @onclick="Undo">
+                        <i class="fas fa-undo" aria-hidden="true"></i> Undo changes
+                    </button>
+                    <button type="button" class="rf-btn rf-btn--primary cz-save" disabled="@(!Dirty || saving)" @onclick="Save">
                         @(saving ? "Saving..." : "Save look")
                     </button>
                 </div>
