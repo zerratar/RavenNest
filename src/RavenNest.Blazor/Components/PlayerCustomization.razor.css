@@ -1,11 +1,413 @@
-﻿.webgl-content {
+﻿/* The character customizer: the stage beside the pickers (stacked on narrow screens). */
+
+.cz {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    gap: var(--rf-space-4);
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .cz {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---- The stage ---------------------------------------------------------------------------------------------------- */
+
+.cz-stage {
     position: relative;
-    width: 960px;
-    height: 600px;
-    max-width: 100%;
-    max-height: 100%;
-    -webkit-transform: initial;
-    transform: initial;
-    top: initial;
-    left: initial;
+    min-height: 34rem;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    overflow: hidden;
+    /* a lit backdrop: a pool of light behind the figure, dark at the edges */
+    background:
+        radial-gradient(ellipse 55% 45% at 50% 40%, rgba(232, 163, 61, 0.10) 0%, rgba(232, 163, 61, 0) 70%),
+        radial-gradient(ellipse 80% 70% at 50% 38%, #2b3343 0%, #1a1f2a 55%, #0d1016 100%);
+    box-shadow: var(--rf-bevel), var(--rf-shadow);
+}
+
+@media (max-width: 960px) {
+    .cz-stage {
+        min-height: 26rem;
+    }
+}
+
+.cz-canvas {
+    position: absolute;
+    inset: 0;
+}
+
+.cz-canvas ::deep canvas {
+    display: block;
+}
+
+.cz-stage__top,
+.cz-stage__bottom {
+    position: absolute;
+    left: var(--rf-space-3);
+    right: var(--rf-space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    pointer-events: none;
+}
+
+.cz-stage__top {
+    top: var(--rf-space-3);
+}
+
+.cz-stage__bottom {
+    bottom: var(--rf-space-3);
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.cz-stage__bottom > * {
+    pointer-events: auto;
+}
+
+.cz-name {
+    font-size: var(--rf-size-title);
+    font-weight: 600;
+    color: var(--rf-ink);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.cz-chip {
+    pointer-events: auto;
+    padding: 0.1rem var(--rf-space-2);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: 999px;
+    background: rgba(13, 16, 22, 0.7);
+    color: var(--rf-gold);
+    font-size: var(--rf-size-tiny);
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.cz-hint {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.cz-stage__error {
+    position: absolute;
+    inset: auto var(--rf-space-4) 4rem;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-bad-wash);
+    border: 1px solid var(--rf-bad);
+    border-radius: var(--rf-radius-sm);
+}
+
+.cz-stage__error p {
+    margin: 0;
+}
+
+/* a segmented control (the camera, the body type) */
+.cz-seg {
+    display: inline-flex;
+    padding: 3px;
+    gap: 3px;
+    background: rgba(13, 16, 22, 0.72);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+}
+
+.cz-seg--wide {
+    display: flex;
+    background: var(--rf-surface-1);
+}
+
+.cz-seg--wide .cz-seg__btn {
+    flex: 1 1 0;
+    justify-content: center;
+}
+
+.cz-seg__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-1);
+    padding: 0.3rem 0.8rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.cz-seg__btn:hover {
+    color: var(--rf-ink);
+}
+
+.cz-seg__btn:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.cz-seg__btn.is-on {
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+    font-weight: 600;
+}
+
+/* ---- The pickers -------------------------------------------------------------------------------------------------- */
+
+.cz-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 34rem;
+    max-height: 46rem;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-bevel);
+    overflow: hidden;
+}
+
+@media (max-width: 960px) {
+    .cz-panel {
+        min-height: 0;
+        max-height: none;
+    }
+}
+
+.cz-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--rf-line);
+    background: var(--rf-surface-2);
+}
+
+.cz-tab {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: var(--rf-space-2) var(--rf-space-1);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+    transition: color var(--rf-transition), border-color var(--rf-transition);
+}
+
+.cz-tab i {
+    font-size: 1rem;
+}
+
+.cz-tab:hover {
+    color: var(--rf-ink);
+}
+
+.cz-tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--rf-gold);
+}
+
+.cz-tab.is-on {
+    color: var(--rf-gold);
+    border-bottom-color: var(--rf-gold);
+}
+
+.cz-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--rf-space-3) var(--rf-space-4);
+}
+
+.cz-group {
+    margin-bottom: var(--rf-space-5);
+}
+
+.cz-group__title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 0 var(--rf-space-2);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+    color: var(--rf-ink-muted);
+}
+
+.cz-group__count {
+    font-weight: normal;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--rf-ink-faint);
+}
+
+.cz-note {
+    margin: var(--rf-space-2) 0 0;
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+}
+
+/* the options: pictures of the character wearing each one */
+.cz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.cz-opt {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: radial-gradient(circle at 50% 35%, #2b3343 0%, #1a1f2a 70%);
+    color: var(--rf-ink-faint);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color var(--rf-transition), transform var(--rf-transition);
+}
+
+.cz-opt:hover {
+    border-color: var(--rf-line-strong);
+    transform: translateY(-1px);
+}
+
+.cz-opt:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.cz-opt.is-on {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 1px var(--rf-gold), 0 0 14px rgba(232, 163, 61, 0.25);
+}
+
+.cz-opt img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* an option whose picture has not come yet shows its number */
+.cz-opt img:not([src]) {
+    visibility: hidden;
+}
+
+.cz-opt__n {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-muted);
+    text-shadow: 0 1px 3px #000;
+}
+
+.cz-opt--none {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* the colours */
+.cz-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.cz-swatch {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    margin: 0;
+    border: 2px solid rgba(0, 0, 0, 0.35);
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px var(--rf-line-strong);
+    cursor: pointer;
+    transition: transform var(--rf-transition), box-shadow var(--rf-transition);
+}
+
+.cz-swatch:hover {
+    transform: scale(1.08);
+}
+
+.cz-swatch:focus-visible,
+.cz-swatch--custom:focus-within {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.cz-swatch.is-on {
+    box-shadow: 0 0 0 2px var(--rf-surface-1), 0 0 0 4px var(--rf-gold);
+}
+
+.cz-swatch--custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(from 0deg, #e05a52, #e8a33d, #d9d24c, #4cbf6a, #4f9de8, #a874e8, #e05a52);
+}
+
+.cz-swatch--custom.is-on {
+    background: var(--c);
+}
+
+.cz-swatch--custom i {
+    font-size: 0.75rem;
+    color: #fff;
+    text-shadow: 0 0 3px #000;
+    pointer-events: none;
+}
+
+.cz-swatch--custom input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+    padding: 0;
+}
+
+/* ---- Saving ------------------------------------------------------------------------------------------------------- */
+
+.cz-foot {
+    padding: var(--rf-space-3) var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+    background: var(--rf-surface-2);
+}
+
+.cz-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    flex-wrap: wrap;
+}
+
+.cz-spacer {
+    flex: 1 1 auto;
+}
+
+.cz-msg {
+    margin: 0 0 var(--rf-space-2);
+    font-size: var(--rf-size-small);
+}
+
+.cz-msg.is-good {
+    color: var(--rf-good);
+}
+
+.cz-msg.is-bad {
+    color: var(--rf-bad);
 }

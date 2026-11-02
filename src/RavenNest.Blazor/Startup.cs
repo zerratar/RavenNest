@@ -530,6 +530,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<ClanService>();
             services.AddSingleton<ClanImageService>();
             services.AddSingleton<BoatService>();
+            services.AddSingleton<CharacterLookService>();
             services.AddSingleton<LogoService>();
             services.AddSingleton<PlayerService>();
             services.AddSingleton<NotificationService>();

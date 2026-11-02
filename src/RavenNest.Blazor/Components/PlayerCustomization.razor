@@ -1,25 +1,165 @@
-﻿@inject RavenNest.Blazor.Services.ClanService ClanService
-@inject RavenNest.Blazor.Services.AuthService AuthService
-@inject NavigationManager NavigationManager
+﻿@using RavenNest.Blazor.Services
+@using RavenNest.Models
+@using System.Linq
+@inject CharacterLookService LookService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
-@if (session != null && session.UserName != null)
+@*
+    The character customizer: the character on a stage (js/rf-character-designer.js: 3D where the browser has WebGL,
+    pre-rendered layers on a 2D canvas where it has not) and its face, hair and colours beside it. Colour pickers
+    drive the stage directly while they are dragged; the page keeps the look and saves it.
+*@
+
+@if (look == null)
 {
-  <div class="webgl-content">
-        <div id="unity-container" class="unity-desktop">
-            <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-            <div id="unity-loading-bar">
-                <div id="unity-logo"></div>
-                <div id="unity-progress-bar-empty">
-                    <div id="unity-progress-bar-full"></div>
+    @if (notAllowed)
+    {
+        <p class="rf-meta">This character's look is not yours to change.</p>
+    }
+    else
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+}
+else
+{
+    <div class="cz" @ref="root">
+        <div class="cz-stage">
+            <div class="cz-canvas" @ref="canvasHost"></div>
+            <div class="cz-stage__top">
+                <span class="cz-name">@Player?.Name</span>
+                @if (mode == "2d")
+                {
+                    <span class="cz-chip" title="Your browser has no WebGL, so this is a flat picture you can turn in steps.">Flat view</span>
+                }
+            </div>
+            <div class="cz-stage__bottom">
+                <div class="cz-seg" role="group" aria-label="Camera">
+                    <button type="button" class="cz-seg__btn @(view == "body" ? "is-on" : "")" aria-pressed="@(view == "body")" @onclick='() => Focus("body")'>
+                        <i class="fas fa-child" aria-hidden="true"></i> Full body
+                    </button>
+                    <button type="button" class="cz-seg__btn @(view == "face" ? "is-on" : "")" aria-pressed="@(view == "face")" @onclick='() => Focus("face")'>
+                        <i class="fas fa-user" aria-hidden="true"></i> Face
+                    </button>
                 </div>
+                <span class="cz-hint">@(mode == "2d" ? "Drag to turn" : "Drag to turn, scroll to zoom")</span>
             </div>
-            <div id="unity-warning"> </div>
-            <div id="unity-footer">
-                <div id="unity-webgl-logo"></div>
-                <div id="unity-fullscreen-button"></div>
-                <div id="unity-build-title">Ravenfall Character Customization</div>
-            </div>
+            @if (loadError != null)
+            {
+                <div class="cz-stage__error"><p>@loadError</p></div>
+            }
         </div>
-  </div>
+
+        <div class="cz-panel">
+            <div class="cz-tabs" role="tablist" aria-label="What to change">
+                @foreach (var t in Tabs)
+                {
+                    var tab = t;
+                    <button type="button" role="tab" class="cz-tab @(this.tab == tab.Key ? "is-on" : "")" aria-selected="@(this.tab == tab.Key)" @onclick="() => Open(tab.Key)">
+                        <i class="fas @tab.Icon" aria-hidden="true"></i><span>@tab.Label</span>
+                    </button>
+                }
+            </div>
+
+            <div class="cz-body">
+                @switch (tab)
+                {
+                    case "body":
+                        <section class="cz-group">
+                            <h3 class="cz-group__title">Body type</h3>
+                            <div class="cz-seg cz-seg--wide" role="group" aria-label="Body type">
+                                <button type="button" class="cz-seg__btn @(!Female ? "is-on" : "")" aria-pressed="@(!Female)" @onclick="() => SetGender(Gender.Male)">Masculine</button>
+                                <button type="button" class="cz-seg__btn @(Female ? "is-on" : "")" aria-pressed="@Female" @onclick="() => SetGender(Gender.Female)">Feminine</button>
+                            </div>
+                        </section>
+                        @(Colors("Skin", "skin", look.SkinColor, SkinTones, v => { look.SkinColor = v; }))
+                        break;
+
+                    case "face":
+                        @(Grid("Face", "heads", look.Head, Female ? CharacterLookService.FemaleHeads : CharacterLookService.MaleHeads, false, v => look.Head = v))
+                        @(Colors("Eyes", "eyes", look.EyeColor, EyeColors, v => { look.EyeColor = v; }))
+                        @(Grid("Eyebrows", "eyebrows", look.Eyebrows, Female ? CharacterLookService.FemaleEyebrows : CharacterLookService.MaleEyebrows, true, v => look.Eyebrows = v))
+                        @(Colors("War paint", "warPaint", look.WarPaintColor, PaintColors, v => { look.WarPaintColor = v; }, "Shows on the faces that have paint."))
+                        @(Colors("Stubble", "stubble", look.StubbleColor, HairColors, v => { look.StubbleColor = v; }, "The shadow of a shave, on the faces that have one."))
+                        break;
+
+                    case "hair":
+                        @(Colors("Hair colour", "hair", look.BeardColor, HairColors, v => { look.BeardColor = v; look.HairColor = v; }, "The game colours the hair, the eyebrows and the beard alike."))
+                        @(Grid("Hairstyle", "hairs", look.Hair, CharacterLookService.Hairs, true, v => look.Hair = v))
+                        break;
+
+                    case "beard":
+                        @(Grid("Beard", "beards", look.FacialHair, CharacterLookService.MaleBeards, true, v => look.FacialHair = v))
+                        <p class="rf-meta">The beard takes the hair colour (Hair tab).</p>
+                        break;
+                }
+            </div>
+
+            <footer class="cz-foot">
+                @if (message != null)
+                {
+                    <p class="cz-msg @(messageIsBad ? "is-bad" : "is-good")" role="status">@message</p>
+                }
+                <div class="cz-actions">
+                    <button type="button" class="rf-btn" title="A random look" @onclick="Randomize">
+                        <i class="fas fa-dice" aria-hidden="true"></i> Surprise me
+                    </button>
+                    <span class="cz-spacer"></span>
+                    <button type="button" class="rf-btn" disabled="@(!Dirty)" @onclick="Undo">Undo changes</button>
+                    <button type="button" class="rf-btn rf-btn--primary" disabled="@(!Dirty || saving)" @onclick="Save">
+                        @(saving ? "Saving..." : "Save look")
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </div>
+}
+
+@code {
+    private RenderFragment Grid(string title, string kind, int current, int count, bool canBeNone, Action<int> pick) => __builder =>
+    {
+        <section class="cz-group">
+            <h3 class="cz-group__title">@title <span class="cz-group__count">@(current < 0 ? "none" : (current + 1) + " of " + count)</span></h3>
+            <div class="cz-grid">
+                @if (canBeNone)
+                {
+                    <button type="button" class="cz-opt cz-opt--none @(current < 0 ? "is-on" : "")" aria-pressed="@(current < 0)" title="None" @onclick="() => Pick(pick, -1)">
+                        <i class="fas fa-ban" aria-hidden="true"></i>
+                    </button>
+                }
+                @for (var i = 0; i < count; i++)
+                {
+                    var index = i;
+                    <button type="button" class="cz-opt @(current == index ? "is-on" : "")" aria-pressed="@(current == index)" title="@title @(index + 1)" @onclick="() => Pick(pick, index)">
+                        <img data-rf-thumb="@kind:@index" alt="" />
+                        <span class="cz-opt__n">@(index + 1)</span>
+                    </button>
+                }
+            </div>
+        </section>
+    };
+
+    private RenderFragment Colors(string title, string channel, string current, string[] palette, Action<string> pick, string note = null) => __builder =>
+    {
+        var now = Norm(current);
+        <section class="cz-group">
+            <h3 class="cz-group__title">@title</h3>
+            <div class="cz-swatches">
+                @foreach (var c in palette)
+                {
+                    var color = c;
+                    <button type="button" class="cz-swatch @(now == color ? "is-on" : "")" style="--c:@color" aria-pressed="@(now == color)" title="@color" @onclick="() => PickColor(pick, color)"></button>
+                }
+                <label class="cz-swatch cz-swatch--custom @(palette.Contains(now) ? "" : "is-on")" title="Any colour" style="--c:@now">
+                    <i class="fas fa-eye-dropper" aria-hidden="true"></i>
+                    <input type="color" value="@now" data-rf-color="@channel" @onchange="e => PickColor(pick, e.Value?.ToString())" aria-label="@title: any colour" />
+                </label>
+            </div>
+            @if (note != null)
+            {
+                <p class="cz-note">@note</p>
+            }
+        </section>
+    };
 }
