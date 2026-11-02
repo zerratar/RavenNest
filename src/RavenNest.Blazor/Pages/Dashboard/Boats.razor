@@ -1,10 +1,12 @@
 @layout DashboardLayout
 @page "/boats"
+@using RavenNest.Blazor.Extensions
 @using RavenNest.Blazor.Services
 @using RavenNest.Models
 @inject AuthService AuthService
 @inject BoatService BoatService
 @inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
@@ -138,7 +140,7 @@ else
         if (selected == null) return;
         if (designer == null)
         {
-            module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/rf-boat-designer.js");
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
             designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
             swatches = await module.InvokeAsync<Dictionary<string, string[]>>("swatches");
             StateHasChanged();

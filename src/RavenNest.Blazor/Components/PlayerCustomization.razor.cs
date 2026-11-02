@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.JSInterop;
+using RavenNest.Blazor.Extensions;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.Models;
 using System;
@@ -15,6 +17,9 @@ namespace RavenNest.Blazor.Components
 
         [Parameter]
         public bool CanManage { get; set; }
+
+        [Inject]
+        private IWebHostEnvironment Environment { get; set; }
 
         private static readonly (string Key, string Label, string Icon)[] AllTabs =
         {
@@ -98,7 +103,7 @@ namespace RavenNest.Blazor.Components
             {
                 if (designer == null)
                 {
-                    module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/rf-character-designer.js");
+                    module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-character-designer.js"));
                     designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
                     mode = await designer.InvokeAsync<string>("getMode");
                     await designer.InvokeVoidAsync("listen", root);
