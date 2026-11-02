@@ -246,6 +246,24 @@ namespace RavenNest.Controllers
             return heroManager.Leaderboard(10);
         }
 
+        /// <summary>A run of the day's challenge ended (day as yyyyMMdd, UTC): the streamer's best of the day and its place.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("hero/daily/{day}/{waves}/{kills}/{seconds}")]
+        public HeroRunResult HeroDaily(int day, int waves, int kills, int seconds)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return heroManager.RecordDaily(sessionToken, day, waves, kills, seconds);
+        }
+
+        /// <summary>Today's challenge: every streamer's best run of it, the best first.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("hero/daily/leaderboard")]
+        public HeroLeaderboard HeroDailyLeaderboard()
+        {
+            return heroManager.DailyLeaderboard(10);
+        }
+
         /// <summary>The titles worn in this stream, for the name tags.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("titles")]

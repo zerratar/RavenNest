@@ -17,6 +17,8 @@ namespace RavenNest.BusinessLogic.Game
     public class HeroModeManager
     {
         public const string BestKey = "hero_best";
+        /// <summary>The streamer's best run of the day's challenge: day|waves|kills|seconds|ticks (day as yyyyMMdd, UTC).</summary>
+        public const string DailyKey = "hero_daily";
 
         private static readonly (int Waves, string Title)[] Titles =
         {
@@ -94,6 +96,77 @@ namespace RavenNest.BusinessLogic.Game
                 var rank = 1 + Board().Count(r => Better(r, best));
                 return new HeroRunResult { Ok = true, Best = best, NewBest = newBest, NewTitles = titles.ToArray(), NewDecor = decor.ToArray(), Rank = rank };
             }
+        }
+
+        /// <summary>
+        /// A run of the day's challenge (the game's WaveRun.Daily: the same waves and twists for every streamer that UTC
+        /// day) ended: the streamer's best of that day kept if better, its place among the day's. Not the all-time board,
+        /// nor its titles and decor (the twists make some days easier); the waves count for the stream's quests.
+        /// </summary>
+        public HeroRunResult RecordDaily(SessionToken token, int day, int waves, int kills, int seconds)
+        {
+            var session = token != null ? gameData.GetSession(token.SessionId) : null;
+            if (session == null) return new HeroRunResult { Error = "notinsession" };
+            // today's, or yesterday's for a run that went past midnight
+            var today = Day(DateTime.UtcNow);
+            if (day != today && day != Day(DateTime.UtcNow.AddDays(-1))) return new HeroRunResult { Error = "day" };
+            waves = Math.Clamp(waves, 0, 10000);
+            kills = Math.Max(0, kills);
+            seconds = Math.Max(0, seconds);
+
+            lock (mutex)
+            {
+                var now = DateTime.UtcNow;
+                if (lastRun.TryGetValue(token.SessionId, out var previous)) seconds = Math.Min(seconds, (int)Math.Ceiling((now - previous).TotalSeconds) + 60);
+                lastRun[token.SessionId] = now;
+                waves = Math.Min(waves, seconds / MinSecondsPerWave);
+
+                var user = gameData.GetUser(session.UserId);
+                var (bestDay, best) = ParseDaily(gameData.GetUserProperty(session.UserId, DailyKey), user);
+                var run = new HeroRunRecord { Streamer = Name(user), Waves = waves, Kills = kills, Seconds = seconds, Reached = now };
+                // a new day starts afresh; a run from yesterday never replaces today's
+                var newBest = best == null || bestDay < day || (bestDay == day && Better(run, best));
+                if (bestDay > day) newBest = false;
+                if (newBest)
+                {
+                    gameData.SetUserProperty(session.UserId, DailyKey, day.ToString(CultureInfo.InvariantCulture) + "|" + Format(run));
+                    best = run;
+                    bestDay = day;
+                }
+
+                var character = gameData.GetActiveSessionCharacters(session).FirstOrDefault(c => c.UserId == session.UserId);
+                if (character != null) QuestTracker.HeroWaves(character, waves);
+
+                var rank = bestDay == day ? 1 + DailyBoard(day).Count(r => Better(r, best)) : 0;
+                return new HeroRunResult { Ok = true, Best = bestDay == day ? best : run, NewBest = newBest, NewTitles = Array.Empty<string>(), NewDecor = Array.Empty<string>(), Rank = rank };
+            }
+        }
+
+        /// <summary>The best runs of today's challenge, the best first.</summary>
+        public HeroLeaderboard DailyLeaderboard(int count)
+        {
+            var today = Day(DateTime.UtcNow);
+            return new HeroLeaderboard { Day = today, Entries = DailyBoard(today).OrderByDescending(r => r.Waves).ThenByDescending(r => r.Kills).ThenBy(r => r.Seconds).Take(Math.Clamp(count, 1, 100)).ToArray() };
+        }
+
+        private IEnumerable<HeroRunRecord> DailyBoard(int day)
+        {
+            foreach (var p in gameData.GetUserPropertiesWithKey(DailyKey))
+            {
+                var (d, r) = ParseDaily(p.Value, gameData.GetUser(p.UserId));
+                if (r != null && d == day) yield return r;
+            }
+        }
+
+        private static int Day(DateTime utc) => utc.Year * 10000 + utc.Month * 100 + utc.Day;
+
+        private static (int Day, HeroRunRecord Run) ParseDaily(string value, User user)
+        {
+            if (string.IsNullOrEmpty(value)) return (0, null);
+            var cut = value.IndexOf('|');
+            if (cut <= 0 || !int.TryParse(value.Substring(0, cut), out var day)) return (0, null);
+            var run = Parse(value.Substring(cut + 1), user);
+            return run == null ? (0, null) : (day, run);
         }
 
         /// <summary>

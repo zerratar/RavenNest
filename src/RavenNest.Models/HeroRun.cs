@@ -16,7 +16,7 @@ namespace RavenNest.Models
     public class HeroRunResult
     {
         public bool Ok { get; set; }
-        /// <summary>notinsession.</summary>
+        /// <summary>notinsession; day (a daily run of neither today nor yesterday).</summary>
         public string Error { get; set; }
         public HeroRunRecord Best { get; set; }
         public bool NewBest { get; set; }
@@ -29,6 +29,8 @@ namespace RavenNest.Models
     /// <summary>The streamers' best runs, the best first.</summary>
     public class HeroLeaderboard
     {
+        /// <summary>For the day's challenge: the day (yyyyMMdd, UTC); 0 for the all-time board.</summary>
+        public int Day { get; set; }
         public HeroRunRecord[] Entries { get; set; }
     }
 }
