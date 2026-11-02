@@ -978,7 +978,7 @@
     color: var(--rf-ink-muted);
 }
 
-/* steps as dots joined by a line (chains) or as segments (village stories) */
+/* steps as dots joined by a line (quest chains and village stories) */
 .qp-dots {
     display: flex;
     align-items: center;
@@ -1026,23 +1026,6 @@
     .qp-dots span + span { margin-left: 2rem; }
     .qp-dots span + span::before { width: 2rem; }
 }
-
-.qp-segments {
-    display: flex;
-    gap: var(--rf-space-1);
-    margin: var(--rf-space-3) 0 var(--rf-space-2);
-    max-width: 22rem;
-}
-
-.qp-segments span {
-    flex: 1;
-    height: 0.6rem;
-    border-radius: 999px;
-    background: var(--rf-surface-3);
-}
-
-.qp-segments span.is-done { background: var(--rf-good); }
-.qp-segments span.is-now { background: var(--rf-gold-bright); }
 
 .qp-objective {
     margin-top: var(--rf-space-4);

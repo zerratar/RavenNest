@@ -203,9 +203,9 @@ else
         </div>
     };
 
-    private RenderFragment Steps(int step, int steps, int state, bool segments = false) => __builder =>
+    private RenderFragment Steps(int step, int steps, int state) => __builder =>
     {
-        <div class="@(segments ? "qp-segments" : "qp-dots")" aria-label="Step @(Math.Min(step + 1, steps)) of @steps">
+        <div class="qp-dots" aria-label="Step @(Math.Min(step + 1, steps)) of @steps">
             @for (var i = 0; i < steps; i++)
             {
                 <span class="@(state == 2 || i < step ? "is-done" : state == 1 && i == step ? "is-now" : "")"></span>
@@ -776,7 +776,7 @@ else
                                     <h3 class="qp-detail__title">@st.Name</h3>
                                     <span class="qp-pill-tag @(st.State == 0 ? "qp-pill-tag--quiet" : "")">@(st.State == 1 ? "Step " + (st.Step + 1) + " of " + st.Steps : "Not begun")</span>
                                 </div>
-                                @Steps(st.Step, st.Steps, st.State, segments: true)
+                                @Steps(st.Step, st.Steps, st.State)
                                 @if (st.State == 1 && !string.IsNullOrEmpty(st.Line))
                                 {
                                     <p class="qp-story">@st.Line</p>
