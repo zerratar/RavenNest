@@ -206,7 +206,7 @@ else
                                     title="@(inClan ? "Your clan's logo" : "Join a clan to fly its logo")"
                                     aria-pressed="@(slot.Current == ClanLook)"
                                     @onclick="() => Pick(slot, ClanLook)">
-                                @if (inClan && ClanLogo?.Invoke(selected) != null)
+                                @if (inClan && Clan?.Invoke(selected)?.Logo != null)
                                 {
                                     <img data-slot="@slot.Slot" data-variant="@ClanLook" alt="" />
                                 }
@@ -256,8 +256,8 @@ else
     /// <summary>Equips a boat on its character or puts it away (true to equip); null when it worked, else why not.</summary>
     [Parameter] public Func<BoatLookResult, bool, string> SetEquipped { get; set; }
 
-    /// <summary>The boat's character's clan logo (its address) for the clan flag, or null when it is in no clan.</summary>
-    [Parameter] public Func<BoatLookResult, string> ClanLogo { get; set; }
+    /// <summary>The boat's character's clan (its logo and boat colours) for the clan flag and sails, or null when it is in no clan.</summary>
+    [Parameter] public Func<BoatLookResult, BoatClanLook> Clan { get; set; }
 
     /// <summary>The look value for the clan's logo on the flag or the sails (the server's BoatLooks.ClanLogo).</summary>
     private const int ClanLook = 99;
@@ -303,13 +303,15 @@ else
             module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
             designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
         }
-        // the clan flag's logo is the selected boat's character's
-        var logo = ClanLogo?.Invoke(selected);
-        if (logo != shownLogo)
+        // the clan flag's and sails' logo and colours are the selected boat's character's clan's
+        var clan = Clan?.Invoke(selected);
+        var clanKey = clan == null ? null : clan.Logo + "|" + clan.FlagColor + "|" + clan.SailColor;
+        if (clanKey != shownLogo)
         {
-            shownLogo = logo;
+            shownLogo = clanKey;
             shownLook = null;
-            await designer.InvokeVoidAsync("clanLogo", logo);
+            paintedThumbs = null;
+            await designer.InvokeVoidAsync("clanLogo", clan?.Logo, clan?.FlagColor, clan?.SailColor);
         }
         await Show();
         // the open tab's options, drawn on this boat (kept by the 3D view, so a repaint is instant)

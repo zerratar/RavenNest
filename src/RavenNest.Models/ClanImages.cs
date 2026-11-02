@@ -57,6 +57,12 @@ namespace RavenNest.Models
 
         /// <summary>Roles whose cape shape differs from the clan's.</summary>
         public Dictionary<Guid, int> RoleCapeStyles { get; set; } = new Dictionary<Guid, int>();
+
+        /// <summary>The cloth of the clan flag on members' boats (#RRGGBB), empty for the plain dark flag.</summary>
+        public string FlagColor { get; set; }
+
+        /// <summary>The cloth of the clan sails on members' boats (#RRGGBB), empty for the plain cream sails.</summary>
+        public string SailColor { get; set; }
     }
 
     public class ClanImageResult

@@ -123,7 +123,7 @@
             <BoatDesigner Boats="Boats" Banner="false"
                           SetLook="(b, slot, v) => BoatService.SetLook(b.CharacterId, b.InventoryItemId, slot, v)"
                           SetEquipped="(b, on) => BoatService.SetEquipped(b.CharacterId, b.InventoryItemId, on)"
-                          ClanLogo="b => BoatService.ClanLogo(b.CharacterId)" />
+                          Clan="b => BoatService.ClanOf(b.CharacterId)" />
             break;
         case CharacterViewState.Map:
             <div class="rf-panel">

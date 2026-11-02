@@ -10,6 +10,9 @@ namespace RavenNest.DataModels
         [PersistentData] private double experience;
         [PersistentData] private string name;
         [PersistentData] private string logo;
+        /// <summary>The cloth of the clan flag and clan sails on members' boats (#RRGGBB), or null for the plain colours.</summary>
+        [PersistentData] private string flagColor;
+        [PersistentData] private string sailColor;
         [PersistentData] private int nameChangeCount;
         [PersistentData] private bool canChangeName;
         [PersistentData] private DateTime created;

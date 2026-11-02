@@ -1,0 +1,111 @@
+/* The Look tab's boat colours: a row of swatches for the clan flag and one for the clan sails, beside a Sloop wearing
+   them (js/rf-boat-designer.js). The rest of the tab is styled by ravenfall-components.css (rf-clanlook). */
+
+.fa-solid {
+    color: inherit;
+}
+
+.cle-boats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    gap: var(--rf-space-4);
+    align-items: stretch;
+    margin-top: var(--rf-space-3);
+}
+
+@media (max-width: 800px) {
+    .cle-boats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.cle-boats__pickers {
+    display: grid;
+    gap: var(--rf-space-4);
+    align-content: start;
+}
+
+.cle-row__title {
+    display: block;
+    margin-bottom: var(--rf-space-2);
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.cle-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.cle-swatch {
+    position: relative;
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--rf-line-strong);
+    background: var(--c);
+    cursor: pointer;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.cle-swatch:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.cle-swatch.is-on {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 2px var(--rf-gold);
+}
+
+.cle-swatch--plain {
+    width: auto;
+    padding: 0 var(--rf-space-3);
+    border-radius: 999px;
+    color: #fff;
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.cle-swatch--custom {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.cle-swatch--custom input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+    padding: 0;
+}
+
+.cle-boats__view {
+    position: relative;
+    min-height: 18rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-lg);
+    overflow: hidden;
+    background: linear-gradient(180deg, #bcd6e4 0%, #1d6a8c 60%);
+}
+
+.cle-boats__hint {
+    position: absolute;
+    left: var(--rf-space-2);
+    top: var(--rf-space-2);
+    z-index: 1;
+    padding: var(--rf-space-1) var(--rf-space-2);
+    background: rgba(18, 21, 28, 0.78);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-tiny);
+    pointer-events: none;
+}

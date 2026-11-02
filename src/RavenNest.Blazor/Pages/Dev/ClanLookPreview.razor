@@ -1,0 +1,25 @@
+@layout DashboardLayout
+@page "/dev/clan-look-preview"
+@using RavenNest.Blazor.Services
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+
+@* The clan page's Look tab with a made up clan, for working on its look without owning a clan. Only on a development server. *@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <ClanLookEditor Preview="preview" />
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private readonly ClanLookState preview = new ClanLookState
+    {
+        ClanName = "The Ravens",
+        OwnerTwitchId = "0",
+        CanCustomize = true,
+        Roles = new List<ClanLookRole> { new ClanLookRole { Name = "Officer", Level = 2 } },
+    };
+}

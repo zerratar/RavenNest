@@ -7,7 +7,8 @@
 @implements IAsyncDisposable
 
 @*
-    The clan page's Look tab, for the clan owner: the clan logo, the cape image and the cape shapes.
+    The clan page's Look tab, for the clan owner: the clan logo, the cape image and the cape shapes, and the colours
+    of the clan flag and clan sails members' boats can wear (shown on a Sloop by js/rf-boat-designer.js).
 
     The editor is a script (js/rf-clan-image-editor.js) because the cropping and the 3D preview run in
     the browser; it uploads the finished image itself and calls EditorDone here when it closes, so this
@@ -148,10 +149,93 @@ else
             </table>
         }
     </section>
+
+    <section class="rf-clanlook__card">
+        <h4 class="rf-clanlook__title">Boat flag and sails</h4>
+        <p class="rf-meta">Members who pick the clan flag or the clan sails for their boat wear your logo on these colours. Players see them with the newest game version.</p>
+        <div class="cle-boats">
+            <div class="cle-boats__pickers">
+                @ColorRow("Flag", state.FlagColor, FlagColors, FlagDefault, v => SaveColors(v, state.SailColor))
+                @ColorRow("Sails", state.SailColor, SailColors, SailDefault, v => SaveColors(state.FlagColor, v))
+            </div>
+            <div class="cle-boats__view" @ref="boatHost">
+                <span class="cle-boats__hint">Drag to turn</span>
+            </div>
+        </div>
+    </section>
 }
 
 @code {
     private static readonly string[] StyleNames = { "Long", "Pointed", "Short", "Tattered" };
+
+    // the clan flag's and sails' colours to pick from (any other is a click on the picker away); the plain ones are what
+    // members' boats wear when none is picked
+    private const string FlagDefault = "#192836";
+    private const string SailDefault = "#CCB48E";
+    private static readonly string[] FlagColors = { "#151515", "#7A1F2B", "#1F3A6B", "#2E5A2E", "#B8860B", "#E8E4DA", "#4B2A6B", "#1F5A5A", "#8A4B1F" };
+    private static readonly string[] SailColors = { "#EDE8DC", "#2A2A2E", "#8A2A2A", "#2F4F6F", "#3E5E3E", "#C9A227", "#6E6E6E", "#5A3A6E", "#9C5A2E" };
+
+    private ElementReference boatHost;
+    private IJSObjectReference boatModule;
+    private IJSObjectReference boatView;
+    private string shownColors;
+
+    private RenderFragment ColorRow(string title, string current, string[] palette, string plain, Action<string> pick) => __builder =>
+    {
+        var now = string.IsNullOrEmpty(current) ? null : current.ToUpperInvariant();
+        <div class="cle-row">
+            <span class="cle-row__title">@title</span>
+            <div class="cle-swatches">
+                <button type="button" class="cle-swatch cle-swatch--plain @(now == null ? "is-on" : "")" style="--c:@plain" title="Plain (as boats have it)" aria-pressed="@(now == null)" @onclick="() => pick(null)"><span>Plain</span></button>
+                @foreach (var c in palette)
+                {
+                    var color = c;
+                    <button type="button" class="cle-swatch @(now == color ? "is-on" : "")" style="--c:@color" title="@color" aria-pressed="@(now == color)" @onclick="() => pick(color)"></button>
+                }
+                <label class="cle-swatch cle-swatch--custom @(now != null && !palette.Contains(now) ? "is-on" : "")" style="--c:@(now ?? plain)" title="Any colour">
+                    <i class="fa-solid fa-eye-dropper" aria-hidden="true"></i>
+                    <input type="color" value="@(now ?? plain)" @onchange="e => pick(e.Value?.ToString()?.ToUpperInvariant())" aria-label="@title: any colour" />
+                </label>
+            </div>
+        </div>
+    };
+
+    private void SaveColors(string flag, string sail)
+    {
+        if (Preview != null)
+        {
+            Preview.FlagColor = flag;
+            Preview.SailColor = sail;
+            Say("Boat colours saved.", false);
+            return;
+        }
+        var result = ClanImages.SetBoatColors(flag, sail);
+        state = ClanImages.GetState();
+        if (result.Ok) Say("Boat colours saved.", false);
+        else Say(result.Error, true);
+    }
+
+    // the Sloop wearing the clan flag and sails, again whenever the colours or the logo change
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (state == null) return;
+        try
+        {
+            if (boatView == null)
+            {
+                boatModule ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
+                boatView = await boatModule.InvokeAsync<IJSObjectReference>("create", boatHost, new { });
+            }
+            var key = LogoSrc + "|" + state.FlagColor + "|" + state.SailColor;
+            if (key == shownColors) return;
+            shownColors = key;
+            await boatView.InvokeVoidAsync("clanLogo", LogoSrc, state.FlagColor, state.SailColor);
+            await boatView.InvokeVoidAsync("show", "Sloop", "look:1;sails=99;flag=99");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
 
     private ClanLookState state;
     private string message;
@@ -164,9 +248,12 @@ else
         ? "/api/clan/image/" + state.Logo.Id
         : "/api/clan/logo/" + state.OwnerTwitchId;
 
+    /// <summary>A made up clan to show instead of the owner's (Pages/Dev/ClanLookPreview.razor); changes stay on the page.</summary>
+    [Parameter] public ClanLookState Preview { get; set; }
+
     protected override void OnInitialized()
     {
-        state = ClanImages.GetState();
+        state = Preview ?? ClanImages.GetState();
     }
 
     private async Task Edit(ClanImageKind kind)
@@ -231,6 +318,16 @@ else
     public async ValueTask DisposeAsync()
     {
         self?.Dispose();
+        try
+        {
+            if (boatView != null)
+            {
+                await boatView.InvokeVoidAsync("dispose");
+                await boatView.DisposeAsync();
+            }
+            if (boatModule != null) await boatModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
         if (module != null)
         {
             try { await module.DisposeAsync(); }

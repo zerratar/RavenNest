@@ -1,5 +1,6 @@
 @layout DashboardLayout
 @page "/dev/boats-preview"
+@using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic.Game
 @using RavenNest.Models
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
@@ -12,7 +13,7 @@
 
 @if (Environment.EnvironmentName == "Development")
 {
-    <BoatDesigner Boats="boats" SetLook="Save" SetEquipped="(b, on) => null" ClanLogo="b => b.CharacterIndex == 0 ? StandInLogo : null" />
+    <BoatDesigner Boats="boats" SetLook="Save" SetEquipped="(b, on) => null" Clan="PreviewClan" />
 }
 else
 {
@@ -23,6 +24,9 @@ else
     private List<BoatLookResult> boats;
     // the first character is in a made up clan, with a stand-in logo for its clan flag
     private const string StandInLogo = "/imgs/quests/icon-loyalty.png";
+
+    private static BoatClanLook PreviewClan(BoatLookResult boat) =>
+        boat.CharacterIndex == 0 ? new BoatClanLook { Logo = StandInLogo, FlagColor = "#7A1F2B", SailColor = "#2F4F6F" } : null;
     // three characters: the first carries two boats, so equipping one puts the other away
     private static readonly Guid[] Characters = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 

@@ -48,6 +48,8 @@ namespace RavenNest.Blazor.Services
                 CanCustomize = images.CanCustomize(user),
                 RequireReview = user.IsAdmin != true && (images.RequireReview || user.ClanImagesNeedReview == true),
                 CapeStyle = clan.CapeStyle,
+                FlagColor = clan.FlagColor,
+                SailColor = clan.SailColor,
                 Logo = images.GetCurrent(clan.Id, ClanImageKind.Logo, ClanImageState.Live),
                 LogoWaiting = images.GetCurrent(clan.Id, ClanImageKind.Logo, ClanImageState.Waiting),
                 Cape = images.GetCurrent(clan.Id, ClanImageKind.Cape, ClanImageState.Live),
@@ -66,6 +68,13 @@ namespace RavenNest.Blazor.Services
             var session = GetSession();
             if (session == null || !session.Authenticated) return new ClanImageResult { Error = "You are not signed in." };
             return images.SetCapeStyle(session.UserId, style, roleStyles);
+        }
+
+        public ClanImageResult SetBoatColors(string flagColor, string sailColor)
+        {
+            var session = GetSession();
+            if (session == null || !session.Authenticated) return new ClanImageResult { Error = "You are not signed in." };
+            return images.SetBoatColors(session.UserId, flagColor, sailColor);
         }
 
         public ClanImageResult UseDefault(ClanImageKind kind)
@@ -91,6 +100,9 @@ namespace RavenNest.Blazor.Services
         public bool CanCustomize { get; set; }
         public bool RequireReview { get; set; }
         public int CapeStyle { get; set; }
+        /// <summary>The clan flag's and clan sails' cloth on members' boats (#RRGGBB), null for the plain colours.</summary>
+        public string FlagColor { get; set; }
+        public string SailColor { get; set; }
         public ClanImageInfo Logo { get; set; }
         public ClanImageInfo LogoWaiting { get; set; }
         public ClanImageInfo Cape { get; set; }

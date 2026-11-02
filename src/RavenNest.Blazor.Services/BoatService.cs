@@ -50,16 +50,21 @@ namespace RavenNest.Blazor.Services
         }
 
         /// <summary>
-        /// The character's clan logo as the game gets it (the owner's upload, or their Twitch picture), for the clan
-        /// flag; null when the character is in no clan.
+        /// The character's clan as its boats wear it: the logo as the game gets it (the owner's upload, or their Twitch
+        /// picture) and the flag and sail cloth colours; null when the character is in no clan.
         /// </summary>
-        public string ClanLogo(Guid characterId)
+        public BoatClanLook ClanOf(Guid characterId)
         {
             var membership = gameData.GetClanMembership(characterId);
             var clan = membership != null ? gameData.GetClan(membership.ClanId) : null;
             if (clan == null) return null;
             var twitch = gameData.GetUserAccess(clan.UserId, "twitch");
-            return twitch?.PlatformId != null ? "/api/clan/logo/" + twitch.PlatformId : null;
+            return new BoatClanLook
+            {
+                Logo = twitch?.PlatformId != null ? "/api/clan/logo/" + twitch.PlatformId : null,
+                FlagColor = clan.FlagColor,
+                SailColor = clan.SailColor,
+            };
         }
 
         /// <summary>What the page shows under the boat: speed range (m/s, by Sailing level), seats and the Sailing level to build it.</summary>
@@ -86,6 +91,14 @@ namespace RavenNest.Blazor.Services
             if (session == null || !session.Authenticated) return new BoatLookResult { Error = "notsignedin" };
             return boats.SetLook(session.UserId, characterId, inventoryItemId, slot, variant);
         }
+    }
+
+    public class BoatClanLook
+    {
+        public string Logo { get; set; }
+        /// <summary>#RRGGBB, or null for the plain dark flag and cream sails.</summary>
+        public string FlagColor { get; set; }
+        public string SailColor { get; set; }
     }
 
     public class BoatFacts

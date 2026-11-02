@@ -143,6 +143,24 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
             return new ClanImageResult { Ok = true };
         }
 
+        /// <summary>
+        /// The cloth colours of the clan flag and clan sails on members' boats (#RRGGBB; empty for the plain dark flag
+        /// and cream sails). Any owner may pick them; only the images are a patron's.
+        /// </summary>
+        public ClanImageResult SetBoatColors(Guid userId, string flagColor, string sailColor)
+        {
+            var clan = gameData.GetClanByOwner(userId);
+            if (clan == null) return Fail("Only a clan owner can change the clan's colours.");
+            if (!ValidColor(flagColor) || !ValidColor(sailColor)) return Fail("Pick a colour from the list or the colour picker.");
+            clan.FlagColor = string.IsNullOrEmpty(flagColor) ? null : flagColor.ToUpperInvariant();
+            clan.SailColor = string.IsNullOrEmpty(sailColor) ? null : sailColor.ToUpperInvariant();
+            SendLookChanged(clan);
+            return new ClanImageResult { Ok = true };
+        }
+
+        private static bool ValidColor(string color) =>
+            string.IsNullOrEmpty(color) || System.Text.RegularExpressions.Regex.IsMatch(color, "^#[0-9A-Fa-f]{6}$");
+
         /// <summary>The clan's cape shape, and the roles that wear another one (an empty style is the clan's).</summary>
         public ClanImageResult SetCapeStyle(Guid userId, int style, IReadOnlyDictionary<Guid, int?> roleStyles)
         {
@@ -368,6 +386,8 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
                 LogoImageId = clan.LogoImageId,
                 CapeImageId = clan.CapeImageId,
                 CapeStyle = clan.CapeStyle,
+                FlagColor = clan.FlagColor,
+                SailColor = clan.SailColor,
             };
 
             foreach (var role in gameData.GetClanRoles(clan.Id))

@@ -93,6 +93,7 @@ class Designer {
         this.thumbs = new Map();
         this.clanFlags = new Map();
         this.clanLogoUrl = null;
+        this.clanColors = {};
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -248,7 +249,7 @@ class Designer {
         if (clanSails && this.clanLogoUrl && sails) {
             // the plain sails' material, wherever a mesh wears it, becomes the one with the logo
             const plain = this.material(m, sails);
-            const logo = await this.clanLogoMaterial(m, sails, this.clanLogoUrl, SAIL_LOGO_AREAS);
+            const logo = await this.clanLogoMaterial(m, 'sails', sails, this.clanLogoUrl, SAIL_LOGO_AREAS);
             if (logo) for (const mesh of meshes) {
                 if (Array.isArray(mesh.material)) mesh.material = mesh.material.map(x => x === plain ? logo : x);
                 else if (mesh.material === plain) mesh.material = logo;
@@ -363,24 +364,28 @@ class Designer {
         cloth.scale.setScalar(scale);
         const clothMeshes = await this.addPart(m, m.flag, cloth, flagSwap);
         if (clan && this.clanLogoUrl) {
-            const logo = await this.clanLogoMaterial(m, material, this.clanLogoUrl, FLAG_LOGO_AREAS);
+            const logo = await this.clanLogoMaterial(m, 'flag', material, this.clanLogoUrl, FLAG_LOGO_AREAS);
             if (logo) for (const mesh of clothMeshes) mesh.material = logo;
         }
         group.add(cloth);
         return clothMeshes;
     }
 
-    /** The character's clan logo (its address), for the clan flag; null for none. */
-    clanLogo(url) {
+    /** The character's clan logo (its address) and the clan's flag and sail cloth colours (#RRGGBB, or none for the plain ones). */
+    clanLogo(url, flagColor, sailColor) {
         this.clanLogoUrl = url || null;
+        this.clanColors = { flag: flagColor || null, sails: sailColor || null };
     }
 
-    // a plain sheet (the dark flag's, the cream sails') with the logo in each of its areas, as the game lays its symbol;
-    // kept per sheet and logo
-    clanLogoMaterial(m, plainName, url, areas) {
-        const key = plainName + '|' + url;
+    // the clan flag's or sails' cloth in the clan's colour (the plain dark flag's, the cream sails' when it picked none)
+    // with the logo in each of its areas, as the game tints the cloth and lays its symbol; kept per cloth, colour and logo
+    clanLogoMaterial(m, kind, plainName, url, areas) {
+        const cloth = m.clanCloth ? m.clanCloth[kind] : null;
+        const color = this.clanColors[kind];
+        const key = kind + '|' + plainName + '|' + color + '|' + url;
         if (this.clanFlags.has(key)) return this.clanFlags.get(key);
-        const info = m.materials[plainName];
+        const info = m.materials[cloth || plainName];
+        const tint = cloth ? color || '#' + (m.clanCloth[kind + 'Tint'] || [1, 1, 1]).map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('') : null;
         const load = src => new Promise(resolve => {
             const img = new Image();
             img.onload = () => resolve(img);
@@ -394,6 +399,15 @@ class Designer {
             canvas.width = canvas.height = size;
             const g = canvas.getContext('2d');
             g.drawImage(sheet, 0, 0, size, size);
+            if (tint) {
+                // the uncoloured cloth times the colour, its torn edges kept
+                g.globalCompositeOperation = 'multiply';
+                g.fillStyle = tint;
+                g.fillRect(0, 0, size, size);
+                g.globalCompositeOperation = 'destination-in';
+                g.drawImage(sheet, 0, 0, size, size);
+                g.globalCompositeOperation = 'source-over';
+            }
             for (const [x0, y0, x1, y1, aspect] of areas) {
                 // as big as most of the area, in its middle, narrowed where the sheet is stretched across the sail
                 const h = Math.min((x1 - x0) / aspect, y1 - y0) * size * 0.85, w = h * aspect;

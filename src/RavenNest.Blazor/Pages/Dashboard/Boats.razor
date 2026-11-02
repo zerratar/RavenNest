@@ -8,7 +8,7 @@
 
 @* The signed in player's boats; the page itself is the BoatDesigner component. *@
 
-<BoatDesigner Boats="boats" SetLook="Save" SetEquipped="Equip" ClanLogo="b => BoatService.ClanLogo(b.CharacterId)" />
+<BoatDesigner Boats="boats" SetLook="Save" SetEquipped="Equip" Clan="b => BoatService.ClanOf(b.CharacterId)" />
 
 @code {
     private RavenNest.Models.SessionInfo session;
