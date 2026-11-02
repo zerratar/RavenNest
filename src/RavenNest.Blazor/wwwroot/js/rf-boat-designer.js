@@ -299,8 +299,8 @@ class Designer {
         return url;
     }
 
-    // the flag as the game's BoatAssembler.Flag hangs it: from the tallest masthead (the ships), the fishing boat's gaff
-    // peak, or a pole at the rowboat's stern; its leading edge at the mast or pole, streaming aft
+    // the flag as the game's BoatAssembler.Flag hangs it: from the tallest masthead (the ships and the fishing boat's
+    // sail) or a pole at the rowboat's stern; its leading edge at the mast or pole, streaming aft
     async addFlag(m, group, meshes, flag, ship) {
         const material = m.flags[flag - 1];
         if (!material) return [];
@@ -317,17 +317,7 @@ class Designer {
         const HALF = 1.89; // half the flag cloth's width, hanging from the middle of its top edge
         let at, scale;
         const masts = meshes.filter(x => x.name.includes('_Mast_') && !x.name.includes('Boom') && !x.name.includes('Sail') && !x.name.includes('Locator'));
-        const gaff = ship ? null : meshes.find(x => x.name.endsWith('_Boom_Back_01'));
-        if (gaff) {
-            // the gaff's peak: its highest point (the mesh is the boom and the gaff together)
-            const pos = gaff.geometry.attributes.position, v = new THREE.Vector3(), peak = new THREE.Vector3(0, -Infinity, 0);
-            for (let i = 0; i < pos.count; i++) {
-                v.fromBufferAttribute(pos, i).applyMatrix4(gaff.matrix);
-                if (v.y > peak.y) peak.copy(v);
-            }
-            scale = 0.42;
-            at = new THREE.Vector3(peak.x, peak.y, peak.z - HALF * scale);
-        } else if (masts.length) {
+        if (masts.length) {
             let top = null;
             for (const mast of masts) { const b = boundsOf([mast]); if (!top || b.max.y > top.max.y) top = b; }
             const c = top.getCenter(new THREE.Vector3()), size = top.getSize(new THREE.Vector3());
