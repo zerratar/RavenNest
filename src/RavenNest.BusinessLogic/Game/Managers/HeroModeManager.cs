@@ -25,8 +25,11 @@ namespace RavenNest.BusinessLogic.Game
             (50, "title_hero_50"),
         };
 
+        private const int MinSecondsPerWave = 12; // the game's breather alone is 12 s, the first wave's count 8 s
+
         private readonly GameData gameData;
         private readonly object mutex = new object();
+        private readonly Dictionary<Guid, DateTime> lastRun = new Dictionary<Guid, DateTime>(); // by session
 
         public HeroModeManager(GameData gameData)
         {
@@ -44,6 +47,14 @@ namespace RavenNest.BusinessLogic.Game
 
             lock (mutex)
             {
+                // the game sends the numbers; a run cannot have lasted longer than since this session's last one,
+                // nor held a wave in under MinSecondsPerWave (a wave's fight plus the breather), so a made up run
+                // cannot top the board or unlock the titles
+                var now = DateTime.UtcNow;
+                if (lastRun.TryGetValue(token.SessionId, out var previous)) seconds = Math.Min(seconds, (int)Math.Ceiling((now - previous).TotalSeconds) + 60);
+                lastRun[token.SessionId] = now;
+                waves = Math.Min(waves, seconds / MinSecondsPerWave);
+
                 var user = gameData.GetUser(session.UserId);
                 var best = Parse(gameData.GetUserProperty(session.UserId, BestKey), user);
                 var run = new HeroRunRecord { Streamer = Name(user), Waves = waves, Kills = kills, Seconds = seconds, Reached = DateTime.UtcNow };

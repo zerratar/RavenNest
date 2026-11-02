@@ -449,18 +449,19 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         private ConcurrentDictionary<Guid, DateTime> lastHeroChest = new ConcurrentDictionary<Guid, DateTime>();
+        private static readonly TimeSpan HeroChestEvery = TimeSpan.FromMinutes(10);
 
         /// <summary>
         /// Hero mode's reward chest (the game's WaveRun, docs/hero-mode-design.md 7d): after a run of at least five
         /// waves, items from the dungeon drop table, its tier from the waves (5 common, 10 uncommon, 15 rare, 25 epic,
         /// 40 legendary). The first character is the hero, who gets one item plus one for every ten waves (five at
-        /// most); the others (the top helpers) one each. Not a dungeon: no dungeon quest progress. Once a minute per
-        /// session.
+        /// most); the others (the top helpers) one each. Not a dungeon: no dungeon quest progress. Once every ten
+        /// minutes per session: once a minute let "hold five waves, fall, again" open a chest every four minutes.
         /// </summary>
         public EventItemReward[] GetHeroChest(SessionToken session, int waves, Guid[] characters)
         {
             if (waves < 5 || characters == null || characters.Length == 0) return new EventItemReward[0];
-            if (lastHeroChest.TryGetValue(session.SessionId, out var last) && DateTime.UtcNow - last <= TimeSpan.FromSeconds(60)) return new EventItemReward[0];
+            if (lastHeroChest.TryGetValue(session.SessionId, out var last) && DateTime.UtcNow - last <= HeroChestEvery) return new EventItemReward[0];
             var gameSession = gameData.GetSession(session.SessionId);
             if (gameSession == null) return null;
             lastHeroChest[session.SessionId] = DateTime.UtcNow;

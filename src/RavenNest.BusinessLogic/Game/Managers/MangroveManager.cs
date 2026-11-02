@@ -133,18 +133,22 @@ namespace RavenNest.BusinessLogic.Game
             var rewards = new List<MangroveReward>();
             var rng = Random.Shared;
             var place = 0;
-            foreach (var id in finishers.Distinct().Take(MostPaid))
+            var ids = finishers.Distinct().Take(MostPaid).ToList();
+            // a race takes two: alone (the streamer's forced start) it paid the winner's prize and sail every ten
+            // minutes, so a lone finisher gets what the back of a race does
+            var race = ids.Count(id => sessionCharacters.Any(x => x.Id == id)) >= 2;
+            foreach (var id in ids)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
                 ++place;
                 if (character == null) continue;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
-                var factor = place == 1 ? 4 : place == 2 ? 2.5 : place == 3 ? 1.5 : 0.75;
+                var factor = !race ? 0.75 : place == 1 ? 4 : place == 2 ? 2.5 : place == 3 ? 1.5 : 0.75;
                 var coins = (long)Math.Round((300 + (skills?.SailingLevel ?? 1) * 10) * factor / 10) * 10;
                 var resources = gameData.GetResources(character);
                 if (resources != null) resources.Coins += coins;
                 // the regatta's sails: the winner one not yet owned, the others now and then
-                var sail = place == 1 || rng.NextDouble() < RegattaSailChance ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
+                var sail = race && (place == 1 || rng.NextDouble() < RegattaSailChance) ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
                 rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0], Looks = sail != null ? new[] { sail } : new string[0] });
             }
             gameData.Touch();
