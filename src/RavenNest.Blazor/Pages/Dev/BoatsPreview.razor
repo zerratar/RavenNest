@@ -1,0 +1,82 @@
+@layout DashboardLayout
+@page "/dev/boats-preview"
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.Models
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+
+@*
+    The boat designer with made up boats (a Sloop, a Brigantine, a Galleon and a Rowboat, some parts earned), for
+    working on its look without owning one. Only on a development server; elsewhere it is a page not found. Picking a
+    part changes it here only.
+*@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <BoatDesigner Boats="boats" SetLook="Save" />
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private List<BoatLookResult> boats;
+
+    protected override void OnInitialized()
+    {
+        if (Environment.EnvironmentName != "Development") return;
+        boats = new List<BoatLookResult>
+        {
+            Boat("Galleon", "Zerratar", 0, true, new[] { "sails_3", "sails_7", "flag_8", "flag_13", "figurehead_2", "figurehead_4", "ram_1", "ram_2", "wood_3", "wood_4", "front_2", "back_2", "hull_2" }),
+            Boat("Brigantine", "Zerratar", 0, false, new[] { "sails_6", "flag_7", "flag_13", "figurehead_2", "ram_1", "wood_3", "back_2" }),
+            Boat("Sloop", "Zerratar", 1, true, new[] { "sails_4", "flag_9", "figurehead_1", "wood_3", "ram_1", "back_2" }),
+            Boat("Rowboat", "Zerratar", 2, true, new[] { "flag_13" }),
+        };
+    }
+
+    private static BoatLookResult Boat(string boat, string character, int index, bool equipped, string[] earned)
+    {
+        var look = BoatLooks.Parse(boat, null);
+        return new BoatLookResult
+        {
+            Ok = true,
+            Boat = boat,
+            Look = BoatLooks.Format(boat, look),
+            InventoryItemId = Guid.NewGuid(),
+            CharacterId = Guid.NewGuid(),
+            CharacterName = character,
+            CharacterIndex = index,
+            Equipped = equipped,
+            Slots = BoatLooks.SlotsFor(boat).Select(s => new BoatLookSlot
+            {
+                Slot = s.Name,
+                Count = s.Count,
+                CanBeNone = s.CanBeNone,
+                Current = look[s.Name],
+                Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
+                    .Where(v => v == 0 || s.Free.Contains(v) || earned.Contains(BoatLooks.Key(s.Name, v))).ToArray(),
+                How = Enumerable.Range(0, s.Count + 1).Select(v => v == 0 ? "None" : s.Free.Contains(v) ? "Every boat has it" : BoatLooks.HowToEarn(s.Name, v)).ToArray(),
+            }).ToArray(),
+        };
+    }
+
+    private BoatLookResult Save(BoatLookResult boat, string slot, int variant)
+    {
+        var look = BoatLooks.Parse(boat.Boat, boat.Look);
+        look[slot] = variant;
+        var result = new BoatLookResult
+        {
+            Ok = true,
+            Boat = boat.Boat,
+            Look = BoatLooks.Format(boat.Boat, look),
+            InventoryItemId = boat.InventoryItemId,
+            CharacterId = boat.CharacterId,
+            CharacterName = boat.CharacterName,
+            CharacterIndex = boat.CharacterIndex,
+            Equipped = boat.Equipped,
+            Slots = boat.Slots.Select(s => new BoatLookSlot { Slot = s.Slot, Count = s.Count, CanBeNone = s.CanBeNone, Current = s.Slot == slot ? variant : s.Current, Owned = s.Owned, How = s.How }).ToArray(),
+        };
+        // the designer keeps the changed boat itself; a new list here would send it back to the first boat
+        return result;
+    }
+}

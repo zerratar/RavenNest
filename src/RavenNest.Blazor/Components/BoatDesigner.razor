@@ -1,0 +1,237 @@
+@using RavenNest.Blazor.Extensions
+@using RavenNest.Models
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@implements IAsyncDisposable
+
+@*
+    The boat designer (the game's docs/own-boats.md, "Customizing boats", phase 4; Pages/Dashboard/Boats.razor, and
+    Pages/Dev/BoatsPreview.razor with made up boats): every boat the player's characters carry, shown in 3D as the game
+    builds it (js/rf-boat-designer.js), and the parts of its look. Owned parts are saved at once; a locked one is only
+    tried on, with where it comes from.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Boats</h1>
+    <p class="rf-page-subtitle">
+        Dress your boats. Every part is earned at sea; the game shows the new look the next time the boat is launched.
+    </p>
+</header>
+
+@if (boats == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else if (boats.Count == 0)
+{
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">No boats yet</h2>
+        <p>
+            The shipwright on Away gives you a rowboat at the end of the shipwright's chain, and builds bigger boats
+            from crafted parts with <code>!boat build</code>. Come back here when you have one.
+        </p>
+    </section>
+}
+else
+{
+    <div class="boats-list" role="tablist" aria-label="Your boats">
+        @foreach (var b in boats)
+        {
+            <button type="button" role="tab" class="boats-pick @(b == selected ? "is-active" : "")" aria-selected="@(b == selected)" @onclick="() => Select(b)">
+                <span class="boats-pick__name">@b.Boat</span>
+                <span class="boats-pick__who">@b.CharacterName@(b.Equipped ? " · equipped" : "")</span>
+            </button>
+        }
+    </div>
+
+    <div class="boats-layout">
+        <div class="boats-view">
+            <div class="boats-canvas" @ref="canvasHost"></div>
+            <p class="boats-hint">Drag to turn, scroll to zoom.</p>
+            @if (trying != null)
+            {
+                <div class="boats-trying" role="status">
+                    <p><b>Trying on @Label(trying.Value.Slot) @VariantName(trying.Value.Variant).</b> @trying.Value.How.</p>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="StopTrying">Back to your look</button>
+                </div>
+            }
+        </div>
+
+        <div class="boats-slots">
+            @if (message != null)
+            {
+                <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@message</p></div>
+            }
+            @foreach (var s in selected.Slots)
+            {
+                <section class="boats-slot">
+                    <h3 class="boats-slot__title">@Label(s.Slot) <span class="rf-meta">@s.Owned.Count(v => v > 0) of @s.Count</span></h3>
+                    <div class="boats-variants">
+                        @for (var v = s.CanBeNone ? 0 : 1; v <= s.Count; v++)
+                        {
+                            var variant = v;
+                            var owned = s.Owned.Contains(variant);
+                            var swatch = Swatch(s.Slot, variant);
+                            <button type="button"
+                                    class="boats-variant @(s.Current == variant ? "is-current" : "") @(owned ? "" : "is-locked") @(swatch != null ? "has-swatch" : "")"
+                                    title="@(owned ? VariantName(variant) : VariantName(variant) + ": " + s.How?[variant])"
+                                    aria-pressed="@(s.Current == variant)"
+                                    @onclick="() => Pick(s, variant)">
+                                @if (swatch != null)
+                                {
+                                    <img src="@swatch" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span>@(variant == 0 ? "None" : variant.ToString())</span>
+                                }
+                                @if (!owned)
+                                {
+                                    <i class="fas fa-lock boats-variant__lock" aria-hidden="true"></i>
+                                }
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+            <p class="rf-meta">In chat: <code>!boat looks</code> says where the rest come from, <code>!boat sails 3</code> changes one part.</p>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>The player's boats, or null while loading.</summary>
+    [Parameter] public IReadOnlyList<BoatLookResult> Boats { get; set; }
+
+    /// <summary>Saves one part of a boat's look (boat, slot, variant) and gives the boat back as it is now.</summary>
+    [Parameter] public Func<BoatLookResult, string, int, BoatLookResult> SetLook { get; set; }
+
+    private IReadOnlyList<BoatLookResult> boats;
+    private BoatLookResult selected;
+    private ElementReference canvasHost;
+    private IJSObjectReference module;
+    private IJSObjectReference designer;
+    private Dictionary<string, string[]> swatches;
+    private (string Slot, int Variant, string How)? trying;
+    private string shownLook;
+    private string message;
+    private bool messageIsBad;
+
+    protected override void OnParametersSet()
+    {
+        if (Boats == null || Boats == boats) return;
+        boats = Boats;
+        // the equipped boat first: the one the player sails
+        selected = boats.OrderByDescending(b => b.Equipped).ThenBy(b => b.CharacterIndex).FirstOrDefault();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (selected == null) return;
+        if (designer == null)
+        {
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
+            designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
+            swatches = await module.InvokeAsync<Dictionary<string, string[]>>("swatches");
+            StateHasChanged();
+        }
+        await Show();
+    }
+
+    // the 3D view follows the page: the selected boat in its look, or a part being tried on
+    private async Task Show()
+    {
+        var look = selected.Look;
+        if (trying != null) look = With(look, trying.Value.Slot, trying.Value.Variant);
+        var key = selected.InventoryItemId + "|" + look;
+        if (designer == null || key == shownLook) return;
+        shownLook = key;
+        await designer.InvokeVoidAsync("show", selected.Boat, look);
+    }
+
+    private void Select(BoatLookResult boat)
+    {
+        selected = boat;
+        trying = null;
+        message = null;
+    }
+
+    private void Pick(BoatLookSlot slot, int variant)
+    {
+        message = null;
+        if (!slot.Owned.Contains(variant))
+        {
+            trying = (slot.Slot, variant, slot.How?[variant] ?? "Not earned yet");
+            return;
+        }
+        trying = null;
+        if (slot.Current == variant) return;
+        var result = SetLook?.Invoke(selected, slot.Slot, variant) ?? new BoatLookResult { Error = "failed" };
+        if (result.Slots != null)
+        {
+            result.CharacterName ??= selected.CharacterName;
+            boats = boats.Select(b => b.InventoryItemId == selected.InventoryItemId ? result : b).ToList();
+            selected = result;
+        }
+        if (!result.Ok) Say(Why(result.Error), true);
+    }
+
+    private void StopTrying() => trying = null;
+
+    private static string With(string look, string slot, int variant)
+    {
+        var parts = (look ?? "look:1").Split(';').Where(p => !p.StartsWith(slot + "=")).ToList();
+        parts.Add(slot + "=" + variant);
+        return string.Join(";", parts);
+    }
+
+    private string Swatch(string slot, int variant) =>
+        variant > 0 && swatches != null && swatches.TryGetValue(slot, out var list) && variant <= list.Length ? list[variant - 1] : null;
+
+    private static string Label(string slot) => slot switch
+    {
+        "hull" => "Hull",
+        "front" => "Front",
+        "middle" => "Middle",
+        "back" => "Back",
+        "figurehead" => "Figurehead",
+        "ram" => "Ram",
+        "sails" => "Sails",
+        "flag" => "Flag",
+        "wood" => "Planks",
+        _ => slot,
+    };
+
+    private static string VariantName(int variant) => variant == 0 ? "none" : "#" + variant;
+
+    private static string Why(string error) => error switch
+    {
+        "locked" => "That part is not yours yet.",
+        "noboat" => "That boat is not there any more. Reload the page.",
+        "nocharacter" => "That character is not yours.",
+        "notsignedin" => "You are not signed in.",
+        _ => "The look could not be changed.",
+    };
+
+    private void Say(string text, bool bad)
+    {
+        message = text;
+        messageIsBad = bad;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (designer != null)
+            {
+                await designer.InvokeVoidAsync("dispose");
+                await designer.DisposeAsync();
+            }
+            if (module != null) await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}
