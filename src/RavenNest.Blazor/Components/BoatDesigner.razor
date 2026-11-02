@@ -1,4 +1,5 @@
 @using RavenNest.Blazor.Extensions
+@using RavenNest.Blazor.Services
 @using RavenNest.Models
 @inject IJSRuntime JS
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
@@ -7,15 +8,41 @@
 @*
     The boat designer (the game's docs/own-boats.md, "Customizing boats", phase 4; Pages/Dashboard/Boats.razor, and
     Pages/Dev/BoatsPreview.razor with made up boats): every boat the player's characters carry, shown in 3D as the game
-    builds it (js/rf-boat-designer.js), and the parts of its look. Owned parts are saved at once; a locked one is only
-    tried on, with where it comes from.
+    builds it (js/rf-boat-designer.js), with its speed, seats and an equip button, and the parts of its look by tab.
+    Each part's options are drawn on the boat itself by the 3D view (paintThumbs). Owned parts are saved at once; a
+    locked one is only tried on, with where it comes from.
 *@
 
-<header class="rf-page-head">
-    <h1 class="rf-page-title">Boats</h1>
-    <p class="rf-page-subtitle">
-        Dress your boats. Every part is earned at sea; the game shows the new look the next time the boat is launched.
-    </p>
+<header class="bd-hero">
+    <div class="bd-hero__text">
+        <h1 class="bd-hero__title">Boats</h1>
+        <p class="bd-hero__subtitle">Dress your boats. Every part is earned at sea.</p>
+    </div>
+    <details class="bd-how">
+        <summary><i class="fa-solid fa-circle-question" aria-hidden="true"></i> How boats work <i class="fa-solid fa-chevron-down bd-how__chevron" aria-hidden="true"></i></summary>
+        <div class="bd-how__panel">
+            <div>
+                <h3>Getting a boat</h3>
+                <p>Finish the shipwright's quest chain for a rowboat. The shipwright on Away builds bigger boats from crafted
+                    parts and coins: <span class="rf-cmd">!boat list</span> says what each needs, <span class="rf-cmd">!boat build sloop</span> builds one.</p>
+            </div>
+            <div>
+                <h3>Sailing</h3>
+                <p>The equipped boat is the one you sail: <span class="rf-cmd">!sail &lt;island&gt;</span> takes you there.
+                    Equip one here or with <span class="rf-cmd">!equip galleon</span>; put it away (<span class="rf-cmd">!unequip galleon</span>) to take the ferry. Higher Sailing, faster boat.</p>
+            </div>
+            <div>
+                <h3>Parts</h3>
+                <p>Every part is earned at sea, nothing is bought: Sailing levels, the regatta and the treasure on the banana
+                    island, holding off the pirates, ferrying guests. Try on a locked part here to see it and where it comes from.</p>
+            </div>
+            <div>
+                <h3>Crew</h3>
+                <p>Bigger boats have more seats. Ask a player aboard with <span class="rf-cmd">!boat invite &lt;player&gt;</span>;
+                    guests fish with you at sea and row a little faster.</p>
+            </div>
+        </div>
+    </details>
 </header>
 
 @if (boats == null)
@@ -24,78 +51,165 @@
 }
 else if (boats.Count == 0)
 {
-    <section class="rf-panel">
-        <h2 class="rf-panel__title">No boats yet</h2>
-        <p>
-            The shipwright on Away gives you a rowboat at the end of the shipwright's chain, and builds bigger boats
-            from crafted parts with <code>!boat build</code>. Come back here when you have one.
-        </p>
-    </section>
+    <div class="bd-empty">
+        <img src="/imgs/items/rowboat.png" alt="" />
+        <div>
+            <h2 class="bd-h2">No boats yet</h2>
+            <p>The shipwright on Away gives you a rowboat at the end of her quest chain (<span class="rf-cmd">!quest begin shipwright</span>),
+                and builds bigger boats from crafted parts with <span class="rf-cmd">!boat build</span>. Come back here when you have one.</p>
+        </div>
+    </div>
 }
 else
 {
-    <div class="boats-list" role="tablist" aria-label="Your boats">
+    <div class="bd-boats" role="tablist" aria-label="Your boats">
         @foreach (var b in boats)
         {
-            <button type="button" role="tab" class="boats-pick @(b == selected ? "is-active" : "")" aria-selected="@(b == selected)" @onclick="() => Select(b)">
-                <span class="boats-pick__name">@b.Boat</span>
-                <span class="boats-pick__who">@b.CharacterName@(b.Equipped ? " · equipped" : "")</span>
+            var boat = b;
+            <button type="button" role="tab" class="bd-boat @(boat == selected ? "is-active" : "")" aria-selected="@(boat == selected)" @onclick="() => Select(boat)">
+                <img class="bd-boat__img" src="@BoatIcon(boat.Boat)" alt="" />
+                <span class="bd-boat__text">
+                    <span class="bd-boat__name">@boat.Boat</span>
+                    <span class="bd-boat__who">@boat.CharacterName@(SameNames(boat) ? " (slot " + boat.CharacterIndex + ")" : "")</span>
+                    @if (boat.Equipped)
+                    {
+                        <span class="bd-chip bd-chip--gold">Equipped</span>
+                    }
+                    else
+                    {
+                        <span class="bd-chip"><i class="fa-regular fa-circle" aria-hidden="true"></i> Not equipped</span>
+                    }
+                </span>
+                <i class="fa-solid fa-chevron-right bd-boat__chevron" aria-hidden="true"></i>
             </button>
         }
     </div>
 
-    <div class="boats-layout">
-        <div class="boats-view">
-            <div class="boats-canvas" @ref="canvasHost"></div>
-            <p class="boats-hint">Drag to turn, scroll to zoom.</p>
-            @if (trying != null)
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@message</p></div>
+    }
+
+    var facts = BoatService.Facts(selected.Boat);
+    var tabs = TabsOf(selected);
+    var currentTab = tabs.Contains(tab) ? tab : tabs.FirstOrDefault();
+    <div class="bd-main">
+        <section class="bd-stage">
+            <div class="bd-view">
+                <div class="bd-canvas" @ref="canvasHost"></div>
+                <span class="bd-hint"><i class="fa-solid fa-computer-mouse" aria-hidden="true"></i> Drag to turn, scroll to zoom</span>
+                @if (trying != null)
+                {
+                    <span class="bd-trying-tag"><i class="fa-solid fa-eye" aria-hidden="true"></i> Trying on</span>
+                }
+            </div>
+            <div class="bd-facts">
+                <div class="bd-fact">
+                    <i class="fa-solid fa-wind" aria-hidden="true"></i>
+                    <span><span class="bd-fact__label">Speed</span><span class="bd-fact__value">@facts.SpeedMin - @facts.SpeedMax <small>m/s</small></span></span>
+                </div>
+                <div class="bd-fact">
+                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                    <span><span class="bd-fact__label">Seats</span><span class="bd-fact__value">@facts.Seats</span></span>
+                </div>
+                <div class="bd-fact">
+                    <i class="fa-solid fa-anchor" aria-hidden="true"></i>
+                    @if (facts.Sailing > 0)
+                    {
+                        <span><span class="bd-fact__label">Needs Sailing</span><span class="bd-fact__value">@facts.Sailing</span></span>
+                    }
+                    else
+                    {
+                        <span><span class="bd-fact__label">From</span><span class="bd-fact__value bd-fact__value--small">the shipwright's chain</span></span>
+                    }
+                </div>
+                @if (SetEquipped != null)
+                {
+                    <button type="button" class="rf-btn bd-equip @(selected.Equipped ? "" : "rf-btn--primary")" disabled="@equipping" @onclick="ToggleEquipped">
+                        @if (selected.Equipped)
+                        {
+                            <i class="fa-solid fa-box-archive" aria-hidden="true"></i> <span>Put away</span>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-ship" aria-hidden="true"></i> <span>Equip on @selected.CharacterName</span>
+                        }
+                    </button>
+                }
+            </div>
+        </section>
+
+        <section class="bd-parts" @ref="partsHost">
+            <h2 class="bd-h2">Parts</h2>
+            @if (tabs.Count > 1)
             {
-                <div class="boats-trying" role="status">
-                    <p><b>Trying on @Label(trying.Value.Slot) @VariantName(trying.Value.Variant).</b> @trying.Value.How.</p>
-                    <button type="button" class="rf-btn rf-btn--small" @onclick="StopTrying">Back to your look</button>
+                <div class="bd-pills" role="tablist" aria-label="Parts">
+                    @foreach (var t in tabs)
+                    {
+                        var key = t;
+                        <button type="button" role="tab" class="bd-pill @(key == currentTab ? "is-on" : "")" aria-selected="@(key == currentTab)" @onclick="() => OpenTab(key)">@TabLabel(key)</button>
+                    }
                 </div>
             }
-        </div>
-
-        <div class="boats-slots">
-            @if (message != null)
+            @foreach (var s in selected.Slots.Where(s => SlotsOfTab(currentTab).Contains(s.Slot)))
             {
-                <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@message</p></div>
-            }
-            @foreach (var s in selected.Slots)
-            {
-                <section class="boats-slot">
-                    <h3 class="boats-slot__title">@Label(s.Slot) <span class="rf-meta">@s.Owned.Count(v => v > 0) of @s.Count</span></h3>
-                    <div class="boats-variants">
-                        @for (var v = s.CanBeNone ? 0 : 1; v <= s.Count; v++)
+                var slot = s;
+                <div class="bd-group">
+                    <div class="bd-group__head">
+                        @if (SlotsOfTab(currentTab).Length > 1 || tabs.Count <= 1)
+                        {
+                            <h3 class="bd-group__title">@Label(slot.Slot)</h3>
+                        }
+                        <span class="bd-group__count">@slot.Owned.Count(v => v > 0) of @slot.Count yours</span>
+                    </div>
+                    <div class="bd-grid">
+                        @for (var v = slot.CanBeNone ? 0 : 1; v <= slot.Count; v++)
                         {
                             var variant = v;
-                            var owned = s.Owned.Contains(variant);
-                            var swatch = Swatch(s.Slot, variant);
-                            <button type="button"
-                                    class="boats-variant @(s.Current == variant ? "is-current" : "") @(owned ? "" : "is-locked") @(swatch != null ? "has-swatch" : "")"
-                                    title="@(owned ? VariantName(variant) : VariantName(variant) + ": " + s.How?[variant])"
-                                    aria-pressed="@(s.Current == variant)"
-                                    @onclick="() => Pick(s, variant)">
-                                @if (swatch != null)
+                            var owned = slot.Owned.Contains(variant);
+                            var shown = trying != null && trying.Value.Slot == slot.Slot ? trying.Value.Variant : slot.Current;
+                            <button type="button" @key="@(selected.InventoryItemId + slot.Slot + variant)"
+                                    class="bd-tile @(slot.Current == variant ? "is-current" : "") @(shown == variant && slot.Current != variant ? "is-trying" : "") @(owned ? "" : "is-locked")"
+                                    title="@(Label(slot.Slot) + " " + VariantName(variant) + (owned ? "" : ": " + slot.How?[variant]))"
+                                    aria-pressed="@(slot.Current == variant)"
+                                    @onclick="() => Pick(slot, variant)">
+                                @if (variant == 0)
                                 {
-                                    <img src="@swatch" alt="" loading="lazy" />
+                                    <span class="bd-tile__none"><i class="fa-solid fa-ban" aria-hidden="true"></i><span>None</span></span>
                                 }
                                 else
                                 {
-                                    <span>@(variant == 0 ? "None" : variant.ToString())</span>
+                                    <img data-slot="@slot.Slot" data-variant="@variant" alt="" />
+                                    <span class="bd-tile__number">@variant</span>
                                 }
-                                @if (!owned)
+                                @if (slot.Current == variant)
                                 {
-                                    <i class="fas fa-lock boats-variant__lock" aria-hidden="true"></i>
+                                    <span class="bd-tile__badge bd-tile__badge--on"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                                }
+                                else if (!owned)
+                                {
+                                    <span class="bd-tile__badge"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
                                 }
                             </button>
                         }
                     </div>
-                </section>
+                </div>
             }
-            <p class="rf-meta">In chat: <code>!boat looks</code> says where the rest come from, <code>!boat sails 3</code> changes one part.</p>
-        </div>
+
+            @if (info != null)
+            {
+                <p class="bd-info"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> @info</p>
+            }
+            @if (trying != null)
+            {
+                <div class="bd-trying">
+                    <i class="fa-solid fa-shirt" aria-hidden="true"></i>
+                    <span>Trying on @Label(trying.Value.Slot) @VariantName(trying.Value.Variant)</span>
+                    <button type="button" class="rf-btn bd-trying__back" @onclick="StopTrying"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Back to your look</button>
+                </div>
+            }
+            <p class="bd-chat"><i class="fa-solid fa-comment" aria-hidden="true"></i> In chat: <span class="rf-cmd">!boat looks</span> lists where the rest come from, <span class="rf-cmd">!boat sails 3</span> changes one part.</p>
+        </section>
     </div>
 }
 
@@ -106,16 +220,23 @@ else
     /// <summary>Saves one part of a boat's look (boat, slot, variant) and gives the boat back as it is now.</summary>
     [Parameter] public Func<BoatLookResult, string, int, BoatLookResult> SetLook { get; set; }
 
+    /// <summary>Equips a boat on its character or puts it away (true to equip); null when it worked, else why not.</summary>
+    [Parameter] public Func<BoatLookResult, bool, string> SetEquipped { get; set; }
+
     private IReadOnlyList<BoatLookResult> boats;
     private BoatLookResult selected;
     private ElementReference canvasHost;
+    private ElementReference partsHost;
     private IJSObjectReference module;
     private IJSObjectReference designer;
-    private Dictionary<string, string[]> swatches;
     private (string Slot, int Variant, string How)? trying;
+    private string tab = "sails";
+    private string info;
     private string shownLook;
+    private string paintedThumbs;
     private string message;
     private bool messageIsBad;
+    private bool equipping;
 
     protected override void OnParametersSet()
     {
@@ -132,10 +253,15 @@ else
         {
             module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
             designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
-            swatches = await module.InvokeAsync<Dictionary<string, string[]>>("swatches");
-            StateHasChanged();
         }
         await Show();
+        // the open tab's options, drawn on this boat (kept by the 3D view, so a repaint is instant)
+        var thumbs = selected.InventoryItemId + "|" + tab + "|" + selected.Look;
+        if (thumbs != paintedThumbs)
+        {
+            paintedThumbs = thumbs;
+            await designer.InvokeVoidAsync("paintThumbs", partsHost, selected.Boat, selected.Look);
+        }
     }
 
     // the 3D view follows the page: the selected boat in its look, or a part being tried on
@@ -153,30 +279,69 @@ else
     {
         selected = boat;
         trying = null;
+        info = null;
         message = null;
+    }
+
+    private void OpenTab(string key)
+    {
+        tab = key;
+        info = null;
     }
 
     private void Pick(BoatLookSlot slot, int variant)
     {
         message = null;
+        var how = slot.How?[variant];
         if (!slot.Owned.Contains(variant))
         {
-            trying = (slot.Slot, variant, slot.How?[variant] ?? "Not earned yet");
+            trying = (slot.Slot, variant, how ?? "Not earned yet");
+            info = "Locked: " + Lower(how ?? "not earned yet");
             return;
         }
         trying = null;
+        info = variant == 0 ? null : how == null || how == "Every boat has it" ? "Yours: every boat has it." : "Yours: " + Lower(how) + ".";
         if (slot.Current == variant) return;
         var result = SetLook?.Invoke(selected, slot.Slot, variant) ?? new BoatLookResult { Error = "failed" };
         if (result.Slots != null)
         {
             result.CharacterName ??= selected.CharacterName;
+            result.CharacterIndex = selected.CharacterIndex;
+            result.Equipped = selected.Equipped;
             boats = boats.Select(b => b.InventoryItemId == selected.InventoryItemId ? result : b).ToList();
             selected = result;
         }
         if (!result.Ok) Say(Why(result.Error), true);
     }
 
-    private void StopTrying() => trying = null;
+    private void ToggleEquipped()
+    {
+        if (SetEquipped == null || equipping) return;
+        equipping = true;
+        var equip = !selected.Equipped;
+        var error = SetEquipped(selected, equip);
+        equipping = false;
+        if (error != null)
+        {
+            Say(Why(error), true);
+            return;
+        }
+        // one boat equipped per character: equipping this one puts that character's other boat away
+        var target = selected;
+        foreach (var b in boats.Where(b => b.CharacterId == target.CharacterId))
+            b.Equipped = equip && b.InventoryItemId == target.InventoryItemId;
+        Say(equip ? target.CharacterName + " sails the " + target.Boat + " now; !sail takes it out." : "The " + target.Boat + " is put away; " + target.CharacterName + " takes the ferry.", false);
+    }
+
+    private void StopTrying()
+    {
+        trying = null;
+        info = null;
+    }
+
+    private static string Lower(string text) => string.IsNullOrEmpty(text) ? text : char.ToLowerInvariant(text[0]) + text.Substring(1);
+
+    private bool SameNames(BoatLookResult boat) => boats.Select(b => b.CharacterId).Distinct().Count() > 1 && boats.Any(b => b.CharacterId != boat.CharacterId && b.CharacterName == boat.CharacterName);
 
     private static string With(string look, string slot, int variant)
     {
@@ -185,15 +350,26 @@ else
         return string.Join(";", parts);
     }
 
-    private string Swatch(string slot, int variant) =>
-        variant > 0 && swatches != null && swatches.TryGetValue(slot, out var list) && variant <= list.Length ? list[variant - 1] : null;
+    private static readonly string[] TabOrder = { "hull", "decks", "sails", "flag", "figurehead", "ram", "wood" };
+
+    private static List<string> TabsOf(BoatLookResult boat) =>
+        TabOrder.Where(t => SlotsOfTab(t).Any(s => boat.Slots.Any(x => x.Slot == s))).ToList();
+
+    private static string[] SlotsOfTab(string tab) => tab == "decks" ? new[] { "front", "middle", "back" } : new[] { tab };
+
+    private static string TabLabel(string tab) => tab switch
+    {
+        "decks" => "Decks",
+        "wood" => "Planks",
+        _ => Label(tab),
+    };
 
     private static string Label(string slot) => slot switch
     {
         "hull" => "Hull",
-        "front" => "Front",
-        "middle" => "Middle",
-        "back" => "Back",
+        "front" => "Bow deck",
+        "middle" => "Middle deck",
+        "back" => "Stern deck",
         "figurehead" => "Figurehead",
         "ram" => "Ram",
         "sails" => "Sails",
@@ -201,6 +377,8 @@ else
         "wood" => "Planks",
         _ => slot,
     };
+
+    private static string BoatIcon(string boat) => "/imgs/items/" + (boat ?? "").ToLowerInvariant().Replace(' ', '-') + ".png";
 
     private static string VariantName(int variant) => variant == 0 ? "none" : "#" + variant;
 
@@ -210,7 +388,7 @@ else
         "noboat" => "That boat is not there any more. Reload the page.",
         "nocharacter" => "That character is not yours.",
         "notsignedin" => "You are not signed in.",
-        _ => "The look could not be changed.",
+        _ => "That did not work. Try again in a moment.",
     };
 
     private void Say(string text, bool bad)

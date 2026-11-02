@@ -12,7 +12,7 @@
 
 @if (Environment.EnvironmentName == "Development")
 {
-    <BoatDesigner Boats="boats" SetLook="Save" />
+    <BoatDesigner Boats="boats" SetLook="Save" SetEquipped="(b, on) => null" />
 }
 else
 {
@@ -21,6 +21,8 @@ else
 
 @code {
     private List<BoatLookResult> boats;
+    // three characters: the first carries two boats, so equipping one puts the other away
+    private static readonly Guid[] Characters = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
     protected override void OnInitialized()
     {
@@ -43,7 +45,7 @@ else
             Boat = boat,
             Look = BoatLooks.Format(boat, look),
             InventoryItemId = Guid.NewGuid(),
-            CharacterId = Guid.NewGuid(),
+            CharacterId = Characters[index],
             CharacterName = character,
             CharacterIndex = index,
             Equipped = equipped,

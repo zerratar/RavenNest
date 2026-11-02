@@ -8,7 +8,7 @@
 
 @* The signed in player's boats; the page itself is the BoatDesigner component. *@
 
-<BoatDesigner Boats="boats" SetLook="Save" />
+<BoatDesigner Boats="boats" SetLook="Save" SetEquipped="Equip" />
 
 @code {
     private RavenNest.Models.SessionInfo session;
@@ -31,4 +31,7 @@
 
     private BoatLookResult Save(BoatLookResult boat, string slot, int variant) =>
         BoatService.SetLook(boat.CharacterId, boat.InventoryItemId, slot, variant);
+
+    private string Equip(BoatLookResult boat, bool equip) =>
+        BoatService.SetEquipped(boat.CharacterId, boat.InventoryItemId, equip);
 }

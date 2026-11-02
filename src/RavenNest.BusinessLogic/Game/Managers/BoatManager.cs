@@ -83,6 +83,10 @@ namespace RavenNest.BusinessLogic.Game
 
         private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, Guid> ownerOfGuest = new System.Collections.Concurrent.ConcurrentDictionary<Guid, Guid>();
 
+        /// <summary>The Sailing level the shipwright asks for to build a boat (0 for the rowboat, which a quest gives).</summary>
+        public static int SailingNeeded(string boat) =>
+            Blueprints.FirstOrDefault(b => string.Equals(b.Boat, boat, StringComparison.OrdinalIgnoreCase))?.Sailing ?? 0;
+
         /// <summary>Seats on each boat, the owner's included (the game's BoatCrews.Seats).</summary>
         public static int Seats(string boat) =>
             string.Equals(boat, "Galleon", StringComparison.OrdinalIgnoreCase) ? 10 :

@@ -885,7 +885,8 @@
         RangedWeapon,
         Shield,
         Pet,
-        Cape
+        Cape,
+        Boat
     }
 
     public static ItemSlot[] GetItemSlots()
@@ -905,6 +906,7 @@
             ItemSlot.RangedWeapon,
             ItemSlot.Shield,
             ItemSlot.Pet,
+            ItemSlot.Boat,
                 // ItemSlot.Cape
         };
     }
@@ -930,6 +932,7 @@
             case ItemType.Leggings: return ItemSlot.Leggings;
             case ItemType.Boots: return ItemSlot.Boots;
             case ItemType.Pet: return ItemSlot.Pet;
+            case ItemType.Boat: return ItemSlot.Boat;
             case ItemType.OneHandedAxe: return ItemSlot.MeleeWeapon;
             case ItemType.TwoHandedAxe: return ItemSlot.MeleeWeapon;
             case ItemType.TwoHandedSpear: return ItemSlot.MeleeWeapon;

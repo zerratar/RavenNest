@@ -3,13 +3,16 @@
 // ship's hull, front, middle, back, figurehead and ram of the look's variants, the rig every one of that ship has, the
 // look's sails and planks by material, and its flag at the masthead (the small boats fly it from a pole at the stern).
 // Drag to turn, scroll to zoom. Everything is in the game's (Unity's) space under a root mirrored in z, so the part
-// matrices and the assembler's numbers are used as they are.
+// matrices and the assembler's numbers are used as they are. paintThumbs draws each part's options on the boat itself,
+// framed on that part, into the page's picker tiles (kept here, so the pictures never go through the server).
 import * as THREE from './three.module.min.js';
 
 const BASE = '/boats/';
 let manifestPromise = null;
 const meshCache = new Map();
 const textureCache = new Map();
+// textures still loading: a thumbnail waits for them, or it would be drawn untextured
+const loading = new Set();
 
 function manifest() {
     manifestPromise ??= fetch(BASE + 'boats.json', { cache: 'no-cache' }).then(r => r.json());
@@ -57,7 +60,11 @@ function loadMesh(m, id) {
 function texture(file, version) {
     if (!file) return null;
     if (textureCache.has(file)) return textureCache.get(file);
-    const t = new THREE.TextureLoader().load(BASE + file + '?v=' + version);
+    let done;
+    const ready = new Promise(resolve => { done = resolve; });
+    loading.add(ready);
+    const finish = () => { loading.delete(ready); done(); };
+    const t = new THREE.TextureLoader().load(BASE + file + '?v=' + version, finish, undefined, finish);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
     textureCache.set(file, t);
@@ -74,6 +81,8 @@ class Designer {
         this.distance = 40;
         this.target = new THREE.Vector3(0, 6, 0);
         this.token = 0;
+        this.thumbToken = 0;
+        this.thumbs = new Map();
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -193,16 +202,26 @@ class Designer {
     /** Shows a boat ("Sloop", "Brigantine", "Galleon", "Rowboat", "Fishing Boat") in a look ("look:1;sails=7;..."). */
     async show(boat, look) {
         const token = ++this.token;
+        const built = await this.build(boat, look);
+        if (token !== this.token) return; // a newer look was asked for meanwhile
+        if (this.boat) this.root.remove(this.boat);
+        this.boat = built.group;
+        this.root.add(built.group);
+        this.frame0(built.group);
+    }
+
+    // the boat in a look, with each part's meshes kept apart (for framing one in a thumbnail)
+    async build(boat, look) {
         const m = await manifest();
         const l = parseLook(look, boat);
         const group = new THREE.Group();
         const sails = m.sails[l.sails - 1], wood = m.woods[l.wood - 1];
         const swap = n => n.startsWith('ShipSails_') && sails ? sails : n.startsWith('Ship_Planks_') && wood ? wood : n;
         const ship = m.ships[boat];
-        let meshes = [];
+        const parts = {};
         if (ship) {
             const pick = (slot, v, fallback) => ship[slot][v - 1] || (fallback ? ship[slot][fallback - 1] : null);
-            const lists = await Promise.all([
+            [parts.hull, parts.front, parts.middle, parts.back, parts.figurehead, parts.ram, parts.rig] = await Promise.all([
                 this.addPart(m, pick('hull', l.hull, 1), group, swap),
                 this.addPart(m, pick('front', l.front, 1), group, swap),
                 this.addPart(m, pick('middle', l.middle, 1), group, swap),
@@ -211,23 +230,78 @@ class Designer {
                 this.addPart(m, pick('ram', l.ram), group, swap),
                 this.addPart(m, ship.rig, group, swap),
             ]);
-            meshes = lists.flat();
         } else {
-            meshes = await this.addPart(m, m.boats[boat], group, swap);
+            parts.hull = await this.addPart(m, m.boats[boat], group, swap);
         }
-        if (token !== this.token) return; // a newer look was asked for meanwhile
+        const meshes = Object.values(parts).flat();
+        parts.flag = await this.addFlag(m, group, meshes, l.flag, !!ship);
+        return { group, parts };
+    }
 
-        await this.addFlag(m, group, meshes, l.flag, !!ship);
-        if (token !== this.token) return;
-        if (this.boat) this.root.remove(this.boat);
-        this.boat = group;
-        this.root.add(group);
-        this.frame0(group);
+    /**
+     * Draws the options of the parts in a picker: every img[data-slot][data-variant] under the element gets a picture
+     * of the boat wearing that option, framed on the part. Drawn once per boat and option, then kept.
+     */
+    async paintThumbs(element, boat, look) {
+        const token = ++this.thumbToken;
+        const images = [...element.querySelectorAll('img[data-slot][data-variant]')];
+        for (const img of images) {
+            if (token !== this.thumbToken || this.disposed) return; // the page moved on
+            const slot = img.dataset.slot, variant = +img.dataset.variant;
+            const key = boat + '|' + slot + '|' + variant;
+            let url = this.thumbs.get(key);
+            if (!url) {
+                url = await this.thumbnail(boat, withPart(look, slot, variant), slot);
+                if (url) this.thumbs.set(key, url);
+            }
+            if (url && img.isConnected) img.src = url;
+        }
+    }
+
+    async thumbnail(boat, look, slot) {
+        const kit = thumbKit();
+        const built = await this.build(boat, look);
+        const parts = built.parts;
+        const focus = focusOf(parts, slot);
+        if (!focus.length) return null;
+        // the rig and the flag hide the decks, the hull and the bow: only the sails and the flag keep them
+        if (slot !== 'sails') for (const mesh of parts.rig || []) mesh.visible = false;
+        if (slot !== 'flag') for (const mesh of parts.flag || []) mesh.visible = false;
+        while (loading.size) await Promise.all([...loading]);
+        kit.root.add(built.group);
+        kit.root.updateMatrixWorld(true);
+        const box = new THREE.Box3();
+        for (const mesh of focus) box.expandByObject(mesh);
+        const hull = new THREE.Box3();
+        for (const mesh of parts.hull || focus) hull.expandByObject(mesh);
+        const centre = box.getCenter(new THREE.Vector3());
+        const radius = Math.max(0.3, box.getBoundingSphere(new THREE.Sphere()).radius);
+        // the bow or the stern, whichever end the part is at, seen from the side and a little above
+        const along = Math.sign(centre.z - hull.getCenter(new THREE.Vector3()).z) || 1;
+        const dir = slot === 'figurehead' || slot === 'ram' || slot === 'front' || slot === 'back'
+            ? new THREE.Vector3(-0.9, 0.35, 0.8 * along)
+            : slot === 'wood' ? new THREE.Vector3(-0.7, 1.0, 0.3)
+            : slot === 'sails' || slot === 'flag' ? new THREE.Vector3(-1, 0.12, 0.25)
+            : new THREE.Vector3(-1, 0.4, 0.35);
+        dir.normalize();
+        const margin = slot === 'figurehead' || slot === 'ram' ? 1.25 : 1.0;
+        const distance = radius / Math.sin(THREE.MathUtils.degToRad(kit.camera.fov / 2)) * margin;
+        kit.camera.position.copy(centre).addScaledVector(dir, distance);
+        kit.camera.near = distance * 0.05;
+        kit.camera.far = distance * 4;
+        kit.camera.updateProjectionMatrix();
+        kit.camera.lookAt(centre);
+        // sails and flags on a sky, or the dark ones would be lost on the page's dark tile
+        kit.scene.background = slot === 'sails' || slot === 'flag' ? kit.sky : null;
+        kit.renderer.render(kit.scene, kit.camera);
+        const url = kit.renderer.domElement.toDataURL('image/webp', 0.9);
+        kit.root.remove(built.group);
+        return url;
     }
 
     async addFlag(m, group, meshes, flag, ship) {
         const material = m.flags[flag - 1];
-        if (!material) return;
+        if (!material) return [];
         group.updateMatrixWorld(true);
         const boundsOf = list => {
             const b = new THREE.Box3();
@@ -264,8 +338,9 @@ class Designer {
         cloth.position.copy(at);
         cloth.rotation.y = Math.PI / 2;
         cloth.scale.setScalar(scale);
-        await this.addPart(m, m.flag, cloth, flagSwap);
+        const clothMeshes = await this.addPart(m, m.flag, cloth, flagSwap);
         group.add(cloth);
+        return clothMeshes;
     }
 
     // the camera round the whole boat, the first time and when its size changes much
@@ -291,6 +366,61 @@ class Designer {
         this.renderer.dispose();
         this.renderer.domElement.remove();
     }
+}
+
+// the meshes a thumbnail frames: the part itself, the main mast's sails for sails, the middle deck for planks
+function focusOf(parts, slot) {
+    switch (slot) {
+        case 'sails': {
+            // the main mast's sails, big enough to tell apart
+            const cloth = (parts.rig || []).filter(mesh => mesh.name.includes('Sails'));
+            const main = cloth.filter(mesh => mesh.name.includes('Middle'));
+            return main.length ? main : cloth.length ? cloth : parts.rig || [];
+        }
+        case 'wood': return parts.middle || [];
+        default: return parts[slot] || [];
+    }
+}
+
+function withPart(look, slot, variant) {
+    const parts = (look || 'look:1').split(';').filter(p => !p.startsWith(slot + '='));
+    parts.push(slot + '=' + variant);
+    return parts.join(';');
+}
+
+// one small renderer for every thumbnail, on a clear background so the page's tile shows through
+const THUMB = 220;
+let kitCache = null;
+function thumbKit() {
+    if (kitCache) return kitCache;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(THUMB, THUMB, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xdfeeff, 0x2b3a48, 1.6));
+    const sun = new THREE.DirectionalLight(0xfff2dd, 2.4);
+    sun.position.set(-30, 60, 40);
+    scene.add(sun);
+    const rim = new THREE.DirectionalLight(0xcfe3ff, 1.6);
+    rim.position.set(40, 30, -50);
+    scene.add(rim);
+    const root = new THREE.Group();
+    root.scale.z = -1;
+    scene.add(root);
+    const canvas = document.createElement('canvas');
+    canvas.width = 4;
+    canvas.height = 64;
+    const g = canvas.getContext('2d');
+    const fade = g.createLinearGradient(0, 0, 0, 64);
+    fade.addColorStop(0, '#d4e4ee');
+    fade.addColorStop(1, '#7f9db1');
+    g.fillStyle = fade;
+    g.fillRect(0, 0, 4, 64);
+    const sky = new THREE.CanvasTexture(canvas);
+    sky.colorSpace = THREE.SRGBColorSpace;
+    kitCache = { renderer, scene, root, sky, camera: new THREE.PerspectiveCamera(30, 1, 0.05, 500) };
+    return kitCache;
 }
 
 function parseLook(tag, boat) {
