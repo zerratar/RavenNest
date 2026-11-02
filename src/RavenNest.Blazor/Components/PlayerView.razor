@@ -2,6 +2,7 @@
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.BoatService BoatService
 
 @*
     Rendered in three places: /characters on the dashboard, /inspect on the front page and the
@@ -80,6 +81,11 @@
             <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Customization)" class="rf-tab @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Customise</button>
         }
 
+        @if (CanManage && Boats.Count > 0)
+        {
+            <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Boats)" class="rf-tab @SelectedClass(CharacterViewState.Boats)" @onclick="() => viewState = CharacterViewState.Boats">Boats</button>
+        }
+
         @if (SelectedPlayer.Clan != null)
         {
             <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Clan)" class="rf-tab @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
@@ -112,6 +118,11 @@
             <div class="rf-panel">
                 <PlayerCustomization Player="@SelectedPlayer" CanManage="CanManage"></PlayerCustomization>
             </div>
+            break;
+        case CharacterViewState.Boats:
+            <BoatDesigner Boats="Boats" Banner="false"
+                          SetLook="(b, slot, v) => BoatService.SetLook(b.CharacterId, b.InventoryItemId, slot, v)"
+                          SetEquipped="(b, on) => BoatService.SetEquipped(b.CharacterId, b.InventoryItemId, on)" />
             break;
         case CharacterViewState.Map:
             <div class="rf-panel">
@@ -204,6 +215,7 @@
             case "clan": viewState = CharacterViewState.Clan; break;
             case "customise":
             case "customize": viewState = CharacterViewState.Customization; break;
+            case "boats": viewState = CharacterViewState.Boats; break;
             default: viewState = CharacterViewState.Overview; break;
         }
     }
@@ -275,6 +287,22 @@
         Inventory,
         Clan,
         Customization,
-        Map
+        Map,
+        Boats
+    }
+
+    /// <summary>The character's own boats (the signed-in player's; none for somebody else's character).</summary>
+    private IReadOnlyList<RavenNest.Models.BoatLookResult> Boats =>
+        boatsOf == SelectedPlayer?.Id ? boats : LoadBoats();
+
+    private Guid? boatsOf;
+    private IReadOnlyList<RavenNest.Models.BoatLookResult> boats = new List<RavenNest.Models.BoatLookResult>();
+
+    private IReadOnlyList<RavenNest.Models.BoatLookResult> LoadBoats()
+    {
+        boatsOf = SelectedPlayer?.Id;
+        boats = SelectedPlayer == null ? new List<RavenNest.Models.BoatLookResult>()
+            : (BoatService.GetBoats() ?? new List<RavenNest.Models.BoatLookResult>()).Where(b => b.CharacterId == SelectedPlayer.Id).ToList();
+        return boats;
     }
 }

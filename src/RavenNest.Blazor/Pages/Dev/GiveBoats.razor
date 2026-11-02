@@ -1,0 +1,38 @@
+@page "/dev/give-boats/{UserName}/{Slot:int}"
+@using RavenNest.BusinessLogic.Data
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject GameData GameData
+@inject global::PlayerInventoryProvider Inventories
+
+@*
+    Gives a character one of every boat it does not have yet (the Rowboat soulbound, as the shipwright's chain gives
+    it), for testing the boats on a development server; elsewhere it is a page not found. The inventory feed tells a
+    running game.
+*@
+
+<p>@result</p>
+
+@code {
+    [Parameter] public string UserName { get; set; }
+    [Parameter] public int Slot { get; set; }
+
+    private string result = "Not found.";
+
+    protected override void OnInitialized()
+    {
+        if (Environment.EnvironmentName != "Development") return;
+        var user = GameData.GetUserByUsername(UserName);
+        var character = user == null ? null : GameData.GetCharactersByUserId(user.Id).FirstOrDefault(c => c.CharacterIndex == Slot);
+        if (character == null) { result = "No such character."; return; }
+        var items = GameData.GetKnownItems();
+        var inventory = Inventories.Get(character.Id);
+        var given = new List<string>();
+        foreach (var boat in new[] { items.Rowboat, items.FishingBoat, items.Sloop, items.Brigantine, items.Galleon })
+        {
+            if (boat == null || inventory.GetAllItems().Any(i => i.ItemId == boat.Id)) continue;
+            inventory.AddItem(boat.Id, 1, equipped: false, soulbound: boat == items.Rowboat);
+            given.Add(boat.Name);
+        }
+        result = given.Count == 0 ? character.Name + " has every boat already." : "Gave " + character.Name + ": " + string.Join(", ", given) + ".";
+    }
+}

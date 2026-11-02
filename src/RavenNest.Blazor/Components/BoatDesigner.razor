@@ -13,6 +13,8 @@
     locked one is only tried on, with where it comes from.
 *@
 
+@if (Banner)
+{
 <header class="bd-hero">
     <div class="bd-hero__text">
         <h1 class="bd-hero__title">Boats</h1>
@@ -44,6 +46,7 @@
         </div>
     </details>
 </header>
+}
 
 @if (boats == null)
 {
@@ -70,7 +73,10 @@ else
                 <img class="bd-boat__img" src="@BoatIcon(boat.Boat)" alt="" />
                 <span class="bd-boat__text">
                     <span class="bd-boat__name">@boat.Boat</span>
-                    <span class="bd-boat__who">@boat.CharacterName@(SameNames(boat) ? " (slot " + boat.CharacterIndex + ")" : "")</span>
+                    @if (Banner)
+                    {
+                        <span class="bd-boat__who">@boat.CharacterName@(SameNames(boat) ? " (slot " + boat.CharacterIndex + ")" : "")</span>
+                    }
                     @if (boat.Equipped)
                     {
                         <span class="bd-chip bd-chip--gold">Equipped</span>
@@ -222,6 +228,12 @@ else
 
     /// <summary>Equips a boat on its character or puts it away (true to equip); null when it worked, else why not.</summary>
     [Parameter] public Func<BoatLookResult, bool, string> SetEquipped { get; set; }
+
+    /// <summary>
+    /// The page's banner, guide and whose each boat is: on for the Boats page (every character's boats), off on a
+    /// character's own Boats tab.
+    /// </summary>
+    [Parameter] public bool Banner { get; set; } = true;
 
     private IReadOnlyList<BoatLookResult> boats;
     private BoatLookResult selected;
