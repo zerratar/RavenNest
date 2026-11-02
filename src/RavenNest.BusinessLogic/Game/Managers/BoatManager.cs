@@ -33,26 +33,26 @@ namespace RavenNest.BusinessLogic.Game
             new Blueprint
             {
                 Boat = "Fishing Boat", Names = new[] { "fishing boat", "fishingboat", "fishing" },
-                Sailing = 30, Fishing = 30, Fee = 50_000,
+                Sailing = 50, Fishing = 30, Fee = 50_000,
                 Parts = new[] { ("Boat Hull", 1L), ("Mast", 1L), ("Sailcloth", 1L), ("Rope", 4L) },
             },
             new Blueprint
             {
                 Boat = "Sloop", Names = new[] { "sloop" },
-                Sailing = 60, Crafting = 50, Fee = 250_000,
+                Sailing = 100, Crafting = 50, Fee = 250_000,
                 Parts = new[] { ("Large Hull", 1L), ("Mast", 2L), ("Sailcloth", 3L), ("Rope", 8L) },
             },
             // the bigger ships (customizing phase 3): Pirate Realm's medium and large ships in the game
             new Blueprint
             {
                 Boat = "Brigantine", Names = new[] { "brigantine", "brig" },
-                Sailing = 100, Crafting = 120, Fee = 1_000_000,
+                Sailing = 300, Crafting = 120, Fee = 1_000_000,
                 Parts = new[] { ("Keel", 1L), ("Mast", 2L), ("Canvas", 4L), ("Iron Fittings", 2L), ("Rope", 12L) },
             },
             new Blueprint
             {
                 Boat = "Galleon", Names = new[] { "galleon" },
-                Sailing = 200, Crafting = 200, Fee = 5_000_000,
+                Sailing = 500, Crafting = 200, Fee = 5_000_000,
                 Parts = new[] { ("Keel", 2L), ("Large Hull", 1L), ("Mast", 3L), ("Canvas", 8L), ("Iron Fittings", 6L), ("Rope", 24L) },
             },
         };
@@ -395,9 +395,10 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                // the boat first: if it cannot be given, nothing is taken
+                // the boat first: if it cannot be given, nothing is taken. Soulbound, as the rowboat is: it can go to the
+                // player's other characters (the stash, sending), not to anyone else, so its Sailing level is earned once
                 var boatItem = gameData.GetItems().FirstOrDefault(i => i.Name.Equals(blueprint.Boat, StringComparison.OrdinalIgnoreCase));
-                if (boatItem == null || !inventory.TryAddItem(boatItem.Id, 1, out _))
+                if (boatItem == null || !inventory.TryAddItem(boatItem.Id, 1, out _, soulbound: true))
                 {
                     logger.LogError("The shipwright could not give " + character.Name + " a " + blueprint.Boat);
                     result.Error = "failed";
