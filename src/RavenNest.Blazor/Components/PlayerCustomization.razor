@@ -96,7 +96,7 @@ else
                 }
             </div>
 
-            <footer class="cz-foot">
+            <div class="cz-foot">
                 @if (message != null)
                 {
                     <p class="cz-msg @(messageIsBad ? "is-bad" : "is-good")" role="status">@message</p>
@@ -111,7 +111,7 @@ else
                         @(saving ? "Saving..." : "Save look")
                     </button>
                 </div>
-            </footer>
+            </div>
         </div>
     </div>
 }
