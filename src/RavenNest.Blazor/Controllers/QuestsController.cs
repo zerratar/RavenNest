@@ -228,6 +228,16 @@ namespace RavenNest.Controllers
             return heroManager.Record(sessionToken, waves, kills, seconds);
         }
 
+        /// <summary>Coins a viewer pays in hero mode (!hero elite): the coins left, or -1 when they had too few.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("hero/spend/{characterId}/{coins}")]
+        public long HeroSpend(Guid characterId, long coins)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return heroManager.Spend(sessionToken, characterId, coins);
+        }
+
         /// <summary>Every streamer's best hero mode run, the best first.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("hero/leaderboard")]

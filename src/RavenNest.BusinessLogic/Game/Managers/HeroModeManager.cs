@@ -25,6 +25,8 @@ namespace RavenNest.BusinessLogic.Game
             (50, "title_hero_50"),
         };
 
+        // the game's price for an elite is 1500 coins; nothing in hero mode costs more than this
+        private const long MostSpent = 10_000;
         private const int MinSecondsPerWave = 12; // the game's breather alone is 12 s, the first wave's count 8 s
 
         private readonly GameData gameData;
@@ -80,6 +82,22 @@ namespace RavenNest.BusinessLogic.Game
                 var rank = 1 + Board().Count(r => Better(r, best));
                 return new HeroRunResult { Ok = true, Best = best, NewBest = newBest, NewTitles = titles.ToArray(), Rank = rank };
             }
+        }
+
+        /// <summary>
+        /// Coins a character playing in the calling stream pays in hero mode (the game's !hero elite, an elite enemy sent
+        /// at the hero that drops better loot). Returns the coins left, or -1 when they had too few.
+        /// </summary>
+        public long Spend(SessionToken session, Guid characterId, long coins)
+        {
+            if (coins <= 0 || coins > MostSpent) return -1;
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || session == null || character.UserIdLock != session.UserId) return -1;
+            var resources = gameData.GetResources(character);
+            if (resources == null || resources.Coins < coins) return -1;
+            resources.Coins -= coins;
+            gameData.Touch();
+            return (long)resources.Coins;
         }
 
         /// <summary>The best runs of every streamer, the best first.</summary>
