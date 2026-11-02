@@ -320,6 +320,90 @@ else
         </section>
     }
 
+    @if (decor != null && decor.Pieces.Count > 0)
+    {
+        @*
+            The village's decor (the game's docs/village-decor-design.md, phase 4): what can be built in build mode,
+            what is still locked and what unlocks it, and the viewers' gifts waiting to be placed.
+        *@
+        <section class="rf-panel" id="decor">
+            <div class="rf-panel__head">
+                <h2 class="rf-panel__title">Decor</h2>
+                <div class="rf-filters rf-decor__filters" role="group" aria-label="Show decor">
+                    <button type="button" class="rf-filter @(decorFilter == DecorFilter.All ? "is-active" : "")" @onclick="() => decorFilter = DecorFilter.All">All</button>
+                    <button type="button" class="rf-filter @(decorFilter == DecorFilter.Unlocked ? "is-active" : "")" @onclick="() => decorFilter = DecorFilter.Unlocked">
+                        <i class="fa-solid fa-unlock" aria-hidden="true"></i> Unlocked
+                    </button>
+                    <button type="button" class="rf-filter @(decorFilter == DecorFilter.Locked ? "is-active" : "")" @onclick="() => decorFilter = DecorFilter.Locked">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i> Locked
+                    </button>
+                    @if (DecorGifts > 0)
+                    {
+                        <button type="button" class="rf-filter @(decorFilter == DecorFilter.Gifts ? "is-active" : "")" @onclick="() => decorFilter = DecorFilter.Gifts">
+                            <i class="fa-solid fa-gift" aria-hidden="true"></i> Gifts
+                        </button>
+                    }
+                </div>
+            </div>
+            <p class="rf-meta">
+                @decor.Pieces.Count(p => p.Unlocked) of @decor.Pieces.Count pieces unlocked
+                &middot; @decor.Pieces.Sum(p => p.Placed) placed
+                @if (DecorGifts > 0)
+                {
+                    <span>&middot; @DecorGifts gifts waiting</span>
+                }
+                &middot; place them in build mode in the game. Viewers give unlocked pieces with
+                <span class="rf-cmd">!decor gift &lt;name&gt;</span>.
+            </p>
+
+            @foreach (var group in DecorGroups)
+            {
+                <h3 class="rf-decor__group">
+                    @group.Key
+                    <span class="rf-meta">@group.Count(p => p.Unlocked) / @group.Count()</span>
+                </h3>
+                <div class="rf-decor">
+                    @foreach (var piece in group)
+                    {
+                        <article class="rf-decor__card @(piece.Unlocked ? "" : "is-locked") @(piece.Gifts > 0 ? "has-gifts" : "")">
+                            <div class="rf-decor__pic">
+                                <img src="@piece.Picture" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
+                                @if (!piece.Unlocked)
+                                {
+                                    <i class="fa-solid fa-lock rf-decor__lock" aria-label="Locked"></i>
+                                }
+                                @if (piece.Placed > 0)
+                                {
+                                    <span class="rf-decor__count" title="Placed in your town">@piece.Placed</span>
+                                }
+                            </div>
+                            <div class="rf-decor__name">@piece.Name</div>
+                            @if (piece.Unlocked)
+                            {
+                                <div class="rf-decor__meta">@piece.Cost</div>
+                            }
+                            else
+                            {
+                                <div class="rf-decor__how">@piece.How</div>
+                            }
+                            @if (piece.Gifts > 0)
+                            {
+                                <div class="rf-decor__gift">
+                                    <i class="fa-solid fa-gift" aria-hidden="true"></i>
+                                    @piece.Gifts waiting@(piece.GiftedBy.Length > 0 ? ", from " + string.Join(", ", piece.GiftedBy) : "")
+                                </div>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+            @if (!DecorGroups.Any())
+            {
+                <p class="rf-meta">Nothing here with this filter.</p>
+            }
+        </section>
+    }
+
     @if (OtherResources.Count > 0)
     {
         <section class="rf-panel">
@@ -622,7 +706,24 @@ else
 
     private RavenNest.Models.SessionInfo session;
     private MyTownData town;
+    private TownDecorData decor;
     private bool loading = true;
+
+    private enum DecorFilter { All, Unlocked, Locked, Gifts }
+    private DecorFilter decorFilter = DecorFilter.All;
+
+    private long DecorGifts => decor?.Pieces.Sum(p => p.Gifts) ?? 0;
+
+    /// <summary>The pieces the filter shows, by the build mode tray's groups, in its order.</summary>
+    private IEnumerable<IGrouping<string, TownDecorPiece>> DecorGroups => (decor?.Pieces ?? Array.Empty<TownDecorPiece>())
+        .Where(p => decorFilter switch
+        {
+            DecorFilter.Unlocked => p.Unlocked,
+            DecorFilter.Locked => !p.Unlocked,
+            DecorFilter.Gifts => p.Gifts > 0,
+            _ => true,
+        })
+        .GroupBy(p => p.Group);
 
     private MyTownHouseData pickerPlot;
     private IReadOnlyList<TownCandidate> candidates;
@@ -710,6 +811,7 @@ else
         }
 
         town = await TownService.GetMyTownAsync(session.UserId);
+        decor = town != null ? await TownService.GetDecorAsync(session.UserId) : null;
         loading = false;
     }
 

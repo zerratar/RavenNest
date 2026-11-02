@@ -130,6 +130,19 @@ namespace RavenNest.BusinessLogic.Game
             Piece("rune_pillar_01", "Awakened runestone", "Quest", ore: 250, coins: 50, quest: "runestone"),
             Piece("monkey_chief_01", "The monkey chief", "Quest", wheat: 60, wood: 20, quest: "bananas"),
             Piece("signpost_ravebridge_01", "The road west", "Quest", wood: 40, quest: "roadwest"),
+
+            // v0.9.6's newer content (2026-11-02): the quest key names what unlocks it (UnlockForQuest)
+            Piece("hero_banner_01", "Hero's banner", "Quest", wood: 30, wheat: 20, quest: "hero10"),
+            Piece("goblin_drum_01", "Goblin war drum", "Quest", wood: 60, ore: 20, quest: "hero25"),
+            Piece("statue_hero_ravebridge_01", "Hero of Ravebridge", "Quest", ore: 400, coins: 100, quest: "hero50"),
+            Piece("regatta_trophy_01", "Regatta trophy", "Quest", wood: 60, ore: 80, quest: "regatta"),
+            Piece("pirate_cannon_01", "Captured cannon", "Quest", ore: 120, wood: 30, quest: "pirates"),
+            Piece("ravebridge_lion_01", "The duke's lion", "Quest", ore: 200, coins: 30, quest: "ravebridge"),
+
+            // patron pieces: the village's streamer supports Ravenfall on Patreon (Mithril, Rune, Dragon and up)
+            Piece("raven_01", "Ravenfall raven", "Patron", ore: 60, patron: 1),
+            Piece("raven_gold_01", "Golden raven", "Patron", ore: 120, coins: 40, patron: 2),
+            Piece("raven_disco_01", "Disco raven", "Patron", ore: 150, coins: 60, patron: 3),
         };
 
         /// <summary>
@@ -165,8 +178,8 @@ namespace RavenNest.BusinessLogic.Game
             return Math.Max(50, (long)Math.Round(worth / 2 / 5) * 5);
         }
 
-        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0, string ev = null, double unlock = 0, bool small = false, string quest = null) =>
-            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Event = ev, UnlockCoins = unlock, Small = small, Quest = quest, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
+        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0, string ev = null, double unlock = 0, bool small = false, string quest = null, int patron = 0) =>
+            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Event = ev, UnlockCoins = unlock, Small = small, Quest = quest, Patron = patron, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
 
         private static VillageDecorPiece Tree(string key, string name, double wood, int tier = 0) =>
             new VillageDecorPiece { Key = key, Name = name, Group = "Trees", Tier = tier, Wood = wood };
@@ -185,9 +198,22 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public VillageDecorPiece[] GetPieces(Guid sessionId)
+        public VillageDecorPiece[] GetPieces(Guid sessionId) => PiecesOf(VillageOf(sessionId));
+
+        /// <summary>The website's town page: a village's pieces, what it has unlocked and the gifts waiting.</summary>
+        public VillageDecorPiece[] GetPiecesOfVillage(Village village) => PiecesOf(village);
+
+        /// <summary>How many of each piece a village has placed (the island's own pieces not counted).</summary>
+        public Dictionary<string, int> PlacedOf(Village village)
         {
-            var village = VillageOf(sessionId);
+            if (village == null) return new Dictionary<string, int>();
+            return gameData.GetVillageDecor(village.Id)
+                .Where(d => !d.Removed && !string.IsNullOrEmpty(d.Piece) && string.IsNullOrEmpty(d.DefaultKey))
+                .GroupBy(d => d.Piece).ToDictionary(g => g.Key, g => g.Count());
+        }
+
+        private VillageDecorPiece[] PiecesOf(Village village)
+        {
             if (village != null) UnlockRunningEvents(village);
             var unlocks = village != null ? UnlocksOf(village) : new HashSet<string>();
             var gifts = village != null ? gameData.GetVillageDecorGifts(village.Id) : Array.Empty<VillageDecorGift>();
@@ -197,7 +223,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new VillageDecorPiece
                 {
                     Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Level = p.Level,
-                    Event = p.Event, UnlockCoins = p.UnlockCoins, Quest = p.Quest, Points = GiftPoints(p),
+                    Event = p.Event, UnlockCoins = p.UnlockCoins, Quest = p.Quest, Patron = p.Patron, Points = GiftPoints(p),
                     Gifts = gift?.Amount ?? 0, GiftedBy = gift?.Givers,
                     Unlocked = village != null && IsUnlocked(village, p, unlocks),
                     Wood = p.Wood, Ore = p.Ore, Fish = p.Fish, Wheat = p.Wheat, Coins = p.Coins,
@@ -373,8 +399,10 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        /// A viewer finished a quest chain in this stream: the chain's piece is the village's for good. Returns the
-        /// piece's key, or null when the chain has none or the village had it already.
+        /// A viewer finished a quest chain in this stream, or something else a piece names as its quest happened there
+        /// (hero10/25/50: a hero mode run held that many waves; regatta: a race of two or more finished; pirates: the
+        /// pirates' raid was held; ravebridge: Ravebridge's quests were done): the piece is the village's for good.
+        /// Returns the piece's key, or null when nothing has that quest or the village had it already.
         /// </summary>
         public string UnlockForQuest(Guid sessionId, string chain)
         {
@@ -506,7 +534,15 @@ namespace RavenNest.BusinessLogic.Game
             if (!string.IsNullOrEmpty(piece.Event) && !unlocks.Contains(piece.Event)) return false;
             if (piece.UnlockCoins > 0 && !unlocks.Contains(piece.Key)) return false;
             if (!string.IsNullOrEmpty(piece.Quest) && !unlocks.Contains(piece.Key)) return false;
+            if (piece.Patron > 0 && PatronTierOf(village) < piece.Patron) return false;
             return true;
+        }
+
+        /// <summary>The Patreon tier of the village's streamer (0 for none).</summary>
+        private int PatronTierOf(Village village)
+        {
+            var user = gameData.GetUser(village.UserId);
+            return user?.PatreonTier ?? 0;
         }
 
         /// <summary>The village streams during an event: its pieces are the village's for good.</summary>

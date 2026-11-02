@@ -26,6 +26,8 @@ namespace RavenNest.Models
 
         /// <summary>The quest chain that unlocks it for the village where someone finishes it ("cat"), or null.</summary>
         public string Quest { get; set; }
+        /// <summary>A patron piece: the Patreon tier (1 Mithril, 2 Rune, 3 Dragon) the village's streamer needs.</summary>
+        public int Patron { get; set; }
 
         /// <summary>What a viewer pays in loyalty points to give the village one (!decor gift).</summary>
         public long Points { get; set; }

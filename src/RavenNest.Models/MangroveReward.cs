@@ -10,5 +10,7 @@ namespace RavenNest.Models
         public EventItemReward[] Items { get; set; }
         /// <summary>Boat looks earned with it (docs/own-boats.md in the game): "sails_9", "flag_12".</summary>
         public string[] Looks { get; set; }
+        /// <summary>A decor piece the village unlocked with it (set on the first reward only).</summary>
+        public string Decor { get; set; }
     }
 }

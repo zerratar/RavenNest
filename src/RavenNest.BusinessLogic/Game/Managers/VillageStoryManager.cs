@@ -172,7 +172,8 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     gameData.Add(new StreamerUnlock { Id = Guid.NewGuid(), StreamerUserId = session.UserId, Key = RavebridgeTitle, Source = "ravebridge", Created = DateTime.UtcNow });
                 }
-                return new VillageStoryResult { Ok = true };
+                // and the duke's lion for the village
+                return new VillageStoryResult { Ok = true, Decor = decorManager.UnlockForQuest(session.Id, "ravebridge") };
             }
         }
 

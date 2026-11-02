@@ -12,6 +12,7 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly RavenNest.BusinessLogic.Game.VillageManager villageManager;
+        private readonly RavenNest.BusinessLogic.Game.VillageDecorManager decorManager;
         private const float MaxExpBonusPerSlot = 200f;
 
         /// <summary>
@@ -21,10 +22,87 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         private const int VillageProcessorPlayerCount = 750;
 
-        public TownService(GameData gameData, RavenNest.BusinessLogic.Game.VillageManager villageManager)
+        public TownService(GameData gameData, RavenNest.BusinessLogic.Game.VillageManager villageManager, RavenNest.BusinessLogic.Game.VillageDecorManager decorManager)
         {
             this.gameData = gameData;
             this.villageManager = villageManager;
+            this.decorManager = decorManager;
+        }
+
+        /// <summary>
+        /// The town page's decor (the game's docs/village-decor-design.md, phase 4): every piece the village can build,
+        /// with its picture, whether the village has it, what unlocks it, how many are placed and the viewers' gifts
+        /// waiting. The island's own trees are only counted when placed again.
+        /// </summary>
+        public async Task<TownDecorData> GetDecorAsync(Guid userId)
+        {
+            return await Task.Run(() =>
+            {
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return null;
+                var placed = decorManager.PlacedOf(village);
+                var pieces = decorManager.GetPiecesOfVillage(village).Select(p => new TownDecorPiece
+                {
+                    Key = p.Key,
+                    Name = p.Name,
+                    Group = p.Group,
+                    Unlocked = p.Unlocked,
+                    How = HowToUnlock(p),
+                    Placed = placed.TryGetValue(p.Key, out var n) ? n : 0,
+                    Gifts = p.Gifts,
+                    GiftedBy = string.IsNullOrEmpty(p.GiftedBy) ? Array.Empty<string>() : p.GiftedBy.Split(',', StringSplitOptions.RemoveEmptyEntries),
+                    GiftPoints = p.Points,
+                    Cost = Cost(p),
+                    Patron = p.Patron,
+                }).ToList();
+                return new TownDecorData { Pieces = pieces };
+            });
+        }
+
+        private static readonly Dictionary<string, string> DecorQuests = new Dictionary<string, string>
+        {
+            ["cat"] = "Finish the quest chain \"The barkeep's lost cat\" in your stream",
+            ["fish"] = "Finish the quest chain \"The one that got away\" in your stream",
+            ["founder"] = "Finish the quest chain \"The village founder\" in your stream",
+            ["shipwright"] = "Finish the quest chain \"The shipwright\" in your stream",
+            ["pumpkin"] = "Finish the Halloween quest chain \"The Pumpkin King\" in your stream",
+            ["runestone"] = "Finish your village story \"The sleeping runestone\"",
+            ["bananas"] = "Finish your village story \"Insufficient bananas\"",
+            ["roadwest"] = "Finish your village story \"The road west\"",
+            ["hero10"] = "Hold 10 waves in hero mode on Ravebridge",
+            ["hero25"] = "Hold 25 waves in hero mode on Ravebridge",
+            ["hero50"] = "Hold 50 waves in hero mode on Ravebridge",
+            ["regatta"] = "Host a banana island regatta with two boats or more",
+            ["pirates"] = "Hold off the pirates' raid on the banana island",
+            ["ravebridge"] = "Finish Ravebridge's quests",
+        };
+
+        private static readonly string[] PatronTiers = { "", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom" };
+
+        /// <summary>What a piece waits for, in the order the game checks it (VillageDecorManager.IsUnlocked).</summary>
+        private static string HowToUnlock(RavenNest.Models.VillageDecorPiece p)
+        {
+            var needs = new List<string>();
+            if (p.Tier > 0) needs.Add("Town hall tier " + (p.Tier + 1));
+            if (p.Level > 0) needs.Add("Village level " + p.Level);
+            if (!string.IsNullOrEmpty(p.Event)) needs.Add("Stream during " + (p.Event == "christmas" ? "Christmas (December 1 to January 6)" : p.Event == "halloween" ? "Halloween (October 15 to November 5)" : p.Event));
+            if (p.UnlockCoins > 0) needs.Add("Unlock with " + Amount(p.UnlockCoins) + " treasury coins in build mode");
+            if (!string.IsNullOrEmpty(p.Quest)) needs.Add(DecorQuests.TryGetValue(p.Quest, out var q) ? q : "A quest");
+            if (p.Patron > 0) needs.Add("Support Ravenfall on Patreon (" + PatronTiers[Math.Min(p.Patron, PatronTiers.Length - 1)] + " or higher)");
+            return needs.Count == 0 ? "Available from the start" : string.Join(", then ", needs);
+        }
+
+        private static string Amount(double value) => ((long)Math.Round(value)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+
+        private static string Cost(RavenNest.Models.VillageDecorPiece p)
+        {
+            var parts = new List<string>();
+            if (p.Wood > 0) parts.Add(Amount(p.Wood) + " wood");
+            if (p.Ore > 0) parts.Add(Amount(p.Ore) + " ore");
+            if (p.Wheat > 0) parts.Add(Amount(p.Wheat) + " wheat");
+            if (p.Fish > 0) parts.Add(Amount(p.Fish) + " fish");
+            if (p.Coins > 0) parts.Add(Amount(p.Coins) + " coins");
+            return parts.Count == 0 ? "Free" : string.Join(", ", parts);
         }
 
         public async Task<IReadOnlyList<TownData>> GetTownsAsync()
@@ -902,5 +980,31 @@ namespace RavenNest.Blazor.Services
         public bool IsBuilt => Type > TownHouseSlotType.NoSkill;
 
         public bool IsAssigned => AssignedUserId != null && IsBuilt;
+    }
+
+    /// <summary>The town page's decor: every piece the village can build (TownService.GetDecorAsync).</summary>
+    public class TownDecorData
+    {
+        public IReadOnlyList<TownDecorPiece> Pieces { get; set; } = Array.Empty<TownDecorPiece>();
+    }
+
+    public class TownDecorPiece
+    {
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public bool Unlocked { get; set; }
+        /// <summary>What unlocks it, in words.</summary>
+        public string How { get; set; }
+        /// <summary>How many the village has placed (the island's own pieces not counted).</summary>
+        public int Placed { get; set; }
+        /// <summary>Viewers' gifts waiting to be placed, and the last givers.</summary>
+        public long Gifts { get; set; }
+        public string[] GiftedBy { get; set; } = Array.Empty<string>();
+        public long GiftPoints { get; set; }
+        public string Cost { get; set; }
+        public int Patron { get; set; }
+        /// <summary>Its picture, rendered from the game's prefab (the game's tools/village-rebuild/decor-pictures.cs).</summary>
+        public string Picture => "/images/decor/" + Key + ".png";
     }
 }

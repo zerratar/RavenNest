@@ -34,6 +34,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly ILogger<MangroveManager> logger;
         private readonly BoatManager boats;
+        private readonly VillageDecorManager decorManager;
         private readonly ConcurrentDictionary<string, DateTime> lastPaid = new ConcurrentDictionary<string, DateTime>();
         // half of what viewers paid to meddle, by session, until the next regatta's podium shares it
         private readonly ConcurrentDictionary<Guid, long> pots = new ConcurrentDictionary<Guid, long>();
@@ -45,8 +46,9 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The pot's shares for the podium.</summary>
         private static readonly double[] PotShares = { 0.5, 0.3, 0.2 };
 
-        public MangroveManager(GameData gameData, PlayerInventoryProvider inventoryProvider, BoatManager boats, ILogger<MangroveManager> logger)
+        public MangroveManager(GameData gameData, PlayerInventoryProvider inventoryProvider, BoatManager boats, VillageDecorManager decorManager, ILogger<MangroveManager> logger)
         {
+            this.decorManager = decorManager;
             this.gameData = gameData;
             this.inventoryProvider = inventoryProvider;
             this.boats = boats;
@@ -107,6 +109,8 @@ namespace RavenNest.BusinessLogic.Game
                 reward.Looks = looks.Where(l => l != null).ToArray();
                 rewards.Add(reward);
             }
+            // holding the pirates' raid gives the village the cannon they left behind
+            if (pirates && rewards.Count > 0) rewards[0].Decor = decorManager.UnlockForQuest(session.SessionId, "pirates");
             gameData.Touch();
             return rewards.ToArray();
         }
@@ -160,6 +164,8 @@ namespace RavenNest.BusinessLogic.Game
                 var sail = race && (place == 1 || rng.NextDouble() < chance) ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
                 rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0], Looks = sail != null ? new[] { sail } : new string[0] });
             }
+            // a real race (two or more) gives the hosting village its trophy
+            if (race && rewards.Count > 0) rewards[0].Decor = decorManager.UnlockForQuest(session.SessionId, "regatta");
             gameData.Touch();
             return rewards.ToArray();
         }

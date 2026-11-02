@@ -21,6 +21,8 @@ namespace RavenNest.Models
         public HeroRunRecord Best { get; set; }
         public bool NewBest { get; set; }
         public string[] NewTitles { get; set; }
+        /// <summary>Decor pieces the run unlocked for the streamer's village (waves 10, 25 and 50).</summary>
+        public string[] NewDecor { get; set; }
         public int Rank { get; set; }
     }
 

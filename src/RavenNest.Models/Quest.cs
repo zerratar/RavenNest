@@ -375,6 +375,9 @@ namespace RavenNest.Models
 
         /// <summary>How many items !quest give handed in.</summary>
         public long Given { get; set; }
+
+        /// <summary>A decor piece the village unlocked with it.</summary>
+        public string Decor { get; set; }
     }
 
     /// <summary>A step of a story line moved (VillageStoryProgress): something found (Finder), or a step done (StepDone).</summary>

@@ -33,9 +33,12 @@ namespace RavenNest.BusinessLogic.Game
         private readonly object mutex = new object();
         private readonly Dictionary<Guid, DateTime> lastRun = new Dictionary<Guid, DateTime>(); // by session
 
-        public HeroModeManager(GameData gameData)
+        private readonly VillageDecorManager decorManager;
+
+        public HeroModeManager(GameData gameData, VillageDecorManager decorManager)
         {
             this.gameData = gameData;
+            this.decorManager = decorManager;
         }
 
         /// <summary>A run in the streamer's session ended: the best kept if it is better, titles unlocked.</summary>
@@ -75,12 +78,21 @@ namespace RavenNest.BusinessLogic.Game
                     titles.Add(title.Substring("title_".Length));
                 }
 
+                // the village's decor for the same marks: a banner, the goblins' war drum, the hero's statue
+                var decor = new List<string>();
+                foreach (var (need, _) in Titles)
+                {
+                    if (waves < need) continue;
+                    var key = decorManager.UnlockForQuest(session.Id, "hero" + need);
+                    if (key != null) decor.Add(key);
+                }
+
                 // the stream's quests count the waves held (the streamer's character in the session)
                 var character = gameData.GetActiveSessionCharacters(session).FirstOrDefault(c => c.UserId == session.UserId);
                 if (character != null) QuestTracker.HeroWaves(character, waves);
 
                 var rank = 1 + Board().Count(r => Better(r, best));
-                return new HeroRunResult { Ok = true, Best = best, NewBest = newBest, NewTitles = titles.ToArray(), Rank = rank };
+                return new HeroRunResult { Ok = true, Best = best, NewBest = newBest, NewTitles = titles.ToArray(), NewDecor = decor.ToArray(), Rank = rank };
             }
         }
 

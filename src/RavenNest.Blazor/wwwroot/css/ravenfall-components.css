@@ -4498,3 +4498,118 @@ a.rf-badge:hover {
     margin-top: var(--rf-space-4);
     max-width: 32rem;
 }
+
+/* ---- Town decor ----------------------------------------------------------
+   The village's decor on the town page: a picture of each piece, rendered from
+   the game, locked ones dimmed with what unlocks them. Gifts waiting get a gold
+   edge, the one thing on the card the streamer should act on. */
+
+.rf-decor__filters {
+    margin-bottom: 0;
+}
+
+.rf-decor__group {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    margin: var(--rf-space-4) 0 var(--rf-space-2);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+    color: var(--rf-ink-muted);
+}
+
+.rf-decor {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-decor__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 0;
+    padding: var(--rf-space-2);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-decor__card.has-gifts {
+    border-color: var(--rf-line-gold);
+}
+
+.rf-decor__pic {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--rf-radius-sm);
+    background: radial-gradient(circle at 50% 40%, #2b3343 0%, #1a1f2a 75%);
+    overflow: hidden;
+}
+
+.rf-decor__pic img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.rf-decor__card.is-locked .rf-decor__pic img {
+    filter: grayscale(0.75) brightness(0.85);
+    opacity: 0.7;
+}
+
+.rf-decor__lock {
+    position: absolute;
+    top: var(--rf-space-1);
+    right: var(--rf-space-1);
+    padding: 0.3rem;
+    border-radius: 50%;
+    background: rgba(13, 16, 22, 0.75);
+    color: var(--rf-ink-muted);
+    font-size: 0.75rem;
+}
+
+.rf-decor__count {
+    position: absolute;
+    bottom: var(--rf-space-1);
+    right: var(--rf-space-1);
+    min-width: 1.5rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-align: center;
+}
+
+.rf-decor__name {
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    color: var(--rf-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-decor__card.is-locked .rf-decor__name {
+    color: var(--rf-ink-muted);
+}
+
+.rf-decor__meta,
+.rf-decor__how {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+    line-height: 1.35;
+}
+
+.rf-decor__gift {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-gold);
+    line-height: 1.35;
+}
