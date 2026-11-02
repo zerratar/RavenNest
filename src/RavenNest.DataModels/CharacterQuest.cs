@@ -15,7 +15,7 @@ namespace RavenNest.DataModels
         /// <summary>The catalog template it was made from.</summary>
         [PersistentData] private string key;
 
-        /// <summary>0 daily, 1 weekly, 2 seasonal daily, 3 chain.</summary>
+        /// <summary>0 daily, 1 weekly, 2 seasonal daily, 3 chain, 4 a Ravebridge quest paid (QuestManager.ClaimRavebridge).</summary>
         [PersistentData] private int kind;
 
         /// <summary>The day or week it belongs to: "2026-10-25" or "2026-W43".</summary>

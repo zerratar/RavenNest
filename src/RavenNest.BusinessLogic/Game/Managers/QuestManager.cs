@@ -116,7 +116,8 @@ namespace RavenNest.BusinessLogic.Game
         public const string Visit = "visit";
         public const string Answer = "answer";
 
-        public const int Daily = 0, Weekly = 1, Seasonal = 2, Chain = 3;
+        /// <summary>Ravebridge: a row kept for each Ravebridge quest paid (ClaimRavebridge), never shown as a quest.</summary>
+        public const int Daily = 0, Weekly = 1, Seasonal = 2, Chain = 3, Ravebridge = 4;
         public const int Offered = 0, Active = 1, Done = 2, Expired = 3, Abandoned = 4, NotNow = 5;
         public const int MaxActiveDaily = 3;
         public const int DailyOffers = 3;
@@ -403,6 +404,62 @@ namespace RavenNest.BusinessLogic.Game
                 if (quest.Kind == Chain) quest.Expires = DateTime.UtcNow; // cleared away with the old rows
                 QuestTracker.Achievements?.Add(character, "quitter", 1);
                 return new QuestActionResult { Ok = true, Quest = Info(quest) };
+            }
+        }
+
+        // ---- Ravebridge ------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// A streamer's real character finished one of the Ravebridge island's quests (the game tracks the steps): pays
+        /// the coins and returns the experience for the game to add, scaled to the character (RavebridgeQuestRewards).
+        /// Each quest pays a character once; a bounty pays again only once its cooldown has passed. A row (kind
+        /// Ravebridge) keeps what was paid and when.
+        /// </summary>
+        public RavebridgeQuestReward ClaimRavebridge(SessionToken token, Guid characterId, string key)
+        {
+            var character = CharacterOf(token, characterId);
+            if (character == null) return new RavebridgeQuestReward { Error = "notinsession" };
+            var quest = RavebridgeQuestRewards.Get(key);
+            if (quest == null) return new RavebridgeQuestReward { Error = "unknown" };
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (skills == null) return new RavebridgeQuestReward { Error = "unknown" };
+
+            lock (mutex)
+            {
+                var now = DateTime.UtcNow;
+                var paid = gameData.GetCharacterQuests(character.Id).Where(q => q.Kind == Ravebridge && q.Key == key).ToList();
+                if (!quest.Bounty && paid.Count > 0) return new RavebridgeQuestReward { Error = "done" };
+                if (quest.Bounty && paid.Any(q => q.Expires > now)) return new RavebridgeQuestReward { Error = "cooldown" };
+
+                var exp = RavebridgeQuestRewards.Exp(quest, skills);
+                var coins = RavebridgeQuestRewards.Coins(quest, skills);
+                var main = exp.Count > 0 ? exp.OrderByDescending(e => e.Value).First().Key : -1;
+                gameData.Add(new CharacterQuest
+                {
+                    Id = Guid.NewGuid(),
+                    CharacterId = character.Id,
+                    Key = key,
+                    Kind = Ravebridge,
+                    Period = DayOf(now),
+                    Objective = "ravebridge",
+                    Skill = -1,
+                    Amount = 1,
+                    Progress = 1,
+                    State = Done,
+                    RewardCoins = coins,
+                    RewardExp = exp.Values.Sum(),
+                    RewardSkill = main,
+                    Offered = now,
+                    Accepted = now,
+                    Completed = now,
+                    // a bounty's row runs out with its cooldown (a little early, for the game's clock) and goes a week
+                    // later with the old rows; a quest's stays, it pays once
+                    Expires = quest.Bounty ? now.AddMinutes(quest.CooldownMinutes * 0.9) : Never,
+                });
+                var resources = gameData.GetResources(character);
+                if (resources != null && coins > 0) resources.Coins += coins;
+                gameData.Touch();
+                return new RavebridgeQuestReward { Ok = true, Coins = coins, Exp = exp };
             }
         }
 

@@ -73,6 +73,16 @@ namespace RavenNest.Controllers
             return questManager.BeginChain(sessionToken, characterId, key);
         }
 
+        /// <summary>A Ravebridge island quest finished by a real character: the coins paid, the experience to add.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/ravebridge/{key}")]
+        public RavebridgeQuestReward ClaimRavebridge(Guid characterId, string key)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return questManager.ClaimRavebridge(sessionToken, characterId, key);
+        }
+
         /// <summary>Hands in the items the chain's delivery step asks for.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{characterId}/deliver")]
