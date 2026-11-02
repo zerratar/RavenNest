@@ -158,6 +158,18 @@ namespace RavenNest.BusinessLogic.Game
         {
             var character = CharacterOf(token, characterId);
             if (character == null) return null;
+            return ListOf(character);
+        }
+
+        /// <summary>The website's quest page: a character's achievements and titles.</summary>
+        public AchievementList Peek(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            return character != null ? ListOf(character) : null;
+        }
+
+        private AchievementList ListOf(Character character)
+        {
             LevelsChanged(character);
             var rows = gameData.GetCharacterAchievements(character.Id);
             var list = new List<AchievementInfo>();

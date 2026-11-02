@@ -222,6 +222,27 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                return ListOf(character, quests);
+            }
+        }
+
+        /// <summary>
+        /// The website's quest page: a character's quests now, as the game would see them (today's offers and this
+        /// week's quest are made the first time), without finishing a visit step: only asking from the game does that.
+        /// </summary>
+        public QuestList Peek(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return null;
+            lock (mutex)
+            {
+                return ListOf(character, Refresh(character));
+            }
+        }
+
+        private QuestList ListOf(Character character, IReadOnlyList<CharacterQuest> quests)
+        {
+            {
                 var stats = gameData.GetCharacterQuestStats(character.Id);
                 var now = DateTime.UtcNow;
                 var day = DayOf(now);

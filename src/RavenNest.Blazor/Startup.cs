@@ -551,6 +551,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<AIAssistanceService>();
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<TownService>();
+            services.AddSingleton<QuestPageService>();
 
 
 

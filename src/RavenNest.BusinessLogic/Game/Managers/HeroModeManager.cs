@@ -112,6 +112,14 @@ namespace RavenNest.BusinessLogic.Game
             return (long)resources.Coins;
         }
 
+        /// <summary>The website's quest page: a streamer's best run and its place among every streamer's (0 for none).</summary>
+        public (HeroRunRecord Best, int Rank) BestOf(Guid userId)
+        {
+            var best = Parse(gameData.GetUserProperty(userId, BestKey), gameData.GetUser(userId));
+            if (best == null) return (null, 0);
+            return (best, 1 + Board().Count(r => Better(r, best)));
+        }
+
         /// <summary>The best runs of every streamer, the best first.</summary>
         public HeroLeaderboard Leaderboard(int count)
         {

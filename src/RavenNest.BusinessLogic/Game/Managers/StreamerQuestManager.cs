@@ -116,6 +116,37 @@ namespace RavenNest.BusinessLogic.Game
             }).ToArray();
         }
 
+        /// <summary>
+        /// The website's quest page: the running quests of the streamer whose stream a character plays in now (none
+        /// when it is in no stream), with the character's own progress on them.
+        /// </summary>
+        public StreamerQuestInfo[] ForCharacter(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || character.UserIdLock == null) return Array.Empty<StreamerQuestInfo>();
+            var streamer = character.UserIdLock.Value;
+            return gameData.GetStreamerQuests(streamer).Where(q => q.State == Running).OrderBy(q => q.Started).Select(q =>
+            {
+                var info = Info(q);
+                var entry = gameData.GetStreamerQuestEntries(q.Id).FirstOrDefault(e => e.CharacterId == characterId);
+                info.YourProgress = entry?.Progress ?? 0;
+                info.YouClaimed = entry?.Completed != null;
+                return info;
+            }).ToArray();
+        }
+
+        /// <summary>The website's quest page: a streamer's quests, the running ones first, then the latest ended.</summary>
+        public StreamerQuestInfo[] HistoryOf(Guid streamerUserId, int ended = 10)
+        {
+            var all = gameData.GetStreamerQuests(streamerUserId);
+            return all.Where(q => q.State == Running).OrderBy(q => q.Started)
+                .Concat(all.Where(q => q.State != Running).OrderByDescending(q => q.Started).Take(ended))
+                .Select(Info).ToArray();
+        }
+
+        /// <summary>The loyalty points a streamer has left to give in quests this week.</summary>
+        public long LoyaltyLeft(Guid streamerUserId) => BudgetLeft(streamerUserId);
+
         /// <summary>Posts a quest: checks it, sets the reward aside, and starts it.</summary>
         public StreamerQuestResult Post(SessionToken token, StreamerQuestRequest request)
         {
