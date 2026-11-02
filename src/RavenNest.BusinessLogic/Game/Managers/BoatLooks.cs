@@ -15,10 +15,14 @@ namespace RavenNest.BusinessLogic.Game
         public const string Prefix = "look:1;";
 
         /// <summary>
-        /// The flag with the clan's logo on it: any member's, for as long as they are in a clan (the game draws the
-        /// logo on a plain dark flag, and the plain flag alone once they leave). Not one of the 17 flags.
+        /// The clan's logo, for the flag and the sails: any member's, for as long as they are in a clan (the game lays
+        /// the logo on the plain dark flag, and on the plain sails where the emblem sails have theirs; the plain ones
+        /// alone once they leave). Not one of the flags or sails.
         /// </summary>
-        public const int ClanFlag = 99;
+        public const int ClanLogo = 99;
+
+        /// <summary>The parts the clan's logo can go on.</summary>
+        public static bool IsClanLogo(string slot, int variant) => variant == ClanLogo && (slot == "flag" || slot == "sails");
 
         public sealed class Slot
         {
@@ -173,7 +177,7 @@ namespace RavenNest.BusinessLogic.Game
                 var kv = part.Split('=');
                 if (kv.Length != 2 || !int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)) continue;
                 var slot = Find(boat, kv[0]);
-                if (slot != null && (v >= (slot.CanBeNone ? 0 : 1) && v <= slot.Count || slot.Name == "flag" && v == ClanFlag)) look[slot.Name] = v;
+                if (slot != null && (v >= (slot.CanBeNone ? 0 : 1) && v <= slot.Count || IsClanLogo(slot.Name, v))) look[slot.Name] = v;
             }
             return look;
         }

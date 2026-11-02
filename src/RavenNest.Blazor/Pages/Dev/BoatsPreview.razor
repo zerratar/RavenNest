@@ -60,7 +60,7 @@ else
                 Current = look[s.Name],
                 Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
                     .Where(v => v == 0 || s.Free.Contains(v) || earned.Contains(BoatLooks.Key(s.Name, v)))
-                    .Concat(s.Name == "flag" && index == 0 ? new[] { BoatLooks.ClanFlag } : new int[0]).ToArray(),
+                    .Concat(index == 0 && BoatLooks.IsClanLogo(s.Name, BoatLooks.ClanLogo) ? new[] { BoatLooks.ClanLogo } : new int[0]).ToArray(),
                 How = Enumerable.Range(0, s.Count + 1).Select(v => v == 0 ? "None" : s.Free.Contains(v) ? "Every boat has it" : BoatLooks.HowToEarn(s.Name, v)).ToArray(),
             }).ToArray(),
         };

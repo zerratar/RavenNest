@@ -205,8 +205,7 @@ namespace RavenNest.BusinessLogic.Game
             var boat = boatStack.Item?.Name ?? "";
             var slot = BoatLooks.Find(boat, slotName);
             if (slot == null) return Fail(character, boatStack, "slot");
-            var clanFlag = slot.Name == "flag" && variant == BoatLooks.ClanFlag;
-            if (clanFlag)
+            if (BoatLooks.IsClanLogo(slot.Name, variant))
             {
                 // the clan's logo: any member may fly it
                 if (gameData.GetClanMembership(character.Id) == null) return Fail(character, boatStack, "noclan");
@@ -309,10 +308,10 @@ namespace RavenNest.BusinessLogic.Game
                     Count = s.Count,
                     CanBeNone = s.CanBeNone,
                     Current = look[s.Name],
-                    // the clan flag (99) is owned while the character is in a clan
+                    // the clan's logo (99) on the flag and the sails is owned while the character is in a clan
                     Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
                         .Where(v => s.Free.Contains(v) || owned.Contains(BoatLooks.Key(s.Name, v)))
-                        .Concat(s.Name == "flag" && inClan ? new[] { BoatLooks.ClanFlag } : Array.Empty<int>())
+                        .Concat(inClan && BoatLooks.IsClanLogo(s.Name, BoatLooks.ClanLogo) ? new[] { BoatLooks.ClanLogo } : Array.Empty<int>())
                         .ToArray(),
                     How = Enumerable.Range(0, s.Count + 1)
                         .Select(v => v == 0 && !s.CanBeNone ? null : s.Free.Contains(v) ? "Every boat has it" : BoatLooks.HowToEarn(s.Name, v))

@@ -8,8 +8,14 @@
 import * as THREE from './three.module.min.js';
 
 const BASE = '/boats/';
-// the clan's logo on the plain dark flag (the game's BoatAssembler.ClanFlag)
-const CLAN_FLAG = 99, PLAIN_DARK_FLAG = 6;
+// the clan's logo (the game's BoatAssembler.ClanLogo): on the plain dark flag, and on the plain cream sails where the
+// emblem sails have theirs; the areas as fractions of the sheet, from the top left
+const CLAN_LOGO = 99, PLAIN_DARK_FLAG = 6, PLAIN_SAILS = 1;
+// (and how wide the logo is drawn against its height: the gaff sails' strip is stretched across them)
+const FLAG_LOGO_AREAS = [[0.4014, 1 - 0.9694, 0.7325, 1 - 0.7078, 1]];
+const SAIL_LOGO_AREAS = [[604, 68, 1432, 960], [660, 1156, 1376, 1920], [1020, 2516, 2060, 3636], [3288, 3184, 3904, 3848]]
+    .map(a => [...a.map(v => v / 4096), 1])
+    .concat([[0.81, 0.196, 0.99, 0.396, 0.6]]);
 let manifestPromise = null;
 const meshCache = new Map();
 const textureCache = new Map();
@@ -219,7 +225,8 @@ class Designer {
         const m = await manifest();
         const l = parseLook(look, boat);
         const group = new THREE.Group();
-        const sails = m.sails[l.sails - 1], wood = m.woods[l.wood - 1];
+        const clanSails = l.sails === CLAN_LOGO;
+        const sails = m.sails[(clanSails ? PLAIN_SAILS : l.sails) - 1], wood = m.woods[l.wood - 1];
         const swap = n => n.startsWith('ShipSails_') && sails ? sails : n.startsWith('Ship_Planks_') && wood ? wood : n;
         const ship = m.ships[boat];
         const parts = {};
@@ -238,6 +245,15 @@ class Designer {
             parts.hull = await this.addPart(m, m.boats[boat], group, swap);
         }
         const meshes = Object.values(parts).flat();
+        if (clanSails && this.clanLogoUrl && sails) {
+            // the plain sails' material, wherever a mesh wears it, becomes the one with the logo
+            const plain = this.material(m, sails);
+            const logo = await this.clanLogoMaterial(m, sails, this.clanLogoUrl, SAIL_LOGO_AREAS);
+            if (logo) for (const mesh of meshes) {
+                if (Array.isArray(mesh.material)) mesh.material = mesh.material.map(x => x === plain ? logo : x);
+                else if (mesh.material === plain) mesh.material = logo;
+            }
+        }
         parts.flag = await this.addFlag(m, group, meshes, l.flag, !!ship);
         return { group, parts };
     }
@@ -252,7 +268,7 @@ class Designer {
         for (const img of images) {
             if (token !== this.thumbToken || this.disposed) return; // the page moved on
             const slot = img.dataset.slot, variant = +img.dataset.variant;
-            const key = boat + '|' + slot + '|' + variant + (variant === CLAN_FLAG ? '|' + this.clanLogoUrl : '');
+            const key = boat + '|' + slot + '|' + variant + (variant === CLAN_LOGO ? '|' + this.clanLogoUrl : '');
             let url = this.thumbs.get(key);
             if (!url) {
                 url = await this.thumbnail(boat, withPart(look, slot, variant), slot);
@@ -306,7 +322,7 @@ class Designer {
     // the flag as the game's BoatAssembler.Flag hangs it: from the tallest masthead (the ships and the fishing boat's
     // sail) or a pole at the rowboat's stern; its leading edge at the mast or pole, streaming aft
     async addFlag(m, group, meshes, flag, ship) {
-        const clan = flag === CLAN_FLAG;
+        const clan = flag === CLAN_LOGO;
         const material = m.flags[(clan ? PLAIN_DARK_FLAG : flag) - 1];
         if (!material) return [];
         group.updateMatrixWorld(true);
@@ -347,7 +363,7 @@ class Designer {
         cloth.scale.setScalar(scale);
         const clothMeshes = await this.addPart(m, m.flag, cloth, flagSwap);
         if (clan && this.clanLogoUrl) {
-            const logo = await this.clanFlagMaterial(m, material, this.clanLogoUrl);
+            const logo = await this.clanLogoMaterial(m, material, this.clanLogoUrl, FLAG_LOGO_AREAS);
             if (logo) for (const mesh of clothMeshes) mesh.material = logo;
         }
         group.add(cloth);
@@ -359,10 +375,11 @@ class Designer {
         this.clanLogoUrl = url || null;
     }
 
-    // the plain dark flag's sheet with the logo in the middle of the shape the flag cloth shows (uv 0.40 to 0.73
-    // across, 0.71 to 0.97 up), as the game lays its symbol; kept per logo
-    clanFlagMaterial(m, plainName, url) {
-        if (this.clanFlags.has(url)) return this.clanFlags.get(url);
+    // a plain sheet (the dark flag's, the cream sails') with the logo in each of its areas, as the game lays its symbol;
+    // kept per sheet and logo
+    clanLogoMaterial(m, plainName, url, areas) {
+        const key = plainName + '|' + url;
+        if (this.clanFlags.has(key)) return this.clanFlags.get(key);
         const info = m.materials[plainName];
         const load = src => new Promise(resolve => {
             const img = new Image();
@@ -377,16 +394,21 @@ class Designer {
             canvas.width = canvas.height = size;
             const g = canvas.getContext('2d');
             g.drawImage(sheet, 0, 0, size, size);
-            const u0 = 0.4014, u1 = 0.7325, v0 = 0.7078, v1 = 0.9694;
-            const side = (v1 - v0) * size * 0.72;
-            const cx = (u0 + u1) / 2 * size, cy = (1 - (v0 + v1) / 2) * size;
-            g.drawImage(logo, cx - side / 2, cy - side / 2, side, side);
+            for (const [x0, y0, x1, y1, aspect] of areas) {
+                // as big as most of the area, in its middle, narrowed where the sheet is stretched across the sail
+                const h = Math.min((x1 - x0) / aspect, y1 - y0) * size * 0.85, w = h * aspect;
+                const cx = (x0 + x1) / 2 * size, cy = (y0 + y1) / 2 * size;
+                g.drawImage(logo, cx - w / 2, cy - h / 2, w, h);
+            }
             const map = new THREE.CanvasTexture(canvas);
             map.colorSpace = THREE.SRGBColorSpace;
             map.anisotropy = 4;
-            return new THREE.MeshStandardMaterial({ map, roughness: 0.85, metalness: 0, alphaTest: 0.5, side: THREE.DoubleSide });
+            return new THREE.MeshStandardMaterial({
+                map, roughness: 0.85, metalness: 0,
+                alphaTest: info.clip ? 0.5 : 0, side: info.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+            });
         });
-        this.clanFlags.set(url, promise);
+        this.clanFlags.set(key, promise);
         return promise;
     }
 

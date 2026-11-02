@@ -198,24 +198,24 @@ else
                                 }
                             </button>
                         }
-                        @if (slot.Slot == "flag")
+                        @if (slot.Slot == "flag" || slot.Slot == "sails")
                         {
-                            var inClan = slot.Owned.Contains(ClanFlag);
+                            var inClan = slot.Owned.Contains(ClanLook);
                             <button type="button" @key="@(selected.InventoryItemId + "clan")"
-                                    class="bd-tile bd-tile--clan @(slot.Current == ClanFlag ? "is-current" : "") @(inClan ? "" : "is-locked")"
+                                    class="bd-tile bd-tile--clan @(slot.Current == ClanLook ? "is-current" : "") @(inClan ? "" : "is-locked")"
                                     title="@(inClan ? "Your clan's logo" : "Join a clan to fly its logo")"
-                                    aria-pressed="@(slot.Current == ClanFlag)"
-                                    @onclick="() => Pick(slot, ClanFlag)">
+                                    aria-pressed="@(slot.Current == ClanLook)"
+                                    @onclick="() => Pick(slot, ClanLook)">
                                 @if (inClan && ClanLogo?.Invoke(selected) != null)
                                 {
-                                    <img data-slot="flag" data-variant="@ClanFlag" alt="" />
+                                    <img data-slot="@slot.Slot" data-variant="@ClanLook" alt="" />
                                 }
                                 else
                                 {
                                     <span class="bd-tile__none"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
                                 }
                                 <span class="bd-tile__number">Clan</span>
-                                @if (slot.Current == ClanFlag)
+                                @if (slot.Current == ClanLook)
                                 {
                                     <span class="bd-tile__badge bd-tile__badge--on"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
                                 }
@@ -259,8 +259,8 @@ else
     /// <summary>The boat's character's clan logo (its address) for the clan flag, or null when it is in no clan.</summary>
     [Parameter] public Func<BoatLookResult, string> ClanLogo { get; set; }
 
-    /// <summary>The flag with the clan's logo (the server's BoatLooks.ClanFlag).</summary>
-    private const int ClanFlag = 99;
+    /// <summary>The look value for the clan's logo on the flag or the sails (the server's BoatLooks.ClanLogo).</summary>
+    private const int ClanLook = 99;
 
     /// <summary>
     /// The page's banner, guide and whose each boat is: on for the Boats page (every character's boats), off on a
@@ -349,7 +349,7 @@ else
     private void Pick(BoatLookSlot slot, int variant)
     {
         message = null;
-        if (variant == ClanFlag && !slot.Owned.Contains(variant))
+        if (variant == ClanLook && !slot.Owned.Contains(variant))
         {
             info = "Locked: join a clan to fly its logo.";
             return;
@@ -362,7 +362,7 @@ else
             return;
         }
         trying = null;
-        info = variant == 0 ? null : variant == ClanFlag ? "Your clan's logo, on a dark flag." : how == null || how == "Every boat has it" ? "Yours: every boat has it." : "Yours: " + Lower(how) + ".";
+        info = variant == 0 ? null : variant == ClanLook ? (slot.Slot == "sails" ? "Your clan's logo, on plain sails." : "Your clan's logo, on a dark flag.") : how == null || how == "Every boat has it" ? "Yours: every boat has it." : "Yours: " + Lower(how) + ".";
         if (slot.Current == variant) return;
         var result = SetLook?.Invoke(selected, slot.Slot, variant) ?? new BoatLookResult { Error = "failed" };
         if (result.Slots != null)
@@ -452,7 +452,7 @@ else
 
     private static string BoatIcon(string boat) => "/imgs/items/" + (boat ?? "").ToLowerInvariant().Replace(' ', '-') + ".png";
 
-    private static string VariantName(int variant) => variant == 0 ? "none" : variant == ClanFlag ? "clan" : "#" + variant;
+    private static string VariantName(int variant) => variant == 0 ? "none" : variant == ClanLook ? "clan" : "#" + variant;
 
     private static string Why(string error) => error switch
     {
