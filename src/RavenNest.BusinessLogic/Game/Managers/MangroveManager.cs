@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Game
         // diggers and defenders paid per chest, finishers per race
         private const int MostPaid = 50;
 
-        // the game's prices for meddling in the regatta are 500 and 2000 coins; nothing on the island costs more
+        // the game's prices for meddling in the regatta are 500, and 2000 doubling to 8000 aimed; nothing on the island costs more
         private const long MostSpent = 10_000;
 
         private readonly GameData gameData;
@@ -35,11 +35,15 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger<MangroveManager> logger;
         private readonly BoatManager boats;
         private readonly ConcurrentDictionary<string, DateTime> lastPaid = new ConcurrentDictionary<string, DateTime>();
+        // half of what viewers paid to meddle, by session, until the next regatta's podium shares it
+        private readonly ConcurrentDictionary<Guid, long> pots = new ConcurrentDictionary<Guid, long>();
 
         /// <summary>Boat looks found digging (docs/own-boats.md in the game, "Customizing boats"): a flag, rarely a figurehead.</summary>
         private const double TreasureFlagChance = 0.12, TreasureFigureheadChance = 0.04;
-        /// <summary>A regatta finisher other than the winner, now and then a sail too.</summary>
-        private const double RegattaSailChance = 0.1;
+        /// <summary>A regatta finisher other than the winner, now and then a sail too; the rest of the podium more often.</summary>
+        private const double RegattaSailChance = 0.1, RegattaPodiumSailChance = 0.3;
+        /// <summary>The pot's shares for the podium.</summary>
+        private static readonly double[] PotShares = { 0.5, 0.3, 0.2 };
 
         public MangroveManager(GameData gameData, PlayerInventoryProvider inventoryProvider, BoatManager boats, ILogger<MangroveManager> logger)
         {
@@ -120,8 +124,10 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        /// The regatta's finishers, first to last: coins by place and Sailing level. The game gives the Sailing exp
-        /// (it owns the skills); this returns the coins it paid, in the same order.
+        /// The regatta's finishers, first to last: coins by place and Sailing level, plus the pot (half of what chat paid
+        /// to meddle) shared by the podium, 50/30/20. The level counts for less than it did (500 + 5 a level, was 300 +
+        /// 10): the high levels win more often already. The game gives the Sailing exp (it owns the skills); this
+        /// returns the coins it paid, in the same order.
         /// </summary>
         public MangroveReward[] RegattaPrizes(SessionToken session, Guid[] finishers)
         {
@@ -137,6 +143,7 @@ namespace RavenNest.BusinessLogic.Game
             // a race takes two: alone (the streamer's forced start) it paid the winner's prize and sail every ten
             // minutes, so a lone finisher gets what the back of a race does
             var race = ids.Count(id => sessionCharacters.Any(x => x.Id == id)) >= 2;
+            var pot = race && pots.TryRemove(session.SessionId, out var p) ? p : 0;
             foreach (var id in ids)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
@@ -144,11 +151,13 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) continue;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 var factor = !race ? 0.75 : place == 1 ? 4 : place == 2 ? 2.5 : place == 3 ? 1.5 : 0.75;
-                var coins = (long)Math.Round((300 + (skills?.SailingLevel ?? 1) * 10) * factor / 10) * 10;
+                var coins = (long)Math.Round((500 + (skills?.SailingLevel ?? 1) * 5) * factor / 10) * 10;
+                if (race && place <= PotShares.Length) coins += (long)(pot * PotShares[place - 1]);
                 var resources = gameData.GetResources(character);
                 if (resources != null) resources.Coins += coins;
-                // the regatta's sails: the winner one not yet owned, the others now and then
-                var sail = race && (place == 1 || rng.NextDouble() < RegattaSailChance) ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
+                // the regatta's sails: the winner one not yet owned, the rest of the podium often, the others now and then
+                var chance = place <= 3 ? RegattaPodiumSailChance : RegattaSailChance;
+                var sail = race && (place == 1 || rng.NextDouble() < chance) ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
                 rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0], Looks = sail != null ? new[] { sail } : new string[0] });
             }
             gameData.Touch();
@@ -187,7 +196,8 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>
         /// Coins a character playing in the calling stream pays on the island (the game's regatta meddling: a powder keg
-        /// or wind before the free one is back, or aimed at a racer). Returns the coins left, or -1 when they had too few.
+        /// or wind before the free one is back, or aimed at a racer); half goes in the session's regatta pot. Returns the
+        /// coins left, or -1 when they had too few.
         /// </summary>
         public long Spend(SessionToken session, Guid characterId, long coins)
         {
@@ -197,6 +207,7 @@ namespace RavenNest.BusinessLogic.Game
             var resources = gameData.GetResources(character);
             if (resources == null || resources.Coins < coins) return -1;
             resources.Coins -= coins;
+            pots.AddOrUpdate(session.SessionId, coins / 2, (_, p) => p + coins / 2);
             gameData.Touch();
             logger.LogInformation(character.Name + " paid " + coins + " coins to meddle in the regatta");
             return (long)resources.Coins;
