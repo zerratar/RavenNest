@@ -49,6 +49,19 @@ namespace RavenNest.Blazor.Services
             return ok ? null : "failed";
         }
 
+        /// <summary>
+        /// The character's clan logo as the game gets it (the owner's upload, or their Twitch picture), for the clan
+        /// flag; null when the character is in no clan.
+        /// </summary>
+        public string ClanLogo(Guid characterId)
+        {
+            var membership = gameData.GetClanMembership(characterId);
+            var clan = membership != null ? gameData.GetClan(membership.ClanId) : null;
+            if (clan == null) return null;
+            var twitch = gameData.GetUserAccess(clan.UserId, "twitch");
+            return twitch?.PlatformId != null ? "/api/clan/logo/" + twitch.PlatformId : null;
+        }
+
         /// <summary>What the page shows under the boat: speed range (m/s, by Sailing level), seats and the Sailing level to build it.</summary>
         public static BoatFacts Facts(string boat) => new BoatFacts
         {

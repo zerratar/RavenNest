@@ -12,7 +12,7 @@
 
 @if (Environment.EnvironmentName == "Development")
 {
-    <BoatDesigner Boats="boats" SetLook="Save" SetEquipped="(b, on) => null" />
+    <BoatDesigner Boats="boats" SetLook="Save" SetEquipped="(b, on) => null" ClanLogo="b => b.CharacterIndex == 0 ? StandInLogo : null" />
 }
 else
 {
@@ -21,6 +21,8 @@ else
 
 @code {
     private List<BoatLookResult> boats;
+    // the first character is in a made up clan, with a stand-in logo for its clan flag
+    private const string StandInLogo = "/imgs/quests/icon-loyalty.png";
     // three characters: the first carries two boats, so equipping one puts the other away
     private static readonly Guid[] Characters = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
@@ -57,7 +59,8 @@ else
                 CanBeNone = s.CanBeNone,
                 Current = look[s.Name],
                 Owned = Enumerable.Range(s.CanBeNone ? 0 : 1, s.Count + (s.CanBeNone ? 1 : 0))
-                    .Where(v => v == 0 || s.Free.Contains(v) || earned.Contains(BoatLooks.Key(s.Name, v))).ToArray(),
+                    .Where(v => v == 0 || s.Free.Contains(v) || earned.Contains(BoatLooks.Key(s.Name, v)))
+                    .Concat(s.Name == "flag" && index == 0 ? new[] { BoatLooks.ClanFlag } : new int[0]).ToArray(),
                 How = Enumerable.Range(0, s.Count + 1).Select(v => v == 0 ? "None" : s.Free.Contains(v) ? "Every boat has it" : BoatLooks.HowToEarn(s.Name, v)).ToArray(),
             }).ToArray(),
         };

@@ -198,6 +198,33 @@ else
                                 }
                             </button>
                         }
+                        @if (slot.Slot == "flag")
+                        {
+                            var inClan = slot.Owned.Contains(ClanFlag);
+                            <button type="button" @key="@(selected.InventoryItemId + "clan")"
+                                    class="bd-tile bd-tile--clan @(slot.Current == ClanFlag ? "is-current" : "") @(inClan ? "" : "is-locked")"
+                                    title="@(inClan ? "Your clan's logo" : "Join a clan to fly its logo")"
+                                    aria-pressed="@(slot.Current == ClanFlag)"
+                                    @onclick="() => Pick(slot, ClanFlag)">
+                                @if (inClan && ClanLogo?.Invoke(selected) != null)
+                                {
+                                    <img data-slot="flag" data-variant="@ClanFlag" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="bd-tile__none"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+                                }
+                                <span class="bd-tile__number">Clan</span>
+                                @if (slot.Current == ClanFlag)
+                                {
+                                    <span class="bd-tile__badge bd-tile__badge--on"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                                }
+                                else if (!inClan)
+                                {
+                                    <span class="bd-tile__badge"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+                                }
+                            </button>
+                        }
                     </div>
                 </div>
             }
@@ -229,12 +256,19 @@ else
     /// <summary>Equips a boat on its character or puts it away (true to equip); null when it worked, else why not.</summary>
     [Parameter] public Func<BoatLookResult, bool, string> SetEquipped { get; set; }
 
+    /// <summary>The boat's character's clan logo (its address) for the clan flag, or null when it is in no clan.</summary>
+    [Parameter] public Func<BoatLookResult, string> ClanLogo { get; set; }
+
+    /// <summary>The flag with the clan's logo (the server's BoatLooks.ClanFlag).</summary>
+    private const int ClanFlag = 99;
+
     /// <summary>
     /// The page's banner, guide and whose each boat is: on for the Boats page (every character's boats), off on a
     /// character's own Boats tab.
     /// </summary>
     [Parameter] public bool Banner { get; set; } = true;
 
+    private IReadOnlyList<BoatLookResult> source;
     private IReadOnlyList<BoatLookResult> boats;
     private BoatLookResult selected;
     private ElementReference canvasHost;
@@ -245,6 +279,7 @@ else
     private string tab = "sails";
     private string info;
     private string shownLook;
+    private string shownLogo = "";
     private string paintedThumbs;
     private string message;
     private bool messageIsBad;
@@ -252,8 +287,10 @@ else
 
     protected override void OnParametersSet()
     {
-        if (Boats == null || Boats == boats) return;
-        boats = Boats;
+        if (Boats == null || Boats == source) return;
+        source = Boats;
+        // by character, then by rank, the smallest boat first
+        boats = Boats.OrderBy(b => b.CharacterIndex).ThenBy(b => Rank(b.Boat)).ToList();
         // the equipped boat first: the one the player sails
         selected = boats.OrderByDescending(b => b.Equipped).ThenBy(b => b.CharacterIndex).FirstOrDefault();
     }
@@ -265,6 +302,14 @@ else
         {
             module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-boat-designer.js"));
             designer = await module.InvokeAsync<IJSObjectReference>("create", canvasHost, new { });
+        }
+        // the clan flag's logo is the selected boat's character's
+        var logo = ClanLogo?.Invoke(selected);
+        if (logo != shownLogo)
+        {
+            shownLogo = logo;
+            shownLook = null;
+            await designer.InvokeVoidAsync("clanLogo", logo);
         }
         await Show();
         // the open tab's options, drawn on this boat (kept by the 3D view, so a repaint is instant)
@@ -304,7 +349,12 @@ else
     private void Pick(BoatLookSlot slot, int variant)
     {
         message = null;
-        var how = slot.How?[variant];
+        if (variant == ClanFlag && !slot.Owned.Contains(variant))
+        {
+            info = "Locked: join a clan to fly its logo.";
+            return;
+        }
+        var how = variant < (slot.How?.Length ?? 0) ? slot.How[variant] : null;
         if (!slot.Owned.Contains(variant))
         {
             trying = (slot.Slot, variant, how ?? "Not earned yet");
@@ -312,7 +362,7 @@ else
             return;
         }
         trying = null;
-        info = variant == 0 ? null : how == null || how == "Every boat has it" ? "Yours: every boat has it." : "Yours: " + Lower(how) + ".";
+        info = variant == 0 ? null : variant == ClanFlag ? "Your clan's logo, on a dark flag." : how == null || how == "Every boat has it" ? "Yours: every boat has it." : "Yours: " + Lower(how) + ".";
         if (slot.Current == variant) return;
         var result = SetLook?.Invoke(selected, slot.Slot, variant) ?? new BoatLookResult { Error = "failed" };
         if (result.Slots != null)
@@ -390,13 +440,24 @@ else
         _ => slot,
     };
 
+    private static int Rank(string boat) => boat switch
+    {
+        "Rowboat" => 0,
+        "Fishing Boat" => 1,
+        "Sloop" => 2,
+        "Brigantine" => 3,
+        "Galleon" => 4,
+        _ => 5,
+    };
+
     private static string BoatIcon(string boat) => "/imgs/items/" + (boat ?? "").ToLowerInvariant().Replace(' ', '-') + ".png";
 
-    private static string VariantName(int variant) => variant == 0 ? "none" : "#" + variant;
+    private static string VariantName(int variant) => variant == 0 ? "none" : variant == ClanFlag ? "clan" : "#" + variant;
 
     private static string Why(string error) => error switch
     {
         "locked" => "That part is not yours yet.",
+        "noclan" => "Join a clan to fly its logo.",
         "noboat" => "That boat is not there any more. Reload the page.",
         "nocharacter" => "That character is not yours.",
         "notsignedin" => "You are not signed in.",

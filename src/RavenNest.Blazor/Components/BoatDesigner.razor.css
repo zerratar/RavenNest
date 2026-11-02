@@ -483,6 +483,12 @@
     font-size: 1.6rem;
 }
 
+/* the clan flag's word in place of a number */
+.bd-tile--clan .bd-tile__number {
+    font-size: var(--rf-size-small);
+    color: var(--rf-gold-bright);
+}
+
 .bd-tile__number {
     position: absolute;
     left: var(--rf-space-2);

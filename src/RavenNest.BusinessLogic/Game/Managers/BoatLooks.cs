@@ -14,6 +14,12 @@ namespace RavenNest.BusinessLogic.Game
     {
         public const string Prefix = "look:1;";
 
+        /// <summary>
+        /// The flag with the clan's logo on it: any member's, for as long as they are in a clan (the game draws the
+        /// logo on a plain dark flag, and the plain flag alone once they leave). Not one of the 17 flags.
+        /// </summary>
+        public const int ClanFlag = 99;
+
         public sealed class Slot
         {
             public string Name;
@@ -167,7 +173,7 @@ namespace RavenNest.BusinessLogic.Game
                 var kv = part.Split('=');
                 if (kv.Length != 2 || !int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)) continue;
                 var slot = Find(boat, kv[0]);
-                if (slot != null && v >= (slot.CanBeNone ? 0 : 1) && v <= slot.Count) look[slot.Name] = v;
+                if (slot != null && (v >= (slot.CanBeNone ? 0 : 1) && v <= slot.Count || slot.Name == "flag" && v == ClanFlag)) look[slot.Name] = v;
             }
             return look;
         }

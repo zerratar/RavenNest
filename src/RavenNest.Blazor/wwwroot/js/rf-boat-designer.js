@@ -8,6 +8,8 @@
 import * as THREE from './three.module.min.js';
 
 const BASE = '/boats/';
+// the clan's logo on the plain dark flag (the game's BoatAssembler.ClanFlag)
+const CLAN_FLAG = 99, PLAIN_DARK_FLAG = 6;
 let manifestPromise = null;
 const meshCache = new Map();
 const textureCache = new Map();
@@ -83,6 +85,8 @@ class Designer {
         this.token = 0;
         this.thumbToken = 0;
         this.thumbs = new Map();
+        this.clanFlags = new Map();
+        this.clanLogoUrl = null;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -248,7 +252,7 @@ class Designer {
         for (const img of images) {
             if (token !== this.thumbToken || this.disposed) return; // the page moved on
             const slot = img.dataset.slot, variant = +img.dataset.variant;
-            const key = boat + '|' + slot + '|' + variant;
+            const key = boat + '|' + slot + '|' + variant + (variant === CLAN_FLAG ? '|' + this.clanLogoUrl : '');
             let url = this.thumbs.get(key);
             if (!url) {
                 url = await this.thumbnail(boat, withPart(look, slot, variant), slot);
@@ -302,7 +306,8 @@ class Designer {
     // the flag as the game's BoatAssembler.Flag hangs it: from the tallest masthead (the ships and the fishing boat's
     // sail) or a pole at the rowboat's stern; its leading edge at the mast or pole, streaming aft
     async addFlag(m, group, meshes, flag, ship) {
-        const material = m.flags[flag - 1];
+        const clan = flag === CLAN_FLAG;
+        const material = m.flags[(clan ? PLAIN_DARK_FLAG : flag) - 1];
         if (!material) return [];
         group.updateMatrixWorld(true);
         const boundsOf = list => {
@@ -341,8 +346,48 @@ class Designer {
         cloth.rotation.y = Math.PI / 2;
         cloth.scale.setScalar(scale);
         const clothMeshes = await this.addPart(m, m.flag, cloth, flagSwap);
+        if (clan && this.clanLogoUrl) {
+            const logo = await this.clanFlagMaterial(m, material, this.clanLogoUrl);
+            if (logo) for (const mesh of clothMeshes) mesh.material = logo;
+        }
         group.add(cloth);
         return clothMeshes;
+    }
+
+    /** The character's clan logo (its address), for the clan flag; null for none. */
+    clanLogo(url) {
+        this.clanLogoUrl = url || null;
+    }
+
+    // the plain dark flag's sheet with the logo in the middle of the shape the flag cloth shows (uv 0.40 to 0.73
+    // across, 0.71 to 0.97 up), as the game lays its symbol; kept per logo
+    clanFlagMaterial(m, plainName, url) {
+        if (this.clanFlags.has(url)) return this.clanFlags.get(url);
+        const info = m.materials[plainName];
+        const load = src => new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+            img.src = src;
+        });
+        const promise = Promise.all([load(BASE + info.texture + '?v=' + m.version), load(url)]).then(([sheet, logo]) => {
+            if (!sheet || !logo) return null;
+            const size = sheet.width;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const g = canvas.getContext('2d');
+            g.drawImage(sheet, 0, 0, size, size);
+            const u0 = 0.4014, u1 = 0.7325, v0 = 0.7078, v1 = 0.9694;
+            const side = (v1 - v0) * size * 0.72;
+            const cx = (u0 + u1) / 2 * size, cy = (1 - (v0 + v1) / 2) * size;
+            g.drawImage(logo, cx - side / 2, cy - side / 2, side, side);
+            const map = new THREE.CanvasTexture(canvas);
+            map.colorSpace = THREE.SRGBColorSpace;
+            map.anisotropy = 4;
+            return new THREE.MeshStandardMaterial({ map, roughness: 0.85, metalness: 0, alphaTest: 0.5, side: THREE.DoubleSide });
+        });
+        this.clanFlags.set(url, promise);
+        return promise;
     }
 
     // the camera round the whole boat, the first time and when its size changes much
