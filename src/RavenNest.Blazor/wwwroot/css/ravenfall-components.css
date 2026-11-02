@@ -617,11 +617,13 @@
    Replaces a strip of tab buttons. A character is something you own and
    recognise, so it gets a card with its name and combat level rather than a
    text label. The selected one is marked with brass, consistent with brass
-   meaning "yours" everywhere else. */
+   meaning "yours" everywhere else. Each card is as wide as its name and slot
+   need (at least 11rem), so "Slot 0 · Main" stays on one line; fixed columns
+   broke it in two beside empty space. */
 
 .rf-charpick {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--rf-space-3);
     margin-bottom: var(--rf-space-5);
 }
@@ -646,6 +648,9 @@
     font-family: inherit;
     cursor: pointer;
     transition: background var(--rf-transition), border-color var(--rf-transition);
+    flex: 0 1 auto;
+    min-width: 11rem;
+    max-width: 100%;
 }
 
 .rf-char:hover {
@@ -677,7 +682,6 @@
 /* Denser variant for picking a target inside a dialog, where the cards are a
    control rather than the content of the page. */
 .rf-charpick--compact {
-    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
     gap: var(--rf-space-2);
     margin-bottom: var(--rf-space-4);
 }
@@ -704,6 +708,7 @@
     letter-spacing: var(--rf-tracking-label);
     color: var(--rf-ink-faint);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 /* The number is the thing a player actually compares between characters, so it

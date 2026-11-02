@@ -1,15 +1,19 @@
-﻿/* The character customizer: the stage beside the pickers (stacked on narrow screens). */
+﻿/* The character customizer: the stage beside the pickers (stacked on narrow screens). Side by side it takes the
+   screen's height, less room at the bottom for the chat bubble, so the pickers show more and the stage is bigger. */
 
 .cz {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 31rem);
     gap: var(--rf-space-4);
     align-items: stretch;
+    height: clamp(34rem, calc(100vh - 8rem), 64rem);
+    height: clamp(34rem, calc(100dvh - 8rem), 64rem);
 }
 
 @media (max-width: 960px) {
     .cz {
         grid-template-columns: minmax(0, 1fr);
+        height: auto;
     }
 }
 
@@ -161,20 +165,13 @@
 .cz-panel {
     display: flex;
     flex-direction: column;
-    min-height: 34rem;
-    max-height: 46rem;
+    min-height: 0;
+    container-type: inline-size;
     background: var(--rf-surface-1);
     border: 1px solid var(--rf-line);
     border-radius: var(--rf-radius-lg);
     box-shadow: var(--rf-bevel);
     overflow: hidden;
-}
-
-@media (max-width: 960px) {
-    .cz-panel {
-        min-height: 0;
-        max-height: none;
-    }
 }
 
 .cz-tabs {
@@ -382,8 +379,8 @@
 
 /* ---- Saving ------------------------------------------------------------------------------------------------------- */
 
-/* A status line, the two lesser buttons side by side, and Save across the full width under them: three buttons in
-   one row do not fit the panel and wrapped unevenly. */
+/* The status line, then the three buttons in a row: Surprise me on its own at the left, Undo and Save together at
+   the right. A panel too narrow for that (phones) puts Surprise me and Undo side by side over a full width Save. */
 .cz-foot {
     display: flex;
     flex-direction: column;
@@ -394,8 +391,8 @@
 }
 
 .cz-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    align-items: center;
     gap: var(--rf-space-2);
 }
 
@@ -404,11 +401,23 @@
     white-space: nowrap;
 }
 
-.cz-save {
-    grid-column: 1 / -1;
-    padding-top: var(--rf-space-3);
-    padding-bottom: var(--rf-space-3);
-    font-size: var(--rf-size-body);
+.cz-undo {
+    margin-left: auto;
+}
+
+@container (max-width: 28rem) {
+    .cz-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cz-undo {
+        margin-left: 0;
+    }
+
+    .cz-save {
+        grid-column: 1 / -1;
+    }
 }
 
 .cz-msg {

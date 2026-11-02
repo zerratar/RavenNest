@@ -108,7 +108,7 @@ else
                     <button type="button" class="rf-btn" title="A random look" @onclick="Randomize">
                         <i class="fas fa-dice" aria-hidden="true"></i> Surprise me
                     </button>
-                    <button type="button" class="rf-btn" disabled="@(!Dirty)" @onclick="Undo">
+                    <button type="button" class="rf-btn cz-undo" disabled="@(!Dirty)" @onclick="Undo">
                         <i class="fas fa-undo" aria-hidden="true"></i> Undo changes
                     </button>
                     <button type="button" class="rf-btn rf-btn--primary cz-save" disabled="@(!Dirty || saving)" @onclick="Save">
