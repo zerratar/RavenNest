@@ -632,6 +632,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureClanLevels(clans);
                 EnsureClanBankLimits(clans);
+                EnsureStubbleAndScars();
                 EnsureClanBankPermission();
 #warning TODO: Enable the EnsureExpMultipliersWithinBounds later, for now we need to allow players to remain their 100x
                 //EnsureExpMultipliersWithinBounds(expMultiplierEvents);
@@ -2546,6 +2547,26 @@ namespace RavenNest.BusinessLogic.Data
                         multi.EndTime = multi.StartTime.Add(runTime);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        ///     Splits the old stubble colour into stubble and scars, once per look (v0.9.6).
+        /// </summary>
+        /// <remarks>
+        ///     Synty's face art paints the scars with the colour its shader calls stubble, and the jaw shadow with
+        ///     the one it calls scar, which was a fixed colour in the material. So the stubble colour a player
+        ///     picked has been colouring their scars all along. The game now gives each colour to what it says;
+        ///     to keep every character looking the same, the old stubble colour becomes the scar colour and the
+        ///     stubble starts as the material's fixed colour.
+        /// </remarks>
+        private void EnsureStubbleAndScars()
+        {
+            foreach (var appearance in syntyAppearances.Entities)
+            {
+                if (appearance.ScarColor != null) continue;
+                appearance.ScarColor = string.IsNullOrEmpty(appearance.StubbleColor) ? appearance.SkinColor : appearance.StubbleColor;
+                appearance.StubbleColor = RavenNest.Models.SyntyAppearance.DefaultStubbleColor;
             }
         }
 

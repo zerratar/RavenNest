@@ -18,6 +18,7 @@ namespace RavenNest.DataModels
         [PersistentData] private string eyeColor;
         [PersistentData] private bool helmetVisible;
         [PersistentData] private string stubbleColor;
+        [PersistentData] private string scarColor;
         [PersistentData] private string warPaintColor;
     }
 }

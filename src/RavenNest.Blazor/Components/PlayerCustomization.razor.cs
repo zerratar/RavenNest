@@ -35,6 +35,15 @@ namespace RavenNest.Blazor.Components
             "#0E0B0A", "#3C2823", "#6B4226", "#A0461E", "#C52A4A", "#A8912A", "#E0C068", "#595959", "#D9D4CC",
             "#0D9BB9", "#4A9F55", "#7B4CC2", "#DF62C7",
         };
+        private static readonly string[] StubbleColors =
+        {
+            SyntyAppearance.DefaultStubbleColor, "#0E0B0A", "#3C2823", "#6B4226", "#A0461E", "#595959", "#D9D4CC", "#C52A4A",
+            "#0D9BB9", "#4A9F55", "#7B4CC2",
+        };
+        private static readonly string[] ScarColors =
+        {
+            SyntyAppearance.DefaultStubbleColor, "#5A2E2E", "#8B3A3A", "#B85C5C", "#E39A8A", "#F2C9B8", "#E8E4DA", "#2A1E1A",
+        };
         private static readonly string[] EyeColors =
         {
             "#000000", "#3B2A1E", "#6E4B2A", "#2F6FB5", "#57A4D9", "#3D8A4A", "#8A8F99", "#C9A227", "#C62828", "#7E3FBF",
@@ -166,7 +175,8 @@ namespace RavenNest.Blazor.Components
             look.BeardColor = look.HairColor = HairColors[r.Next(HairColors.Length)];
             look.EyeColor = EyeColors[r.Next(EyeColors.Length)];
             look.WarPaintColor = PaintColors[r.Next(PaintColors.Length)];
-            look.StubbleColor = r.Next(2) == 0 ? look.BeardColor : look.SkinColor;
+            look.StubbleColor = r.Next(2) == 0 ? look.BeardColor : SyntyAppearance.DefaultStubbleColor;
+            look.ScarColor = r.Next(3) == 0 ? look.SkinColor : ScarColors[r.Next(ScarColors.Length)];
             message = null;
         }
 
@@ -230,7 +240,8 @@ namespace RavenNest.Blazor.Components
             a.BeardColor = Norm(a.BeardColor ?? a.HairColor, "#3C2823");
             a.HairColor = Norm(a.HairColor ?? a.BeardColor, a.BeardColor);
             a.EyeColor = Norm(a.EyeColor, "#000000");
-            a.StubbleColor = Norm(a.StubbleColor, a.SkinColor);
+            a.StubbleColor = Norm(a.StubbleColor, SyntyAppearance.DefaultStubbleColor);
+            a.ScarColor = Norm(a.ScarColor, a.SkinColor);
             a.WarPaintColor = Norm(a.WarPaintColor, "#000000");
         }
 
@@ -243,7 +254,7 @@ namespace RavenNest.Blazor.Components
         }
 
         private static string Key(SyntyAppearance a) =>
-            string.Join("|", a.Gender, a.Head, a.Hair, a.Eyebrows, a.FacialHair, a.SkinColor, a.BeardColor, a.HairColor, a.EyeColor, a.StubbleColor, a.WarPaintColor);
+            string.Join("|", a.Gender, a.Head, a.Hair, a.Eyebrows, a.FacialHair, a.SkinColor, a.BeardColor, a.HairColor, a.EyeColor, a.StubbleColor, a.ScarColor, a.WarPaintColor);
 
         private static SyntyAppearance Clone(SyntyAppearance a)
         {
@@ -267,6 +278,7 @@ namespace RavenNest.Blazor.Components
             to.BeardColor = from.BeardColor;
             to.EyeColor = from.EyeColor;
             to.StubbleColor = from.StubbleColor;
+            to.ScarColor = from.ScarColor;
             to.WarPaintColor = from.WarPaintColor;
         }
 

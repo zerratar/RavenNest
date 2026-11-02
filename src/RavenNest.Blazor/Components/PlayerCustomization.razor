@@ -81,6 +81,7 @@ else
                         @(Colors("Eyes", "eyes", look.EyeColor, EyeColors, v => { look.EyeColor = v; }))
                         @(Grid("Eyebrows", "eyebrows", look.Eyebrows, Female ? CharacterLookService.FemaleEyebrows : CharacterLookService.MaleEyebrows, true, v => look.Eyebrows = v))
                         @(Colors("War paint", "warPaint", look.WarPaintColor, PaintColors, v => { look.WarPaintColor = v; }, "Shows on the faces that have paint."))
+                        @(Colors("Scars", "scar", look.ScarColor, ScarColors, v => { look.ScarColor = v; }, "Shows on the faces drawn with scars. The first colour is your skin, which hides them.", withSkin: true))
                         break;
 
                     case "hair":
@@ -91,7 +92,7 @@ else
                     case "beard":
                         @(Grid("Beard", "beards", look.FacialHair, CharacterLookService.MaleBeards, true, v => look.FacialHair = v))
                         <p class="rf-meta">The beard takes the hair colour (Hair tab).</p>
-                        @(Colors("Stubble", "stubble", look.StubbleColor, HairColors, v => { look.StubbleColor = v; }, "The shadow of a shave, on the faces drawn with one: along the jaw, and on some over the lip. A beard covers most of it, and the skin colour hides it."))
+                        @(Colors("Stubble", "stubble", look.StubbleColor, StubbleColors, v => { look.StubbleColor = v; }, "The shadow of a shave along the jaw, and on some faces over the lip. A beard covers most of it. The first colour is your skin, which hides it.", withSkin: true))
                         break;
                 }
             </div>
@@ -144,16 +145,19 @@ else
         </section>
     };
 
-    private RenderFragment Colors(string title, string channel, string current, string[] palette, Action<string> pick, string note = null) => __builder =>
+    private RenderFragment Colors(string title, string channel, string current, string[] palette, Action<string> pick, string note = null, bool withSkin = false) => __builder =>
     {
         var now = Norm(current);
+        // the skin colour first, to hide stubble or scars
+        var skin = withSkin ? Norm(look.SkinColor) : null;
+        if (skin != null) palette = palette.Where(c => c != skin).Prepend(skin).ToArray();
         <section class="cz-group">
             <h3 class="cz-group__title">@title</h3>
             <div class="cz-swatches">
                 @foreach (var c in palette)
                 {
                     var color = c;
-                    <button type="button" class="cz-swatch @(now == color ? "is-on" : "")" style="--c:@color" aria-pressed="@(now == color)" title="@color" @onclick="() => PickColor(pick, color)"></button>
+                    <button type="button" class="cz-swatch @(now == color ? "is-on" : "")" style="--c:@color" aria-pressed="@(now == color)" title="@(color == skin ? "Same as the skin" : color)" @onclick="() => PickColor(pick, color)"></button>
                 }
                 <label class="cz-swatch cz-swatch--custom @(palette.Contains(now) ? "" : "is-on")" title="Any colour" style="--c:@now">
                     <i class="fas fa-eye-dropper" aria-hidden="true"></i>

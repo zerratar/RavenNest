@@ -50,7 +50,8 @@ export function normalize(a) {
         skin: hex(get('skinColor', '#d6b8ae')),
         // the game colours the hair, the eyebrows and the beard all with the beard colour
         hair_: hex(get('beardColor', get('hairColor', '#3c2823'))),
-        stubble: hex(get('stubbleColor', get('skinColor', '#d6b8ae'))),
+        stubble: hex(get('stubbleColor', '#6c5148')),
+        scar: hex(get('scarColor', get('skinColor', '#d6b8ae'))),
         warPaint: hex(get('warPaintColor', '#000000')),
         eyes: hex(get('eyeColor', '#000000')),
     };
@@ -176,8 +177,10 @@ function characterMaterial(m) {
         masksB: { value: tex(m.material.masksB, false) },
         cHair: { value: new THREE.Color('#3c2823') },
         cSkin: { value: new THREE.Color('#d6b8ae') },
-        cStubble: { value: new THREE.Color('#d6b8ae') },
-        cScar: { value: new THREE.Color().setRGB(...m.material.scar, THREE.LinearSRGBColorSpace) },
+        // Synty's face art paints the scars in the mask the shader calls stubble (masks A green) and the jaw
+        // shadow in the one it calls scar (masks B green); the game gives each colour to what it paints
+        cScar: { value: new THREE.Color('#d6b8ae') },
+        cStubble: { value: new THREE.Color('#6c5148') },
         cBodyArt: { value: new THREE.Color('#000000') },
         // the fifth mask is the eyes (the game's graph has a constant red there, its eye colour left unconnected)
         cFifth: { value: new THREE.Color('#000000') },
@@ -196,8 +199,8 @@ vec3 rfA = texture2D(masksA, vMapUv).rgb;
 vec3 rfB = texture2D(masksB, vMapUv).rgb;
 rfC = mix(rfC, cHair, rfA.b);
 rfC = mix(rfC, cSkin, rfA.r);
-rfC = mix(rfC, cStubble, rfA.g);
-rfC = mix(rfC, cScar, rfB.g);
+rfC = mix(rfC, cScar, rfA.g);
+rfC = mix(rfC, cStubble, rfB.g);
 rfC = mix(rfC, cBodyArt, rfB.r * bodyArtAmount);
 rfC = mix(rfC, cFifth, rfB.b);
 diffuseColor.rgb *= rfC;`);
@@ -211,6 +214,7 @@ function setColors(uniforms, a) {
     uniforms.cHair.value.set(a.hair_);
     uniforms.cSkin.value.set(a.skin);
     uniforms.cStubble.value.set(a.stubble);
+    uniforms.cScar.value.set(a.scar);
     uniforms.cBodyArt.value.set(a.warPaint);
     uniforms.cFifth.value.set(a.eyes);
 }
@@ -578,13 +582,13 @@ class Stage {
     color(channel, value) {
         if (!this.appearance) return;
         const a = this.appearance;
-        const map = { skin: 'skin', hair: 'hair_', stubble: 'stubble', warPaint: 'warPaint', eyes: 'eyes' };
+        const map = { skin: 'skin', hair: 'hair_', stubble: 'stubble', scar: 'scar', warPaint: 'warPaint', eyes: 'eyes' };
         if (!map[channel]) return;
         a[map[channel]] = hex(value);
         setColors(this.material.userData.uniforms, a);
     }
 
-    /** Colour pickers inside an element drive the view directly: inputs with data-rf-color="skin|hair|stubble|warPaint|eyes". */
+    /** Colour pickers inside an element drive the view directly: inputs with data-rf-color="skin|hair|stubble|scar|warPaint|eyes". */
     listen(root) {
         this.listener = e => {
             const channel = e.target?.dataset?.rfColor;
@@ -766,7 +770,7 @@ class Flat {
 
     color(channel, value) {
         if (!this.appearance) return;
-        const map = { skin: 'skin', hair: 'hair_', stubble: 'stubble', warPaint: 'warPaint', eyes: 'eyes' };
+        const map = { skin: 'skin', hair: 'hair_', stubble: 'stubble', scar: 'scar', warPaint: 'warPaint', eyes: 'eyes' };
         if (!map[channel]) return;
         this.appearance[map[channel]] = hex(value);
         this.redraw();
@@ -810,7 +814,7 @@ class Flat {
         const px = out.data;
         const depth = new Uint16Array(W * H); // 0 is empty, nearer is larger
         const hair = linearColor(a.hair_), skin = linearColor(a.skin), stubble = linearColor(a.stubble);
-        const paint = linearColor(a.warPaint), eyes = linearColor(a.eyes), scar = this.m.material.scar;
+        const paint = linearColor(a.warPaint), eyes = linearColor(a.eyes), scar = linearColor(a.scar);
         const amount = this.m.material.bodyArtAmount ?? 1;
         for (const l of loaded) {
             const s = l.img.data, w = l.w;
@@ -830,8 +834,9 @@ class Flat {
                     let r = fromSrgb[s[i0]], g = fromSrgb[s[i0 + 1]], b = fromSrgb[s[i0 + 2]];
                     let k = s[i1 + 2] / 255; r += (hair[0] - r) * k; g += (hair[1] - g) * k; b += (hair[2] - b) * k;
                     k = s[i1] / 255; r += (skin[0] - r) * k; g += (skin[1] - g) * k; b += (skin[2] - b) * k;
-                    k = s[i1 + 1] / 255; r += (stubble[0] - r) * k; g += (stubble[1] - g) * k; b += (stubble[2] - b) * k;
-                    k = s[i2 + 1] / 255; r += (scar[0] - r) * k; g += (scar[1] - g) * k; b += (scar[2] - b) * k;
+                    // the scars in the mask called stubble, the stubble in the one called scar (see characterMaterial)
+                    k = s[i1 + 1] / 255; r += (scar[0] - r) * k; g += (scar[1] - g) * k; b += (scar[2] - b) * k;
+                    k = s[i2 + 1] / 255; r += (stubble[0] - r) * k; g += (stubble[1] - g) * k; b += (stubble[2] - b) * k;
                     k = s[i2] / 255 * amount; r += (paint[0] - r) * k; g += (paint[1] - g) * k; b += (paint[2] - b) * k;
                     k = s[i2 + 2] / 255; r += (eyes[0] - r) * k; g += (eyes[1] - g) * k; b += (eyes[2] - b) * k;
                     const shade = s[i3] / 255 * 2 * 4096;

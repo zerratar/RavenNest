@@ -59,6 +59,7 @@ namespace RavenNest.Blazor.Services
                 EyeColor = a.EyeColor,
                 HelmetVisible = a.HelmetVisible,
                 StubbleColor = a.StubbleColor,
+                ScarColor = a.ScarColor,
                 WarPaintColor = a.WarPaintColor,
             };
         }
@@ -78,7 +79,7 @@ namespace RavenNest.Blazor.Services
             if (!InRange(look.Hair, Hairs, true)) return "invalid";
             if (!InRange(look.Eyebrows, female ? FemaleEyebrows : MaleEyebrows, true)) return "invalid";
             if (!female && !InRange(look.FacialHair, MaleBeards, true)) return "invalid";
-            var colors = new[] { look.SkinColor, look.HairColor, look.BeardColor, look.EyeColor, look.StubbleColor, look.WarPaintColor };
+            var colors = new[] { look.SkinColor, look.HairColor, look.BeardColor, look.EyeColor, look.StubbleColor, look.ScarColor, look.WarPaintColor };
             foreach (var c in colors) if (c == null || !HexColor.IsMatch(c)) return "invalid";
 
             // the parts and colours from the page, the rest as it was
@@ -92,6 +93,7 @@ namespace RavenNest.Blazor.Services
             current.BeardColor = Hex(look.BeardColor);
             current.EyeColor = Hex(look.EyeColor);
             current.StubbleColor = Hex(look.StubbleColor);
+            current.ScarColor = Hex(look.ScarColor);
             current.WarPaintColor = Hex(look.WarPaintColor);
             return playerManager.UpdateAppearance(characterId, current) ? null : "failed";
         }

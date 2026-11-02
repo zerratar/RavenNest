@@ -3472,7 +3472,13 @@ namespace RavenNest.BusinessLogic.Game
             characterAppearance.Gender = (DataModels.Gender)(int)appearance.Gender;
             characterAppearance.Hair = appearance.Hair;
             characterAppearance.SkinColor = appearance.SkinColor;
-            characterAppearance.StubbleColor = appearance.StubbleColor;
+            // a game older than v0.9.6 has no scar colour, and the stubble it sends is what its shader paints
+            // the scars with: keep both as they are
+            if (appearance.ScarColor != null)
+            {
+                characterAppearance.StubbleColor = appearance.StubbleColor;
+                characterAppearance.ScarColor = appearance.ScarColor;
+            }
             characterAppearance.WarPaintColor = appearance.WarPaintColor;
             characterAppearance.Head = appearance.Head;
             characterAppearance.HairColor = appearance.HairColor;
@@ -5480,7 +5486,8 @@ namespace RavenNest.BusinessLogic.Game
                 SkinColor = skinColor,
                 HairColor = hairColor,
                 BeardColor = beardColor,
-                StubbleColor = skinColor,
+                StubbleColor = RavenNest.Models.SyntyAppearance.DefaultStubbleColor,
+                ScarColor = skinColor,
                 WarPaintColor = hairColor,
                 EyeColor = "#000000",
                 Eyebrows = Utility.Random(0, gender == Gender.Male ? 10 : 7),
