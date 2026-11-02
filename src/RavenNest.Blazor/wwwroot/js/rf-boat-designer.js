@@ -299,6 +299,8 @@ class Designer {
         return url;
     }
 
+    // the flag as the game's BoatAssembler.Flag hangs it: from the tallest masthead (the ships), the fishing boat's gaff
+    // peak, or a pole at the rowboat's stern; its leading edge at the mast or pole, streaming aft
     async addFlag(m, group, meshes, flag, ship) {
         const material = m.flags[flag - 1];
         if (!material) return [];
@@ -312,27 +314,37 @@ class Designer {
             return b;
         };
         const flagSwap = () => material;
+        const HALF = 1.89; // half the flag cloth's width, hanging from the middle of its top edge
         let at, scale;
         const masts = meshes.filter(x => x.name.includes('_Mast_') && !x.name.includes('Boom') && !x.name.includes('Sail') && !x.name.includes('Locator'));
-        if (ship && masts.length) {
+        const gaff = ship ? null : meshes.find(x => x.name.endsWith('_Boom_Back_01'));
+        if (gaff) {
+            // the gaff's peak: its highest point (the mesh is the boom and the gaff together)
+            const pos = gaff.geometry.attributes.position, v = new THREE.Vector3(), peak = new THREE.Vector3(0, -Infinity, 0);
+            for (let i = 0; i < pos.count; i++) {
+                v.fromBufferAttribute(pos, i).applyMatrix4(gaff.matrix);
+                if (v.y > peak.y) peak.copy(v);
+            }
+            scale = 0.42;
+            at = new THREE.Vector3(peak.x, peak.y, peak.z - HALF * scale);
+        } else if (masts.length) {
             let top = null;
             for (const mast of masts) { const b = boundsOf([mast]); if (!top || b.max.y > top.max.y) top = b; }
-            const c = top.getCenter(new THREE.Vector3());
-            at = new THREE.Vector3(c.x, top.max.y, c.z - 0.9);
-            scale = 0.75;
+            const c = top.getCenter(new THREE.Vector3()), size = top.getSize(new THREE.Vector3());
+            scale = ship ? 0.75 : 0.42;
+            at = new THREE.Vector3(c.x, top.max.y, c.z - HALF * scale - Math.min(size.x, size.z) / 2);
         } else {
+            // the kit's banded post stands upright from its foot, just inside the stern's gunwale
             const hulls = meshes.filter(x => x.name.includes('Hull') || x.name === 'Model');
             const b = boundsOf(hulls.length ? hulls : meshes);
-            // the kit's post lies along x: stood upright, its foot just inside the stern's gunwale
-            const poleLength = 2.34 * 0.7, foot = b.max.y - 0.3, z = b.min.z + 0.35;
+            const poleScale = 0.7, poleHeight = 2.36 * poleScale, foot = b.max.y - 0.3, z = b.min.z + 0.35;
             const pole = new THREE.Group();
-            pole.position.set(0, foot + poleLength * 0.5, z);
-            pole.rotation.z = -Math.PI / 2;
-            pole.scale.setScalar(0.7);
+            pole.position.set(0, foot, z);
+            pole.scale.setScalar(poleScale);
             await this.addPart(m, m.flagPole, pole, n => n);
             group.add(pole);
-            at = new THREE.Vector3(0, foot + poleLength, z - 0.05);
             scale = 0.32;
+            at = new THREE.Vector3(0, foot + poleHeight - 0.05, z - HALF * scale - 0.06);
         }
         const cloth = new THREE.Group();
         cloth.position.copy(at);
@@ -372,8 +384,8 @@ class Designer {
 function focusOf(parts, slot) {
     switch (slot) {
         case 'sails': {
-            // the main mast's sails, big enough to tell apart
-            const cloth = (parts.rig || []).filter(mesh => mesh.name.includes('Sails'));
+            // the main mast's sails, big enough to tell apart (the fishing boat's sail is among its own meshes)
+            const cloth = (parts.rig || parts.hull || []).filter(mesh => mesh.name.includes('Sails') || mesh.name.includes('_Sail_'));
             const main = cloth.filter(mesh => mesh.name.includes('Middle'));
             return main.length ? main : cloth.length ? cloth : parts.rig || [];
         }

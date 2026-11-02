@@ -70,9 +70,16 @@ namespace RavenNest.BusinessLogic.Game
             S("wood", 5, false, 1, 1, 2),
         };
 
-        /// <summary>The Rowboat and the Fishing Boat keep their models: a flag at the stern only.</summary>
+        /// <summary>The Rowboat keeps its model: a flag on a pole at the stern only.</summary>
         private static readonly Slot[] FlagOnly =
         {
+            S("flag", 17, true, 0, 0, 1, 2, 3),
+        };
+
+        /// <summary>The Fishing Boat keeps its model, but its sail is the small ship's: the ships' sails, and a flag at its masthead.</summary>
+        private static readonly Slot[] SailAndFlag =
+        {
+            S("sails", 14, false, 1, 1, 2),
             S("flag", 17, true, 0, 0, 1, 2, 3),
         };
 
@@ -142,6 +149,7 @@ namespace RavenNest.BusinessLogic.Game
             string.Equals(boat, "Sloop", StringComparison.OrdinalIgnoreCase) ? SmallShip
             : string.Equals(boat, "Brigantine", StringComparison.OrdinalIgnoreCase) ? MediumShip
             : string.Equals(boat, "Galleon", StringComparison.OrdinalIgnoreCase) ? LargeShip
+            : string.Equals(boat, "Fishing Boat", StringComparison.OrdinalIgnoreCase) ? SailAndFlag
             : FlagOnly;
 
         public static Slot Find(string boat, string slot) =>

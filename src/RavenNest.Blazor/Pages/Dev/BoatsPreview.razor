@@ -5,7 +5,7 @@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
 
 @*
-    The boat designer with made up boats (a Sloop, a Brigantine, a Galleon and a Rowboat, some parts earned), for
+    The boat designer with made up boats (a Sloop, a Brigantine, a Galleon, a Fishing Boat and a Rowboat, some parts earned), for
     working on its look without owning one. Only on a development server; elsewhere it is a page not found. Picking a
     part changes it here only.
 *@
@@ -32,6 +32,7 @@ else
             Boat("Galleon", "Zerratar", 0, true, new[] { "sails_3", "sails_7", "flag_8", "flag_13", "figurehead_2", "figurehead_4", "ram_1", "ram_2", "wood_3", "wood_4", "front_2", "back_2", "hull_2" }),
             Boat("Brigantine", "Zerratar", 0, false, new[] { "sails_6", "flag_7", "flag_13", "figurehead_2", "ram_1", "wood_3", "back_2" }),
             Boat("Sloop", "Zerratar", 1, true, new[] { "sails_4", "flag_9", "figurehead_1", "wood_3", "ram_1", "back_2" }),
+            Boat("Fishing Boat", "Zerratar", 2, false, new[] { "sails_9", "flag_8", "flag_13" }),
             Boat("Rowboat", "Zerratar", 2, true, new[] { "flag_13" }),
         };
     }
