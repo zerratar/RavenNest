@@ -81,7 +81,6 @@ else
                         @(Colors("Eyes", "eyes", look.EyeColor, EyeColors, v => { look.EyeColor = v; }))
                         @(Grid("Eyebrows", "eyebrows", look.Eyebrows, Female ? CharacterLookService.FemaleEyebrows : CharacterLookService.MaleEyebrows, true, v => look.Eyebrows = v))
                         @(Colors("War paint", "warPaint", look.WarPaintColor, PaintColors, v => { look.WarPaintColor = v; }, "Shows on the faces that have paint."))
-                        @(Colors("Stubble", "stubble", look.StubbleColor, HairColors, v => { look.StubbleColor = v; }, "The shadow of a shave, on the faces that have one."))
                         break;
 
                     case "hair":
@@ -92,6 +91,7 @@ else
                     case "beard":
                         @(Grid("Beard", "beards", look.FacialHair, CharacterLookService.MaleBeards, true, v => look.FacialHair = v))
                         <p class="rf-meta">The beard takes the hair colour (Hair tab).</p>
+                        @(Colors("Stubble", "stubble", look.StubbleColor, HairColors, v => { look.StubbleColor = v; }, "The shadow of a shave, on the faces drawn with one: along the jaw, and on some over the lip. A beard covers most of it, and the skin colour hides it."))
                         break;
                 }
             </div>
