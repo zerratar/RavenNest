@@ -17,7 +17,8 @@ namespace RavenNest.BusinessLogic.Game
     public class HeroModeManager
     {
         public const string BestKey = "hero_best";
-        /// <summary>The streamer's best run of the day's challenge: day|waves|kills|seconds|ticks (day as yyyyMMdd, UTC).</summary>
+        /// <summary>The streamer's best run of the day's challenge: day|waves|kills|seconds|ticks|twists (day as yyyyMMdd,
+        /// UTC; twists as the game names them, "Hunters,Blessed-steel").</summary>
         public const string DailyKey = "hero_daily";
 
         private static readonly (int Waves, string Title)[] Titles =
@@ -103,8 +104,9 @@ namespace RavenNest.BusinessLogic.Game
         /// day) ended: the streamer's best of that day kept if better, its place among the day's. Not the all-time board,
         /// nor its titles and decor (the twists make some days easier); the waves count for the stream's quests.
         /// </summary>
-        public HeroRunResult RecordDaily(SessionToken token, int day, int waves, int kills, int seconds)
+        public HeroRunResult RecordDaily(SessionToken token, int day, int waves, int kills, int seconds, string twists = null)
         {
+            twists = CleanTwists(twists);
             var session = token != null ? gameData.GetSession(token.SessionId) : null;
             if (session == null) return new HeroRunResult { Error = "notinsession" };
             // today's, or yesterday's for a run that went past midnight
@@ -122,14 +124,14 @@ namespace RavenNest.BusinessLogic.Game
                 waves = Math.Min(waves, seconds / MinSecondsPerWave);
 
                 var user = gameData.GetUser(session.UserId);
-                var (bestDay, best) = ParseDaily(gameData.GetUserProperty(session.UserId, DailyKey), user);
+                var (bestDay, best, _) = ParseDaily(gameData.GetUserProperty(session.UserId, DailyKey), user);
                 var run = new HeroRunRecord { Streamer = Name(user), Waves = waves, Kills = kills, Seconds = seconds, Reached = now };
                 // a new day starts afresh; a run from yesterday never replaces today's
                 var newBest = best == null || bestDay < day || (bestDay == day && Better(run, best));
                 if (bestDay > day) newBest = false;
                 if (newBest)
                 {
-                    gameData.SetUserProperty(session.UserId, DailyKey, day.ToString(CultureInfo.InvariantCulture) + "|" + Format(run));
+                    gameData.SetUserProperty(session.UserId, DailyKey, day.ToString(CultureInfo.InvariantCulture) + "|" + Format(run) + "|" + twists);
                     best = run;
                     bestDay = day;
                 }
@@ -142,31 +144,55 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        /// <summary>The best runs of today's challenge, the best first.</summary>
+        /// <summary>The best runs of today's challenge, the best first, and the day's twists as the runs sent them (none
+        /// until somebody played it: the game works them out from the date).</summary>
         public HeroLeaderboard DailyLeaderboard(int count)
         {
             var today = Day(DateTime.UtcNow);
-            return new HeroLeaderboard { Day = today, Entries = DailyBoard(today).OrderByDescending(r => r.Waves).ThenByDescending(r => r.Kills).ThenBy(r => r.Seconds).Take(Math.Clamp(count, 1, 100)).ToArray() };
+            string twists = null;
+            var entries = new List<HeroRunRecord>();
+            foreach (var p in gameData.GetUserPropertiesWithKey(DailyKey))
+            {
+                var (d, r, t) = ParseDaily(p.Value, gameData.GetUser(p.UserId));
+                if (r == null || d != today) continue;
+                entries.Add(r);
+                if (string.IsNullOrEmpty(twists) && !string.IsNullOrEmpty(t)) twists = t;
+            }
+            return new HeroLeaderboard
+            {
+                Day = today,
+                Twists = string.IsNullOrEmpty(twists) ? Array.Empty<string>() : twists.Split(','),
+                Entries = entries.OrderByDescending(r => r.Waves).ThenByDescending(r => r.Kills).ThenBy(r => r.Seconds).Take(Math.Clamp(count, 1, 100)).ToArray(),
+            };
         }
 
         private IEnumerable<HeroRunRecord> DailyBoard(int day)
         {
             foreach (var p in gameData.GetUserPropertiesWithKey(DailyKey))
             {
-                var (d, r) = ParseDaily(p.Value, gameData.GetUser(p.UserId));
+                var (d, r, _) = ParseDaily(p.Value, gameData.GetUser(p.UserId));
                 if (r != null && d == day) yield return r;
             }
         }
 
+        /// <summary>Twists as the game sends them: letters, '-' before Blessed's boon, ',' between; anything else dropped.</summary>
+        private static string CleanTwists(string twists)
+        {
+            if (string.IsNullOrEmpty(twists)) return string.Empty;
+            var clean = new string(twists.Where(c => char.IsLetter(c) || c == ',' || c == '-').ToArray());
+            return clean.Length > 80 ? clean.Substring(0, 80) : clean;
+        }
+
         private static int Day(DateTime utc) => utc.Year * 10000 + utc.Month * 100 + utc.Day;
 
-        private static (int Day, HeroRunRecord Run) ParseDaily(string value, User user)
+        private static (int Day, HeroRunRecord Run, string Twists) ParseDaily(string value, User user)
         {
-            if (string.IsNullOrEmpty(value)) return (0, null);
+            if (string.IsNullOrEmpty(value)) return (0, null, null);
             var cut = value.IndexOf('|');
-            if (cut <= 0 || !int.TryParse(value.Substring(0, cut), out var day)) return (0, null);
+            if (cut <= 0 || !int.TryParse(value.Substring(0, cut), out var day)) return (0, null, null);
             var run = Parse(value.Substring(cut + 1), user);
-            return run == null ? (0, null) : (day, run);
+            var parts = value.Split('|');
+            return run == null ? (0, null, null) : (day, run, parts.Length > 5 ? parts[5] : null);
         }
 
         /// <summary>

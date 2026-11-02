@@ -1,0 +1,132 @@
+/* Hero mode's boards: today's challenge beside the all-time board, stacked on narrow screens. */
+.rf-heroes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+    gap: 1.25rem;
+    align-items: start;
+    margin-top: 1.25rem;
+}
+
+.rf-heroes__board {
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.rf-heroes__head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 0.6rem;
+}
+
+.rf-heroes__head-icon {
+    font-size: 1.4rem;
+    color: var(--rf-gold);
+    width: 2.6rem;
+    height: 2.6rem;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--rf-gold-wash);
+    flex: none;
+}
+
+/* the day's challenge in blue, as in the game's wave HUD */
+.rf-heroes__head-icon--daily {
+    color: #6ebee1;
+    background: rgba(110, 190, 225, 0.12);
+}
+
+.rf-heroes__title {
+    font-size: var(--rf-size-title);
+    margin: 0;
+    color: var(--rf-ink);
+}
+
+.rf-heroes__sub {
+    margin: 0.1rem 0 0;
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-heroes__note {
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+    margin: 0 0 1rem;
+}
+
+.rf-heroes__twists {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.rf-heroes__twist {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 6px;
+    background: var(--rf-surface-2);
+    border: 1px solid rgba(110, 190, 225, 0.3);
+}
+
+.rf-heroes__twist-icon {
+    color: #6ebee1;
+    width: 1.2rem;
+    text-align: center;
+    margin-top: 0.2rem;
+}
+
+.rf-heroes__twist-name {
+    display: block;
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-heroes__twist-text {
+    display: block;
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-heroes__empty {
+    color: var(--rf-ink-muted);
+    font-style: italic;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.rf-heroes__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.rf-heroes__name {
+    font-weight: 600;
+    color: var(--rf-ink);
+}
+
+.rf-heroes__waves {
+    font-weight: 700;
+    color: var(--rf-gold-bright);
+}
+
+.rf-heroes__time {
+    font-family: var(--rf-font-mono);
+    color: var(--rf-ink-muted);
+}
+
+.rf-heroes__rank {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    font-weight: 700;
+    color: var(--rf-ink-muted);
+}
+
+.rf-heroes__rank--1 { color: #14161c; background: #d4af37; }
+.rf-heroes__rank--2 { color: #14161c; background: #b5b5bd; }
+.rf-heroes__rank--3 { color: #fff3e6; background: #9c5221; }

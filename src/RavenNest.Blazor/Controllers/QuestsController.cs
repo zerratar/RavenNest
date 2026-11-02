@@ -248,12 +248,12 @@ namespace RavenNest.Controllers
 
         /// <summary>A run of the day's challenge ended (day as yyyyMMdd, UTC): the streamer's best of the day and its place.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost("hero/daily/{day}/{waves}/{kills}/{seconds}")]
-        public HeroRunResult HeroDaily(int day, int waves, int kills, int seconds)
+        [HttpPost("hero/daily/{day}/{waves}/{kills}/{seconds}/{twists?}")]
+        public HeroRunResult HeroDaily(int day, int waves, int kills, int seconds, string twists = null)
         {
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
-            return heroManager.RecordDaily(sessionToken, day, waves, kills, seconds);
+            return heroManager.RecordDaily(sessionToken, day, waves, kills, seconds, twists);
         }
 
         /// <summary>Today's challenge: every streamer's best run of it, the best first.</summary>

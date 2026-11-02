@@ -31,6 +31,9 @@ namespace RavenNest.Models
     {
         /// <summary>For the day's challenge: the day (yyyyMMdd, UTC); 0 for the all-time board.</summary>
         public int Day { get; set; }
+        /// <summary>For the day's challenge: its twists as the game names them ("Hunters", "Blessed-steel"); empty until
+        /// somebody played it.</summary>
+        public string[] Twists { get; set; }
         public HeroRunRecord[] Entries { get; set; }
     }
 }

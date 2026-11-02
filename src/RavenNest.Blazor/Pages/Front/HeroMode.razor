@@ -1,0 +1,196 @@
+@*
+    Hero mode's boards (the game's docs/hero-mode-design.md, "Daily challenge"): today's challenge with its twists and
+    the day's best runs, and every streamer's best run of all time. Public; the game shows the top three of each at
+    Captain Hargrove, this page the rest.
+*@
+@page "/hero-mode"
+@page "/ravebridge"
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.Models
+@inject HeroModeManager Hero
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Ravebridge's defenders</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section">
+        <p class="rf-lead">
+            In hero mode the streamer plays by hand on Ravebridge and holds the castle town against wave after wave of
+            goblins, ghosts and skeletons, with a boss every fifth wave. Viewers type <span class="rf-cmd">!ravebridge</span>
+            to fight beside them, vote a boon between waves with <span class="rf-cmd">!hero 1</span>,
+            <span class="rf-cmd">2</span> or <span class="rf-cmd">3</span>, and get a downed hero back up with
+            <span class="rf-cmd">!hero revive</span>. The score is how many waves the line held.
+        </p>
+
+        <div class="rf-heroes">
+            <section class="rf-panel rf-panel--accent rf-heroes__board rf-heroes__board--daily" aria-labelledby="hero-daily">
+                <header class="rf-heroes__head">
+                    <i class="fa-solid fa-calendar-day rf-heroes__head-icon rf-heroes__head-icon--daily" aria-hidden="true"></i>
+                    <div>
+                        <h2 id="hero-daily" class="rf-heroes__title">Today's challenge</h2>
+                        <p class="rf-heroes__sub">@DayText &middot; new challenge in @ResetText</p>
+                    </div>
+                </header>
+                <p class="rf-heroes__note">
+                    One run a day, the same for every streamer: the same enemies in every wave, the same bosses and boons,
+                    and two twists that change the rules. Captain Hargrove offers it once his quest is done.
+                </p>
+
+                @if (twists.Count > 0)
+                {
+                    <ul class="rf-heroes__twists">
+                        @foreach (var t in twists)
+                        {
+                            <li class="rf-heroes__twist">
+                                <i class="fa-solid @t.Icon rf-heroes__twist-icon" aria-hidden="true"></i>
+                                <div>
+                                    <span class="rf-heroes__twist-name">@t.Name</span>
+                                    <span class="rf-heroes__twist-text">@t.Text</span>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="rf-heroes__empty">Today's twists show here once the first streamer takes the challenge on.</p>
+                }
+
+                @if (daily.Entries == null || daily.Entries.Length == 0)
+                {
+                    <p class="rf-heroes__empty">Nobody has held the line today yet. The first run tops the board.</p>
+                }
+                else
+                {
+                    @Board(daily.Entries)
+                }
+            </section>
+
+            <section class="rf-panel rf-heroes__board" aria-labelledby="hero-all">
+                <header class="rf-heroes__head">
+                    <i class="fa-solid fa-trophy rf-heroes__head-icon" aria-hidden="true"></i>
+                    <div>
+                        <h2 id="hero-all" class="rf-heroes__title">All time</h2>
+                        <p class="rf-heroes__sub">Each streamer's best endless run</p>
+                    </div>
+                </header>
+                <p class="rf-heroes__note">
+                    Holding 10, 25 and 50 waves earns the streamer a title and a piece of decor for their village.
+                    Daily runs are kept apart: their twists make some days easier than others.
+                </p>
+
+                @if (allTime.Entries == null || allTime.Entries.Length == 0)
+                {
+                    <p class="rf-heroes__empty">No runs yet. The first streamer to hold the line takes first place.</p>
+                }
+                else
+                {
+                    @Board(allTime.Entries)
+                }
+            </section>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HeroLeaderboard daily = new HeroLeaderboard();
+    private HeroLeaderboard allTime = new HeroLeaderboard();
+    private List<TwistView> twists = new List<TwistView>();
+
+    private sealed class TwistView
+    {
+        public string Name;
+        public string Text;
+        public string Icon;
+    }
+
+    protected override void OnInitialized()
+    {
+        daily = Hero.DailyLeaderboard(10);
+        allTime = Hero.Leaderboard(25);
+        twists = (daily.Twists ?? Array.Empty<string>()).Select(Twist).Where(t => t != null).ToList();
+    }
+
+    private static string DayText => DateTime.UtcNow.ToString("dddd d MMMM", System.Globalization.CultureInfo.InvariantCulture) + " (UTC)";
+
+    private static string ResetText
+    {
+        get
+        {
+            var left = DateTime.UtcNow.Date.AddDays(1) - DateTime.UtcNow;
+            return left.TotalHours >= 1 ? $"{(int)left.TotalHours} h {left.Minutes} min" : $"{Math.Max(1, left.Minutes)} min";
+        }
+    }
+
+    /// <summary>A twist as the game sent it ("Hunters", "Blessed-steel") in the game's own words.</summary>
+    private static TwistView Twist(string key)
+    {
+        var parts = key.Split('-');
+        var (text, icon) = parts[0] switch
+        {
+            "Swarm" => ("SWARM", "fa-users"),
+            "ThickHides" => ("THICK", "fa-shield-halved"),
+            "BossRush" => ("BOSSES", "fa-skull"),
+            "Hasty" => ("HASTY", "fa-person-running"),
+            "EliteGuard" => ("ELITES", "fa-crown"),
+            "Hunters" => ("HUNTERS", "fa-crosshairs"),
+            "DryFlasks" => ("DRY", "fa-flask"),
+            "TinyTerrors" => ("TINY", "fa-down-left-and-up-right-to-center"),
+            "Blessed" => ("BLESSED", "fa-star"),
+            _ => (null, null),
+        };
+        if (text == null) return null;
+        var line = GameTexts.Get("UI_DAILY_" + text + "_TEXT", string.Empty);
+        if (line.Contains("{0}"))
+        {
+            var boon = parts.Length > 1 ? GameTexts.Get("UI_BOON_" + parts[1].ToUpperInvariant(), parts[1]) : "?";
+            line = string.Format(line, boon);
+        }
+        return new TwistView
+        {
+            Name = GameTexts.Get("UI_DAILY_" + text, parts[0]),
+            Text = line.Length > 0 ? char.ToUpperInvariant(line[0]) + line.Substring(1) + "." : string.Empty,
+            Icon = icon,
+        };
+    }
+
+    private static string Clock(int seconds) => seconds >= 3600
+        ? $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}"
+        : $"{seconds / 60}:{seconds % 60:00}";
+
+    private RenderFragment Board(HeroRunRecord[] entries) => __builder =>
+    {
+        <div class="rf-scroll-x">
+            <table class="rf-table rf-heroes__table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Streamer</span></th>
+                        <th scope="col" class="rf-heroes__num"><span class="rf-th rf-th--static">Waves</span></th>
+                        <th scope="col" class="rf-heroes__num"><span class="rf-th rf-th--static">Fallen</span></th>
+                        <th scope="col" class="rf-heroes__num"><span class="rf-th rf-th--static">Time</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < entries.Length; i++)
+                    {
+                        var e = entries[i];
+                        var rank = i + 1;
+                        <tr>
+                            <td><span class="rf-heroes__rank @(rank <= 3 ? "rf-heroes__rank--" + rank : "")">@rank</span></td>
+                            <td class="rf-heroes__name">@e.Streamer</td>
+                            <td class="rf-heroes__num rf-heroes__waves">@e.Waves</td>
+                            <td class="rf-heroes__num">@e.Kills.ToString("N0")</td>
+                            <td class="rf-heroes__num rf-heroes__time">@Clock(e.Seconds)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    };
+}
