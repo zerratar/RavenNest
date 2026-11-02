@@ -1,0 +1,140 @@
+@layout DashboardLayout
+@page "/dev/quests-preview"
+@using RavenNest.Blazor.Services
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject NavigationManager NavigationManager
+
+@*
+    The quest page with made up data, for working on its look without signing in or playing to a given state
+    (?tab=daily|chains|achievements|stream). Only on a development server; elsewhere it is a page not found.
+*@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <QuestBoard Data="data" StreamerName="Zerratar" StartTab="@startTab" />
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private QuestPageData data;
+    private string startTab;
+
+    protected override void OnInitialized()
+    {
+        var pair = new Uri(NavigationManager.Uri).Query.TrimStart('?').Split('&').Select(p => p.Split('=')).FirstOrDefault(p => p[0] == "tab");
+        startTab = pair != null && pair.Length == 2 ? pair[1] : null;
+        if (Environment.EnvironmentName == "Development") data = Sample();
+    }
+
+    private static string Q(string name) => "/imgs/quests/" + name + ".png";
+
+    private static QuestPageData Sample()
+    {
+        var expires = DateTime.UtcNow.Date.AddDays(1);
+        var c = new QuestPageCharacter
+        {
+            Id = Guid.NewGuid(),
+            Name = "Zerratar",
+            StreamName = "Zerratar",
+            Streak = 3,
+            DailiesCompleted = 41,
+            Title = "the Brave",
+            Taken =
+            {
+                new QuestPageQuest { Kind = 0, Text = "Chop 400 wood", Picture = Q("quest-wood"), Coins = 12430, Exp = 9854594, ExpSkill = "Woodcutting", ExpSkillIcon = "/imgs/icons/skills/woodcutting.png", Progress = 260, Amount = 400, State = 1, Expires = expires },
+            },
+            Offers =
+            {
+                new QuestPageQuest { Kind = 0, Text = "Gather 90 times", Picture = Q("quest-herbs"), Coins = 12430, Exp = 11843400, ExpSkill = "Gathering", Amount = 90, Command = "!quest accept 1", Expires = expires },
+                new QuestPageQuest { Kind = 0, Text = "Cook 25 meals", Picture = Q("quest-make"), Coins = 12430, Exp = 9854594, ExpSkill = "Cooking", ExpSkillIcon = "/imgs/icons/skills/Cooking.png", Amount = 25, Command = "!quest accept 2", Expires = expires },
+                new QuestPageQuest { Kind = 0, Text = "Win a raid", Picture = Q("quest-raid"), Coins = 12430, Exp = 38859750, ExpSkill = "Slayer", ExpSkillIcon = "/imgs/icons/skills/slayer.png", Amount = 1, Command = "!quest accept 3", Expires = expires },
+            },
+            Weekly = new QuestPageQuest { Kind = 1, Text = "Defeat 1,200 enemies", Picture = Q("quest-kill"), Coins = 74590, Exp = 233158499, ExpSkill = "Slayer", ExpSkillIcon = "/imgs/icons/skills/slayer.png", Amount = 1200, Command = "!quest accept weekly", Expires = expires.AddDays(5) },
+            Seasonal = new QuestPageQuest { Kind = 2, Text = "Harvest 60 pumpkins", Picture = Q("quest-wheat"), Coins = 18650, Exp = 14535508, ExpSkill = "Farming", ExpSkillIcon = "/imgs/icons/skills/farming.png", Amount = 60, Command = "!quest accept seasonal", Expires = expires.AddDays(9) },
+            Chains =
+            {
+                new QuestPageChain { Key = "PUMPKIN", Name = "The Pumpkin King", State = 1, Step = 0, Steps = 5, Event = "halloween", Story = "Something stirs in the pumpkin patch. Harvest it before it harvests you.", Task = "Harvest 60 wheat", Progress = 22, Amount = 60, RewardTitle = "the Haunted", RewardDecor = "Jack-o'-lantern", RewardDecorKey = "jack_o_lantern_01", Picture = Q("chain-pumpkin"), Banner = "/imgs/quests/chain-pumpkin-wide.jpg" },
+                new QuestPageChain { Key = "FISH", Name = "The one that got away", State = 0, Steps = 6, Story = "Old Finn swears a giant fish keeps stealing his bait. Catch some fish to show him you know your way around a rod.", RewardTitle = "the Angler's Friend", RewardDecor = "Fish trophy", RewardDecorKey = "fish_trophy_01", Command = "!quest begin FISH", Picture = Q("chain-fish"), Banner = "/imgs/quests/chain-fish-wide.jpg" },
+                new QuestPageChain { Key = "FOUNDER", Name = "The village founder", State = 0, Steps = 7, Story = "The town hall's oldest record says a hero founded this village, but nobody remembers who. The mayor wants a statue anyway. Mine good stone for it.", RewardTitle = "the Founder", RewardDecor = "Founder's statue", RewardDecorKey = "statue_founder_01", Command = "!quest begin FOUNDER", Picture = Q("chain-founder"), Banner = "/imgs/quests/chain-founder-wide.jpg" },
+                new QuestPageChain { Key = "CAT", Name = "The barkeep's lost cat", State = 2, Steps = 4, Ending = "Sir Whiskers is home, fat and smug, and the barkeep pours you one on the house.", RewardTitle = "the Cat Whisperer", RewardDecor = "Cat", RewardDecorKey = "cat_01", Picture = Q("chain-cat"), Banner = "/imgs/quests/chain-cat-wide.jpg" },
+                new QuestPageChain { Key = "SHIPWRIGHT", Name = "The shipwright", State = 2, Steps = 5, Ending = "She is done! Your own rowboat is waiting in your inventory.", RewardTitle = "the Shipwright", RewardDecor = "Boat on trestles", RewardDecorKey = "boat_build_01", Picture = Q("chain-shipwright"), Banner = "/imgs/quests/chain-shipwright-wide.jpg" },
+            },
+            Achievements =
+            {
+                A("storyteller", "Storyteller", 1, 2, new long[] { 3, 6, 10 }, "ach-storyteller", "the Curious", "the Storyteller", "the Lorekeeper"),
+                A("slayer", "Slayer", 1, 5444, new long[] { 1000, 10000, 100000 }, "quest-kill", "the Brave", "the Slayer", "the Unstoppable"),
+                A("angler", "Angler", 0, 733, new long[] { 1000, 10000, 100000 }, "quest-fish", "the Angler", "the Fisher King", "the Leviathan"),
+                A("allround", "All-rounder", 0, 35, new long[] { 50, 100, 200 }, "ach-allround", "the Well-Rounded", "the Versatile", "the Polymath"),
+                A("woodcutter", "Woodcutter", 0, 604, new long[] { 1000, 10000, 100000 }, "quest-wood", "the Woodcutter", "the Lumberjack", "the Forest's Bane"),
+                A("helper", "Helper", 0, 1, new long[] { 5, 25, 100 }, "ach-helper", "the Team Player", "the Pillar", "the Heart of the Stream"),
+                A("raider", "Raider", 3, 520, new long[] { 10, 100, 500 }, "quest-raid", "the Raider", "the Warlord", "the Boss Breaker"),
+                A("miner", "Miner", 2, 2400, new long[] { 1000, 10000, 100000 }, "quest-ore", "the Miner", "the Delver of Ore", "the Mountain"),
+                A("ferryman", "Ferryman", 0, 3, new long[] { 10, 50, 200 }, "/imgs/items/rowboat.png", "the Ferryman", "the Boatswain", "the Admiral"),
+                A("wrong", "Confidently wrong", 0, 0, new long[] { 5 }, "ach-wrong", "the Confidently Wrong", null, null, hidden: true),
+                A("quitter", "Quitter", 1, 10, new long[] { 10 }, "ach-quitter", "the Quitter", null, null, hidden: true),
+            },
+            Titles =
+            {
+                new QuestPageTitle { Number = 1, Text = "the Confidently Wrong" },
+                new QuestPageTitle { Number = 2, Text = "the Brave", Worn = true },
+                new QuestPageTitle { Number = 3, Text = "the Curious" },
+                new QuestPageTitle { Number = 4, Text = "the Shipwright" },
+                new QuestPageTitle { Number = 5, Text = "the Cat Whisperer" },
+                new QuestPageTitle { Number = 6, Text = "the Monkey Friend" },
+                new QuestPageTitle { Number = 7, Text = "the Runebreaker" },
+            },
+            StreamQuests =
+            {
+                new QuestPageBounty { Name = "Clear the island", Description = "Everyone on Mangrove, hit those monkeys.", Goal = true, Task = "Defeat 100 enemies", Picture = Q("quest-kill"), Amount = 100, Progress = 64, Helpers = 12, State = 1, Ends = DateTime.UtcNow.AddHours(5), Reward = "500 coins each" },
+            },
+        };
+        var data = new QuestPageData();
+        data.Characters.Add(c);
+        data.Characters.Add(new QuestPageCharacter { Id = Guid.NewGuid(), Name = "Zerratar", Index = 1 });
+        data.Streamer = new QuestPageStreamer
+        {
+            Stories =
+            {
+                new QuestPageStory { Key = "ROADWEST", Name = "The road west", State = 1, Step = 1, Steps = 6, Line = "Pieces of an old map are stuck in the bark of the oldest trees. Woodcutters, find all four.", Task = "Find 4 torn map pieces while woodcutting", Progress = 3, Amount = 4, Helpers = new[] { "zerratar" }, Picture = Q("story-roadwest") },
+                new QuestPageStory { Key = "RUNESTONE", Name = "The sleeping runestone", State = 2, Steps = 5, Ending = "The runes flare and the stone wakes; a hidden path opens behind it.", Helpers = new string[0], Picture = Q("story-runestone") },
+                new QuestPageStory { Key = "BANANAS", Name = "Insufficient bananas", State = 2, Steps = 4, Ending = "The monkeys have their bananas and the mangrove island is yours to visit.", Helpers = new string[0], Picture = Q("story-bananas") },
+            },
+            Unlocks =
+            {
+                new QuestPageUnlock { Key = "island_mangrove", Text = "The mangrove island", Picture = Q("story-bananas") },
+                new QuestPageUnlock { Key = "runestone_open", Text = "The runestone's hidden path", Picture = Q("story-runestone") },
+                new QuestPageUnlock { Key = "perk_runestone_1", Text = "+5% Fishing and Gathering exp", Picture = Q("story-runestone") },
+                new QuestPageUnlock { Key = "title_monkey_friend", Text = "the Monkey Friend", Title = true },
+                new QuestPageUnlock { Key = "title_runebreaker", Text = "the Runebreaker", Title = true },
+            },
+            Quests =
+            {
+                new QuestPageBounty { Name = "Clear the island", Goal = true, Task = "Defeat 100 enemies", Picture = Q("quest-kill"), Amount = 100, Progress = 100, State = 2 },
+                new QuestPageBounty { Name = "The test hunt", Task = "Catch 50 fish", Picture = Q("quest-fish"), Amount = 50, Progress = 0, State = 4 },
+            },
+            LoyaltyLeft = 2500,
+            LoyaltyWeekly = 2500,
+            HeroWaves = 5,
+            HeroKills = 63,
+            HeroSeconds = 463,
+            HeroRank = 1,
+        };
+        return data;
+    }
+
+    private static QuestPageAchievement A(string key, string name, int tier, long progress, long[] targets, string picture, string t1, string t2, string t3, bool hidden = false) => new QuestPageAchievement
+    {
+        Key = key,
+        Name = name,
+        Tier = tier,
+        Progress = progress,
+        Targets = targets,
+        Next = tier < targets.Length ? targets[tier] : 0,
+        Hidden = hidden,
+        Picture = picture.StartsWith("/") ? picture : Q(picture),
+        TierTitles = new[] { t1, t2, t3 },
+    };
+}

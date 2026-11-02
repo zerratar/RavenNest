@@ -95,7 +95,13 @@ namespace RavenNest.Blazor.Services
         private static QuestPageQuest Card(QuestInfo q, string command) => new QuestPageQuest
         {
             Kind = q.Kind,
+            Key = q.Key,
             Text = QuestText(q),
+            Picture = QuestPicture(q.Objective, q.Skill),
+            Coins = q.RewardCoins,
+            Exp = (long)q.RewardExp,
+            ExpSkill = SkillName(q.RewardSkill),
+            ExpSkillIcon = SkillIcon(q.RewardSkill),
             Progress = q.Progress,
             Amount = q.Amount,
             State = q.State,
@@ -128,6 +134,8 @@ namespace RavenNest.Blazor.Services
                 RewardDecor = piece?.Name,
                 RewardDecorKey = piece?.Key,
                 Command = ch.State == 0 ? "!quest begin " + ch.Key : null,
+                Picture = Picture("chain-" + ch.Key.ToLowerInvariant()),
+                Banner = Picture("chain-" + ch.Key.ToLowerInvariant() + "-wide", "jpg"),
             };
         }
 
@@ -144,6 +152,7 @@ namespace RavenNest.Blazor.Services
                 Next = next,
                 Targets = targets,
                 Hidden = a.Hidden,
+                Picture = AchievementPicture(a.Key),
                 TierTitles = Enumerable.Range(1, 3).Select(t => TitleText(a.Key + "_" + t)).ToArray(),
             };
         }
@@ -156,7 +165,7 @@ namespace RavenNest.Blazor.Services
             return new QuestPageStreamer
             {
                 Stories = log.Stories.Select(Story).ToList(),
-                Unlocks = log.Unlocks.Select(u => GameTexts.Get("UI_UNLOCK_" + u, null) ?? TitleText(u.StartsWith("title_") ? u.Substring(6) : u)).Where(t => !string.IsNullOrEmpty(t)).ToList(),
+                Unlocks = log.Unlocks.Select(Unlock).Where(u => !string.IsNullOrEmpty(u.Text)).ToList(),
                 Quests = streamerQuests.HistoryOf(userId).Select(q => Bounty(q, false)).ToList(),
                 LoyaltyLeft = streamerQuests.LoyaltyLeft(userId),
                 LoyaltyWeekly = StreamerQuestManager.WeeklyLoyaltyBudget,
@@ -178,6 +187,8 @@ namespace RavenNest.Blazor.Services
                 Step = s.Step,
                 Steps = s.Steps,
                 Hook = GameTexts.Get("UI_STORY_" + s.Key + "_HOOK", null),
+                Ending = s.State == 2 ? GameTexts.Get("UI_STORY_" + s.Key + "_END", null) : null,
+                Picture = Picture("story-" + s.Key.ToLowerInvariant()),
                 Line = under ? GameTexts.Get("UI_STORY_" + s.Key + "_" + (s.Step + 1), null) : null,
                 Task = under ? StoryTask(s) : null,
                 Progress = under ? s.Progress : 0,
@@ -192,6 +203,7 @@ namespace RavenNest.Blazor.Services
             Description = q.Description,
             Goal = q.Kind == 2,
             Task = StreamerTask(q),
+            Picture = QuestPicture(q.Objective, q.Skill),
             Amount = q.Amount,
             Progress = forCharacter && q.Kind == 1 ? q.YourProgress : q.Progress,
             Winners = q.Winners,
@@ -202,6 +214,96 @@ namespace RavenNest.Blazor.Services
             YouClaimed = forCharacter && q.YouClaimed,
             Reward = BountyReward(q),
         };
+
+        private static QuestPageUnlock Unlock(string key)
+        {
+            var title = key.StartsWith("title_");
+            var text = GameTexts.Get("UI_UNLOCK_" + key, null) ?? TitleText(title ? key.Substring(6) : key);
+            // where it came from: the islands and perks show their story's picture, titles a crown
+            string picture = null;
+            if (key.Contains("mangrove") || key.Contains("bananas")) picture = Picture("story-bananas");
+            else if (key.Contains("ravebridge")) picture = Picture("story-ravebridge");
+            else if (key.Contains("runestone")) picture = Picture("story-runestone");
+            return new QuestPageUnlock { Key = key, Text = text, Picture = picture, Title = title };
+        }
+
+        // ---- Pictures: the game's quest window pictures (QuestArt), copied to wwwroot/imgs/quests --------------
+
+        private static string Picture(string name, string extension = "png") => "/imgs/quests/" + name + "." + extension;
+
+        /// <summary>The picture of a quest's objective, the same as the game's quest window (QuestArt.ObjectivePicture).</summary>
+        private static string QuestPicture(string objective, int skill)
+        {
+            switch (objective)
+            {
+                case "gather":
+                    switch ((Skill)skill)
+                    {
+                        case Skill.Woodcutting: return Picture("quest-wood");
+                        case Skill.Mining: return Picture("quest-ore");
+                        case Skill.Fishing: return Picture("quest-fish");
+                        case Skill.Farming: return Picture("quest-wheat");
+                        default: return Picture("quest-herbs");
+                    }
+                case "kill": return Picture("quest-kill");
+                case "make":
+                case "craft":
+                case "cook":
+                case "brew": return Picture("quest-make");
+                case "exp":
+                case "levels": return Picture("quest-levels");
+                case "raid": return Picture("quest-raid");
+                case "dungeon": return Picture("quest-dungeon");
+                case "hero_wave": return Picture("quest-hero");
+                default: return Picture("empty-board");
+            }
+        }
+
+        /// <summary>An achievement's picture: the quest or item picture of the same thing where there is one, so a thing looks the same everywhere.</summary>
+        private static string AchievementPicture(string key)
+        {
+            switch (key)
+            {
+                case "angler": return Picture("quest-fish");
+                case "woodcutter": return Picture("quest-wood");
+                case "miner": return Picture("quest-ore");
+                case "farmer": return Picture("quest-wheat");
+                case "forager": return Picture("quest-herbs");
+                case "slayer": return Picture("quest-kill");
+                case "raider": return Picture("quest-raid");
+                case "delver": return Picture("quest-dungeon");
+                case "crafter": return Picture("quest-make");
+                case "cook": return Picture("rb-sauce");
+                case "quester": return Picture("empty-board");
+                case "ferryman": return "/imgs/items/rowboat.png";
+                default: return Picture("ach-" + key);
+            }
+        }
+
+        /// <summary>The website's skill icon (imgs/icons/skills), or null.</summary>
+        private static string SkillIcon(int index)
+        {
+            if (!Enum.IsDefined(typeof(Skill), index)) return null;
+            switch ((Skill)index)
+            {
+                case Skill.Attack: return "/imgs/icons/skills/Attack.png";
+                case Skill.Defense: return "/imgs/icons/skills/Defense.png";
+                case Skill.Strength: return "/imgs/icons/skills/Strength.png";
+                case Skill.Health: return "/imgs/icons/skills/health.png";
+                case Skill.Woodcutting: return "/imgs/icons/skills/woodcutting.png";
+                case Skill.Fishing: return "/imgs/icons/skills/Fishing.png";
+                case Skill.Mining: return "/imgs/icons/skills/Mining.png";
+                case Skill.Crafting: return "/imgs/icons/skills/Crafting.png";
+                case Skill.Cooking: return "/imgs/icons/skills/Cooking.png";
+                case Skill.Farming: return "/imgs/icons/skills/farming.png";
+                case Skill.Slayer: return "/imgs/icons/skills/slayer.png";
+                case Skill.Magic: return "/imgs/icons/skills/Magic.png";
+                case Skill.Ranged: return "/imgs/icons/skills/ranged.png";
+                case Skill.Sailing: return "/imgs/icons/skills/sailing.png";
+                case Skill.Healing: return "/imgs/icons/skills/healing.png";
+                default: return null;
+            }
+        }
 
         // ---- Words, as the game has them (QuestChat.Text, StoryLog.Task) ----------------------------------------
 
@@ -327,7 +429,13 @@ namespace RavenNest.Blazor.Services
     {
         /// <summary>0 daily, 1 weekly, 2 seasonal.</summary>
         public int Kind { get; set; }
+        public string Key { get; set; }
         public string Text { get; set; }
+        public string Picture { get; set; }
+        public long Coins { get; set; }
+        public long Exp { get; set; }
+        public string ExpSkill { get; set; }
+        public string ExpSkillIcon { get; set; }
         public long Progress { get; set; }
         public long Amount { get; set; }
         /// <summary>0 offered, 1 taken, 2 finished, 3 expired, 4 given up.</summary>
@@ -359,6 +467,9 @@ namespace RavenNest.Blazor.Services
         public string RewardDecor { get; set; }
         public string RewardDecorKey { get; set; }
         public string Command { get; set; }
+        public string Picture { get; set; }
+        /// <summary>A wide picture for the chain's page.</summary>
+        public string Banner { get; set; }
     }
 
     public class QuestPageAchievement
@@ -372,6 +483,7 @@ namespace RavenNest.Blazor.Services
         public long Next { get; set; }
         public long[] Targets { get; set; }
         public bool Hidden { get; set; }
+        public string Picture { get; set; }
         /// <summary>The title each tier gives.</summary>
         public string[] TierTitles { get; set; }
         public double Share => Next > 0 ? Math.Clamp((double)Progress / Next, 0, 1) : 1;
@@ -391,6 +503,7 @@ namespace RavenNest.Blazor.Services
         /// <summary>A stream goal (everyone together); else a bounty (each on their own).</summary>
         public bool Goal { get; set; }
         public string Task { get; set; }
+        public string Picture { get; set; }
         public long Amount { get; set; }
         public long Progress { get; set; }
         public int Winners { get; set; }
@@ -407,7 +520,7 @@ namespace RavenNest.Blazor.Services
     public class QuestPageStreamer
     {
         public List<QuestPageStory> Stories { get; set; } = new List<QuestPageStory>();
-        public List<string> Unlocks { get; set; } = new List<string>();
+        public List<QuestPageUnlock> Unlocks { get; set; } = new List<QuestPageUnlock>();
         public List<QuestPageBounty> Quests { get; set; } = new List<QuestPageBounty>();
         public long LoyaltyLeft { get; set; }
         public long LoyaltyWeekly { get; set; }
@@ -426,11 +539,23 @@ namespace RavenNest.Blazor.Services
         public int Step { get; set; }
         public int Steps { get; set; }
         public string Hook { get; set; }
+        /// <summary>Finished: how it ended.</summary>
+        public string Ending { get; set; }
+        public string Picture { get; set; }
         public string Line { get; set; }
         public string Task { get; set; }
         public long Progress { get; set; }
         public long Amount { get; set; }
         public string[] Helpers { get; set; }
         public double Share => Amount > 0 ? Math.Clamp((double)Progress / Amount, 0, 1) : 0;
+    }
+
+    public class QuestPageUnlock
+    {
+        public string Key { get; set; }
+        public string Text { get; set; }
+        /// <summary>The picture of the story it came from, or null (a title shows a crown).</summary>
+        public string Picture { get; set; }
+        public bool Title { get; set; }
     }
 }

@@ -1,0 +1,939 @@
+﻿@using RavenNest.Blazor.Services
+@inject IJSRuntime JS
+
+@*
+    The quest page (Pages/Dashboard/Quests.razor, and Pages/Dev/QuestsPreview.razor with made up data): the game's
+    quests (docs/quests-design.md) as the website shows them, where each character stands, read only. Quests are
+    taken, handed in and given up in chat, so everything that can be acted on names the command, with a copy button.
+    Four tabs: the day's and week's quests, quest chains, achievements and titles, and the streamer's own village
+    stories and posted quests. The pictures are the game's quest window pictures (wwwroot/imgs/quests).
+*@
+
+<header class="qp-hero">
+    <div class="qp-hero__text">
+        <h1 class="qp-hero__title">Quests</h1>
+        <p class="qp-hero__subtitle">Your adventures, achievements and village stories.</p>
+    </div>
+    <details class="qp-how">
+        <summary><i class="fa-solid fa-circle-question" aria-hidden="true"></i> How quests work <i class="fa-solid fa-chevron-down qp-how__chevron" aria-hidden="true"></i></summary>
+        <div class="qp-how__panel">
+            <div>
+                <h3>Daily and weekly quests</h3>
+                <p>Every day three new quests are offered, and one bigger quest each week. Take one in chat with
+                    <span class="rf-cmd">!quest accept 1</span> (or <span class="rf-cmd">weekly</span>), then just play:
+                    progress counts by itself. Up to three at a time; finishing dailies on following days builds a streak.</p>
+            </div>
+            <div>
+                <h3>Quest chains</h3>
+                <p>Short stories told by the tavern's quest giver, a step at a time. Begin one with
+                    <span class="rf-cmd">!quest begin &lt;name&gt;</span>. Steps ask you to bring items
+                    (<span class="rf-cmd">!quest deliver</span>), sail somewhere or answer a riddle. Each ends with a title,
+                    and a piece of decor for the village of the stream you finish it in.</p>
+            </div>
+            <div>
+                <h3>Achievements and titles</h3>
+                <p>Achievements count what you do anyway: wood chopped, raids won, quests done. Each has a bronze, silver
+                    and gold tier, and every tier gives a title. Wear one on your name tag with
+                    <span class="rf-cmd">!title 2</span>, or none with <span class="rf-cmd">!title off</span>.</p>
+            </div>
+            <div>
+                <h3>Stream bounties</h3>
+                <p>Streamers post their own quests: a bounty for the first few players to reach a target, or a goal the
+                    whole stream works on together. They show with the daily quests of the character playing there.</p>
+            </div>
+        </div>
+    </details>
+</header>
+
+@if (Loading)
+{
+    <p class="rf-meta">Loading your quests...</p>
+}
+else if (data == null || (data.Characters.Count == 0 && data.Streamer == null))
+{
+    <div class="rf-panel rf-panel--accent">
+        <h2 class="rf-panel__title">No characters yet</h2>
+        <p>Join a stream that plays Ravenfall with <span class="rf-cmd">!join</span>, then type <span class="rf-cmd">!quest</span> to see today's quests.</p>
+    </div>
+}
+else
+{
+    <nav class="qp-tabs" role="tablist" aria-label="Quests">
+        @if (data.Characters.Count > 0)
+        {
+            @Tab("daily", "Daily & weekly")
+            @Tab("chains", "Quest chains")
+            @Tab("achievements", "Achievements")
+        }
+        @if (data.Streamer != null)
+        {
+            @Tab("stream", "Your stream")
+        }
+    </nav>
+
+    @foreach (var error in data.Errors)
+    {
+        <div class="rf-banner rf-banner--warn"><p>Could not read the quests of @error</p></div>
+    }
+
+    @if (tab != "stream" && character != null)
+    {
+        <div class="qp-who">
+            <label class="qp-select">
+                <i class="fa-solid fa-user" aria-hidden="true"></i>
+                <select aria-label="Character" value="@character.Id" @onchange="PickCharacter">
+                    @foreach (var c in data.Characters)
+                    {
+                        <option value="@c.Id">@c.Name@(data.Characters.Count(x => x.Name == c.Name) > 1 ? " (slot " + c.Index + ")" : "")</option>
+                    }
+                </select>
+                <i class="fa-solid fa-chevron-down qp-select__chevron" aria-hidden="true"></i>
+            </label>
+            @if (character.StreamName != null)
+            {
+                <span class="qp-live">Playing in @character.StreamName's stream</span>
+            }
+            else
+            {
+                <span class="qp-offline">Not in a stream right now</span>
+            }
+        </div>
+
+        @switch (tab)
+        {
+            case "daily": @DailyTab(character) break;
+            case "chains": @ChainsTab(character) break;
+            case "achievements": @AchievementsTab(character) break;
+        }
+    }
+    else if (tab == "stream" && data.Streamer != null)
+    {
+        @StreamTab(data.Streamer)
+    }
+}
+
+@code {
+    [Parameter] public QuestPageData Data { get; set; }
+
+    /// <summary>The signed in user's name, shown as the stream's.</summary>
+    [Parameter] public string StreamerName { get; set; }
+
+    /// <summary>daily, chains, achievements or stream (?tab= on the page).</summary>
+    [Parameter] public string StartTab { get; set; }
+
+    [Parameter] public bool Loading { get; set; }
+
+    private QuestPageData data;
+    private QuestPageCharacter character;
+    private string tab = "daily";
+    private string copied;
+
+    // quest chains
+    private string chainFilter = "all";
+    private string chainKey;
+
+    // achievements
+    private string achSearch = "";
+    private string achSort = "closest";
+    private string achFilter = "all";
+    private int achPage;
+    private const int AchievementsPerPage = 6;
+
+    protected override void OnParametersSet()
+    {
+        if (Data == null || Data == data) return;
+        data = Data;
+        // the character with something going on first: in a stream, or with quests taken
+        character = data.Characters.OrderByDescending(c => c.StreamName != null).ThenByDescending(c => c.Taken.Count).FirstOrDefault();
+        tab = character == null && data.Streamer != null ? "stream" : "daily";
+        if (StartTab == "stream" ? data.Streamer != null : character != null && (StartTab == "chains" || StartTab == "achievements" || StartTab == "daily")) tab = StartTab;
+    }
+
+    private void PickCharacter(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id)) character = data.Characters.FirstOrDefault(c => c.Id == id) ?? character;
+        chainKey = null;
+        achPage = 0;
+    }
+
+    private async Task Copy(string text)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            copied = text;
+            StateHasChanged();
+            await Task.Delay(1500);
+            if (copied == text) copied = null;
+        }
+        catch (Exception)
+        {
+            // no clipboard (an old browser, or not allowed): the command is still there to read
+        }
+    }
+
+    // ---- Shared pieces ------------------------------------------------------------------------------------------
+
+    private RenderFragment Tab(string key, string label) => __builder =>
+    {
+        <button type="button" role="tab" class="qp-tab @(tab == key ? "is-active" : "")" aria-selected="@(tab == key)" @onclick="() => tab = key">@label</button>
+    };
+
+    private RenderFragment Bar(double share, string extra = null) => @<div class="qp-bar @extra"><span class="qp-bar__fill" style="width: @((Math.Clamp(share, 0, 1) * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span></div>;
+
+    /// <summary>A chat command with a copy button.</summary>
+    private RenderFragment Command(string command) => __builder =>
+    {
+        <div class="qp-cmd">
+            <code>@command</code>
+            <button type="button" class="qp-cmd__copy @(copied == command ? "is-copied" : "")" title="@(copied == command ? "Copied" : "Copy")" aria-label="Copy @command" @onclick="() => Copy(command)">
+                <i class="fa-solid @(copied == command ? "fa-check" : "fa-copy")" aria-hidden="true"></i>
+            </button>
+        </div>
+    };
+
+    /// <summary>A picture on its tile: a scene fills it, a cut-out sits on the tile's dark backdrop.</summary>
+    private RenderFragment Art(string src, string size = null, bool secret = false) => __builder =>
+    {
+        <div class="qp-art @(size != null ? "qp-art--" + size : "") @(secret ? "is-secret" : "")">
+            @if (!string.IsNullOrEmpty(src))
+            {
+                <img src="@src" alt="" loading="lazy" onerror="this.style.display='none'" />
+            }
+        </div>
+    };
+
+    private RenderFragment Steps(int step, int steps, int state, bool segments = false) => __builder =>
+    {
+        <div class="@(segments ? "qp-segments" : "qp-dots")" aria-label="Step @(Math.Min(step + 1, steps)) of @steps">
+            @for (var i = 0; i < steps; i++)
+            {
+                <span class="@(state == 2 || i < step ? "is-done" : state == 1 && i == step ? "is-now" : "")"></span>
+            }
+        </div>
+    };
+
+    /// <summary>"5 h left", "2 days left": how long a quest or bounty runs.</summary>
+    private static string Left(DateTime ends)
+    {
+        var left = ends - DateTime.UtcNow;
+        if (left <= TimeSpan.Zero) return "Ended";
+        if (left.TotalDays >= 2) return Math.Floor(left.TotalDays) + " days left";
+        if (left.TotalHours >= 1) return Math.Floor(left.TotalHours) + " h left";
+        return Math.Max(1, (int)left.TotalMinutes) + " min left";
+    }
+
+    // ---- Daily & weekly -----------------------------------------------------------------------------------------
+
+    private RenderFragment DailyTab(QuestPageCharacter c) => __builder =>
+    {
+        var dailies = c.Taken.Where(q => q.Kind == 0).Concat(c.Offers).ToList();
+        <div class="qp-strip">
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-fire qp-flame @(c.Streak > 0 ? "is-lit" : "")" aria-hidden="true"></i>
+                <span class="qp-strip__value">@c.Streak</span>
+                <span class="qp-strip__label">Day streak</span>
+            </div>
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-circle-check qp-strip__icon" aria-hidden="true"></i>
+                <span class="qp-strip__value">@c.DailiesCompleted.ToString("N0")</span>
+                <span class="qp-strip__label">Dailies completed</span>
+            </div>
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-crown qp-strip__icon qp-strip__icon--gold" aria-hidden="true"></i>
+                @if (c.Title != null)
+                {
+                    <span class="qp-strip__text">Title: <strong class="qp-gold">@c.Title</strong></span>
+                }
+                else
+                {
+                    <span class="qp-strip__text qp-faint">No title worn</span>
+                }
+            </div>
+        </div>
+
+        <div class="qp-section-head">
+            <h2 class="qp-h2">Daily quests</h2>
+            <span class="qp-meta">Choose up to 3 quests <span class="qp-dot">&bull;</span> Resets at 00:00 UTC</span>
+            <span class="qp-meta qp-meta--end"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Accept a quest in chat, then play to make progress.</span>
+        </div>
+        @if (dailies.Count == 0)
+        {
+            <div class="qp-empty">
+                @Art("/imgs/quests/empty-board.png", "lg")
+                <p>No quests yet today. Type <span class="rf-cmd">!quest</span> in a stream to get today's three.</p>
+            </div>
+        }
+        else
+        {
+            <div class="qp-grid qp-grid--3">
+                @foreach (var q in dailies)
+                {
+                    @QuestCard(q)
+                }
+            </div>
+        }
+
+        @if (c.Weekly != null || c.Seasonal != null || c.Taken.Any(q => q.Kind != 0))
+        {
+            <h2 class="qp-h2 qp-h2--spaced">Longer adventures</h2>
+            <div class="qp-grid qp-grid--2">
+                @foreach (var q in c.Taken.Where(q => q.Kind != 0))
+                {
+                    @QuestCard(q)
+                }
+                @if (c.Weekly != null && !c.Taken.Any(q => q.Kind == 1))
+                {
+                    @QuestCard(c.Weekly)
+                }
+                @if (c.Seasonal != null && !c.Taken.Any(q => q.Kind == 2))
+                {
+                    @QuestCard(c.Seasonal)
+                }
+            </div>
+        }
+
+        @if (c.StreamQuests.Count > 0)
+        {
+            <div class="qp-section-head qp-section-head--spaced">
+                <h2 class="qp-h2">@c.StreamName's quests</h2>
+                <span class="qp-meta">Posted by the streamer; your progress counts while you play there</span>
+            </div>
+            <div class="qp-grid qp-grid--2">
+                @foreach (var b in c.StreamQuests)
+                {
+                    @BountyCard(b)
+                }
+            </div>
+        }
+    };
+
+    private RenderFragment QuestCard(QuestPageQuest q) => __builder =>
+    {
+        var done = q.State == 2;
+        var kind = q.Kind == 1 ? "weekly" : q.Kind == 2 ? "seasonal" : "daily";
+        <article class="qp-card qp-card--@kind @(done ? "is-done" : "")">
+            <div class="qp-card__main">
+                @Art(q.Picture)
+                <div class="qp-card__body">
+                    <div class="qp-chips">
+                        @if (q.Kind == 0)
+                        {
+                            <span class="qp-chip">Daily</span>
+                        }
+                        else if (q.Kind == 1)
+                        {
+                            <span class="qp-chip qp-chip--strong">Weekly quest</span>
+                            <span class="qp-chips__note">New quest every Monday</span>
+                        }
+                        else
+                        {
+                            <span class="qp-chip qp-chip--season">Seasonal quest</span>
+                        }
+                        <span class="qp-chip @(done ? "qp-chip--good" : q.State == 1 ? "qp-chip--gold" : "qp-chip--good")">@(done ? "Done" : q.State == 1 ? "Taken" : "Available")</span>
+                    </div>
+                    <h3 class="qp-card__title">@q.Text</h3>
+                    <ul class="qp-rewards">
+                        <li><img src="/imgs/quests/icon-coin.png" alt="" /> @q.Coins.ToString("N0") coins</li>
+                        @if (q.Exp > 0)
+                        {
+                            <li>
+                                @if (q.ExpSkillIcon != null)
+                                {
+                                    <img src="@q.ExpSkillIcon" alt="" />
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-star" aria-hidden="true"></i>
+                                }
+                                @q.Exp.ToString("N0") @q.ExpSkill XP
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            @if (q.State == 1 || done)
+            {
+                <div class="qp-progress">
+                    <div class="qp-progress__row">
+                        <span>@q.Progress.ToString("N0") / @q.Amount.ToString("N0")</span>
+                        <span class="qp-faint">@(done ? "Completed" : Left(q.Expires))</span>
+                    </div>
+                    @Bar(q.Share, done ? "is-done" : null)
+                </div>
+            }
+            else if (q.Command != null)
+            {
+                @Command(q.Command)
+            }
+        </article>
+    };
+
+    private RenderFragment BountyCard(QuestPageBounty b) => __builder =>
+    {
+        var running = b.State == 1;
+        <article class="qp-card qp-card--bounty @(running ? "" : "is-done")">
+            <div class="qp-card__main">
+                @Art(b.Picture)
+                <div class="qp-card__body">
+                    <div class="qp-chips">
+                        <span class="qp-chip qp-chip--strong">@(b.Goal ? "Stream goal" : "Bounty")</span>
+                        <span class="qp-chip @(running ? "qp-chip--gold" : b.State == 2 || b.State == 5 ? "qp-chip--good" : "")">@BountyState(b)</span>
+                    </div>
+                    <h3 class="qp-card__title">@b.Name</h3>
+                    @if (!string.IsNullOrEmpty(b.Description))
+                    {
+                        <p class="qp-card__desc">@b.Description</p>
+                    }
+                    @if (!string.IsNullOrEmpty(b.Reward))
+                    {
+                        <ul class="qp-rewards"><li><i class="fa-solid fa-gift" aria-hidden="true"></i> @b.Reward</li></ul>
+                    }
+                </div>
+            </div>
+            <div class="qp-progress">
+                <div class="qp-progress__row">
+                    <span>@b.Task: @b.Progress.ToString("N0") / @b.Amount.ToString("N0")</span>
+                    <span class="qp-faint">@(b.YouClaimed ? "You claimed yours" : running ? Left(b.Ends) : b.Goal ? b.Helpers + " helped" : b.Claimed + " of " + b.Winners + " claimed")</span>
+                </div>
+                @Bar(b.Share)
+            </div>
+        </article>
+    };
+
+    private static string BountyState(QuestPageBounty b) => b.State switch
+    {
+        1 => "Running",
+        2 => "Done",
+        3 => "Out of time",
+        4 => "Stopped",
+        5 => "All claimed",
+        _ => "",
+    };
+
+    // ---- Quest chains -------------------------------------------------------------------------------------------
+
+    private static int ChainOrder(QuestPageChain ch) => ch.State == 1 ? 0 : ch.State == 0 ? 1 : ch.State == 5 ? 2 : 3;
+
+    private RenderFragment ChainsTab(QuestPageCharacter c) => __builder =>
+    {
+        var all = c.Chains.OrderBy(ChainOrder).ToList();
+        var shown = chainFilter == "progress" ? all.Where(ch => ch.State == 1).ToList()
+            : chainFilter == "done" ? all.Where(ch => ch.State == 2).ToList()
+            : all;
+        var selected = shown.FirstOrDefault(ch => ch.Key == chainKey) ?? shown.FirstOrDefault();
+        <div class="qp-section-head">
+            <h2 class="qp-h2">Quest chains</h2>
+            <span class="qp-meta">Short stories, lasting rewards.</span>
+            <span class="qp-meta qp-meta--end qp-meta--strong">@all.Count(ch => ch.State == 2) of @all.Count completed</span>
+        </div>
+        @if (all.Count == 0)
+        {
+            <div class="qp-empty"><p>No quest chains yet. Type <span class="rf-cmd">!quest</span> in a stream to hear the quest giver's stories.</p></div>
+        }
+        else
+        {
+            <div class="qp-master">
+                <div class="qp-list">
+                    <div class="qp-pills" role="group" aria-label="Show">
+                        @Pill("all", "All", all.Count, chainFilter, v => { chainFilter = v; })
+                        @Pill("progress", "In progress", all.Count(ch => ch.State == 1), chainFilter, v => { chainFilter = v; })
+                        @Pill("done", "Completed", all.Count(ch => ch.State == 2), chainFilter, v => { chainFilter = v; })
+                    </div>
+                    @if (shown.Count == 0)
+                    {
+                        <p class="qp-faint qp-list__empty">Nothing here yet.</p>
+                    }
+                    @foreach (var ch in shown)
+                    {
+                        var current = ch;
+                        <button type="button" class="qp-row @(current == selected ? "is-selected" : "")" aria-pressed="@(current == selected)" @onclick="() => chainKey = current.Key">
+                            @Art(current.Picture, "sm")
+                            <span class="qp-row__text">
+                                <span class="qp-row__name">@current.Name</span>
+                                <span class="qp-row__state">@ChainState(current)</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-right qp-row__chevron" aria-hidden="true"></i>
+                        </button>
+                    }
+                </div>
+                @if (selected != null)
+                {
+                    @ChainDetail(selected)
+                }
+            </div>
+        }
+    };
+
+    private RenderFragment ChainState(QuestPageChain ch) => __builder =>
+    {
+        switch (ch.State)
+        {
+            case 1: <span class="qp-state qp-state--now"><i class="fa-regular fa-circle" aria-hidden="true"></i> In progress &middot; Step @(ch.Step + 1) of @ch.Steps</span> break;
+            case 2: <span class="qp-state qp-state--done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Completed</span> break;
+            case 5: <span class="qp-state">@ch.Steps steps &middot; <span class="qp-chip">@(ch.Event == "halloween" ? "Halloween only" : ch.Event == "christmas" ? "Christmas only" : "Not now")</span></span> break;
+            default: <span class="qp-state">@ch.Steps steps &middot; <span class="qp-chip qp-chip--good">Available</span></span> break;
+        }
+    };
+
+    private RenderFragment ChainDetail(QuestPageChain ch) => __builder =>
+    {
+        <article class="qp-detail @(ch.State == 2 ? "is-done" : "")">
+            <div class="qp-detail__banner">
+                <img src="@ch.Banner" alt="" loading="lazy" onerror="this.style.display='none'" />
+            </div>
+            <div class="qp-detail__body">
+                <div class="qp-detail__head">
+                    <h3 class="qp-detail__title">@ch.Name</h3>
+                    @if (ch.State == 1)
+                    {
+                        <span class="qp-pill-tag">Step @(ch.Step + 1) of @ch.Steps</span>
+                    }
+                    else if (ch.State == 2)
+                    {
+                        <span class="qp-pill-tag qp-pill-tag--good"><i class="fa-solid fa-check" aria-hidden="true"></i> Completed</span>
+                    }
+                    else
+                    {
+                        <span class="qp-pill-tag qp-pill-tag--quiet">@ch.Steps steps</span>
+                    }
+                </div>
+                @Steps(ch.Step, ch.Steps, ch.State)
+                @if (!string.IsNullOrEmpty(ch.Story))
+                {
+                    <p class="qp-story">@ch.Story</p>
+                }
+                @if (!string.IsNullOrEmpty(ch.Ending))
+                {
+                    <p class="qp-story">@ch.Ending</p>
+                }
+
+                @if (!string.IsNullOrEmpty(ch.Task))
+                {
+                    <div class="qp-objective">
+                        <div class="qp-label">Current objective</div>
+                        <div class="qp-objective__row">
+                            <span class="qp-objective__task">@ch.Task</span>
+                            @if (ch.Amount > 1)
+                            {
+                                <span class="qp-objective__count">@ch.Progress.ToString("N0") / @ch.Amount.ToString("N0")</span>
+                            }
+                        </div>
+                        @if (ch.Amount > 1)
+                        {
+                            @Bar((double)ch.Progress / ch.Amount, "qp-bar--lg")
+                        }
+                        <p class="qp-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Progress updates as you play.</p>
+                    </div>
+                }
+                @if (ch.Command != null)
+                {
+                    <div class="qp-objective">
+                        <div class="qp-label">Begin it in chat</div>
+                        @Command(ch.Command)
+                    </div>
+                }
+
+                @if (ch.RewardTitle != null || ch.RewardDecor != null)
+                {
+                    <div class="qp-label qp-label--big">Story rewards</div>
+                    <div class="qp-story-rewards">
+                        @if (ch.RewardDecor != null)
+                        {
+                            <div class="qp-story-reward">
+                                <img class="qp-story-reward__decor" src="/images/decor/@(ch.RewardDecorKey).png" alt="" loading="lazy" onerror="this.style.display='none'" />
+                                <span>Village decor: <strong>@ch.RewardDecor</strong></span>
+                            </div>
+                        }
+                        @if (ch.RewardTitle != null)
+                        {
+                            <div class="qp-story-reward">
+                                <i class="fa-solid fa-crown qp-crown" aria-hidden="true"></i>
+                                <span>Title: <strong class="qp-gold">@ch.RewardTitle</strong></span>
+                            </div>
+                        }
+                    </div>
+                }
+                <p class="qp-foot-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> One quest chain at a time. Available stories include a chat command to begin.</p>
+            </div>
+        </article>
+    };
+
+    private RenderFragment Pill(string key, string label, int count, string current, Action<string> pick) => __builder =>
+    {
+        <button type="button" class="qp-pill @(current == key ? "is-on" : "")" aria-pressed="@(current == key)" @onclick="() => pick(key)">@label <span class="qp-pill__count">@count</span></button>
+    };
+
+    // ---- Achievements -------------------------------------------------------------------------------------------
+
+    private static bool Secret(QuestPageAchievement a) => a.Hidden && a.Progress == 0 && a.Tier == 0;
+
+    private RenderFragment AchievementsTab(QuestPageCharacter c) => __builder =>
+    {
+        var all = c.Achievements;
+        IEnumerable<QuestPageAchievement> list = all;
+        if (achFilter == "progress") list = list.Where(a => a.Next > 0);
+        else if (achFilter == "done") list = list.Where(a => a.Next == 0);
+        if (!string.IsNullOrWhiteSpace(achSearch))
+        {
+            var term = achSearch.Trim();
+            list = list.Where(a => !Secret(a) && (a.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || a.TierTitles.Any(t => t != null && t.Contains(term, StringComparison.OrdinalIgnoreCase))));
+        }
+        list = achSort switch
+        {
+            "tier" => list.OrderByDescending(a => a.Tier).ThenByDescending(a => a.Share),
+            "name" => list.OrderBy(a => Secret(a)).ThenBy(a => a.Name),
+            // closest first: the ones still going, nearest their next tier, then the finished ones, the secrets last
+            _ => list.OrderBy(a => a.Next == 0 ? 1 : 0).ThenBy(a => Secret(a)).ThenByDescending(a => a.Share),
+        };
+        var shown = list.ToList();
+        var pages = Math.Max(1, (shown.Count + AchievementsPerPage - 1) / AchievementsPerPage);
+        var page = Math.Clamp(achPage, 0, pages - 1);
+        var worn = c.Titles.FirstOrDefault(t => t.Worn);
+        var example = c.Titles.FirstOrDefault(t => !t.Worn) ?? worn;
+
+        <div class="qp-strip qp-strip--5">
+            <div class="qp-strip__cell"><span class="qp-medal qp-medal--3"></span><span class="qp-strip__value">@all.Count(a => a.Tier >= 3)</span><span class="qp-strip__unit">Gold</span></div>
+            <div class="qp-strip__cell"><span class="qp-medal qp-medal--2"></span><span class="qp-strip__value">@all.Count(a => a.Tier == 2)</span><span class="qp-strip__unit">Silver</span></div>
+            <div class="qp-strip__cell"><span class="qp-medal qp-medal--1"></span><span class="qp-strip__value">@all.Count(a => a.Tier == 1)</span><span class="qp-strip__unit">Bronze</span></div>
+            <div class="qp-strip__cell"><i class="fa-solid fa-crown qp-strip__icon qp-strip__icon--gold" aria-hidden="true"></i><span class="qp-strip__value">@c.Titles.Count</span><span class="qp-strip__unit">Titles earned</span></div>
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-bookmark qp-strip__icon qp-strip__icon--banner" aria-hidden="true"></i>
+                @if (worn != null)
+                {
+                    <span class="qp-strip__text">Wearing: <strong class="qp-gold">@worn.Text</strong></span>
+                }
+                else
+                {
+                    <span class="qp-strip__text qp-faint">No title worn</span>
+                }
+            </div>
+        </div>
+
+        <div class="qp-columns">
+            <section>
+                <div class="qp-section-head qp-section-head--tools">
+                    <h2 class="qp-h2">Achievements</h2>
+                    <label class="qp-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input type="search" placeholder="Search achievements" value="@achSearch" @oninput="e => { achSearch = e.Value?.ToString() ?? string.Empty; achPage = 0; }" aria-label="Search achievements" />
+                    </label>
+                    <label class="qp-select qp-select--small">
+                        <select aria-label="Sort" value="@achSort" @onchange="e => { achSort = e.Value?.ToString(); achPage = 0; }">
+                            <option value="closest">Closest to next tier</option>
+                            <option value="tier">Highest tier</option>
+                            <option value="name">A to Z</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down qp-select__chevron" aria-hidden="true"></i>
+                    </label>
+                </div>
+                <div class="qp-pills" role="group" aria-label="Show">
+                    @Pill("all", "All", all.Count, achFilter, v => { achFilter = v; achPage = 0; })
+                    @Pill("progress", "In progress", all.Count(a => a.Next > 0), achFilter, v => { achFilter = v; achPage = 0; })
+                    @Pill("done", "Completed", all.Count(a => a.Next == 0), achFilter, v => { achFilter = v; achPage = 0; })
+                </div>
+                @if (shown.Count == 0)
+                {
+                    <p class="qp-faint">No achievements match.</p>
+                }
+                <div class="qp-grid qp-grid--2 qp-grid--tight">
+                    @foreach (var a in shown.Skip(page * AchievementsPerPage).Take(AchievementsPerPage))
+                    {
+                        @AchievementCard(a)
+                    }
+                </div>
+                @if (shown.Count > 0)
+                {
+                    <div class="qp-pager">
+                        <span class="qp-faint">Showing @Math.Min(AchievementsPerPage, shown.Count - page * AchievementsPerPage) of @shown.Count achievements</span>
+                        @if (pages > 1)
+                        {
+                            <div class="qp-pager__buttons">
+                                <button type="button" class="qp-page" disabled="@(page == 0)" aria-label="Previous page" @onclick="() => achPage = page - 1"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                                @for (var p = 0; p < pages; p++)
+                                {
+                                    var number = p;
+                                    <button type="button" class="qp-page @(number == page ? "is-on" : "")" aria-current="@(number == page ? "page" : null)" @onclick="() => achPage = number">@(number + 1)</button>
+                                }
+                                <button type="button" class="qp-page" disabled="@(page >= pages - 1)" aria-label="Next page" @onclick="() => achPage = page + 1"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <aside>
+                <div class="qp-section-head">
+                    <h2 class="qp-h2">Your titles</h2>
+                    <span class="qp-meta qp-meta--end">@c.Titles.Count earned</span>
+                </div>
+                @if (c.Titles.Count == 0)
+                {
+                    <div class="qp-box"><p class="qp-faint">No titles yet. Every achievement tier and quest chain gives one.</p></div>
+                }
+                else
+                {
+                    <ol class="qp-titles">
+                        @foreach (var t in c.Titles)
+                        {
+                            <li class="@(t.Worn ? "is-worn" : "")">
+                                <span class="qp-titles__number">@t.Number.</span>
+                                <span class="qp-titles__text">@t.Text</span>
+                                @if (t.Worn)
+                                {
+                                    <span class="qp-titles__worn">Wearing</span>
+                                }
+                            </li>
+                        }
+                    </ol>
+                    <p class="qp-cmd-label">Wear a title using its number in chat.</p>
+                    @Command("!title " + example.Number)
+                    <p class="qp-cmd-label">Remove your title in chat.</p>
+                    @Command("!title off")
+                }
+            </aside>
+        </div>
+    };
+
+    private RenderFragment AchievementCard(QuestPageAchievement a) => __builder =>
+    {
+        var secret = Secret(a);
+        var tiers = a.Targets?.Length ?? 3;
+        <article class="qp-ach @(a.Next == 0 ? "is-done" : "") @(a.Tier >= 3 ? "is-gold" : "")">
+            @Art(a.Picture, "md", secret)
+            <div class="qp-ach__body">
+                <div class="qp-ach__head">
+                    <h3 class="qp-ach__name">@(secret ? "???" : a.Name)</h3>
+                    <span class="qp-pips" aria-label="Tier @a.Tier of @tiers">
+                        @for (var t = 1; t <= tiers; t++)
+                        {
+                            <span class="qp-pip qp-pip--@(tiers == 1 ? 3 : t) @(a.Tier >= t ? "is-on" : "")"></span>
+                        }
+                    </span>
+                </div>
+                @if (secret)
+                {
+                    <p class="qp-ach__next">A secret. Keep playing.</p>
+                }
+                else if (a.Next > 0)
+                {
+                    <div class="qp-ach__count">@a.Progress.ToString("N0") / @a.Next.ToString("N0")</div>
+                    @Bar(a.Share)
+                    <p class="qp-ach__next">Next title: @a.TierTitles[Math.Min(a.Tier, 2)]</p>
+                }
+                else
+                {
+                    <div class="qp-ach__count">@a.Progress.ToString("N0")</div>
+                    @Bar(1, "is-done")
+                    <p class="qp-ach__next">@(tiers == 1 ? "Done" : "All three tiers"): @a.TierTitles[Math.Min(tiers, 3) - 1]</p>
+                }
+            </div>
+        </article>
+    };
+
+    // ---- Your stream --------------------------------------------------------------------------------------------
+
+    private RenderFragment StreamTab(QuestPageStreamer s) => __builder =>
+    {
+        var current = s.Stories.FirstOrDefault(x => x.State == 1);
+        var next = current == null ? s.Stories.FirstOrDefault(x => x.State == 0) : null;
+        var finished = s.Stories.Where(x => x.State == 2).ToList();
+        var waiting = s.Stories.Where(x => x.State == 0 && x != next).ToList();
+        <div class="qp-who">
+            <span class="qp-select qp-select--static"><i class="fa-brands fa-twitch" aria-hidden="true"></i> Your stream: <strong class="qp-gold">@StreamerName</strong></span>
+            <span class="qp-live">Stream overview</span>
+        </div>
+
+        <div class="qp-strip">
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-house qp-strip__icon qp-strip__icon--gold" aria-hidden="true"></i>
+                <span class="qp-strip__value">@finished.Count / @s.Stories.Count</span>
+                <span class="qp-strip__label">Village stories completed</span>
+            </div>
+            <div class="qp-strip__cell">
+                <i class="fa-solid fa-shield-halved qp-strip__icon qp-strip__icon--gold" aria-hidden="true"></i>
+                <span class="qp-strip__value">@(s.HeroWaves > 0 ? s.HeroWaves + " waves" : "None yet")</span>
+                <span class="qp-strip__label">Best hero mode run@(s.HeroRank > 0 ? " · rank #" + s.HeroRank : "")</span>
+            </div>
+            <div class="qp-strip__cell">
+                <img class="qp-strip__img" src="/imgs/quests/icon-loyalty.png" alt="" />
+                <span class="qp-strip__value">@s.LoyaltyLeft.ToString("N0") / @s.LoyaltyWeekly.ToString("N0")</span>
+                <span class="qp-strip__label">Weekly loyalty points remaining</span>
+            </div>
+        </div>
+
+        <div class="qp-columns">
+            <section>
+                <h2 class="qp-h2">Village stories</h2>
+                @if (current != null || next != null)
+                {
+                    var st = current ?? next;
+                    <article class="qp-story-card">
+                        <div class="qp-story-card__main">
+                            @Art(st.Picture, "xl")
+                            <div class="qp-story-card__body">
+                                <div class="qp-detail__head">
+                                    <h3 class="qp-detail__title">@st.Name</h3>
+                                    <span class="qp-pill-tag @(st.State == 0 ? "qp-pill-tag--quiet" : "")">@(st.State == 1 ? "Step " + (st.Step + 1) + " of " + st.Steps : "Not begun")</span>
+                                </div>
+                                @Steps(st.Step, st.Steps, st.State, segments: true)
+                                @if (st.State == 1 && !string.IsNullOrEmpty(st.Line))
+                                {
+                                    <p class="qp-story">@st.Line</p>
+                                }
+                                else if (!string.IsNullOrEmpty(st.Hook))
+                                {
+                                    <p class="qp-story">@st.Hook</p>
+                                }
+                                @if (!string.IsNullOrEmpty(st.Task))
+                                {
+                                    <div class="qp-objective__row">
+                                        <span class="qp-objective__task">@st.Task</span>
+                                        @if (st.Amount > 0)
+                                        {
+                                            <span class="qp-objective__count">@st.Progress.ToString("N0") / @st.Amount.ToString("N0")</span>
+                                        }
+                                    </div>
+                                    @if (st.Amount > 0)
+                                    {
+                                        @Bar(st.Share, "qp-bar--lg")
+                                    }
+                                }
+                                @if (st.Helpers.Length > 0)
+                                {
+                                    <p class="qp-helpers"><i class="fa-solid fa-crown qp-crown" aria-hidden="true"></i> Top helper@(st.Helpers.Length > 1 ? "s" : ""): <strong class="qp-gold">@string.Join(", ", st.Helpers)</strong></p>
+                                }
+                            </div>
+                        </div>
+                        <div class="qp-story-card__foot"><i class="fa-solid fa-gamepad" aria-hidden="true"></i> @(st.State == 1 ? "Continue" : "Begin it") in the game's quest window <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Village tab</div>
+                    </article>
+                }
+                else if (finished.Count == s.Stories.Count && s.Stories.Count > 0)
+                {
+                    <div class="qp-box"><p>Every village story is told. New ones come with updates.</p></div>
+                }
+
+                @if (finished.Count > 0)
+                {
+                    <h3 class="qp-h3">Completed stories</h3>
+                    <div class="qp-folds">
+                        @foreach (var st in finished)
+                        {
+                            <details class="qp-fold">
+                                <summary>
+                                    @Art(st.Picture, "xs")
+                                    <span class="qp-fold__name">@st.Name</span>
+                                    <span class="qp-state qp-state--done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Completed</span>
+                                    <i class="fa-solid fa-chevron-down qp-fold__chevron" aria-hidden="true"></i>
+                                </summary>
+                                <p class="qp-story">@(st.Ending ?? st.Hook ?? "Told.")</p>
+                            </details>
+                        }
+                    </div>
+                }
+                @if (waiting.Count > 0)
+                {
+                    <h3 class="qp-h3">Still to tell</h3>
+                    <div class="qp-folds">
+                        @foreach (var st in waiting)
+                        {
+                            <details class="qp-fold">
+                                <summary>
+                                    @Art(st.Picture, "xs")
+                                    <span class="qp-fold__name">@st.Name</span>
+                                    <span class="qp-state">@st.Steps steps</span>
+                                    <i class="fa-solid fa-chevron-down qp-fold__chevron" aria-hidden="true"></i>
+                                </summary>
+                                <p class="qp-story">@(st.Hook ?? "A story for later.")</p>
+                            </details>
+                        }
+                    </div>
+                }
+
+                <h3 class="qp-h3">Quests you posted</h3>
+                @if (s.Quests.Count == 0)
+                {
+                    <div class="qp-box"><p class="qp-faint">None yet. Post a bounty or a stream goal from the game's quest window.</p></div>
+                }
+                else
+                {
+                    <div class="qp-table-wrap">
+                        <table class="qp-table">
+                            <thead><tr><th>Quest</th><th>Type</th><th>Progress</th><th>Status</th></tr></thead>
+                            <tbody>
+                                @foreach (var b in s.Quests)
+                                {
+                                    <tr>
+                                        <td><span class="qp-table__quest">@Art(b.Picture, "xs") @b.Name</span></td>
+                                        <td><span class="qp-table__type"><i class="fa-solid @(b.Goal ? "fa-tower-broadcast" : "fa-crosshairs")" aria-hidden="true"></i> @(b.Goal ? "Stream goal" : "Bounty")</span></td>
+                                        <td>@b.Progress.ToString("N0") / @b.Amount.ToString("N0")</td>
+                                        <td><span class="qp-status @(b.State == 1 ? "qp-status--gold" : b.State == 2 || b.State == 5 ? "qp-status--good" : "")">@BountyState(b)</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <p class="qp-table__note"><i class="fa-solid fa-gamepad" aria-hidden="true"></i> Posted and managed in the game's quest window.</p>
+                    </div>
+                }
+            </section>
+
+            <aside>
+                <h2 class="qp-h2">Unlocked for your stream</h2>
+                @if (s.Unlocks.Count == 0)
+                {
+                    <div class="qp-box"><p class="qp-faint">Nothing yet. Village stories unlock islands, perks and titles.</p></div>
+                }
+                else
+                {
+                    <ul class="qp-unlocks">
+                        @foreach (var u in s.Unlocks)
+                        {
+                            <li>
+                                @if (u.Picture != null)
+                                {
+                                    @Art(u.Picture, "xs")
+                                }
+                                else
+                                {
+                                    <span class="qp-unlocks__crown"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
+                                }
+                                @if (u.Title)
+                                {
+                                    <span>Title: <strong class="qp-gold">@u.Text</strong></span>
+                                }
+                                else
+                                {
+                                    <span>@u.Text</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <div class="qp-box qp-hero-best">
+                    <h2 class="qp-h3">Hero mode best</h2>
+                    <div class="qp-hero-best__row">
+                        @Art("/imgs/quests/quest-hero.png", "md")
+                        @if (s.HeroWaves > 0)
+                        {
+                            <div>
+                                <div class="qp-hero-best__waves">@s.HeroWaves waves</div>
+                                <div>@s.HeroKills.ToString("N0") enemies &middot; @(s.HeroSeconds / 60):@((s.HeroSeconds % 60).ToString("00"))</div>
+                                @if (s.HeroRank > 0)
+                                {
+                                    <div class="qp-faint">Rank #@s.HeroRank among all streamers</div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="qp-faint">No run yet. Captain Hargrove on Ravebridge starts one.</p>
+                        }
+                    </div>
+                    <p class="qp-faint qp-hero-best__note">Decor and titles come at 10, 25 and 50 waves.</p>
+                    <a class="qp-link" href="/town#decor">View town decor <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+                </div>
+            </aside>
+        </div>
+    };
+}

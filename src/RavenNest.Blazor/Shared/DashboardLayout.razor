@@ -9,7 +9,7 @@
     AdminLayout and DarkAdminDashboardLayout carry that class too and have no
     business growing a landscape.
 *@
-<div class="page dashboard rf-dash rf-dash--art" style="--rf-art-img: url('@ArtImage')">
+<div class="page dashboard rf-dash rf-dash--art" style="@(ArtImage != null ? "--rf-art-img: url('" + ArtImage + "')" : null)">
     <div class="sidebar">
         <NavMenu Dashboard="true" />
     </div>
@@ -95,6 +95,9 @@
             ["session"] = "kyo",
             ["notifications"] = "kyo",
             ["town"] = "town",
+            // pages with a banner of their own: no band behind it
+            ["quests"] = "",
+            ["dev"] = "",
         };
 
     private const string DefaultArt = "home";
@@ -109,7 +112,7 @@
             if (cut >= 0) path = path.Substring(0, cut);
 
             var name = ArtByPage.TryGetValue(path, out var art) ? art : DefaultArt;
-            return "/imgs/dashboard/" + name + ".jpg";
+            return name.Length == 0 ? null : "/imgs/dashboard/" + name + ".jpg";
         }
     }
 
