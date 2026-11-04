@@ -1,0 +1,17 @@
+// Pulls the latest RavenBot, publishes the centralized bot (ROBot) to a staging folder while the live bot keeps
+// running, then swaps it in. The bot is only down for the swap. If the pull or the publish fails, nothing has been
+// stopped. The bot's settings.json is never overwritten. Source copy: RavenNest repo, deploy/lanlink.
+{
+  "description": "Pull, publish and restart the centralized bot ROBot (short downtime)",
+  "steps": [
+    { "run": "git pull --ff-only", "in": "C:/Ravenfall/Projects/RavenBot" },
+    { "run": "if exist \"C:/Ravenfall/Projects/Deploy/ROBot\" rmdir /s /q \"C:/Ravenfall/Projects/Deploy/ROBot\"" },
+    { "run": "dotnet publish src/ROBot/ROBot.csproj -c Release -r win-x64 --self-contained false -o C:/Ravenfall/Projects/Deploy/ROBot", "in": "C:/Ravenfall/Projects/RavenBot" },
+    // from here the bot is down: keep it short. The bot keeps nothing to save, so it is stopped as AppStarter's
+    // twelve-hour restarts do
+    { "stop": "AppStarter" },
+    { "stop": "ROBot", "timeoutSeconds": 60 },
+    { "run": "robocopy \"C:/Ravenfall/Projects/Deploy/ROBot\" \"C:/Ravenfall/Projects/RavenBot/Publish/Release\" /E /R:5 /W:2 /NP /NFL /NDL /XF settings.json & if errorlevel 8 (exit /b 1) else (exit /b 0)" },
+    { "start": "C:/Ravenfall/Projects/AppStarter/AppStarter/bin/Debug/net9.0/AppStarter.exe", "always": true }
+  ]
+}

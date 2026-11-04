@@ -1,0 +1,20 @@
+// Pulls the latest RavenNest, publishes it to a staging folder while the live server keeps running, then swaps it in.
+// The server is only down for the swap: a graceful stop (Ctrl+C, so it saves), the copy, and AppStarter starting it.
+// If the pull or the publish fails, nothing has been stopped. The server's own config files (appsettings*.json,
+// web.config) are never overwritten. Source copy: RavenNest repo, deploy/lanlink.
+{
+  "description": "Pull, publish and restart RavenNest (graceful stop, short downtime)",
+  "steps": [
+    { "run": "git pull --ff-only", "in": "C:/Ravenfall/Projects/RavenNest" },
+    { "run": "if exist \"C:/Ravenfall/Projects/Deploy/RavenNest\" rmdir /s /q \"C:/Ravenfall/Projects/Deploy/RavenNest\"" },
+    { "run": "dotnet publish src/RavenNest.Blazor/RavenNest.Blazor.csproj -c Release -r win-x64 --self-contained false -o C:/Ravenfall/Projects/Deploy/RavenNest", "in": "C:/Ravenfall/Projects/RavenNest" },
+    // from here the server is down: keep it short
+    { "stop": "AppStarter" },
+    { "run": "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Users/woats/AppData/Local/LanLink/Scripts/stop-gracefully.ps1 -Name RavenNest -Wait 180", "timeoutSeconds": 240, "continueOnError": true },
+    // only if the graceful stop did not finish in time
+    { "stop": "RavenNest", "timeoutSeconds": 60 },
+    { "run": "robocopy \"C:/Ravenfall/Projects/Deploy/RavenNest\" \"C:/Ravenfall/Projects/RavenNest/Publish\" /E /R:5 /W:2 /NP /NFL /NDL /XF appsettings*.json web.config & if errorlevel 8 (exit /b 1) else (exit /b 0)" },
+    // also after a failed step: AppStarter then starts the server again (the previous build if the copy never ran)
+    { "start": "C:/Ravenfall/Projects/AppStarter/AppStarter/bin/Debug/net9.0/AppStarter.exe", "always": true }
+  ]
+}
