@@ -63,7 +63,7 @@ namespace RavenNest.Blazor.Services
             ["UI_QUEST_ANSWER"] = "Answer with !quest answer 1 to {0}",
             ["UI_QUEST_WRONG_DEFAULT"] = "That is not it.",
             ["UI_QUEST_HALLOWEEN_KILL"] = "Defeat {0} spooky enemies",
-            ["UI_QUEST_HALLOWEEN_HARVEST"] = "Harvest {0} pumpkins",
+            ["UI_QUEST_HALLOWEEN_HARVEST"] = "Harvest {0} crops for the patch (any farming counts, no pumpkins needed)",
             ["UI_QUEST_CHRISTMAS_WOOD"] = "Chop {0} logs for the yule fire",
             ["UI_QUEST_CHRISTMAS_COOK"] = "Cook {0} Christmas meals",
             ["UI_QUEST_CHAIN_ENTRY"] = "{0}: {1} ({2})",
