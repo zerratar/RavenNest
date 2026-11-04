@@ -612,6 +612,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<StreamerQuestManager>();
             services.AddSingleton<VillageStoryManager>();
             services.AddSingleton<HeroModeManager>();
+            services.AddSingleton<UpdateHonourManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();

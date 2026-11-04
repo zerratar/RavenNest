@@ -105,5 +105,8 @@
 
         /// <summary>A world event pulls the stream to Ravebridge, unlocked or not (RavebridgeForced).</summary>
         RavebridgeForced = 56,
+
+        /// <summary>The stream started on the newest release quickly: first on it, or an Early Bird (UpdateHonour).</summary>
+        UpdateHonour = 57,
     }
 }

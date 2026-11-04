@@ -44,6 +44,8 @@ namespace RavenNest.BusinessLogic.Game
             999, 999, 999, 999, 999, 999, 999, 999, 999, 999, 999
         };
 
+        private readonly UpdateHonourManager updateHonours;
+
         public SessionManager(
             ILogger<SessionManager> logger,
             ITwitchClient twitchClient,
@@ -52,8 +54,10 @@ namespace RavenNest.BusinessLogic.Game
             VillageManager villageManager,
             ITwitchExtensionConnectionProvider extWsConnectionProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider,
-            ISecureHasher secureHasher)
+            ISecureHasher secureHasher,
+            UpdateHonourManager updateHonours)
         {
+            this.updateHonours = updateHonours;
             this.logger = logger;
             this.twitchClient = twitchClient;
             this.gameData = gameData;
@@ -211,6 +215,9 @@ namespace RavenNest.BusinessLogic.Game
             {
                 userSettings["client_version"] = clientVersion;
             }
+
+            // a stream on the newest release soon after it went up: first on it, or an Early Bird
+            updateHonours.SessionStarted(newGameSession, user, clientVersion);
 
             return Task.FromResult(new BeginSessionResult
             {

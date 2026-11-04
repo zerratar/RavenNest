@@ -314,6 +314,12 @@ namespace RavenNest.Blazor.Services
             ["UI_SKILL_MELEE"] = "Melee",
             ["UI_SKILL_ALL"] = "All",
             ["UI_SKILL_ENCHANTING"] = "Enchanting",
+            ["UI_TITLE_TRAILBLAZER_1"] = "the Trailblazer",
+            ["UI_TITLE_TRAILBLAZER_2"] = "the Pathfinder",
+            ["UI_TITLE_TRAILBLAZER_3"] = "the Vanguard",
+            ["UI_TITLE_EARLYBIRD_1"] = "the Early Bird",
+            ["UI_TITLE_EARLYBIRD_2"] = "the Dawn Patrol",
+            ["UI_TITLE_EARLYBIRD_3"] = "the Ever Ready",
         };
 
         /// <summary>A text by its name in the game ("UI_CHAIN_CAT"), any case; the fallback when there is none.</summary>

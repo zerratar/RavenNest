@@ -409,6 +409,23 @@ namespace RavenNest.Models
         public StreamQuestHelper[] Helpers { get; set; }
     }
 
+    /// <summary>
+    /// The stream started on the newest release soon after it went up (UpdateHonour): the first stream in the world on
+    /// it, an Early Bird (within ten minutes), or both, with the counts so far and any titles they earned.
+    /// </summary>
+    public class UpdateHonour
+    {
+        public string Version { get; set; }
+        /// <summary>Minutes after the release went up on GitHub.</summary>
+        public int Minutes { get; set; }
+        public bool First { get; set; }
+        public bool Early { get; set; }
+        public int FirstCount { get; set; }
+        public int EarlyCount { get; set; }
+        /// <summary>Title keys ("earlybird_1", "trailblazer_2").</summary>
+        public string[] NewTitles { get; set; }
+    }
+
     /// <summary>A character reached an achievement's tier (AchievementReached): the title that came with it.</summary>
     public class AchievementReached
     {

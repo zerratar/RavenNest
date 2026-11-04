@@ -1,0 +1,73 @@
+/* "First to update": each version's first stream, in the hero mode boards' style. */
+.rf-firsts {
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.rf-firsts__head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 0.6rem;
+}
+
+.rf-firsts__icon {
+    font-size: 1.3rem;
+    color: var(--rf-gold);
+    width: 2.6rem;
+    height: 2.6rem;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--rf-gold-wash);
+    flex: none;
+}
+
+.rf-firsts__title {
+    font-size: var(--rf-size-title);
+    margin: 0;
+    color: var(--rf-ink);
+}
+
+.rf-firsts__sub {
+    margin: 0.1rem 0 0;
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-firsts__note {
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+    margin: 0 0 1rem;
+}
+
+.rf-firsts__empty {
+    color: var(--rf-ink-muted);
+    font-style: italic;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.rf-firsts__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.rf-firsts__version {
+    font-family: var(--rf-font-mono);
+    font-weight: 700;
+    color: var(--rf-gold-bright);
+    white-space: nowrap;
+}
+
+.rf-firsts__name {
+    font-weight: 600;
+    color: var(--rf-ink);
+}
+
+.rf-firsts__crown {
+    color: #d4af37;
+    margin-right: 0.4rem;
+}
+
+.rf-firsts__time {
+    color: var(--rf-ink-muted);
+}

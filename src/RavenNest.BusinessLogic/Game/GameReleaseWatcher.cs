@@ -22,6 +22,15 @@ namespace RavenNest.BusinessLogic.Game
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan StartDelay = TimeSpan.FromMinutes(1);
 
+        /// <summary>The newest release seen on GitHub and when it went up (UpdateHonourManager), or null before the first check.</summary>
+        public static LatestRelease Latest { get; private set; }
+
+        public sealed class LatestRelease
+        {
+            public string Version { get; init; }
+            public DateTime Published { get; init; }
+        }
+
         private readonly ILogger<GameReleaseWatcher> logger;
         private readonly GameData gameData;
 
@@ -98,6 +107,8 @@ namespace RavenNest.BusinessLogic.Game
             if (client == null) return;
 
             var release = await RavenNest.BusinessLogic.Github.Github.GetGithubReleaseAsync();
+            if (release != null && release.Version >= gameData.GetClientVersion())
+                Latest = new LatestRelease { Version = release.VersionString, Published = release.Published.ToUniversalTime() };
             if (release == null || release.Version < gameData.GetClientVersion() || client.ClientVersion == release.VersionString)
                 return;
 

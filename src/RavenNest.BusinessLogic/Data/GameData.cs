@@ -4256,6 +4256,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<StreamerUnlock> GetStreamerUnlocks(Guid streamerUserId) => streamerUnlocks[nameof(User), streamerUserId];
 
+        /// <summary>Every streamer's unlocks (UpdateHonourManager: who was first on a version).</summary>
+        public IReadOnlyList<StreamerUnlock> GetAllStreamerUnlocks() => streamerUnlocks.Entities.ToList();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(StreamerUnlock item) => Update(() => streamerUnlocks.Add(item));
 

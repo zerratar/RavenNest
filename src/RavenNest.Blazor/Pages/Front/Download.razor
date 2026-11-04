@@ -4,6 +4,8 @@
 @using RavenNest.Blazor.Services
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
+@using RavenNest.BusinessLogic.Game
+@inject UpdateHonourManager Honours
 
 @*
     Every heading on this page used to sit outside the block it introduced. The panels centre
@@ -69,6 +71,67 @@
                 </a>
             </div>
         </div>
+
+        @*
+            Who updated first (UpdateHonourManager): the first stream on each new version keeps the record, and every
+            stream on it within ten minutes is an Early Bird. A carrot for the game's background download and
+            automatic install (v0.9.7.0).
+        *@
+        <section class="rf-panel rf-firsts" aria-labelledby="firsts-title">
+            <header class="rf-firsts__head">
+                <i class="fa-solid fa-flag-checkered rf-firsts__icon" aria-hidden="true"></i>
+                <div>
+                    <h2 id="firsts-title" class="rf-firsts__title">First to update</h2>
+                    <p class="rf-firsts__sub">The first stream on each new version</p>
+                </div>
+            </header>
+            <p class="rf-firsts__note">
+                When a new version goes up, the first stream to start on it holds the record for good and becomes a
+                Trailblazer. Every stream on it within ten minutes is an Early Bird. Both earn titles over the releases.
+                To be quick, turn on <b>Download updates in the background</b> and <b>Install updates automatically</b>
+                in the game's settings, under Game &gt; Updates (from v0.9.7.0).
+            </p>
+            @if (firsts.Count == 0)
+            {
+                <p class="rf-firsts__empty">Nobody holds a record yet. The next version's first stream takes the first one.</p>
+            }
+            else
+            {
+                <div class="rf-scroll-x">
+                    <table class="rf-table rf-firsts__table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Version</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">First stream</span></th>
+                                <th scope="col" class="rf-firsts__num"><span class="rf-th rf-th--static">After the release</span></th>
+                                <th scope="col" class="rf-firsts__num"><span class="rf-th rf-th--static">Early Birds</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in firsts)
+                            {
+                                <tr>
+                                    <td class="rf-firsts__version">v@(f.Version)</td>
+                                    <td class="rf-firsts__name">
+                                        <i class="fa-solid fa-crown rf-firsts__crown" aria-hidden="true"></i>
+                                        @if (!string.IsNullOrEmpty(f.StreamerLogin))
+                                        {
+                                            <a href="https://www.twitch.tv/@f.StreamerLogin" target="_blank" rel="noopener">@f.Streamer</a>
+                                        }
+                                        else
+                                        {
+                                            @f.Streamer
+                                        }
+                                    </td>
+                                    <td class="rf-firsts__num rf-firsts__time">@After(f.Minutes)</td>
+                                    <td class="rf-firsts__num">@f.EarlyBirds</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
 
         <div class="rf-prose">
             <h2 class="rf-panel__title">Setting it up</h2>
@@ -155,3 +218,14 @@
         </div>
     </div>
 </div>
+
+@code {
+    private IReadOnlyList<UpdateHonourRecord> firsts = Array.Empty<UpdateHonourRecord>();
+
+    protected override void OnInitialized()
+    {
+        firsts = Honours.GetFirsts(25);
+    }
+
+    private static string After(int? minutes) => minutes == null ? "?" : minutes < 1 ? "under a minute" : minutes == 1 ? "1 minute" : minutes < 120 ? minutes + " minutes" : (minutes / 60) + " hours";
+}
