@@ -326,6 +326,48 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>
+        /// A raid won or a dungeon cleared by characters of one stream: a bounty is each character's own, a goal counts it
+        /// once and credits all of them (QuestTracker.ReportGroup).
+        /// </summary>
+        internal void GroupProgress(IReadOnlyList<Character> characters, string objective)
+        {
+            var first = characters.FirstOrDefault();
+            if (first?.UserIdLock == null) return;
+            var quests = gameData.GetStreamerQuests(first.UserIdLock.Value);
+            if (quests.Count == 0) return;
+
+            try
+            {
+                foreach (var quest in quests.ToList())
+                {
+                    if (quest.State != Running || quest.Objective != objective) continue;
+                    if (quest.Ends <= DateTime.UtcNow) { End(quest, OutOfTime); continue; }
+
+                    if (quest.Kind == Bounty)
+                    {
+                        foreach (var character in characters) BountyProgress(quest, character, 1);
+                        continue;
+                    }
+
+                    bool finished;
+                    lock (mutex)
+                    {
+                        if (quest.State != Running || quest.Progress >= quest.Amount) continue;
+                        quest.Progress += 1;
+                        foreach (var character in characters) EntryOf(quest, character).Progress += 1;
+                        finished = quest.Progress >= quest.Amount;
+                    }
+
+                    if (finished) End(quest, Done);
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Streamer quest group progress failed: " + exc);
+            }
+        }
+
         private void BountyProgress(StreamerQuest quest, Character character, long amount)
         {
             lock (mutex)

@@ -277,15 +277,7 @@ namespace RavenNest.BusinessLogic.Game
             var counted = Math.Min(amount, step.Amount - row.Progress);
             if (counted <= 0) return;
             row.Progress += counted;
-
-            var helper = gameData.GetVillageStoryHelpers(row.Id).FirstOrDefault(h => h.Step == row.Step && h.CharacterId == character.Id);
-            if (helper == null)
-            {
-                helper = new VillageStoryHelper { Id = Guid.NewGuid(), VillageStoryId = row.Id, Step = row.Step, CharacterId = character.Id };
-                gameData.Add(helper);
-            }
-            helper.Amount += counted;
-            helper.Updated = DateTime.UtcNow;
+            Credit(row, character, counted);
 
             if (found)
             {
@@ -294,6 +286,48 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             if (row.Progress >= step.Amount) StepDone(row, story);
+        }
+
+        private void Credit(VillageStory row, Character character, long amount)
+        {
+            var helper = gameData.GetVillageStoryHelpers(row.Id).FirstOrDefault(h => h.Step == row.Step && h.CharacterId == character.Id);
+            if (helper == null)
+            {
+                helper = new VillageStoryHelper { Id = Guid.NewGuid(), VillageStoryId = row.Id, Step = row.Step, CharacterId = character.Id };
+                gameData.Add(helper);
+            }
+            helper.Amount += amount;
+            helper.Updated = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// A raid won or a dungeon cleared by characters of one stream: one for the story's step, and each of them a
+        /// helper on it (QuestTracker.ReportGroup).
+        /// </summary>
+        internal void GroupActivity(IReadOnlyList<Character> characters, string objective)
+        {
+            var first = characters.FirstOrDefault();
+            if (first?.UserIdLock == null) return;
+            var row = gameData.GetVillageStories(first.UserIdLock.Value).FirstOrDefault(r => r.State == Active);
+            var story = row != null ? VillageStories.Get(row.Key) : null;
+            if (story == null) return;
+
+            try
+            {
+                lock (mutex)
+                {
+                    if (row.State != Active) return;
+                    var step = story.Steps[row.Step];
+                    if (step.Kind != objective || row.Progress >= step.Amount) return;
+                    row.Progress += 1;
+                    foreach (var character in characters) Credit(row, character, 1);
+                    if (row.Progress >= step.Amount) StepDone(row, story);
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Story group progress failed: " + exc);
+            }
         }
 
         private void StepDone(VillageStory row, VillageStories.Story story)

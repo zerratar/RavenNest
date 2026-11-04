@@ -200,13 +200,7 @@ namespace RavenNest.BusinessLogic.Game
                         var counted = Math.Min(amount, quest.Amount - quest.Progress);
                         if (counted <= 0) return;
                         quest.Progress += counted;
-                        var helper = run.Helpers.GetOrAdd(character.Id, id =>
-                        {
-                            var c = new StreamQuestContribution { Id = Guid.NewGuid(), StreamQuestId = quest.Id, CharacterId = id };
-                            gameData.Add(c);
-                            return c;
-                        });
-                        helper.Amount += counted;
+                        HelperOf(run, character).Amount += counted;
                         finished = quest.Progress >= quest.Amount;
                     }
                 }
@@ -218,6 +212,51 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError("Stream quest progress failed: " + exc);
             }
         }
+
+        /// <summary>
+        /// A raid won or a dungeon cleared by characters of one stream: one for the quest, and each of them a helper with
+        /// an equal share of it (QuestTracker.ReportGroup).
+        /// </summary>
+        internal void GroupProgress(IReadOnlyList<Character> characters, string objective)
+        {
+            var first = characters.FirstOrDefault();
+            if (first?.UserIdLock == null || !running.TryGetValue(first.UserIdLock.Value, out var run)) return;
+            var quest = run.Quest;
+            if (quest.Objective != objective) return;
+
+            try
+            {
+                var finished = false;
+                lock (run)
+                {
+                    if (quest.State != Running) return;
+                    if (quest.Ends <= DateTime.UtcNow)
+                    {
+                        finished = true;
+                    }
+                    else
+                    {
+                        if (quest.Progress >= quest.Amount) return;
+                        quest.Progress += 1;
+                        foreach (var character in characters) HelperOf(run, character).Amount += 1;
+                        finished = quest.Progress >= quest.Amount;
+                    }
+                }
+
+                if (finished) End(run, quest.Progress >= quest.Amount ? Done : OutOfTime);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Stream quest group progress failed: " + exc);
+            }
+        }
+
+        private StreamQuestContribution HelperOf(Run run, Character character) => run.Helpers.GetOrAdd(character.Id, id =>
+        {
+            var c = new StreamQuestContribution { Id = Guid.NewGuid(), StreamQuestId = run.Quest.Id, CharacterId = id };
+            gameData.Add(c);
+            return c;
+        });
 
         private void EndOverdue()
         {

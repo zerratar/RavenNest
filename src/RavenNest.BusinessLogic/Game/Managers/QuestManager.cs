@@ -61,8 +61,33 @@ namespace RavenNest.BusinessLogic.Game
             if (amount > 0) Report(character, objective, -1, amount);
         }
 
-        public static void RaidWon(Character character) => Report(character, QuestManager.Raid, -1, 1);
-        public static void DungeonCleared(Character character) => Report(character, QuestManager.Dungeon, -1, 1);
+        public static void RaidWon(IReadOnlyList<Character> characters) => ReportGroup(characters, QuestManager.Raid);
+        public static void DungeonCleared(IReadOnlyList<Character> characters) => ReportGroup(characters, QuestManager.Dungeon);
+
+        /// <summary>
+        /// A raid won or a dungeon cleared together: one each for the characters' own quests and achievements, but one for
+        /// the whole group in the stream's shared goals (stream quest, streamer goal, village story), where everyone in it
+        /// is credited. Reported per character, the first two of fifteen filled a "2 dungeons" stream quest on their own
+        /// and were its only helpers.
+        /// </summary>
+        private static void ReportGroup(IReadOnlyList<Character> characters, string objective)
+        {
+            if (characters == null || characters.Count == 0) return;
+            foreach (var character in characters)
+            {
+                Listener?.Progress(character, objective, -1, 1);
+                Achievements?.Activity(character, objective, -1, 1);
+            }
+
+            // a raid war brings another stream's players: each stream counts its own
+            foreach (var group in characters.Where(c => c?.UserIdLock != null).GroupBy(c => c.UserIdLock.Value))
+            {
+                var stream = group.ToList();
+                StreamListener?.GroupProgress(stream, objective);
+                StreamerListener?.GroupProgress(stream, objective);
+                Stories?.GroupActivity(stream, objective);
+            }
+        }
 
         /// <summary>A hero mode wave run held this many waves (the streamer's character in the session reports it).</summary>
         public static void HeroWaves(Character character, int waves)

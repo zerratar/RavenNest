@@ -375,11 +375,13 @@ namespace RavenNest.BusinessLogic.Game
 
                 const double seasonalTokenDropRate = 0.05;
 
+                // everyone the server rewards for it finished it: one dungeon for the stream, every one of them a helper
+                QuestTracker.DungeonCleared(characters.Select(c => sessionCharacters.FirstOrDefault(x => x.Id == c)).Where(x => x != null).Distinct().ToList());
+
                 foreach (var c in characters)
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
-                    QuestTracker.DungeonCleared(character); // everyone the server rewards for it finished it
 
                     var value = rng.NextDouble();
                     var dropChance = value >= 0.5 ? 1f : 0.80f;
@@ -515,11 +517,13 @@ namespace RavenNest.BusinessLogic.Game
 
                 const double seasonalTokenDropRate = 0.025;
 
+                // everyone the server rewards for it finished it: one raid for the stream, every one of them a helper
+                QuestTracker.RaidWon(characters.Select(c => sessionCharacters.FirstOrDefault(x => x.Id == c)).Where(x => x != null).Distinct().ToList());
+
                 foreach (var c in characters)
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
-                    QuestTracker.RaidWon(character); // everyone the server rewards for it finished it
 
                     var skills = gameData.GetCharacterSkills(character.SkillsId);
 
