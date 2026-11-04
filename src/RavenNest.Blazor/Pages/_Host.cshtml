@@ -22,7 +22,7 @@
     <base href="~/" />
 
     <link rel="stylesheet" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/style.css">
-    <link rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" asp-append-version="true" />
 
     <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
     <link rel="icon" type="image/png" href="favicon.png" sizes="96x96">
@@ -31,9 +31,9 @@
     <link href="_content/Blazorise.Bootstrap/blazorise.bootstrap.css" rel="stylesheet" />
 
     <link href="_content/PSC.Blazor.Components.AutoComplete/css/autocomplete.css" rel="stylesheet" />
-    <link href="/css/open-iconic/font/css/open-iconic-bootstrap.min.css" rel="stylesheet" />
-    <link href="/RavenNest.styles.css" rel="stylesheet" />
-    <link href="/css/site.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+    <link href="/css/open-iconic/font/css/open-iconic-bootstrap.min.css" rel="stylesheet" asp-append-version="true" />
+    <link href="/RavenNest.styles.css" rel="stylesheet" asp-append-version="true" />
+    <link href="/css/site.css" rel="stylesheet" asp-append-version="true" />
 
     @* Ravenfall design system, loaded after site.css so it can set its own baseline.
          tokens      values only, affect nothing until referenced
@@ -41,23 +41,23 @@
                      these are safe unscoped and usable by components outside the dashboard
          dashboard   page chrome, scoped under .rf-dash so front and admin pages are untouched
          front       front page chrome, scoped under .rf-front, which MainLayout puts on its root *@
-    <link href="/css/ravenfall-tokens.css?@(System.Random.Shared.Next())" rel="stylesheet" />
-    <link href="/css/ravenfall-components.css?@(System.Random.Shared.Next())" rel="stylesheet" />
-    <link href="/css/ravenfall-dashboard.css?@(System.Random.Shared.Next())" rel="stylesheet" />
-    <link href="/css/ravenfall-front.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+    <link href="/css/ravenfall-tokens.css" rel="stylesheet" asp-append-version="true" />
+    <link href="/css/ravenfall-components.css" rel="stylesheet" asp-append-version="true" />
+    <link href="/css/ravenfall-dashboard.css" rel="stylesheet" asp-append-version="true" />
+    <link href="/css/ravenfall-front.css" rel="stylesheet" asp-append-version="true" />
 
     <!-- This is the glue between Blazor and Chart.js -->
-    <script src="js/moment.min.js"></script>
+    <script src="js/moment.min.js" asp-append-version="true"></script>
 
     <!-- Load the Twitch embed script -->
     <script src="https://embed.twitch.tv/embed/v1.js"></script>
-    <script src="js/draggable.js"></script>
-    <script src="js/rf-dismiss.js"></script>
+    <script src="js/draggable.js" asp-append-version="true"></script>
+    <script src="js/rf-dismiss.js" asp-append-version="true"></script>
 
-    <script src="js/rf-chat.js"></script>
+    <script src="js/rf-chat.js" asp-append-version="true"></script>
 
-    <script src="js/rf-tableview.js"></script>
-    <script src="js/rf-input.js"></script>
+    <script src="js/rf-tableview.js" asp-append-version="true"></script>
+    <script src="js/rf-input.js" asp-append-version="true"></script>
     <script>
       
         window.downloadFileFromBytes = (fileName, byteBase64) => {
@@ -216,15 +216,15 @@
     </script>
     <script src="_framework/blazor.server.js"></script>
     <script src="_content/Blazored.Typeahead/blazored-typeahead.js"></script>
-    <script src="js/jquery.min.js"></script>
+    <script src="js/jquery.min.js" asp-append-version="true"></script>
 
 
     <!-- inside of body section and after the div/app tag  -->
     <!-- These are the standard js dependencies this provider tipically dependes upon, but Blazorise deems these as optional as Blazorise Components should work correctly without these  -->
-    <script src="js/jquery.slim.min.js"></script>
-    <script src="js/popper.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/chart.min.js"></script>
+    <script src="js/jquery.slim.min.js" asp-append-version="true"></script>
+    <script src="js/popper.min.js" asp-append-version="true"></script>
+    <script src="js/bootstrap.min.js" asp-append-version="true"></script>
+    <script src="js/chart.min.js" asp-append-version="true"></script>
     <script src="_content/PSC.Blazor.Components.AutoComplete/js/autocomplete.js"></script>
 
     <script>

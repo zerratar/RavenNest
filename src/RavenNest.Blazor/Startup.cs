@@ -328,7 +328,26 @@ namespace RavenNest.Blazor
 
             app.UseSwagger();
             app.UseSwaggerUI();
-            app.UseStaticFiles();
+            // Without a Cache-Control header browsers guessed how long to keep a file, so after a deploy players kept
+            // the old styles and scripts until a Ctrl+Shift+R (2026-11-04). A versioned address (?v=, from
+            // asp-append-version or WebHostEnvironmentExtensions.Versioned) changes with the file, so it is kept for
+            // good; pictures are checked again after an hour; everything else on every load (a cheap 304 when unchanged).
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                OnPrepareResponse = ctx =>
+                {
+                    var headers = ctx.Context.Response.Headers;
+                    if (ctx.Context.Request.Query.ContainsKey("v"))
+                    {
+                        headers["Cache-Control"] = "public, max-age=31536000, immutable";
+                        return;
+                    }
+
+                    var extension = System.IO.Path.GetExtension(ctx.File.Name).ToLowerInvariant();
+                    var picture = extension is ".png" or ".jpg" or ".jpeg" or ".webp" or ".gif" or ".svg" or ".ico";
+                    headers["Cache-Control"] = picture ? "public, max-age=3600" : "no-cache";
+                }
+            });
             //app.UseStaticFiles(new StaticFileOptions()
             //{
             //    FileProvider = new PhysicalFileProvider(PublicAssetsFolder),
