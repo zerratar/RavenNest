@@ -159,7 +159,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var entry in filtered)
+                                    @foreach (var entry in filtered.Take(shown))
                                     {
                                         var item = GetItem(entry.ItemId);
                                         if (item == null)
@@ -322,6 +322,14 @@
                                 </tbody>
                             </table>
                         </div>
+                        @if (filtered.Count > shown)
+                        {
+                            <div class="rf-actions rf-vendor__more">
+                                <button type="button" class="rf-btn" @onclick="ShowMore">
+                                    Show @Math.Min(PageSize, filtered.Count - shown) more (@((filtered.Count - shown).ToString("N0")) not shown)
+                                </button>
+                            </div>
+                        }
                     </div>
                 }
 

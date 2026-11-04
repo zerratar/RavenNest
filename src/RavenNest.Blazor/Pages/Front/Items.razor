@@ -101,7 +101,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var item in items)
+                                @foreach (var item in items.Take(shown))
                                 {
                                     var source = sources[item.Id];
                                     <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "is-selected" : null)">
@@ -269,6 +269,19 @@
                             </tbody>
                         </table>
                     </div>
+                    @*
+                        A page at a time. Every item went out as one render of over a megabyte, and a
+                        connection that cannot carry a message that size drops it, reconnects, is sent
+                        the same render again and drops again (the vendor list did that, 2026-11-04).
+                    *@
+                    @if (items.Count > shown)
+                    {
+                        <div class="rf-actions rf-vendor__more">
+                            <button type="button" class="rf-btn" @onclick="ShowMore">
+                                Show @Math.Min(PageSize, items.Count - shown) more (@((items.Count - shown).ToString("N0")) not shown)
+                            </button>
+                        </div>
+                    }
                 </div>
             }
         }
@@ -331,6 +344,23 @@
         }
 
         ApplyFilters();
+        ShowSelected();
+    }
+
+    private const int PageSize = 50;
+    private int shown = PageSize;
+
+    private void ShowMore()
+    {
+        shown += PageSize;
+    }
+
+    /// <summary>Enough pages shown for a linked item's row to be there to scroll to.</summary>
+    private void ShowSelected()
+    {
+        if (string.IsNullOrEmpty(Id) || items == null) return;
+        var index = items.TakeWhile(x => x.Id.ToString() != Id).Count();
+        if (index < items.Count) shown = Math.Max(shown, (index / PageSize + 1) * PageSize);
     }
 
     /// <summary>
@@ -345,19 +375,21 @@
             return;
         }
 
-        if (items != null && items.Any(x => x.Id.ToString() == Id))
+        if (items == null || !items.Any(x => x.Id.ToString() == Id))
         {
-            return;
+            search = "";
+            itemFilter = ItemFilter.All;
+            shown = PageSize;
+            ApplyFilters();
         }
 
-        search = "";
-        itemFilter = ItemFilter.All;
-        ApplyFilters();
+        ShowSelected();
     }
 
     private void SelectItemFilter(ItemFilter newItemFilter)
     {
         itemFilter = newItemFilter;
+        shown = PageSize;
         ApplyFilters();
         InvokeAsync(StateHasChanged);
     }
@@ -371,6 +403,7 @@
     private void OnSearchChanged(string value)
     {
         search = value ?? "";
+        shown = PageSize;
         ApplyFilters();
     }
 
@@ -379,6 +412,7 @@
         clearSignal++;
         search = "";
         itemFilter = ItemFilter.All;
+        shown = PageSize;
         ApplyFilters();
     }
 
@@ -471,6 +505,7 @@
 
         sort = key;
         sortSelector = selector;
+        shown = PageSize;
         ApplyFilters();
     }
 

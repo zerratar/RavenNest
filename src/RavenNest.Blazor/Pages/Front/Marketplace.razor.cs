@@ -174,9 +174,23 @@ namespace RavenNest.Blazor.Pages.Front
             ApplyFilters();
         }
 
+        /// <summary>
+        ///     Listings a page at a time: one render of every listing is a large message, and a
+        ///     connection that cannot carry it drops, reconnects and is sent it again (the vendor
+        ///     list did that, 2026-11-04).
+        /// </summary>
+        private const int PageSize = 50;
+        private int shown = PageSize;
+
+        private void ShowMore()
+        {
+            shown += PageSize;
+        }
+
         private void ApplyFilters()
         {
             filtered = items.Where(Filter).ToList();
+            shown = PageSize;
         }
 
         private bool Filter(MarketItem entry)
@@ -329,6 +343,7 @@ namespace RavenNest.Blazor.Pages.Front
             }
             finally
             {
+                shown = PageSize;
                 StateHasChanged();
             }
         }
