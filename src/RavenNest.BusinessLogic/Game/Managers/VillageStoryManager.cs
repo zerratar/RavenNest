@@ -141,9 +141,14 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 if (given == 0) return new VillageStoryResult { Error = "nothing", Story = Info(row) };
 
+                // the reply names what was brought, so the step it was brought for: taken before counting, as the chains'
+                // deliveries do. A delivery that finished its step told chat the next one's item and progress instead
+                // ("You brought 150 Tin Ore (0/80)" for 150 planks).
+                var delivery = Info(row);
+                delivery.Progress = Math.Min(step.Amount, row.Progress + given);
                 Count(row, story, character, given);
                 gameData.Touch();
-                return new VillageStoryResult { Ok = true, Story = Info(row), Given = given };
+                return new VillageStoryResult { Ok = true, Story = delivery, Given = given };
             }
         }
 
