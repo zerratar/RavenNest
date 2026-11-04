@@ -58,7 +58,7 @@ namespace RavenNest.Blazor.Services
             ["UI_STREAM_QUEST_ORE"] = "ore",
             ["UI_STREAM_QUEST_FISH"] = "fish",
             ["UI_STREAM_QUEST_WHEAT"] = "wheat",
-            ["UI_QUEST_DELIVER"] = "Bring {0} {1}",
+            ["UI_QUEST_DELIVER"] = "Bring {0} {1} with !quest deliver",
             ["UI_QUEST_VISIT"] = "Sail to {0} and say !quest there",
             ["UI_QUEST_ANSWER"] = "Answer with !quest answer 1 to {0}",
             ["UI_QUEST_WRONG_DEFAULT"] = "That is not it.",
