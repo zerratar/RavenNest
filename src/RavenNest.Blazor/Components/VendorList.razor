@@ -159,7 +159,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var record in filtered)
+                        @foreach (var record in filtered.Take(shown))
                         {
                             var item = record.Item;
                             <tr>
@@ -246,6 +246,20 @@ else
                     </tbody>
                 </table>
             </TableView>
+            @*
+                A page at a time. All 448 rows went out as one render of about half a megabyte, and a
+                connection that cannot carry a message that size (some antivirus, VPNs and proxies)
+                dropped it, reconnected, was sent the same render again and dropped again, so the
+                page never loaded for that player (2026-11-04).
+            *@
+            @if (filtered.Count > shown)
+            {
+                <div class="rf-actions rf-vendor__more">
+                    <button type="button" class="rf-btn" @onclick="ShowMore">
+                        Show @Math.Min(PageSize, filtered.Count - shown) more (@((filtered.Count - shown).ToString("N0")) not shown)
+                    </button>
+                </div>
+            }
         </div>
     }
 
@@ -376,6 +390,14 @@ else
         ApplyFilters();
     }
 
+    private const int PageSize = 50;
+    private int shown = PageSize;
+
+    private void ShowMore()
+    {
+        shown += PageSize;
+    }
+
     private void ApplyFilters()
     {
         var matching = records.Where(Matches);
@@ -409,12 +431,14 @@ else
     private void OnSearchChanged(string value)
     {
         search = value ?? "";
+        shown = PageSize;
         ApplyFilters();
     }
 
     private void SelectItemFilter(ItemFilter newFilter)
     {
         itemFilter = newFilter;
+        shown = PageSize;
         ApplyFilters();
     }
 
@@ -423,6 +447,7 @@ else
         clearSignal++;
         search = "";
         itemFilter = ItemFilter.All;
+        shown = PageSize;
         ApplyFilters();
     }
 
@@ -439,6 +464,7 @@ else
 
         sort = key;
         sortSelector = selector;
+        shown = PageSize;
         ApplyFilters();
     }
 

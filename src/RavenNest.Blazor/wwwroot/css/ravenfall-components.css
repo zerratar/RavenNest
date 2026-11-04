@@ -3182,6 +3182,12 @@ a.rf-badge:hover {
     margin-bottom: var(--rf-space-4);
 }
 
+/* Under the table: the stock comes a page at a time. */
+.rf-vendor__more {
+    justify-content: center;
+    margin-top: var(--rf-space-4);
+}
+
 /* The purse. It was a bare coin badge sitting against the character picker with
    no label, so it read as part of the picker rather than as the balance, and it
    was abbreviated when this is the one number on the page that decides whether

@@ -40,6 +40,22 @@ namespace RavenNest.BusinessLogic
                     categoryName.Contains("Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware", StringComparison.OrdinalIgnoreCase))
                 {
                     await Console.Error.WriteLineAsync(msg + " [" + categoryName + "]");
+
+                    // a circuit's errors still go to its file (not the db): a page that broke for one player
+                    // left nothing to look at once the console had scrolled on (2026-11-04)
+                    if (categoryName.Contains("Microsoft.AspNetCore.Components.Server.Circuits.CircuitHost", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(FolderPaths.LogsPath);
+                            System.IO.File.AppendAllText(Path.Combine(FolderPaths.LogsPath, categoryName + ".log"),
+                                "[" + DateTime.UtcNow.ToString("u") + "] <" + severity + "> " + msg.Trim() + $". {exception}\n");
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                    }
                     return;
                 }
 
