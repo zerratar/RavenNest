@@ -1316,6 +1316,11 @@ namespace RavenNest.BusinessLogic.Data
             // basic material crafting
             EnsureCraftingRecipe(20, items.SilverBar, items.Silver, items.Coal);
 
+            // planks for the village story's bridge ("The road west" asks for 150): the item was left from the old
+            // resources (obsoleteItems) with no way to make it (the user, 2026-11-04). Its old conversion into
+            // woodcutting drops (ConvertUserResources) is switched off, so crafted planks stay.
+            EnsureCraftingRecipe(1, obsoleteItems.WoodPlank, Ingredient(items.Logs, 2));
+
             // Potion Base
             EnsureCraftingRecipe(20, items.Vial, items.Sand, items.Coal);
 
