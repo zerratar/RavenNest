@@ -27,6 +27,22 @@
         </header>
     }
 
+    @*
+        Which stream the character plays in, and what it does there. The old skills tab said so
+        ("You're currently training ... on X's stream"); the redesign dropped it, and the page no
+        longer told you where you were playing (2026-11-04).
+    *@
+    @if (!string.IsNullOrEmpty(SelectedPlayer.SessionInfo?.OwnerUserName))
+    {
+        <p class="rf-player__live">
+            <span class="rf-player__live-dot" aria-hidden="true"></span>
+            <span>
+                @LiveActivity() in
+                <a href="https://www.twitch.tv/@SelectedPlayer.SessionInfo.OwnerUserName" target="_blank" rel="noopener">@LiveStreamName</a>'s stream
+            </span>
+        </p>
+    }
+
     @if (CanManage)
     {
         @*
@@ -155,6 +171,23 @@
     public string Tab { get; set; }
 
     private SessionInfo session;
+
+    private string LiveStreamName =>
+        string.IsNullOrEmpty(SelectedPlayer.SessionInfo?.OwnerDisplayName) ? SelectedPlayer.SessionInfo?.OwnerUserName : SelectedPlayer.SessionInfo.OwnerDisplayName;
+
+    /// <summary>"Training Woodcutting", "Resting in the onsen", or just playing.</summary>
+    private string LiveActivity()
+    {
+        var state = SelectedPlayer.State;
+        if (state == null) return "Playing";
+        if (state.InOnsen) return "Resting in the onsen";
+        var training = PlayerService.GetTrainingSkill(state);
+        if (training == null) return "Playing";
+        return training.IsCollectingItem && !string.IsNullOrEmpty(training.ItemName)
+            ? "Training " + training.Name + " (" + training.ItemName + ")"
+            : "Training " + training.Name;
+    }
+
     private bool editingAlias;
     private string oldIdentifier;
     private CharacterViewState viewState;

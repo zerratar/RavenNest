@@ -2416,6 +2416,29 @@ a.rf-badge:hover {
    Was a paragraph of prose with the commands buried in bold inside it. The
    commands are the only part anyone reads, so they lead. */
 
+/* the stream the character plays in, above the join commands */
+.rf-player__live {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: 0 0 var(--rf-space-3);
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-player__live a {
+    color: var(--rf-gold);
+}
+
+.rf-player__live-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--rf-good);
+    box-shadow: 0 0 0 4px var(--rf-good-wash);
+    flex-shrink: 0;
+}
+
 .rf-player__join {
     display: flex;
     flex-wrap: wrap;
