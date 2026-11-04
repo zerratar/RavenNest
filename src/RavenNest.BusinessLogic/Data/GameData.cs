@@ -5767,6 +5767,12 @@ namespace RavenNest.BusinessLogic.Data
         public Item BananaBread;
         public Item BurnedBananaBread;
         public Item BananaSplit;
+        public Item Mango;
+        public Item SuuuuperJuicyMango;
+        public Item MangoSmoothie;
+        public Item MangoSalsa;
+        public Item MangoTart;
+        public Item BurnedMangoTart;
         public Item Bananarang;
 
         // Cooking

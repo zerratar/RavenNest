@@ -458,6 +458,8 @@ namespace RavenNest.BusinessLogic.Data
                     // comes from its pirates' treasure
                     Banana = GetOrCreateItem(i, "Banana", "A wild banana from the Mangrove island. The monkeys are watching you hold it.", ItemCategory.Resource, ItemType.Gathering),
                     GoldenBanana = GetOrCreateItem(i, "Golden Banana", "Dug up with pirate treasure. The monkeys would give anything for it. So would the pirates.", ItemCategory.Resource, ItemType.Gathering),
+                    // mangoes grow there too, for a chatter called the_juicy_mango who asked why there were none (2026-11-04)
+                    Mango = GetOrCreateItem(i, "Mango", "A ripe mango from the Mangrove island. Juicy, but it knows it is not the juiciest.", ItemCategory.Resource, ItemType.Gathering),
 
                     RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidons Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
 
@@ -553,6 +555,12 @@ namespace RavenNest.BusinessLogic.Data
                     BananaBread = GetOrCreateItem(i, "Banana Bread", "Moist, sweet and still warm. A monkey's idea of a perfect loaf.", ItemCategory.Food, ItemType.Food),
                     BurnedBananaBread = GetOrCreateItem(i, "Burned Banana Bread", "Even the monkeys will not touch it.", ItemCategory.Food, ItemType.Food),
                     BananaSplit = GetOrCreateItem(i, "Banana Split", "A banana, split, with chocolate on top. Eaten fast, before the monkeys notice.", ItemCategory.Food, ItemType.Food),
+                    // the only one of its kind, it says; a rare find while gathering mangoes
+                    SuuuuperJuicyMango = GetOrCreateItem(i, "Suuuuper Juicy Mango", "There is only one mango this juicy, and it knows it. Eat it over a bucket.", ItemCategory.Food, ItemType.Food),
+                    MangoSmoothie = GetOrCreateItem(i, "Mango Smoothie", "Mango, milk and sugar, shaken until the monkeys start to dance.", ItemCategory.Food, ItemType.Food),
+                    MangoSalsa = GetOrCreateItem(i, "Mango Salsa", "Sweet, sharp and green. Goes with everything, mostly fingers.", ItemCategory.Food, ItemType.Food),
+                    MangoTart = GetOrCreateItem(i, "Mango Tart", "Golden pastry under a fan of mango slices. Too pretty to eat. Eaten anyway.", ItemCategory.Food, ItemType.Food),
+                    BurnedMangoTart = GetOrCreateItem(i, "Burned Mango Tart", "The mango slices survived. The pastry did not.", ItemCategory.Food, ItemType.Food),
                     BurnedTuna = GetOrCreateItem(i, "Burned Tuna", "Tuna jerky, but not on purpose.", ItemCategory.Food, ItemType.Food),
                     BurnedMarlin = GetOrCreateItem(i, "Burned Marlin", "All that fighting, for this.", ItemCategory.Food, ItemType.Food),
                     BurnedAnglerfish = GetOrCreateItem(i, "Burned Anglerfish", "Now it is ugly and burned.", ItemCategory.Food, ItemType.Food),
@@ -1173,6 +1181,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(60, items.Turmeric, 150, 0.10, farming);
             EnsureDropRate(100, items.Sugar, 360, 0.09, gathering);
             EnsureDropRate(1, items.Banana, 30, 0.25, gathering); // the Mangrove island only
+            EnsureDropRate(15, items.Mango, 40, 0.18, gathering); // the Mangrove island only
+            EnsureDropRate(15, items.SuuuuperJuicyMango, 1800, 0.01, gathering); // the Mangrove island only, rare
             EnsureDropRate(120, items.Cinnamon, 360, 0.09, gathering);
             EnsureDropRate(70, items.Apple, 200, 0.10, farming);
             EnsureDropRate(80, items.Carrots, 250, 0.10, farming);
@@ -1449,6 +1459,9 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCookingRecipeGuaranteed(10, items.Flour, Ingredient(items.Wheat));
             EnsureCookingRecipe(60, items.BananaBread, items.BurnedBananaBread, 0.2, 1, items.Banana, items.Flour, items.Sugar, items.Eggs);
             EnsureCookingRecipeGuaranteed(320, items.BananaSplit, Ingredients(items.Banana, items.Milk, items.Chocolate, items.Sugar));
+            EnsureCookingRecipeGuaranteed(40, items.MangoSmoothie, Ingredients(items.Mango, items.Milk, items.Sugar));
+            EnsureCookingRecipeGuaranteed(110, items.MangoSalsa, Ingredients(items.Mango, items.Tomato, items.Onion, items.Coriander));
+            EnsureCookingRecipe(200, items.MangoTart, items.BurnedMangoTart, 0.2, 1, items.Mango, items.Flour, items.Butter, items.Sugar, items.Eggs);
             EnsureCookingRecipe(30, items.Bread, items.BurnedBread, 0.2, 1, items.Flour, items.Water, items.Salt, items.Yeast);
             EnsureCookingRecipeGuaranteed(60, items.HamSandwich, Ingredients(items.Bread, items.Butter, items.Ham));
             EnsureCookingRecipeGuaranteed(70, items.Butter, Ingredients(items.Milk));
@@ -1566,6 +1579,10 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
             EnsureItemStatusEffects(typedItems.BananaBread, Effect(StatusEffectType.Heal, 0.09f, 12), Effect(StatusEffectType.IncreasedAttackSpeed, 120, 0.05f, 2));
             EnsureItemStatusEffects(typedItems.BananaSplit, Effect(StatusEffectType.Heal, 0.15f, 24), Effect(StatusEffectType.IncreasedAttackSpeed, 180, 0.08f, 3));
+            EnsureItemStatusEffects(typedItems.MangoSmoothie, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreasedMovementSpeed, 120, 0.05f, 0));
+            EnsureItemStatusEffects(typedItems.MangoSalsa, Effect(StatusEffectType.Heal, 0.10f, 15), Effect(StatusEffectType.IncreasedHitChance, 120, 0.05f, 0));
+            EnsureItemStatusEffects(typedItems.MangoTart, Effect(StatusEffectType.Heal, 0.13f, 20), Effect(StatusEffectType.IncreasedDodge, 150, 0.06f, 0));
+            EnsureItemStatusEffects(typedItems.SuuuuperJuicyMango, Effect(StatusEffectType.Heal, 0.25f, 40), Effect(StatusEffectType.IncreasedMovementSpeed, 300, 0.10f, 0), Effect(StatusEffectType.IncreasedAttackSpeed, 300, 0.10f, 0));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
             EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 120, 0.05f, 0));
             EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
@@ -1580,6 +1597,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.BurnedApplePie, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedBread, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedBananaBread, Effect(StatusEffectType.Heal, 0.02f, 2));
+            EnsureItemStatusEffects(typedItems.BurnedMangoTart, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedSkewers, Effect(StatusEffectType.Heal, 0.02f, 2));
             EnsureItemStatusEffects(typedItems.BurnedChocolateChipCookies, Effect(StatusEffectType.Heal, 0.02f, 2));
 

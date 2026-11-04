@@ -13,6 +13,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public static readonly System.Collections.Generic.HashSet<string> MangroveOnly = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Banana",
+            "Mango",
+            "Suuuuper Juicy Mango",
         };
 
         public override void Process(
