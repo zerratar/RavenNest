@@ -14,7 +14,9 @@ namespace RavenNest.BusinessLogic.Data
     /// before deploying.
     /// </summary>
     /// <remarks>
-    /// It only ever adds. It never drops, renames or changes a column, and never touches data. The model
+    /// It only ever adds, except for the columns in <see cref="Widened"/>. It never drops or renames a column,
+    /// and never touches data. A string column narrower than the model is only logged, so it is known before a
+    /// save fails on it (widening a big table at startup can take a long time). The model
     /// comes from EF (RavenfallDbContext, including its OnModelCreating overrides), so the column types are
     /// the ones EF expects when it loads. A new nullable column is added as NULL. A new column that cannot
     /// be null gets a default (0, an empty string, an empty id or a fixed date), so existing rows stay
@@ -22,6 +24,19 @@ namespace RavenNest.BusinessLogic.Data
     /// </remarks>
     public static class DatabaseSchema
     {
+        /// <summary>
+        /// Columns widened to nvarchar(max) when the database has them narrower. Item tags hold boat looks
+        /// ("look:1;hull=1;front=1;middle=2;back=2;figurehead=0;ram=1;sails=2;flag=2;wood=3"), which did not fit
+        /// the old nvarchar(50): the boat's stack failed every save from 2026-11-04, and the restore point that
+        /// left behind could not be restored, which stopped the server on 2026-11-05 until the column was widened.
+        /// </summary>
+        private static readonly (string table, string column)[] Widened =
+        {
+            ("InventoryItem", "Tag"),
+            ("MarketItem", "Tag"),
+            ("ClanBankItem", "Tag"),
+        };
+
         public static void Ensure(IRavenfallDbContextProvider db, ILogger logger)
         {
             try
@@ -33,9 +48,11 @@ namespace RavenNest.BusinessLogic.Data
                 connection.Open();
 
                 var existing = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+                // the length of every n/varchar column with a fixed one (max is -1 and left out)
+                var lengths = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 using (var query = connection.CreateCommand())
                 {
-                    query.CommandText = "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS";
+                    query.CommandText = "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS";
                     using var reader = query.ExecuteReader();
                     while (reader.Read())
                     {
@@ -46,10 +63,25 @@ namespace RavenNest.BusinessLogic.Data
                         }
 
                         columns.Add(reader.GetString(2));
+                        var type = reader.GetString(3);
+                        if ((type == "nvarchar" || type == "varchar") && !reader.IsDBNull(4) && reader.GetInt32(4) > 0)
+                        {
+                            lengths[key + "." + reader.GetString(2)] = reader.GetInt32(4);
+                        }
                     }
                 }
 
                 var changes = 0;
+                var narrower = new List<string>();
+                foreach (var (tableName, columnName) in Widened)
+                {
+                    if (!lengths.TryGetValue("dbo." + tableName + "." + columnName, out var length)) continue;
+                    Execute(connection, $"ALTER TABLE [dbo].[{tableName}] ALTER COLUMN [{columnName}] nvarchar(max) NULL");
+                    lengths.Remove("dbo." + tableName + "." + columnName);
+                    logger.LogWarning("Database schema: widened dbo.{Table}.{Column} from {Length} to nvarchar(max)", tableName, columnName, length);
+                    changes++;
+                }
+
                 foreach (var table in model.Tables)
                 {
                     var schema = string.IsNullOrEmpty(table.Schema) ? "dbo" : table.Schema;
@@ -63,7 +95,16 @@ namespace RavenNest.BusinessLogic.Data
 
                     foreach (var column in table.Columns)
                     {
-                        if (columns.Contains(column.Name)) continue;
+                        if (columns.Contains(column.Name))
+                        {
+                            if (lengths.TryGetValue(schema + "." + table.Name + "." + column.Name, out var length) && ModelLength(column.StoreType) > length)
+                            {
+                                narrower.Add(table.Name + "." + column.Name + " (" + length + ")");
+                            }
+
+                            continue;
+                        }
+
                         var definition = ColumnDefinition(column, forNewColumn: true);
                         if (definition == null)
                         {
@@ -76,6 +117,12 @@ namespace RavenNest.BusinessLogic.Data
                         logger.LogWarning("Database schema: added column {Schema}.{Table}.{Column} ({Type})", schema, table.Name, column.Name, column.StoreType);
                         changes++;
                     }
+                }
+
+                if (narrower.Count > 0)
+                {
+                    logger.LogWarning("Database schema: {Count} column(s) are narrower than the model and fail to save longer values: {Columns}",
+                        narrower.Count, string.Join(", ", narrower));
                 }
 
                 logger.LogInformation("Database schema checked, {Changes} change(s).", changes);
@@ -110,6 +157,17 @@ namespace RavenNest.BusinessLogic.Data
             if (!forNewColumn) return name + " NOT NULL";
             var value = DefaultFor(column.StoreType);
             return value == null ? null : $"{name} NOT NULL CONSTRAINT [DF_{column.Table.Name}_{column.Name}] DEFAULT ({value})";
+        }
+
+        /// <summary>The length of a model's string type: nvarchar(50) is 50, nvarchar(max) is int.MaxValue, anything else 0.</summary>
+        private static int ModelLength(string storeType)
+        {
+            var type = (storeType ?? string.Empty).ToLowerInvariant();
+            if (!type.StartsWith("nvarchar") && !type.StartsWith("varchar")) return 0;
+            if (type.Contains("(max)")) return int.MaxValue;
+            var open = type.IndexOf('(');
+            var close = type.IndexOf(')');
+            return open > 0 && close > open && int.TryParse(type.Substring(open + 1, close - open - 1), out var n) ? n : 0;
         }
 
         private static string DefaultFor(string storeType)
