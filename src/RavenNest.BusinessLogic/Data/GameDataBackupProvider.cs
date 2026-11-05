@@ -20,6 +20,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly string FullBackupsPath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Backups);
         private readonly string FullRestorePointPath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Restorepoints);
         private readonly string FullMergePath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Merge);
+        private readonly string FullPendingChangesPath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.PendingChanges);
         //#else
         //        private const string fullRestorePointPath = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
         //#endif
@@ -45,8 +46,219 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.Directory.CreateDirectory(FullBackupsPath);
             }
 
+            if (!System.IO.Directory.Exists(FullPendingChangesPath))
+            {
+                System.IO.Directory.CreateDirectory(FullPendingChangesPath);
+            }
+
             this.logger = logger;
         }
+
+        #region Pending changes
+        // A set's unsaved changes (adds, updates and deletes) are kept on disk while some of them keep failing to
+        // save, and put back as unsaved changes when the server starts: the database is loaded as it is and only the
+        // difference is written, by the usual save. They replace the old restore points, a copy of the whole table
+        // that was put back by emptying the table and inserting every row, and left the table empty when one row
+        // could not be inserted (2026-11-05: a boat look too long for InventoryItem.Tag stopped the server).
+
+        /// <summary>Writes the set's unsaved changes, replacing what was written for it before.</summary>
+        public void WritePendingChanges(IEntitySet entitySet)
+        {
+            var file = GetEntityFilePath(entitySet.GetEntityType(), FullPendingChangesPath);
+            var data = JsonConvert.SerializeObject(new
+            {
+                Written = DateTime.UtcNow,
+                Added = entitySet.Added.Select(x => x.Entity).Where(x => x != null).ToList(),
+                Updated = entitySet.Updated.Select(x => x.Entity).Where(x => x != null).ToList(),
+                Removed = entitySet.Removed.Select(x => x.Entity?.Id ?? Guid.Empty).Where(x => x != Guid.Empty).ToList(),
+            });
+
+            lock (ioMutex)
+            {
+                // written aside and moved over, so a crash while writing never leaves half a file
+                var temp = file + ".tmp";
+                System.IO.File.WriteAllText(temp, data);
+                System.IO.File.Move(temp, file, true);
+            }
+        }
+
+        /// <summary>Removes the set's pending changes file, once nothing of it waits to be saved.</summary>
+        public void ClearPendingChanges(IEntitySet entitySet)
+        {
+            var file = GetEntityFilePath(entitySet.GetEntityType(), FullPendingChangesPath);
+            lock (ioMutex)
+            {
+                if (System.IO.File.Exists(file))
+                {
+                    System.IO.File.Delete(file);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Puts the set's pending changes back, and an old style restore point of the set as the difference from
+        /// what was loaded, as unsaved changes for the next save. Nothing is written to the database here. Throws
+        /// when an old restore point looks incomplete, without changing anything.
+        /// </summary>
+        public string RestorePendingChanges(IEntitySet entitySet)
+        {
+            var type = entitySet.GetEntityType();
+            var method = typeof(GameDataBackupProvider).GetMethod(nameof(RestorePendingChangesOf), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            try
+            {
+                return (string)method.MakeGenericMethod(type).Invoke(this, new object[] { entitySet });
+            }
+            catch (System.Reflection.TargetInvocationException exc) when (exc.InnerException != null)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exc.InnerException).Throw();
+                throw;
+            }
+        }
+
+        private string RestorePendingChangesOf<T>(EntitySet<T> set) where T : Entity<T>
+        {
+            var pendingFile = GetEntityFilePath(typeof(T), FullPendingChangesPath);
+            var legacyFile = GetEntityFilePath(typeof(T), FullRestorePointPath);
+            var report = new List<string>();
+
+            if (System.IO.File.Exists(legacyFile))
+            {
+                // the backups folder keeps a copy of it
+                lock (ioMutex)
+                {
+                    System.IO.File.Copy(legacyFile, Path.Combine(GetBackupFolder(), Path.GetFileName(legacyFile)), true);
+                }
+
+                report.Add(RestoreLegacySnapshot(set, legacyFile));
+            }
+
+            if (System.IO.File.Exists(pendingFile))
+            {
+                PendingChangesFile<T> pending;
+                lock (ioMutex)
+                {
+                    pending = JsonConvert.DeserializeObject<PendingChangesFile<T>>(System.IO.File.ReadAllText(pendingFile));
+                }
+
+                var added = 0; var updated = 0; var removed = 0;
+                foreach (var entity in (pending?.Added ?? new List<T>()).Concat(pending?.Updated ?? new List<T>()))
+                {
+                    if (entity == null) continue;
+                    if (set.TryGet(entity.Id, out var existing))
+                    {
+                        if (CopyValues(entity, existing)) updated++;
+                    }
+                    else if (set.Add(entity) == AddEntityResult.Success)
+                    {
+                        added++;
+                    }
+                }
+
+                foreach (var id in pending?.Removed ?? new List<Guid>())
+                {
+                    if (set.TryGet(id, out var existing) && set.Remove(existing) == RemoveEntityResult.Success)
+                    {
+                        removed++;
+                    }
+                }
+
+                report.Add($"pending changes from {pending?.Written:u}: {added} added, {updated} updated, {removed} removed");
+            }
+
+            if (report.Count == 0)
+            {
+                return null;
+            }
+
+            // kept on disk, as the difference, until the save has written it; nothing left to write, nothing kept
+            if (set.Added.Count + set.Updated.Count + set.Removed.Count > 0)
+            {
+                WritePendingChanges(set);
+            }
+            else
+            {
+                ClearPendingChanges(set);
+            }
+
+            if (System.IO.File.Exists(legacyFile))
+            {
+                ClearRestorePoint(typeof(T));
+            }
+
+            return typeof(T).Name + ": " + string.Join("; ", report);
+        }
+
+        /// <summary>An old restore point (the whole table) as the difference from the loaded set.</summary>
+        private string RestoreLegacySnapshot<T>(EntitySet<T> set, string file) where T : Entity<T>
+        {
+            var snapshot = LoadEntities(typeof(T), FullRestorePointPath)?.OfType<T>().ToList() ?? new List<T>();
+            var loaded = set.Entities;
+
+            // a partly written or damaged copy would delete every row it lacks: refuse it, and change nothing
+            if (snapshot.Count < loaded.Count * 0.9)
+            {
+                throw new DataMigrationException($"The restore point for {typeof(T).Name} has {snapshot.Count} rows and the database {loaded.Count}; " +
+                    $"it looks incomplete, so nothing was restored. Check {file} and remove it to start without it.");
+            }
+
+            var inSnapshot = new HashSet<Guid>(snapshot.Select(x => x.Id));
+            var added = 0; var updated = 0; var removed = 0;
+            foreach (var entity in snapshot)
+            {
+                if (set.TryGet(entity.Id, out var existing))
+                {
+                    if (CopyValues(entity, existing)) updated++;
+                }
+                else if (set.Add(entity) == AddEntityResult.Success)
+                {
+                    added++;
+                }
+            }
+
+            foreach (var entity in loaded)
+            {
+                if (!inSnapshot.Contains(entity.Id) && set.Remove(entity) == RemoveEntityResult.Success)
+                {
+                    removed++;
+                }
+            }
+
+            return $"old restore point of {snapshot.Count} rows: {added} added, {updated} updated, {removed} removed";
+        }
+
+        /// <summary>Copies the restored values onto the loaded entity; true when any differed (it is then an unsaved update).</summary>
+        private static bool CopyValues<T>(T from, T to) where T : Entity<T>
+        {
+            var changed = false;
+            foreach (var property in CopiedProperties<T>.All)
+            {
+                var value = property.GetValue(from);
+                if (Equals(property.GetValue(to), value)) continue;
+                property.SetValue(to, value);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static class CopiedProperties<T>
+        {
+            // what a restore point file holds of an entity: its public read/write properties but the id
+            public static readonly System.Reflection.PropertyInfo[] All = typeof(T)
+                .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                .Where(x => x.CanRead && x.CanWrite && x.GetIndexParameters().Length == 0 && x.Name != nameof(IEntity.Id))
+                .Where(x => x.GetCustomAttributes(typeof(JsonIgnoreAttribute), true).Length == 0)
+                .ToArray();
+        }
+
+        private class PendingChangesFile<T>
+        {
+            public DateTime Written { get; set; }
+            public List<T> Added { get; set; }
+            public List<T> Updated { get; set; }
+            public List<Guid> Removed { get; set; }
+        }
+        #endregion
 
         public void ClearRestorePoint(IEntitySet entitySet)
         {

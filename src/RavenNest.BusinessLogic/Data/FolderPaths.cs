@@ -27,6 +27,7 @@ namespace RavenNest.BusinessLogic.Data
         public const string BinaryCache = "cache";
 
         public const string Restorepoints = "restorepoints";
+        public const string PendingChanges = "pending-changes";
         public const string Backups = "backups";
         public const string Merge = "merge";
         public const string SessionPlayers = "session-players";

@@ -277,113 +277,88 @@ namespace RavenNest.BusinessLogic.Data
                 // Missing tables and columns are added before anything reads or writes them.
                 DatabaseSchema.Ensure(db, logger);
 
-                #region Data Restoration
-                var restorePoint = backupProvider.GetRestorePoint(dataTypes);
-
-                logger.LogInformation($"Checking for restore points.");
-                if (restorePoint != null)
-                {
-                    if (dataMigration.TryMigrate(this.db, restorePoint, out var migrated, out var failed, out var failedExc))
-                    {
-                        // if all was good, clear whole restore point
-                        backupProvider.ClearRestorePoint();
-                    }
-                    else
-                    {
-                        foreach (var migratedType in migrated)
-                        {
-                            backupProvider.ClearRestorePoint(migratedType);
-                        }
-
-                        var failedTypeNames = failed.Select(x => x.Name).ToArray();
-                        var errorMessage = failedTypeNames.Length + " table(s) failed to migrate: " + string.Join(", ", failedTypeNames) + $". Error Reported: \n'{failedExc}'\nServer start interrupted to prevent dataloss.";
-                        logger.LogError(errorMessage);
-                        throw new DataMigrationException(errorMessage);
-                    }
-                }
-                #endregion
 
                 logger.LogInformation($"Loading dataset from database.");
                 #region Data Load
                 using (var ctx = this.db.Get())
                 {
-                    agreements = new EntitySet<Agreements>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList());
+                    agreements = new EntitySet<Agreements>(ctx.Agreements.ToList());
 
-                    serverSettings = new EntitySet<ServerSettings>(restorePoint?.Get<ServerSettings>() ?? ctx.ServerSettings.ToList());
+                    serverSettings = new EntitySet<ServerSettings>(ctx.ServerSettings.ToList());
 
-                    itemStatusEffects = new EntitySet<DataModels.ItemStatusEffect>(restorePoint?.Get<ItemStatusEffect>() ?? ctx.ItemStatusEffect.ToList());
+                    itemStatusEffects = new EntitySet<DataModels.ItemStatusEffect>(ctx.ItemStatusEffect.ToList());
                     itemStatusEffects.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    characterStatusEffects = new EntitySet<DataModels.CharacterStatusEffect>(restorePoint?.Get<CharacterStatusEffect>() ?? ctx.CharacterStatusEffect.ToList());
+                    characterStatusEffects = new EntitySet<DataModels.CharacterStatusEffect>(ctx.CharacterStatusEffect.ToList());
                     characterStatusEffects.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    itemDrops = new EntitySet<ItemDrop>(restorePoint?.Get<ItemDrop>() ?? ctx.ItemDrop.ToList());
+                    itemDrops = new EntitySet<ItemDrop>(ctx.ItemDrop.ToList());
                     itemDrops.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
+                    resourceItemDrops = new EntitySet<ResourceItemDrop>(ctx.ResourceItemDrop.ToList());
                     resourceItemDrops.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
+                    patreonSettings = new EntitySet<PatreonSettings>(ctx.PatreonSettings.ToList());
 
                     dailyAggregatedMarketplaceData = new EntitySet<DailyAggregatedMarketplaceData>(ctx.DailyAggregatedMarketplaceData.ToList());
                     dailyAggregatedEconomyReport = new EntitySet<DailyAggregatedEconomyReport>(ctx.DailyAggregatedEconomyReport.ToList());
 
-                    loyalty = new EntitySet<UserLoyalty>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList());
+                    loyalty = new EntitySet<UserLoyalty>(ctx.UserLoyalty.ToList());
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
 
-                    pets = new EntitySet<Pet>(restorePoint?.Get<Pet>() ?? ctx.Pet.ToList());
+                    pets = new EntitySet<Pet>(ctx.Pet.ToList());
                     pets.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    itemRecipes = new EntitySet<DataModels.ItemRecipe>(restorePoint?.Get<DataModels.ItemRecipe>() ?? ctx.ItemRecipe.ToList());
+                    itemRecipes = new EntitySet<DataModels.ItemRecipe>(ctx.ItemRecipe.ToList());
                     itemRecipes.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    itemRecipeIngredients = new EntitySet<DataModels.ItemRecipeIngredient>(restorePoint?.Get<DataModels.ItemRecipeIngredient>() ?? ctx.ItemRecipeIngredient.ToList());
+                    itemRecipeIngredients = new EntitySet<DataModels.ItemRecipeIngredient>(ctx.ItemRecipeIngredient.ToList());
                     itemRecipeIngredients.RegisterLookupGroup(nameof(ItemRecipe), x => x.RecipeId);
                     itemRecipeIngredients.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    redeemableItems = new EntitySet<RedeemableItem>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList());
+                    redeemableItems = new EntitySet<RedeemableItem>(ctx.RedeemableItem.ToList());
                     redeemableItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    userProperties = new EntitySet<UserProperty>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList());
+                    userProperties = new EntitySet<UserProperty>(ctx.UserProperty.ToList());
                     userProperties.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    clientDevices = new EntitySet<ClientDevice>(restorePoint?.Get<ClientDevice>() ?? ctx.ClientDevice.ToList());
+                    clientDevices = new EntitySet<ClientDevice>(ctx.ClientDevice.ToList());
                     clientDevices.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    villageRoads = new EntitySet<VillageRoad>(restorePoint?.Get<VillageRoad>() ?? ctx.VillageRoad.ToList());
+                    villageRoads = new EntitySet<VillageRoad>(ctx.VillageRoad.ToList());
                     villageRoads.RegisterLookupGroup(nameof(Village), x => x.VillageId);
-                    villageDecor = new EntitySet<VillageDecor>(restorePoint?.Get<VillageDecor>() ?? ctx.VillageDecor.ToList());
+                    villageDecor = new EntitySet<VillageDecor>(ctx.VillageDecor.ToList());
                     villageDecor.RegisterLookupGroup(nameof(Village), x => x.VillageId);
-                    villageDecorUnlocks = new EntitySet<VillageDecorUnlock>(restorePoint?.Get<VillageDecorUnlock>() ?? ctx.VillageDecorUnlock.ToList());
+                    villageDecorUnlocks = new EntitySet<VillageDecorUnlock>(ctx.VillageDecorUnlock.ToList());
                     villageDecorUnlocks.RegisterLookupGroup(nameof(Village), x => x.VillageId);
-                    villageDecorGifts = new EntitySet<VillageDecorGift>(restorePoint?.Get<VillageDecorGift>() ?? ctx.VillageDecorGift.ToList());
+                    villageDecorGifts = new EntitySet<VillageDecorGift>(ctx.VillageDecorGift.ToList());
                     villageDecorGifts.RegisterLookupGroup(nameof(Village), x => x.VillageId);
-                    villageDecorGiftLogs = new EntitySet<VillageDecorGiftLog>(restorePoint?.Get<VillageDecorGiftLog>() ?? ctx.VillageDecorGiftLog.ToList());
-                    characterQuests = new EntitySet<CharacterQuest>(restorePoint?.Get<CharacterQuest>() ?? ctx.CharacterQuest.ToList());
+                    villageDecorGiftLogs = new EntitySet<VillageDecorGiftLog>(ctx.VillageDecorGiftLog.ToList());
+                    characterQuests = new EntitySet<CharacterQuest>(ctx.CharacterQuest.ToList());
                     characterQuests.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
-                    characterQuestStats = new EntitySet<CharacterQuestStats>(restorePoint?.Get<CharacterQuestStats>() ?? ctx.CharacterQuestStats.ToList());
+                    characterQuestStats = new EntitySet<CharacterQuestStats>(ctx.CharacterQuestStats.ToList());
                     characterQuestStats.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
-                    streamQuests = new EntitySet<StreamQuest>(restorePoint?.Get<StreamQuest>() ?? ctx.StreamQuest.ToList());
+                    streamQuests = new EntitySet<StreamQuest>(ctx.StreamQuest.ToList());
                     streamQuests.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
-                    streamQuestContributions = new EntitySet<StreamQuestContribution>(restorePoint?.Get<StreamQuestContribution>() ?? ctx.StreamQuestContribution.ToList());
+                    streamQuestContributions = new EntitySet<StreamQuestContribution>(ctx.StreamQuestContribution.ToList());
                     streamQuestContributions.RegisterLookupGroup(nameof(StreamQuest), x => x.StreamQuestId);
-                    characterAchievements = new EntitySet<CharacterAchievement>(restorePoint?.Get<CharacterAchievement>() ?? ctx.CharacterAchievement.ToList());
+                    characterAchievements = new EntitySet<CharacterAchievement>(ctx.CharacterAchievement.ToList());
                     characterAchievements.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
-                    streamerQuests = new EntitySet<StreamerQuest>(restorePoint?.Get<StreamerQuest>() ?? ctx.StreamerQuest.ToList());
+                    streamerQuests = new EntitySet<StreamerQuest>(ctx.StreamerQuest.ToList());
                     streamerQuests.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
-                    streamerQuestEntries = new EntitySet<StreamerQuestEntry>(restorePoint?.Get<StreamerQuestEntry>() ?? ctx.StreamerQuestEntry.ToList());
+                    streamerQuestEntries = new EntitySet<StreamerQuestEntry>(ctx.StreamerQuestEntry.ToList());
                     streamerQuestEntries.RegisterLookupGroup(nameof(StreamerQuest), x => x.StreamerQuestId);
-                    streamerQuestBudgets = new EntitySet<StreamerQuestBudget>(restorePoint?.Get<StreamerQuestBudget>() ?? ctx.StreamerQuestBudget.ToList());
+                    streamerQuestBudgets = new EntitySet<StreamerQuestBudget>(ctx.StreamerQuestBudget.ToList());
                     streamerQuestBudgets.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
-                    villageStories = new EntitySet<VillageStory>(restorePoint?.Get<VillageStory>() ?? ctx.VillageStory.ToList());
+                    villageStories = new EntitySet<VillageStory>(ctx.VillageStory.ToList());
                     villageStories.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
-                    villageStoryHelpers = new EntitySet<VillageStoryHelper>(restorePoint?.Get<VillageStoryHelper>() ?? ctx.VillageStoryHelper.ToList());
+                    villageStoryHelpers = new EntitySet<VillageStoryHelper>(ctx.VillageStoryHelper.ToList());
                     villageStoryHelpers.RegisterLookupGroup(nameof(VillageStory), x => x.VillageStoryId);
-                    streamerUnlocks = new EntitySet<StreamerUnlock>(restorePoint?.Get<StreamerUnlock>() ?? ctx.StreamerUnlock.ToList());
+                    streamerUnlocks = new EntitySet<StreamerUnlock>(ctx.StreamerUnlock.ToList());
                     streamerUnlocks.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
 
-                    boatLookUnlocks = new EntitySet<BoatLookUnlock>(restorePoint?.Get<BoatLookUnlock>() ?? ctx.BoatLookUnlock.ToList());
+                    boatLookUnlocks = new EntitySet<BoatLookUnlock>(ctx.BoatLookUnlock.ToList());
                     boatLookUnlocks.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
@@ -391,44 +366,43 @@ namespace RavenNest.BusinessLogic.Data
                     loyaltyRewards = new EntitySet<UserLoyaltyReward>(ctx.UserLoyaltyReward.ToList());
                     //loyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyRank), x => x.RankId);
 
-                    userAccess = new EntitySet<UserAccess>(restorePoint?.Get<UserAccess>() ?? ctx.UserAccess.ToList());
+                    userAccess = new EntitySet<UserAccess>(ctx.UserAccess.ToList());
                     userAccess.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward>(restorePoint?.Get<UserClaimedLoyaltyReward>() ?? ctx.UserClaimedLoyaltyReward.ToList());
+                    claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward>(ctx.UserClaimedLoyaltyReward.ToList());
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(User), x => x.UserId);
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyReward), x => x.RewardId);
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(Character), x => x.CharacterId.GetValueOrDefault());
 
-                    characterSessionActivities = new EntitySet<CharacterSessionActivity>(restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList());
+                    characterSessionActivities = new EntitySet<CharacterSessionActivity>(ctx.CharacterSessionActivity.ToList());
                     characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
                     characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     clanInvites = new EntitySet<CharacterClanInvite>(
-                        restorePoint?.Get<CharacterClanInvite>() ?? ctx.CharacterClanInvite.ToList());
+                        ctx.CharacterClanInvite.ToList());
                     clanInvites.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanInvites.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     clanInvites.RegisterLookupGroup(nameof(User), x => x.InviterUserId.GetValueOrDefault());
 
-                    patreons = new EntitySet<UserPatreon>(restorePoint?.Get<UserPatreon>() ?? ctx.UserPatreon.ToList());
+                    patreons = new EntitySet<UserPatreon>(ctx.UserPatreon.ToList());
                     patreons.RegisterLookupGroup(nameof(User), x => x.UserId.GetValueOrDefault());
 
                     notifications = new EntitySet<UserNotification>(
-                        restorePoint?.Get<UserNotification>() ??
                         ctx.UserNotification.ToList());
                     notifications.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     expMultiplierEvents = new EntitySet<ExpMultiplierEvent>(
                         ctx.ExpMultiplierEvent.ToList());
 
-                    syntyAppearances = new EntitySet<SyntyAppearance>(restorePoint?.Get<SyntyAppearance>() ?? ctx.SyntyAppearance.ToList());
-                    characters = new EntitySet<Character>(restorePoint?.Get<Character>() ?? ctx.Character.ToList());
+                    syntyAppearances = new EntitySet<SyntyAppearance>(ctx.SyntyAppearance.ToList());
+                    characters = new EntitySet<Character>(ctx.Character.ToList());
 
                     characters.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
-                    characterStates = new EntitySet<CharacterState>(restorePoint?.Get<CharacterState>() ?? ctx.CharacterState.ToList());
-                    gameSessions = new EntitySet<GameSession>(restorePoint?.Get<GameSession>() ?? ctx.GameSession.ToList());
+                    characterStates = new EntitySet<CharacterState>(ctx.CharacterState.ToList());
+                    gameSessions = new EntitySet<GameSession>(ctx.GameSession.ToList());
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
@@ -437,45 +411,45 @@ namespace RavenNest.BusinessLogic.Data
                     //gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    userBankItems = new EntitySet<UserBankItem>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList());
+                    userBankItems = new EntitySet<UserBankItem>(ctx.UserBankItem.ToList());
                     userBankItems.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     // Reading a clan bank always means reading one clan, so that is the lookup.
-                    clanBankItems = new EntitySet<ClanBankItem>(restorePoint?.Get<ClanBankItem>() ?? ctx.ClanBankItem.ToList());
+                    clanBankItems = new EntitySet<ClanBankItem>(ctx.ClanBankItem.ToList());
                     clanBankItems.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
                     // Two lookups: the log tab reads a clan, the daily allowance reads a character.
-                    clanBankLog = new EntitySet<ClanBankLog>(restorePoint?.Get<ClanBankLog>() ?? ctx.ClanBankLog.ToList());
+                    clanBankLog = new EntitySet<ClanBankLog>(ctx.ClanBankLog.ToList());
                     clanBankLog.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanBankLog.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    clanBankLimits = new EntitySet<ClanBankWithdrawalLimit>(restorePoint?.Get<ClanBankWithdrawalLimit>() ?? ctx.ClanBankWithdrawalLimit.ToList());
+                    clanBankLimits = new EntitySet<ClanBankWithdrawalLimit>(ctx.ClanBankWithdrawalLimit.ToList());
                     clanBankLimits.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
                     // The tavern shelves: one streamer's listings, and the sales report reads one streamer's
                     // sales; the per viewer limit reads one listing's sales.
-                    streamerShopListings = new EntitySet<StreamerShopListing>(restorePoint?.Get<StreamerShopListing>() ?? ctx.StreamerShopListing.ToList());
+                    streamerShopListings = new EntitySet<StreamerShopListing>(ctx.StreamerShopListing.ToList());
                     streamerShopListings.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
-                    streamerShopTransactions = new EntitySet<StreamerShopTransaction>(restorePoint?.Get<StreamerShopTransaction>() ?? ctx.StreamerShopTransaction.ToList());
+                    streamerShopTransactions = new EntitySet<StreamerShopTransaction>(ctx.StreamerShopTransaction.ToList());
                     streamerShopTransactions.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
                     streamerShopTransactions.RegisterLookupGroup(nameof(StreamerShopListing), x => x.ListingId);
-                    clanImages = new EntitySet<ClanImage>(restorePoint?.Get<ClanImage>() ?? ctx.ClanImage.ToList());
+                    clanImages = new EntitySet<ClanImage>(ctx.ClanImage.ToList());
                     clanImages.RegisterLookupGroup(nameof(User), x => x.UserId);
                     clanImages.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-                    vendorItems = new EntitySet<VendorItem>(restorePoint?.Get<VendorItem>() ?? ctx.VendorItem.ToList());
+                    vendorItems = new EntitySet<VendorItem>(ctx.VendorItem.ToList());
                     vendorItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    inventoryItems = new EntitySet<InventoryItem>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList());
+                    inventoryItems = new EntitySet<InventoryItem>(ctx.InventoryItem.ToList());
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     inventoryItems.EntityChanged += (item, _) => InventoryItemChanged?.Invoke(item);
 
-                    itemAttributes = new EntitySet<ItemAttribute>(restorePoint?.Get<ItemAttribute>() ?? ctx.ItemAttribute.ToList());
+                    itemAttributes = new EntitySet<ItemAttribute>(ctx.ItemAttribute.ToList());
 
-                    marketItems = new EntitySet<MarketItem>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList());
+                    marketItems = new EntitySet<MarketItem>(ctx.MarketItem.ToList());
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    items = new EntitySet<Item>(restorePoint?.Get<Item>() ?? ctx.Item.ToList());
+                    items = new EntitySet<Item>(ctx.Item.ToList());
 
                     npcs = new EntitySet<NPC>(ctx.NPC.ToList());
                     npcSpawns = new EntitySet<NPCSpawn>(ctx.NPCSpawn.ToList());
@@ -485,69 +459,63 @@ namespace RavenNest.BusinessLogic.Data
                     npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
 
                     itemCraftingRequirements = new EntitySet<ItemCraftingRequirement>(
-                        restorePoint?.Get<ItemCraftingRequirement>() ??
                         ctx.ItemCraftingRequirement.ToList());
                     itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    clans = new EntitySet<Clan>(restorePoint?.Get<Clan>() ?? ctx.Clan.ToList());
+                    clans = new EntitySet<Clan>(ctx.Clan.ToList());
                     clans.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    clanRoles = new EntitySet<ClanRole>(restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList());
+                    clanRoles = new EntitySet<ClanRole>(ctx.ClanRole.ToList());
                     clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-                    clanRolePermissions = new EntitySet<ClanRolePermissions>(restorePoint?.Get<ClanRolePermissions>() ?? ctx.ClanRolePermissions.ToList());
+                    clanRolePermissions = new EntitySet<ClanRolePermissions>(ctx.ClanRolePermissions.ToList());
                     clanRolePermissions.RegisterLookupGroup(nameof(ClanRole), x => x.ClanRoleId);
 
-                    characterClanSkillCooldown = new EntitySet<CharacterClanSkillCooldown>(restorePoint?.Get<CharacterClanSkillCooldown>() ?? ctx.CharacterClanSkillCooldown.ToList());
+                    characterClanSkillCooldown = new EntitySet<CharacterClanSkillCooldown>(ctx.CharacterClanSkillCooldown.ToList());
                     characterClanSkillCooldown.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterClanSkillCooldown.RegisterLookupGroup(nameof(Skill), x => x.SkillId);
 
                     clanMemberships = new EntitySet<CharacterClanMembership>(
-                        restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList());
+                        ctx.CharacterClanMembership.ToList());
                     clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanMemberships.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    villages = new EntitySet<Village>(restorePoint?.Get<Village>() ?? ctx.Village.ToList());
+                    villages = new EntitySet<Village>(ctx.Village.ToList());
                     villages.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     villageHouses = new EntitySet<VillageHouse>(
-                        restorePoint?.Get<VillageHouse>() ??
                         ctx.VillageHouse.ToList());
 
                     villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
                     resources = new EntitySet<Resources>(
-                        restorePoint?.Get<Resources>() ??
                         ctx.Resources.ToList());
 
                     statistics = new EntitySet<Statistics>(
-                        restorePoint?.Get<Statistics>() ??
                         ctx.Statistics.ToList());
 
                     characterSkillRecords = new EntitySet<CharacterSkillRecord>(
-                        restorePoint?.Get<CharacterSkillRecord>() ??
                         ctx.CharacterSkillRecord.ToList());
 
                     characterSkillRecords.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    characterSkills = new EntitySet<Skills>(restorePoint?.Get<Skills>() ?? ctx.Skills.ToList());
-                    clanSkills = new EntitySet<ClanSkill>(restorePoint?.Get<ClanSkill>() ?? ctx.ClanSkill.ToList());
+                    characterSkills = new EntitySet<Skills>(ctx.Skills.ToList());
+                    clanSkills = new EntitySet<ClanSkill>(ctx.ClanSkill.ToList());
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
                     vendorTransaction = new EntitySet<VendorTransaction>(
-                        restorePoint?.Get<VendorTransaction>() ??
                         ctx.VendorTransaction.ToList());
                     vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                     vendorTransaction.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    marketTransactions = new EntitySet<MarketItemTransaction>(restorePoint?.Get<MarketItemTransaction>() ?? ctx.MarketItemTransaction.ToList());
+                    marketTransactions = new EntitySet<MarketItemTransaction>(ctx.MarketItemTransaction.ToList());
                     marketTransactions.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                     marketTransactions.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
                     marketTransactions.RegisterLookupGroup(nameof(Character) + "Buyer", x => x.BuyerCharacterId);
 
 
                     skills = new EntitySet<Skill>(ctx.Skill.ToList());
-                    users = new EntitySet<User>(restorePoint?.Get<User>() ?? ctx.User.ToList());
+                    users = new EntitySet<User>(ctx.User.ToList());
                     gameClients = new EntitySet<GameClient>(ctx.GameClient.ToList());
 
                     Client = gameClients.Entities.First();
@@ -605,6 +573,28 @@ namespace RavenNest.BusinessLogic.Data
                         clans, clanRoles, clanMemberships, clanInvites, agreements,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
+                }
+                #endregion
+
+                #region Data Restoration
+                // Changes a save could not write before the server stopped go back in as unsaved changes, over the
+                // database as it was loaded; the first save writes the difference. The database is never emptied.
+                logger.LogInformation($"Checking for pending changes.");
+                foreach (var entitySet in entitySets)
+                {
+                    try
+                    {
+                        var restored = backupProvider.RestorePendingChanges(entitySet);
+                        if (restored != null)
+                        {
+                            logger.LogWarning("Restored " + restored);
+                        }
+                    }
+                    catch (Exception exc)
+                    {
+                        logger.LogError("Could not restore the pending changes of " + entitySet.GetName() + ", server start interrupted: " + exc.Message);
+                        throw;
+                    }
                 }
                 #endregion
 
@@ -5020,18 +5010,25 @@ namespace RavenNest.BusinessLogic.Data
                             if (setFailed)
                             {
                                 errorSaving = true;
-                                backupProvider.CreateRestorePoint(new[] { entitySet });
+                            }
+
+                            // what keeps failing (now or waiting for its retry) stays on disk with the set's other
+                            // unsaved changes until it is written; a row waiting for its retry is not tried, so
+                            // setFailed alone would forget it
+                            if (setFailed || HasFailingChanges(entitySet))
+                            {
+                                backupProvider.WritePendingChanges(entitySet);
                             }
                             else
                             {
-                                backupProvider.ClearRestorePoint(entitySet);
+                                backupProvider.ClearPendingChanges(entitySet);
                             }
                         }
                         catch (SqlException exc)
                         {
                             errorSaving = true;
-                            backupProvider.CreateRestorePoint(new[] { entitySet });
-                            logger.LogError("Failed to save " + entityType + " to DB! Restorepoint Created and query saved. Exception: " + exc);
+                            backupProvider.WritePendingChanges(entitySet);
+                            logger.LogError("Failed to save " + entityType + " to DB! Pending changes kept and query saved. Exception: " + exc);
                             File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, entityType + "_error_query.sql"), lastQuery);
                         }
                     }
@@ -5297,6 +5294,18 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         private readonly ConcurrentDictionary<Guid, FailedSave> failedSaves = new ConcurrentDictionary<Guid, FailedSave>();
+
+        /// <summary>Whether an unsaved change of the set belongs to a row that failed to save and has not been written since.</summary>
+        private bool HasFailingChanges(IEntitySet set)
+        {
+            if (failedSaves.IsEmpty) return false;
+            foreach (var change in set.Added.Concat(set.Updated).Concat(set.Removed))
+            {
+                if (change.Entity != null && failedSaves.ContainsKey(change.Entity.Id)) return true;
+            }
+
+            return false;
+        }
 
         /// <summary>Writes one batch in its own connection; false (and the query and error) if the database refused it.</summary>
         private bool TryWriteBatch(EntityStoreItems saveData, out int written, out string failedQuery, out Exception error)
