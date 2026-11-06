@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The combat rules shared by the game (copied into Assets/Libraries like RavenNest.Models.dll) and the
+    combat simulator, so the two can never disagree (the game's docs/combat-v2-design.md, section 7).
+    netstandard2.1 so Unity loads it; no dependencies.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>RavenNest.Combat</RootNamespace>
+  </PropertyGroup>
+
+</Project>
