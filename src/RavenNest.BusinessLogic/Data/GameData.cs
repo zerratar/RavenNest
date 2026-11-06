@@ -128,6 +128,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<StreamerShopTransaction> streamerShopTransactions;
         private readonly EntitySet<ClanImage> clanImages;
         private readonly EntitySet<ClanBankWithdrawalLimit> clanBankLimits;
+        private readonly EntitySet<ClanJoinRequest> clanJoinRequests;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
         private readonly EntitySet<ItemDrop> itemDrops;
@@ -241,6 +242,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClanBankItem),
                 typeof(ClanBankLog),
                 typeof(ClanBankWithdrawalLimit),
+                typeof(ClanJoinRequest),
                 typeof(StreamerShopListing),
                 typeof(StreamerShopTransaction),
                 typeof(ClanImage),
@@ -426,6 +428,10 @@ namespace RavenNest.BusinessLogic.Data
                     clanBankLimits = new EntitySet<ClanBankWithdrawalLimit>(ctx.ClanBankWithdrawalLimit.ToList());
                     clanBankLimits.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
+                    clanJoinRequests = new EntitySet<ClanJoinRequest>(ctx.ClanJoinRequest.ToList());
+                    clanJoinRequests.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    clanJoinRequests.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+
                     // The tavern shelves: one streamer's listings, and the sales report reads one streamer's
                     // sales; the per viewer limit reads one listing's sales.
                     streamerShopListings = new EntitySet<StreamerShopListing>(ctx.StreamerShopListing.ToList());
@@ -552,7 +558,7 @@ namespace RavenNest.BusinessLogic.Data
                         syntyAppearances, characters, characterStates,
                         userProperties, vendorTransaction,
                         userBankItems,
-                        clanBankItems, clanBankLog, clanBankLimits,
+                        clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests,
                         streamerShopListings, streamerShopTransactions,
                         clanImages,
                         characterSkillRecords,
@@ -3212,6 +3218,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(ClanBankWithdrawalLimit item) => Update(() => clanBankLimits.Add(item));
+        public AddEntityResult Add(ClanJoinRequest item) => Update(() => clanJoinRequests.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
@@ -3783,6 +3790,16 @@ namespace RavenNest.BusinessLogic.Data
                 .Sum(x => -x.Amount);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>A clan's join requests, waiting and decided.</summary>
+        public IReadOnlyList<ClanJoinRequest> GetClanJoinRequests(Guid clanId)
+            => clanJoinRequests[nameof(Clan), clanId].ToList();
+
+        /// <summary>A character's join requests to any clan, waiting and decided.</summary>
+        public IReadOnlyList<ClanJoinRequest> GetClanJoinRequestsByCharacter(Guid characterId)
+            => clanJoinRequests[nameof(Character), characterId].ToList();
+
+        public ClanJoinRequest GetClanJoinRequest(Guid requestId) => clanJoinRequests[requestId];
+
         public IReadOnlyList<ClanBankWithdrawalLimit> GetClanBankLimits(Guid clanId)
             => clanBankLimits[nameof(Clan), clanId].ToList();
 
@@ -4780,6 +4797,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ClanBankWithdrawalLimit item) => clanBankLimits.Remove(item);
+        public RemoveEntityResult Remove(ClanJoinRequest item) => clanJoinRequests.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(Agreements item) => agreements.Remove(item);

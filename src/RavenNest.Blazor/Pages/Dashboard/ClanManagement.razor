@@ -3,6 +3,7 @@
 @page "/clan/ranks"
 @page "/clan/stash"
 @page "/clan/look"
+@page "/clan/requests"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
@@ -248,6 +249,7 @@ else
         <div class="rf-tabs" role="tablist">
             <button type="button" role="tab" aria-selected="@(section == Section.Members)" class="rf-tab @(section == Section.Members ? "is-active" : "")" @onclick="() => ShowSection(Section.Members)">Members</button>
             <button type="button" role="tab" aria-selected="@(section == Section.Ranks)" class="rf-tab @(section == Section.Ranks ? "is-active" : "")" @onclick="() => ShowSection(Section.Ranks)">Ranks</button>
+            <button type="button" role="tab" aria-selected="@(section == Section.Requests)" class="rf-tab @(section == Section.Requests ? "is-active" : "")" @onclick="() => ShowSection(Section.Requests)">Requests</button>
             @if (canUseBank)
             {
                 <button type="button" role="tab" aria-selected="@(section == Section.Stash)" class="rf-tab @(section == Section.Stash ? "is-active" : "")" @onclick="() => ShowSection(Section.Stash)">Stash</button>
@@ -262,6 +264,14 @@ else
         {
             @* the logo, the cape image and the cape shapes: the owner's alone *@
             <ClanLookEditor @key="clan.Id"></ClanLookEditor>
+        }
+        else if (section == Section.Requests)
+        {
+            <ClanJoinRequests @key="@(clan.Id.ToString() + ActingCharacterId)"
+                              ClanId="@clan.Id"
+                              ActingCharacterId="@ActingCharacterId"
+                              CanAnswer="@(myPermissions?.CanCreateInvite == true)"
+                              CanSetPolicy="@(myPermissions?.CanMakePublic == true)"></ClanJoinRequests>
         }
         else if (section == Section.Ranks)
         {
@@ -332,7 +342,7 @@ else
     private bool canRenameClan;
     private RavenNest.BusinessLogic.Game.TypedClanRolePermissions myPermissions;
     private bool editingClanName;
-    private enum Section { Members, Ranks, Stash, Look }
+    private enum Section { Members, Ranks, Requests, Stash, Look }
 
     private Section section = Section.Members;
 
@@ -507,6 +517,7 @@ else
         if (uri.IndexOf("/clan/ranks", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Ranks;
         else if (uri.IndexOf("/clan/stash", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Stash;
         else if (uri.IndexOf("/clan/look", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Look;
+        else if (uri.IndexOf("/clan/requests", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Requests;
         else section = Section.Members;
     }
 

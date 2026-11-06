@@ -257,6 +257,153 @@ namespace RavenNest.Blazor.Services
             return GetMembers(clanId);
         }
 
+        #region Join policy and join requests
+        // docs/clan-pages-design.md, step 2: the clan page's Join / Request to join, and the Requests tab on /clan.
+
+        /// <summary>What the signed in visitor can do about joining this clan, per character; null when signed out.</summary>
+        public ClanJoinOptions GetJoinOptions(Guid clanId)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return null;
+
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return null;
+
+            var options = new ClanJoinOptions { Policy = (ClanJoinPolicy)clan.JoinPolicy };
+            foreach (var character in gameData.GetCharactersByUserId(session.UserId).OrderBy(x => x.CharacterIndex))
+            {
+                var membership = gameData.GetClanMembership(character.Id);
+                var inClan = membership != null ? gameData.GetClan(membership.ClanId) : null;
+                options.Characters.Add(new ClanJoinCharacter
+                {
+                    CharacterId = character.Id,
+                    Name = CharacterName(character),
+                    InClan = inClan?.Name,
+                    InThisClan = inClan != null && inClan.Id == clanId,
+                    WaitingRequestId = gameData.GetClanJoinRequestsByCharacter(character.Id).FirstOrDefault(x => x.ClanId == clanId && x.State == 0)?.Id,
+                    Invited = gameData.GetClanInvitesByCharacter(character.Id).Any(x => x.ClanId == clanId),
+                });
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        ///     Joins an open clan (or one the character is invited to), or files a request with the clan that takes
+        ///     them. The character must be the signed in user's.
+        /// </summary>
+        public ClanJoinOutcome Join(Guid clanId, Guid characterId, string message)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return ClanJoinOutcome.Fail("Sign in first.");
+
+            var clan = gameData.GetClan(clanId);
+            var character = gameData.GetCharacter(characterId);
+            if (clan == null || character == null || character.UserId != session.UserId)
+                return ClanJoinOutcome.Fail("That character or clan could not be found.");
+
+            if ((ClanJoinPolicy)clan.JoinPolicy == ClanJoinPolicy.OnRequest)
+            {
+                var request = clanManager.RequestToJoin(clanId, characterId, message, out var error);
+                return request != null
+                    ? new ClanJoinOutcome { Success = true, RequestSent = true, Message = "Request sent. " + clan.Name + "'s officers will answer it, and you will get a notification." }
+                    : ClanJoinOutcome.Fail(error);
+            }
+
+            var result = clanManager.JoinClan(clan.UserId, characterId);
+            if (result.Success)
+                return new ClanJoinOutcome { Success = true, Message = CharacterName(character) + " joined " + clan.Name + " as " + (result.Role?.Name ?? "a member") + "." };
+
+            return ClanJoinOutcome.Fail(result.Failure switch
+            {
+                JoinClanFailure.AlreadyInClan => CharacterName(character) + " is already in a clan. Leave it first.",
+                JoinClanFailure.InviteOnly => clan.Name + " only takes members by invite.",
+                _ => "Could not join " + clan.Name + " right now.",
+            });
+        }
+
+        public bool WithdrawJoinRequest(Guid requestId)
+        {
+            var session = GetSession();
+            return session.Authenticated && clanManager.WithdrawJoinRequest(requestId, session.UserId);
+        }
+
+        /// <summary>The requests waiting on the clan, for ranks that may invite; null for anyone else.</summary>
+        public IReadOnlyList<ClanJoinRequestEntry> GetJoinRequests(Guid clanId, Guid? actingCharacterId)
+        {
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            if (mine == null || !mine.CanCreateInvite)
+                return null;
+
+            var output = new List<ClanJoinRequestEntry>();
+            foreach (var request in clanManager.GetWaitingJoinRequests(clanId))
+            {
+                var character = gameData.GetCharacter(request.CharacterId);
+                if (character == null)
+                    continue;
+
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                output.Add(new ClanJoinRequestEntry
+                {
+                    Id = request.Id,
+                    CharacterId = character.Id,
+                    Name = CharacterName(character),
+                    AvatarUrl = "/api/twitch/logo/" + (gameData.GetUserAccess(character.UserId, "twitch")?.PlatformId ?? character.UserId.ToString()),
+                    CombatLevel = skills != null ? GameData.GetCombatLevel(skills) : 0,
+                    Message = request.Message,
+                    Created = request.Created,
+                });
+            }
+
+            return output;
+        }
+
+        public ClanJoinOutcome AnswerJoinRequest(Guid clanId, Guid requestId, bool accept, Guid? actingCharacterId)
+        {
+            var session = GetSession();
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            if (mine == null || !mine.CanCreateInvite)
+                return ClanJoinOutcome.Fail("Your rank may not answer requests.");
+
+            var request = gameData.GetClanJoinRequest(requestId);
+            if (request == null || request.ClanId != clanId)
+                return ClanJoinOutcome.Fail("That request is not for this clan.");
+
+            var name = CharacterName(gameData.GetCharacter(request.CharacterId));
+            if (!accept)
+                return clanManager.DeclineJoinRequest(requestId, session.UserId)
+                    ? new ClanJoinOutcome { Success = true, Message = "Turned down " + name + "." }
+                    : ClanJoinOutcome.Fail("That request has already been answered.");
+
+            return clanManager.AcceptJoinRequest(requestId, session.UserId, out var error)
+                ? new ClanJoinOutcome { Success = true, Message = name + " is in the clan now." }
+                : ClanJoinOutcome.Fail(error);
+        }
+
+        public ClanJoinPolicy GetJoinPolicy(Guid clanId) => clanManager.GetJoinPolicy(clanId);
+
+        /// <summary>Who may join; for ranks with "Can change who may join" (the CanMakePublic permission).</summary>
+        public bool SetJoinPolicy(Guid clanId, ClanJoinPolicy policy, Guid? actingCharacterId)
+        {
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            return mine != null && mine.CanMakePublic && clanManager.SetJoinPolicy(clanId, policy);
+        }
+
+        private static string CharacterName(DataModels.Character character)
+        {
+            if (character == null) return "Someone";
+            var name = character.Name;
+            if (!string.IsNullOrEmpty(character.Identifier) && !character.Identifier.All(char.IsDigit))
+                name += " (" + character.Identifier + ")";
+            if (character.CharacterIndex > 0)
+                name += " #" + character.CharacterIndex;
+            return name;
+        }
+        #endregion
+
         public IReadOnlyList<ClanRole> GetRoles(Guid clanId)
         {
             var session = GetSession();
@@ -774,6 +921,44 @@ namespace RavenNest.Blazor.Services
         public string PlayingOn { get; set; }
 
         public bool IsPlaying => !string.IsNullOrEmpty(PlayingOn);
+    }
+
+    public class ClanJoinOptions
+    {
+        public ClanJoinPolicy Policy { get; set; }
+        public List<ClanJoinCharacter> Characters { get; } = new List<ClanJoinCharacter>();
+    }
+
+    public class ClanJoinCharacter
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+
+        /// <summary>The clan the character is in, or null.</summary>
+        public string InClan { get; set; }
+        public bool InThisClan { get; set; }
+        public Guid? WaitingRequestId { get; set; }
+        public bool Invited { get; set; }
+        public bool CanAct => InClan == null && WaitingRequestId == null;
+    }
+
+    public class ClanJoinOutcome
+    {
+        public bool Success { get; set; }
+        public bool RequestSent { get; set; }
+        public string Message { get; set; }
+        public static ClanJoinOutcome Fail(string message) => new ClanJoinOutcome { Message = message };
+    }
+
+    public class ClanJoinRequestEntry
+    {
+        public Guid Id { get; set; }
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+        public int CombatLevel { get; set; }
+        public string Message { get; set; }
+        public DateTime Created { get; set; }
     }
 
     public class CreateClanModel

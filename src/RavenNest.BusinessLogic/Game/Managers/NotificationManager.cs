@@ -72,6 +72,52 @@ namespace RavenNest.BusinessLogic.Game
             return notification;
         }
 
+        /// <summary>A request to join (docs/clan-pages-design.md, step 2), to the owner and the ranks that may invite.</summary>
+        public void ClanJoinRequestReceived(ClanJoinRequest request, IReadOnlyList<Guid> deciderUserIds)
+        {
+            var character = gameData.GetCharacter(request.CharacterId);
+            var clan = gameData.GetClan(request.ClanId);
+            if (character == null || clan == null || deciderUserIds == null)
+                return;
+
+            foreach (var userId in deciderUserIds)
+            {
+                if (userId == character.UserId)
+                    continue;
+
+                gameData.Add(new UserNotification
+                {
+                    Id = Guid.NewGuid(),
+                    Title = $"{character.Name} asks to join {clan.Name}",
+                    Description = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message,
+                    UserId = userId,
+                    RedirectUrl = "/clan/requests",
+                    Time = DateTime.UtcNow
+                });
+            }
+        }
+
+        /// <summary>How a request to join went, to the asker.</summary>
+        public void ClanJoinRequestDecided(ClanJoinRequest request, bool accepted)
+        {
+            var character = gameData.GetCharacter(request.CharacterId);
+            var clan = gameData.GetClan(request.ClanId);
+            if (character == null || clan == null)
+                return;
+
+            gameData.Add(new UserNotification
+            {
+                Id = Guid.NewGuid(),
+                Title = accepted
+                    ? $"{character.Name} is now in {clan.Name}"
+                    : $"{clan.Name} turned down {character.Name}'s request to join",
+                Description = accepted ? $"Welcome to {clan.Name}!" : null,
+                UserId = request.UserId,
+                RedirectUrl = accepted ? "/clan" : "/clans",
+                Time = DateTime.UtcNow
+            });
+        }
+
         public void DeleteNotification(Guid notificationId)
         {
             var notification = gameData.GetNotification(notificationId);

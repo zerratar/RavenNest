@@ -4692,3 +4692,93 @@ a.rf-badge:hover {
         gap: var(--rf-space-1);
     }
 }
+
+/* Choices: a few big options side by side, each with a line saying what it means (who may join a clan) */
+.rf-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-choice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    text-align: left;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 2px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-choice:hover:not(:disabled) {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-strong);
+    color: var(--rf-ink);
+}
+
+.rf-choice:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-choice:disabled {
+    cursor: default;
+}
+
+.rf-choice.is-active {
+    border-color: var(--rf-gold);
+    color: var(--rf-ink);
+}
+
+.rf-choice__title {
+    font-weight: 800;
+    color: var(--rf-ink);
+}
+
+.rf-choice.is-active .rf-choice__title,
+.rf-choice.is-active .rf-choice__title i {
+    color: var(--rf-gold);
+}
+
+.rf-choice__text {
+    font-size: var(--rf-size-small);
+}
+
+.rf-joinreq {
+    display: grid;
+    gap: var(--rf-space-5);
+}
+
+.rf-joinreq__message {
+    max-width: 24rem;
+    overflow-wrap: anywhere;
+}
+
+/* the clan page's join panel */
+.rf-clanjoin__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-clanjoin__form {
+    display: grid;
+    gap: var(--rf-space-3);
+    max-width: 32rem;
+}
+
+.rf-clanjoin__waiting {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    margin: 0 0 var(--rf-space-3) 0;
+}

@@ -87,6 +87,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<StreamerShopTransaction> StreamerShopTransaction { get; set; }
         public virtual DbSet<ClanImage> ClanImage { get; set; }
         public virtual DbSet<ClanBankWithdrawalLimit> ClanBankWithdrawalLimit { get; set; }
+        public virtual DbSet<ClanJoinRequest> ClanJoinRequest { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
 
@@ -246,6 +247,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<StreamerShopTransaction>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanImage>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanBankWithdrawalLimit>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ClanJoinRequest>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

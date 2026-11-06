@@ -63,6 +63,13 @@ namespace RavenNest.Blazor.Services
             return list;
         }
 
+        /// <summary>Drops the cached list, after a change the list shows (someone joined a clan, a policy changed).</summary>
+        public void Forget()
+        {
+            lock (listLock)
+                cachedList = null;
+        }
+
         /// <summary>One clan's page, found by its name (any case) or its id; null when there is no such clan.</summary>
         public PublicClanPage GetClan(string key)
         {
@@ -185,6 +192,7 @@ namespace RavenNest.Blazor.Services
                 Members = memberships.Count,
                 PlayingNow = playing,
                 Founded = clan.Created,
+                JoinPolicy = (RavenNest.Models.ClanJoinPolicy)clan.JoinPolicy,
             };
         }
 
@@ -239,6 +247,14 @@ namespace RavenNest.Blazor.Services
         public int Members { get; set; }
         public int PlayingNow { get; set; }
         public DateTime Founded { get; set; }
+        public RavenNest.Models.ClanJoinPolicy JoinPolicy { get; set; }
+
+        public string JoinPolicyText => JoinPolicy switch
+        {
+            RavenNest.Models.ClanJoinPolicy.OnRequest => "On request",
+            RavenNest.Models.ClanJoinPolicy.InviteOnly => "Invite only",
+            _ => "Open",
+        };
 
         /// <summary>The page's address: by name, which reads well and is what people share.</summary>
         public string Url => "/clans/" + Uri.EscapeDataString(Name ?? Id.ToString());

@@ -18,6 +18,13 @@ namespace RavenNest.DataModels
         [PersistentData] private DateTime created;
         [PersistentData] private bool isPublic;
 
+        /// <summary>
+        /// Who may join (RavenNest.Models.ClanJoinPolicy): 0 anyone, with !clan join or the clan page (what every clan
+        /// was before join policies existed, and still the default); 1 on request, decided by ranks that may invite;
+        /// 2 by invite only. isPublic above was never set anywhere and is no longer read.
+        /// </summary>
+        [PersistentData] private int joinPolicy;
+
         // The clan's own images (ClanImage ids), empty for the defaults: the owner's Twitch picture, and that
         // logo on a cloth colour for the cape. The shape of the cape: 0 long, 1 pointed, 2 short, 3 tattered.
         [PersistentData] private Guid? logoImageId;

@@ -189,6 +189,7 @@ namespace RavenNest.BusinessLogic.Game
                 Joined = DateTime.UtcNow,
             });
             gameData.Remove(invite);
+            CloseJoinRequests(character.Id);
 
             notificationManager.ClanInviteAccepted(invite.ClanId, invite.CharacterId, DateTime.UtcNow, invite.InviterUserId);
             return true;
@@ -263,6 +264,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Joined = DateTime.UtcNow
             });
+            CloseJoinRequests(characterId);
             return true;
         }
 
@@ -919,10 +921,22 @@ namespace RavenNest.BusinessLogic.Game
         private JoinClanResult JoinClan(Guid characterId, DataModels.Clan clan)
         {
             var charClan = GetClanByCharacter(characterId);
-            if (charClan != null) return new JoinClanResult();
+            if (charClan != null) return new JoinClanResult { ClanName = clan.Name, Failure = JoinClanFailure.AlreadyInClan };
 
-            if (clan.IsPublic)
-                return new JoinClanResult();
+            // who may join (docs/clan-pages-design.md, step 2): Clan.IsPublic used to be checked here the wrong way
+            // round, refusing "public" clans, and since nothing ever set it every clan took anyone
+            switch ((ClanJoinPolicy)clan.JoinPolicy)
+            {
+                case ClanJoinPolicy.OnRequest:
+                    var request = RequestToJoin(clan.Id, characterId, null, out _);
+                    return new JoinClanResult { ClanName = clan.Name, RequestSent = request != null };
+
+                case ClanJoinPolicy.InviteOnly:
+                    var invite = gameData.GetClanInvitesByCharacter(characterId).FirstOrDefault(x => x.ClanId == clan.Id);
+                    if (invite != null && AcceptClanInvite(invite.Id, out var invited, out var invitedRole))
+                        return new JoinClanResult { Success = true, Clan = ModelMapper.Map(gameData, invited), Role = ModelMapper.Map(invitedRole) };
+                    return new JoinClanResult { ClanName = clan.Name, Failure = JoinClanFailure.InviteOnly };
+            }
 
             var roles = GetClanRoles(clan.Id);
             if (roles == null) return new JoinClanResult();
@@ -942,6 +956,192 @@ namespace RavenNest.BusinessLogic.Game
 
             return new JoinClanResult();
         }
+
+        #region Join policy and join requests
+        // docs/clan-pages-design.md, step 2. Permissions are checked by the callers (ClanService for the website, the
+        // chat commands above), as for invites.
+
+        public const int MaxJoinRequestMessageLength = 200;
+
+        public ClanJoinPolicy GetJoinPolicy(Guid clanId) => (ClanJoinPolicy)(gameData.GetClan(clanId)?.JoinPolicy ?? 0);
+
+        public bool SetJoinPolicy(Guid clanId, ClanJoinPolicy policy)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null || !Enum.IsDefined(typeof(ClanJoinPolicy), policy))
+                return false;
+
+            clan.JoinPolicy = (int)policy;
+            return true;
+        }
+
+        /// <summary>
+        ///     Files a request for the character to join a clan that takes members on request, or returns the one
+        ///     already waiting. Null, with the reason, when it cannot: no such clan or character, already in a clan,
+        ///     or the clan is not one that takes requests.
+        /// </summary>
+        public DataModels.ClanJoinRequest RequestToJoin(Guid clanId, Guid characterId, string message, out string error)
+        {
+            error = null;
+            var clan = gameData.GetClan(clanId);
+            var character = gameData.GetCharacter(characterId);
+            if (clan == null || character == null)
+            {
+                error = "That clan or character no longer exists.";
+                return null;
+            }
+
+            if (gameData.GetClanMembership(characterId) != null)
+            {
+                error = character.Name + " is already in a clan.";
+                return null;
+            }
+
+            if ((ClanJoinPolicy)clan.JoinPolicy != ClanJoinPolicy.OnRequest)
+            {
+                error = (ClanJoinPolicy)clan.JoinPolicy == ClanJoinPolicy.InviteOnly
+                    ? clan.Name + " only takes members by invite."
+                    : clan.Name + " is open: join it right away.";
+                return null;
+            }
+
+            var waiting = gameData.GetClanJoinRequestsByCharacter(characterId).FirstOrDefault(x => x.ClanId == clanId && x.State == 0);
+            if (waiting != null)
+                return waiting;
+
+            message = (message ?? "").Trim();
+            if (message.Length > MaxJoinRequestMessageLength)
+                message = message.Substring(0, MaxJoinRequestMessageLength);
+
+            var request = new DataModels.ClanJoinRequest
+            {
+                Id = Guid.NewGuid(),
+                ClanId = clanId,
+                CharacterId = characterId,
+                UserId = character.UserId,
+                Message = message,
+                Created = DateTime.UtcNow,
+            };
+            gameData.Add(request);
+            notificationManager.ClanJoinRequestReceived(request, GetJoinRequestDeciders(clan));
+            return request;
+        }
+
+        /// <summary>The requests waiting for a decision, oldest first.</summary>
+        public IReadOnlyList<DataModels.ClanJoinRequest> GetWaitingJoinRequests(Guid clanId) =>
+            gameData.GetClanJoinRequests(clanId).Where(x => x.State == 0).OrderBy(x => x.Created).ToList();
+
+        /// <summary>Puts the asker in the clan's lowest rank. False, with the reason, when it cannot.</summary>
+        public bool AcceptJoinRequest(Guid requestId, Guid decidedByUserId, out string error)
+        {
+            error = null;
+            var request = gameData.GetClanJoinRequest(requestId);
+            if (request == null || request.State != 0)
+            {
+                error = "That request has already been answered.";
+                return false;
+            }
+
+            var clan = gameData.GetClan(request.ClanId);
+            var character = gameData.GetCharacter(request.CharacterId);
+            if (clan == null || character == null)
+            {
+                Decide(request, 3, decidedByUserId);
+                error = "That character no longer exists.";
+                return false;
+            }
+
+            if (gameData.GetClanMembership(character.Id) != null)
+            {
+                Decide(request, 3, decidedByUserId);
+                error = character.Name + " has joined another clan since.";
+                return false;
+            }
+
+            var role = gameData.GetClanRoles(clan.Id).OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
+            if (role == null)
+            {
+                CreateDefaultRoles(clan);
+                role = gameData.GetClanRoles(clan.Id).OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
+            }
+
+            // decided before the membership is added, which closes the character's other waiting requests
+            Decide(request, 1, decidedByUserId);
+            if (role == null || !AddClanMember(clan.Id, character.Id, role.Id))
+            {
+                request.State = 0;
+                request.DecidedByUserId = null;
+                request.Decided = null;
+                error = "Could not add " + character.Name + " to the clan.";
+                return false;
+            }
+
+            // as an accepted invite: the cape the character wore goes, so the new clan's shows
+            var appearance = gameData.GetAppearance(character.SyntyAppearanceId);
+            if (appearance != null)
+                appearance.Cape = 0;
+
+            notificationManager.ClanJoinRequestDecided(request, accepted: true);
+            return true;
+        }
+
+        public bool DeclineJoinRequest(Guid requestId, Guid decidedByUserId)
+        {
+            var request = gameData.GetClanJoinRequest(requestId);
+            if (request == null || request.State != 0)
+                return false;
+
+            Decide(request, 2, decidedByUserId);
+            notificationManager.ClanJoinRequestDecided(request, accepted: false);
+            return true;
+        }
+
+        /// <summary>The asker takes a waiting request back; only the character's own user may.</summary>
+        public bool WithdrawJoinRequest(Guid requestId, Guid userId)
+        {
+            var request = gameData.GetClanJoinRequest(requestId);
+            if (request == null || request.State != 0 || request.UserId != userId)
+                return false;
+
+            Decide(request, 3, userId);
+            return true;
+        }
+
+        /// <summary>The character is in a clan now: its waiting requests are closed.</summary>
+        private void CloseJoinRequests(Guid characterId)
+        {
+            foreach (var request in gameData.GetClanJoinRequestsByCharacter(characterId))
+            {
+                if (request.State == 0)
+                    Decide(request, 3, null);
+            }
+        }
+
+        private static void Decide(DataModels.ClanJoinRequest request, int state, Guid? decidedByUserId)
+        {
+            request.State = state;
+            request.DecidedByUserId = decidedByUserId;
+            request.Decided = DateTime.UtcNow;
+        }
+
+        /// <summary>Who hears about a new request: the owner and everyone whose rank may invite.</summary>
+        private IReadOnlyList<Guid> GetJoinRequestDeciders(DataModels.Clan clan)
+        {
+            var users = new HashSet<Guid> { clan.UserId };
+            foreach (var membership in gameData.GetClanMemberships(clan.Id))
+            {
+                var role = gameData.GetClanRole(membership.ClanRoleId);
+                if (role == null || !GetClanRolePermissions(role).CanCreateInvite)
+                    continue;
+
+                var character = gameData.GetCharacter(membership.CharacterId);
+                if (character != null)
+                    users.Add(character.UserId);
+            }
+
+            return users.ToList();
+        }
+        #endregion
 
         public ClanLeaveResult LeaveClan(Guid characterId)
         {

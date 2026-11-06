@@ -1,0 +1,190 @@
+@*
+    /clan/requests: who may join the clan, and the requests waiting on it (the game's
+    docs/clan-pages-design.md, step 2). Ranks that may invite answer requests; ranks with "Change who
+    may join" pick the policy.
+*@
+@using RavenNest.Blazor.Services
+@using RavenNest.Models
+@inject ClanService ClanService
+
+<div class="rf-joinreq">
+    <section class="rf-joinreq__policy" aria-labelledby="joinreq-policy-title">
+        <h3 class="rf-panel__title" id="joinreq-policy-title">Who may join</h3>
+        <div class="rf-choices" role="radiogroup" aria-labelledby="joinreq-policy-title">
+            @foreach (var option in Policies)
+            {
+                <button type="button"
+                        role="radio"
+                        aria-checked="@(policy == option.Policy)"
+                        class="rf-choice @(policy == option.Policy ? "is-active" : "")"
+                        disabled="@(!CanSetPolicy)"
+                        @onclick="() => SetPolicy(option.Policy)">
+                    <span class="rf-choice__title"><i class="@option.Icon" aria-hidden="true"></i> @option.Title</span>
+                    <span class="rf-choice__text">@option.Text</span>
+                </button>
+            }
+        </div>
+        @if (!CanSetPolicy)
+        {
+            <p class="rf-meta">Your rank cannot change this. The owner can allow it under Ranks ("Change who may join").</p>
+        }
+    </section>
+
+    @if (!string.IsNullOrEmpty(status))
+    {
+        <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@status</p>
+        </div>
+    }
+
+    <section aria-labelledby="joinreq-list-title">
+        <h3 class="rf-panel__title" id="joinreq-list-title">Requests to join</h3>
+        @if (requests == null)
+        {
+            <p class="rf-meta">Your rank cannot see requests. Ranks that may invite players answer them.</p>
+        }
+        else if (requests.Count == 0)
+        {
+            <p class="rf-meta">
+                @(policy == ClanJoinPolicy.OnRequest
+                    ? "Nobody is waiting. Players ask from the clan's page or with !clan join in chat."
+                    : "Nobody is waiting. Requests come in while the clan takes members on request.")
+            </p>
+        }
+        else
+        {
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Combat</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Message</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Asked</span></th>
+                            @if (CanAnswer)
+                            {
+                                <th scope="col"><span class="rf-th rf-th--static">Answer</span></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var request in requests)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="rf-item">
+                                        <span class="rf-item__img"><img src="@request.AvatarUrl" alt="" loading="lazy" /></span>
+                                        <span class="rf-item__body">
+                                            <a class="rf-item__name" href="/inspect/@request.CharacterId" target="_blank">@request.Name</a>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>@request.CombatLevel</td>
+                                <td class="rf-joinreq__message">
+                                    @if (string.IsNullOrWhiteSpace(request.Message))
+                                    {
+                                        <span class="rf-table__quiet">No message</span>
+                                    }
+                                    else
+                                    {
+                                        @request.Message
+                                    }
+                                </td>
+                                <td class="rf-table__quiet" title="@request.Created.ToString("f")">@AskedText(request.Created)</td>
+                                @if (CanAnswer)
+                                {
+                                    <td>
+                                        <div class="rf-actions">
+                                            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" disabled="@busy" @onclick="() => Answer(request, true)">Accept</button>
+                                            <button type="button" class="rf-btn rf-btn--small" disabled="@busy" @onclick="() => Answer(request, false)">Decline</button>
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    [Parameter] public Guid ClanId { get; set; }
+    [Parameter] public Guid? ActingCharacterId { get; set; }
+    [Parameter] public bool CanAnswer { get; set; }
+    [Parameter] public bool CanSetPolicy { get; set; }
+
+    /// <summary>A request was accepted, so the member list behind the other tab is out of date.</summary>
+    [Parameter] public EventCallback MembersChanged { get; set; }
+
+    private ClanJoinPolicy policy;
+    private IReadOnlyList<ClanJoinRequestEntry> requests;
+    private string status;
+    private bool statusIsBad;
+    private bool busy;
+
+    private record PolicyOption(ClanJoinPolicy Policy, string Icon, string Title, string Text);
+
+    private static readonly PolicyOption[] Policies =
+    {
+        new(ClanJoinPolicy.Open, "fa-solid fa-door-open", "Anyone", "Players join at once with !clan join or from the clan's page."),
+        new(ClanJoinPolicy.OnRequest, "fa-solid fa-envelope-open-text", "On request", "Players ask, and ranks that may invite accept or decline here."),
+        new(ClanJoinPolicy.InviteOnly, "fa-solid fa-lock", "Invite only", "Only players your clan invites can join."),
+    };
+
+    protected override void OnParametersSet() => Load();
+
+    private void Load()
+    {
+        policy = ClanService.GetJoinPolicy(ClanId);
+        requests = ClanService.GetJoinRequests(ClanId, ActingCharacterId);
+    }
+
+    private void SetPolicy(ClanJoinPolicy value)
+    {
+        if (!CanSetPolicy || value == policy)
+            return;
+
+        if (ClanService.SetJoinPolicy(ClanId, value, ActingCharacterId))
+        {
+            policy = value;
+            Show(value switch
+            {
+                ClanJoinPolicy.OnRequest => "The clan takes members on request now. Waiting requests show below.",
+                ClanJoinPolicy.InviteOnly => "The clan takes members by invite only now.",
+                _ => "Anyone can join the clan now.",
+            }, false);
+        }
+        else
+        {
+            Show("Could not change who may join.", true);
+        }
+    }
+
+    private async Task Answer(ClanJoinRequestEntry request, bool accept)
+    {
+        busy = true;
+        var outcome = ClanService.AnswerJoinRequest(ClanId, request.Id, accept, ActingCharacterId);
+        Show(outcome.Message, !outcome.Success);
+        Load();
+        busy = false;
+        if (outcome.Success && accept)
+            await MembersChanged.InvokeAsync();
+    }
+
+    private void Show(string message, bool bad)
+    {
+        status = message;
+        statusIsBad = bad;
+    }
+
+    private static string AskedText(DateTime created)
+    {
+        var age = DateTime.UtcNow - created;
+        if (age.TotalMinutes < 1) return "Just now";
+        if (age.TotalHours < 1) return (int)age.TotalMinutes + " min ago";
+        if (age.TotalDays < 1) return (int)age.TotalHours + (age.TotalHours < 2 ? " hour ago" : " hours ago");
+        return (int)age.TotalDays + (age.TotalDays < 2 ? " day ago" : " days ago");
+    }
+}

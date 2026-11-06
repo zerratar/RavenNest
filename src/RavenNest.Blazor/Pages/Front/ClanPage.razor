@@ -8,6 +8,8 @@
 @using RavenNest.BusinessLogic
 @using RavenNest.BusinessLogic.Game
 @inject PublicClanService PublicClanService
+@inject ClanService ClanService
+@inject NavigationManager NavigationManager
 
 <div class="top-section">
     <div class="hero-text">
@@ -57,6 +59,80 @@
                     <a class="rf-btn" href="/clan"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage your clan</a>
                 }
             </div>
+
+            @* joining (docs/clan-pages-design.md, step 2): straight in, on request, or by invite *@
+            <section class="rf-panel rf-clanjoin" aria-label="Joining @clan.Name">
+                <div class="rf-clanjoin__head">
+                    <span class="rf-badge"><i class="@PolicyIcon(clan.JoinPolicy)" aria-hidden="true"></i> @clan.JoinPolicyText</span>
+                    <span class="rf-meta">@PolicyText(clan.JoinPolicy)</span>
+                </div>
+
+                @if (joinOptions == null)
+                {
+                    <a class="rf-btn rf-btn--primary" href="@("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri))">Sign in to join</a>
+                }
+                else
+                {
+                    @foreach (var member in joinOptions.Characters.Where(x => x.InThisClan))
+                    {
+                        <p class="rf-meta"><b>@member.Name</b> is in this clan.</p>
+                    }
+
+                    @foreach (var waiting in joinOptions.Characters.Where(x => x.WaitingRequestId != null))
+                    {
+                        <p class="rf-clanjoin__waiting">
+                            <span><b>@waiting.Name</b> asked to join and is waiting for an answer.</span>
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => Withdraw(waiting.WaitingRequestId.Value)">Take back the request</button>
+                        </p>
+                    }
+
+                    var candidates = Candidates;
+                    @if (candidates.Count > 0)
+                    {
+                        <div class="rf-clanjoin__form">
+                            @if (candidates.Count > 1)
+                            {
+                                <label class="rf-field">
+                                    <span class="rf-label">Character</span>
+                                    <select class="rf-input" @bind="joinCharacterId">
+                                        @foreach (var c in candidates)
+                                        {
+                                            <option value="@c.CharacterId">@c.Name</option>
+                                        }
+                                    </select>
+                                </label>
+                            }
+                            @if (joinOptions.Policy == RavenNest.Models.ClanJoinPolicy.OnRequest)
+                            {
+                                <label class="rf-field">
+                                    <span class="rf-label">Message to the clan (optional)</span>
+                                    <textarea class="rf-input rf-textarea" maxlength="200" rows="3" placeholder="Say hello, or why you want to join" @bind="joinMessage"></textarea>
+                                </label>
+                            }
+                            <div class="rf-actions">
+                                <button type="button" class="rf-btn rf-btn--primary" disabled="@joining" @onclick="JoinClan">
+                                    @JoinButtonText(candidates)
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (joinOptions.Policy == RavenNest.Models.ClanJoinPolicy.InviteOnly && joinOptions.Characters.Any(x => x.InClan == null && x.WaitingRequestId == null))
+                    {
+                        <p class="rf-meta">Ask one of the clan's officers for an invite.</p>
+                    }
+                    else if (!joinOptions.Characters.Any(x => x.InThisClan || x.WaitingRequestId != null))
+                    {
+                        <p class="rf-meta">@(joinOptions.Characters.Count == 0 ? "You have no characters yet." : "All your characters are in a clan. A character has to leave its clan before it can join another.")</p>
+                    }
+                }
+
+                @if (!string.IsNullOrEmpty(joinStatus))
+                {
+                    <div class="rf-banner @(joinStatusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+                        <p>@joinStatus</p>
+                    </div>
+                }
+            </section>
 
             <div class="rf-stats">
                 <div class="rf-stat">
@@ -262,12 +338,86 @@
 
     protected override void OnParametersSet()
     {
+        joinStatus = null;
+        Reload();
+        loaded = true;
+    }
+
+    private void Reload()
+    {
         clanPage = PublicClanService.GetClan(Uri.UnescapeDataString(Key ?? ""));
+        joinOptions = clanPage != null ? ClanService.GetJoinOptions(clanPage.Summary.Id) : null;
+        joinCharacterId = Candidates.FirstOrDefault()?.CharacterId ?? Guid.Empty;
         memberSearch = null;
         clearSignal++;
         ApplyMemberSearch();
-        loaded = true;
     }
+
+    // joining
+    private ClanJoinOptions joinOptions;
+    private Guid joinCharacterId;
+    private string joinMessage;
+    private string joinStatus;
+    private bool joinStatusIsBad;
+    private bool joining;
+
+    // characters that can join now: free, not waiting, and for an invite only clan, invited
+    private List<ClanJoinCharacter> Candidates =>
+        joinOptions?.Characters
+            .Where(x => x.CanAct && (joinOptions.Policy != RavenNest.Models.ClanJoinPolicy.InviteOnly || x.Invited))
+            .ToList()
+        ?? new List<ClanJoinCharacter>();
+
+    private string JoinButtonText(List<ClanJoinCharacter> candidates)
+    {
+        var who = candidates.Count == 1 ? " as " + candidates[0].Name : "";
+        return joinOptions.Policy switch
+        {
+            RavenNest.Models.ClanJoinPolicy.OnRequest => "Request to join" + who,
+            RavenNest.Models.ClanJoinPolicy.InviteOnly => "Accept the invite" + who,
+            _ => "Join" + who,
+        };
+    }
+
+    private void JoinClan()
+    {
+        if (clanPage == null || joinCharacterId == Guid.Empty)
+            return;
+
+        joining = true;
+        var outcome = ClanService.Join(clanPage.Summary.Id, joinCharacterId, joinMessage);
+        joinStatus = outcome.Message;
+        joinStatusIsBad = !outcome.Success;
+        if (outcome.Success)
+        {
+            joinMessage = null;
+            PublicClanService.Forget();
+            Reload();
+        }
+        joining = false;
+    }
+
+    private void Withdraw(Guid requestId)
+    {
+        var done = ClanService.WithdrawJoinRequest(requestId);
+        joinStatus = done ? "Request taken back." : "That request was already answered.";
+        joinStatusIsBad = !done;
+        Reload();
+    }
+
+    private static string PolicyIcon(RavenNest.Models.ClanJoinPolicy policy) => policy switch
+    {
+        RavenNest.Models.ClanJoinPolicy.OnRequest => "fa-solid fa-envelope-open-text",
+        RavenNest.Models.ClanJoinPolicy.InviteOnly => "fa-solid fa-lock",
+        _ => "fa-solid fa-door-open",
+    };
+
+    private static string PolicyText(RavenNest.Models.ClanJoinPolicy policy) => policy switch
+    {
+        RavenNest.Models.ClanJoinPolicy.OnRequest => "Ask to join, and the clan's officers decide. In chat: !clan join followed by the clan's name.",
+        RavenNest.Models.ClanJoinPolicy.InviteOnly => "This clan takes members by invite only.",
+        _ => "Anyone can join, here or with !clan join followed by the clan's name in chat.",
+    };
 
     private void OnMemberSearchChanged(string value)
     {

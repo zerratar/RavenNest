@@ -35,6 +35,13 @@ namespace RavenNest.BusinessLogic.Game
         TypedClanRolePermissions GetOwnerPermissions();
         bool IsClanOwner(Guid characterId);
         JoinClanResult JoinClan(Guid clanOwnerUserId, Guid characterId);
+        ClanJoinPolicy GetJoinPolicy(Guid clanId);
+        bool SetJoinPolicy(Guid clanId, ClanJoinPolicy policy);
+        DataModels.ClanJoinRequest RequestToJoin(Guid clanId, Guid characterId, string message, out string error);
+        IReadOnlyList<DataModels.ClanJoinRequest> GetWaitingJoinRequests(Guid clanId);
+        bool AcceptJoinRequest(Guid requestId, Guid decidedByUserId, out string error);
+        bool DeclineJoinRequest(Guid requestId, Guid decidedByUserId);
+        bool WithdrawJoinRequest(Guid requestId, Guid userId);
         JoinClanResult JoinClan(string clanOwnerId, string platform, Guid characterId);
         ClanLeaveResult LeaveClan(Guid characterId);
         ChangeRoleResult PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument);
