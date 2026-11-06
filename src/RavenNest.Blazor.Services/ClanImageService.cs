@@ -77,6 +77,15 @@ namespace RavenNest.Blazor.Services
             return images.SetBoatColors(session.UserId, flagColor, sailColor);
         }
 
+        /// <summary>An image sent straight from the page (the banner, which has no editor); the owner's own clan only.</summary>
+        public ClanImageResult Upload(ClanImageKind kind, byte[] data)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return new ClanImageResult { Ok = false, Error = "Sign in first." };
+            return images.Upload(session.UserId, kind, data);
+        }
+
         public ClanImageResult UseDefault(ClanImageKind kind)
         {
             var session = GetSession();

@@ -67,6 +67,7 @@
                         <th>Clan</th>
                         <th>Logo</th>
                         <th>Cape</th>
+                        <th>Banner</th>
                         <th>Last upload</th>
                         <th>Needs review</th>
                         <th></th>
@@ -87,6 +88,7 @@
                             <td>@(row.ClanName ?? "No clan")</td>
                             <td>@Image(row.Logo)</td>
                             <td>@Image(row.Cape)</td>
+                            <td>@Image(row.Banner)</td>
                             <td><span title="@row.LastUpload.ToString("u")">@Ago(row.LastUpload)</span></td>
                             <td>
                                 <label class="rf-switch">
@@ -261,7 +263,7 @@
 
     private RenderFragment Thumb(ClanImageInfo image) => __builder =>
     {
-        var css = "rf-clanimg__thumb" + (image.Kind == ClanImageKind.Cape ? " rf-clanimg__thumb--cape" : "");
+        var css = "rf-clanimg__thumb" + (image.Kind == ClanImageKind.Cape ? " rf-clanimg__thumb--cape" : image.Kind == ClanImageKind.Banner ? " rf-clanimg__thumb--banner" : "");
         if (image.State == ClanImageState.Blocked)
         {
             <div class="@css rf-clanimg__thumb--gone" title="Deleted when it was blocked"><i class="fas fa-ban" aria-hidden="true"></i></div>

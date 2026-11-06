@@ -1,8 +1,8 @@
 @page "/clans/{Key}"
 @*
-    One clan, for anyone: its level and skills, its ranks and who holds them, and its members (the
-    game's docs/clan-pages-design.md, step 1). Shows everything for now; the owner gets to hide parts
-    in step 3.
+    One clan, for anyone (the game's docs/clan-pages-design.md): its level and skills, ranks and members
+    (step 1), joining (step 2), what the owner keeps to the clan (step 3), and the page the owner makes
+    of it, with a banner, an accent colour, an about text, news, a Top 8 and a visitor counter (step 4).
 *@
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
@@ -39,6 +39,11 @@
         else
         {
             var clan = clanPage.Summary;
+            <div class="rf-clanpage" style="@AccentStyle">
+            @if (!string.IsNullOrEmpty(clanPage.BannerUrl))
+            {
+                <img class="rf-clanpage__banner" src="@clanPage.BannerUrl" alt="" />
+            }
             <div class="rf-clan">
                 <img src="@clan.LogoUrl" class="rf-clan__logo" alt="@clan.Name" />
                 <div class="rf-clan__id">
@@ -58,6 +63,32 @@
                 {
                     <a class="rf-btn" href="/clan"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage your clan</a>
                 }
+            </div>
+
+            <div class="rf-stats">
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.EnchantingLevel</div>
+                    <div class="rf-label">Enchanting</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.Level</div>
+                    <div class="rf-label">Clan level</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.Members.ToString("N0")</div>
+                    <div class="rf-label">Members</div>
+                </div>
+                @if (!clan.PlayingHidden)
+                {
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@clan.PlayingNow.ToString("N0")</div>
+                        <div class="rf-label">Playing now</div>
+                    </div>
+                }
+                <div class="rf-stat" title="@clan.Founded.ToString("D")">
+                    <div class="rf-stat__value">@(clan.Founded > DateTime.UnixEpoch ? clan.Founded.ToString("yyyy") : "-")</div>
+                    <div class="rf-label">Founded</div>
+                </div>
             </div>
 
             @* joining (docs/clan-pages-design.md, step 2): straight in, on request, or by invite *@
@@ -134,29 +165,87 @@
                 }
             </section>
 
-            <div class="rf-stats">
-                <div class="rf-stat">
-                    <div class="rf-stat__value">@clan.EnchantingLevel</div>
-                    <div class="rf-label">Enchanting</div>
-                </div>
-                <div class="rf-stat">
-                    <div class="rf-stat__value">@clan.Level</div>
-                    <div class="rf-label">Clan level</div>
-                </div>
-                <div class="rf-stat">
-                    <div class="rf-stat__value">@clan.Members.ToString("N0")</div>
-                    <div class="rf-label">Members</div>
-                </div>
-                <div class="rf-stat">
-                    <div class="rf-stat__value">@clan.PlayingNow.ToString("N0")</div>
-                    <div class="rf-label">Playing now</div>
-                </div>
-                <div class="rf-stat" title="@clan.Founded.ToString("D")">
-                    <div class="rf-stat__value">@(clan.Founded > DateTime.UnixEpoch ? clan.Founded.ToString("yyyy") : "-")</div>
-                    <div class="rf-label">Founded</div>
-                </div>
-            </div>
+            @if (!string.IsNullOrWhiteSpace(clanPage.About))
+            {
+                <section class="rf-panel rf-clanpage__about">
+                    <div class="rf-clanpage__head">
+                        <h3 class="rf-panel__title">About @clan.Name</h3>
+                        @ReportLink(Guid.Empty)
+                    </div>
+                    @if (clanPage.AboutHidden)
+                    {
+                        <p class="rf-banner rf-banner--warn">An admin hid this text after a report. Only the clan sees it until the owner changes it.</p>
+                    }
+                    <ClanText Text="@clanPage.About" />
+                    @ReportForm(Guid.Empty)
+                </section>
+            }
 
+            @if (clanPage.TopMembers.Count > 0)
+            {
+                <section class="rf-panel">
+                    <h3 class="rf-panel__title">Top @clanPage.TopMembers.Count</h3>
+                    <ol class="rf-top8">
+                        @foreach (var member in clanPage.TopMembers)
+                        {
+                            <li class="rf-top8__member">
+                                <a href="/inspect/@member.CharacterId">
+                                    <img src="@member.AvatarUrl" alt="" loading="lazy" />
+                                    <span class="rf-top8__name">@member.Name</span>
+                                </a>
+                                @if (clanPage.ShowsRank)
+                                {
+                                    <span class="rf-meta">@member.Rank</span>
+                                }
+                            </li>
+                        }
+                    </ol>
+                </section>
+            }
+
+            @if (clanPage.Posts.Count > 0)
+            {
+                <section class="rf-panel">
+                    <h3 class="rf-panel__title">News</h3>
+                    <div class="rf-clannews">
+                        @foreach (var post in clanPage.Posts.Take(postsShown))
+                        {
+                            <article class="rf-clannews__post @(post.Pinned ? "is-pinned" : "")">
+                                <header class="rf-clanpage__head">
+                                    <h4 class="rf-clannews__title">@post.Title</h4>
+                                    @ReportLink(post.Id)
+                                </header>
+                                <p class="rf-meta rf-clannews__meta">
+                                    @if (post.Pinned)
+                                    {
+                                        <span class="rf-badge"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Pinned</span>
+                                    }
+                                    @if (post.MembersOnly)
+                                    {
+                                        <span class="rf-badge"><i class="fa-solid fa-lock" aria-hidden="true"></i> Members only</span>
+                                    }
+                                    <span>@post.Author@(post.AuthorIsOwner ? " (owner)" : ""), @post.Created.ToString("d MMM yyyy")@(post.Edited != null ? ", edited" : "")</span>
+                                </p>
+                                @if (post.Hidden)
+                                {
+                                    <p class="rf-banner rf-banner--warn">An admin hid this post after a report. Only the clan sees it until it is edited.</p>
+                                }
+                                <ClanText Text="@post.Body" />
+                                @ReportForm(post.Id)
+                            </article>
+                        }
+                    </div>
+                    @if (clanPage.Posts.Count > postsShown)
+                    {
+                        <div class="rf-actions rf-vendor__more">
+                            <button type="button" class="rf-btn" @onclick="() => postsShown += PostPageSize">Older news (@(clanPage.Posts.Count - postsShown) more)</button>
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (!clanPage.ProgressHidden)
+            {
             <section class="rf-panel">
                 <h3 class="rf-panel__title">Clan progress</h3>
                 <div class="rf-next">
@@ -173,6 +262,7 @@
                     </div>
                 </div>
             </section>
+            }
 
             @if (clanPage.Skills.Count > 0)
             {
@@ -184,10 +274,13 @@
                             <li class="rf-skill">
                                 <span class="rf-skill__name">@skill.Name</span>
                                 <span class="rf-skill__bar">
-                                    <span class="rf-skill__fill" style="@Bar(Progress(skill.Level, skill.Experience))"></span>
+                                    <span class="rf-skill__fill" style="@Bar(clanPage.ProgressHidden ? 0 : Progress(skill.Level, skill.Experience))"></span>
                                 </span>
                                 <span class="rf-skill__next">
-                                    @if (skill.MaxLevel > 0 && skill.Level >= skill.MaxLevel)
+                                    @if (clanPage.ProgressHidden)
+                                    {
+                                    }
+                                    else if (skill.MaxLevel > 0 && skill.Level >= skill.MaxLevel)
                                     {
                                         <span class="rf-skill__max">Max</span>
                                     }
@@ -239,6 +332,12 @@
 
             <section class="rf-panel">
                 <h3 class="rf-panel__title">Members</h3>
+                @if (clanPage.MembersHidden)
+                {
+                    <p class="rf-meta">@clan.Name keeps its member list to itself.</p>
+                }
+                else
+                {
                 <div class="rf-toolbar">
                     <SearchBox Placeholder="Search members"
                                AriaLabel="Search the clan's members by name"
@@ -259,9 +358,18 @@
                             <thead>
                                 <tr>
                                     <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
-                                    <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
-                                    <th scope="col"><span class="rf-th rf-th--static">Joined</span></th>
-                                    <th scope="col"><span class="rf-th rf-th--static">Now</span></th>
+                                    @if (clanPage.ShowsRank)
+                                    {
+                                        <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                                    }
+                                    @if (clanPage.ShowsJoined)
+                                    {
+                                        <th scope="col"><span class="rf-th rf-th--static">Joined</span></th>
+                                    }
+                                    @if (clanPage.ShowsPlaying)
+                                    {
+                                        <th scope="col"><span class="rf-th rf-th--static">Now</span></th>
+                                    }
                                 </tr>
                             </thead>
                             <tbody>
@@ -282,8 +390,16 @@
                                                 </span>
                                             </div>
                                         </td>
-                                        <td><span class="rf-table__quiet">@member.Rank</span></td>
-                                        <td class="rf-table__quiet" title="@(member.Joined > DateTime.UnixEpoch ? member.Joined.ToString("f") : "")">@JoinedText(member.Joined)</td>
+                                        @if (clanPage.ShowsRank)
+                                        {
+                                            <td><span class="rf-table__quiet">@member.Rank</span></td>
+                                        }
+                                        @if (clanPage.ShowsJoined)
+                                        {
+                                            <td class="rf-table__quiet" title="@(member.Joined > DateTime.UnixEpoch ? member.Joined.ToString("f") : "")">@JoinedText(member.Joined)</td>
+                                        }
+                                        @if (clanPage.ShowsPlaying)
+                                        {
                                         <td>
                                             @if (member.IsPlaying)
                                             {
@@ -296,6 +412,7 @@
                                                 <span class="rf-table__quiet">Not playing</span>
                                             }
                                         </td>
+                                        }
                                     </tr>
                                 }
                             </tbody>
@@ -311,7 +428,14 @@
                         </div>
                     }
                 }
+                }
             </section>
+
+            @* an old fashioned hit counter, as clan pages had in 2005 *@
+            <p class="rf-clanpage__visitors">
+                You are visitor <span class="rf-counter">@visitors.ToString("D6")</span>
+            </p>
+            </div>
         }
     </div>
 </div>
@@ -339,8 +463,68 @@
     protected override void OnParametersSet()
     {
         joinStatus = null;
+        reportingId = null;
+        postsShown = PostPageSize;
         Reload();
+        if (clanPage != null && countedKey != Key)
+        {
+            countedKey = Key;
+            visitors = PublicClanService.CountVisit(clanPage.Summary.Id);
+        }
         loaded = true;
+    }
+
+    // step 4: news, reports, the counter
+    private const int PostPageSize = 10;
+    private int postsShown = PostPageSize;
+    private long visitors;
+    private string countedKey;
+    private Guid? reportingId;
+    private string reportReason;
+    private string reportStatus;
+    private Guid? reportStatusFor;
+
+    // the accent colour, already checked to be #RRGGBB when it was saved
+    private string AccentStyle =>
+        string.IsNullOrEmpty(clanPage?.AccentColor) ? null : "--rf-clan-accent: " + clanPage.AccentColor + ";";
+
+    private RenderFragment ReportLink(Guid postId) => __builder =>
+    {
+        if (clanPage != null && clanPage.VisitorSignedIn && !clanPage.VisitorIsMember && reportingId != postId)
+        {
+            <button type="button" class="rf-linkbtn rf-clanpage__report" @onclick="() => { reportingId = postId; reportReason = null; reportStatus = null; }">
+                <i class="fa-solid fa-flag" aria-hidden="true"></i> Report
+            </button>
+        }
+    };
+
+    private RenderFragment ReportForm(Guid postId) => __builder =>
+    {
+        if (reportingId == postId)
+        {
+            <div class="rf-clanpage__reportform">
+                <label class="rf-field">
+                    <span class="rf-label">What is wrong with it? (optional)</span>
+                    <textarea class="rf-input rf-textarea" rows="2" maxlength="300" @bind="reportReason"></textarea>
+                </label>
+                <div class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => SendReport(postId)">Send to the admins</button>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => reportingId = null">Cancel</button>
+                </div>
+            </div>
+        }
+        else if (reportStatusFor == postId && !string.IsNullOrEmpty(reportStatus))
+        {
+            <p class="rf-meta">@reportStatus</p>
+        }
+    };
+
+    private void SendReport(Guid postId)
+    {
+        var error = ClanService.ReportClanContent(clanPage.Summary.Id, postId, reportReason);
+        reportStatus = error ?? "Thanks. An admin will have a look.";
+        reportStatusFor = postId;
+        reportingId = null;
     }
 
     private void Reload()

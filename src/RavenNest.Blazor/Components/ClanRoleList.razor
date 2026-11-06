@@ -162,6 +162,7 @@ else
         new PermGroup("The clan", new[]
         {
             new Perm("Rename the clan", "Free name changes are limited, so this is worth keeping tight.", p => p.CanRenameClan, (p, v) => p.CanRenameClan = v),
+            new Perm("Post clan news", "Write, edit and pin news on the clan's page.", p => p.CanPostNews, (p, v) => p.CanPostNews = v),
             new Perm("Change who may join", "Choose whether anyone may join, players ask first, or only invited players can join.", p => p.CanMakePublic, (p, v) => p.CanMakePublic = v),
             new Perm("See clan details", "View the roster and the clan's progress.", p => p.CanSeeClanDetails, (p, v) => p.CanSeeClanDetails = v),
             new Perm("Use clan skills", "Enchant using the clan's enchanting level.", p => p.CanUseClanSkills, (p, v) => p.CanUseClanSkills = v),

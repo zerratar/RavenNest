@@ -6,7 +6,9 @@ namespace RavenNest.Models
     public enum ClanImageKind
     {
         Logo = 0,
-        Cape = 1
+        Cape = 1,
+        /// <summary>The wide picture at the top of the clan's public page (docs/clan-pages-design.md, step 4).</summary>
+        Banner = 2
     }
 
     public enum ClanImageState
@@ -101,6 +103,7 @@ namespace RavenNest.Models
         public string ClanName { get; set; }
         public ClanImageInfo Logo { get; set; }
         public ClanImageInfo Cape { get; set; }
+        public ClanImageInfo Banner { get; set; }
         public int WaitingCount { get; set; }
         public int Uploads { get; set; }
         public DateTime LastUpload { get; set; }

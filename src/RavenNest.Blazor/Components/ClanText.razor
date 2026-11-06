@@ -1,0 +1,57 @@
+@*
+    A clan's own words (its about text and news posts) as written: plain text, never HTML. Blank lines
+    make paragraphs, single line breaks stay, and web addresses become links that open in a new tab
+    and tell search engines the link is user content.
+*@
+@using System.Text.RegularExpressions
+
+<div class="rf-clantext">
+    @foreach (var paragraph in Paragraphs)
+    {
+        <p>
+            @for (var i = 0; i < paragraph.Length; i++)
+            {
+                if (i > 0)
+                {
+                    <br />
+                }
+                foreach (var (text, isLink) in Pieces(paragraph[i]))
+                {
+                    if (isLink)
+                    {
+                        <a href="@text" target="_blank" rel="nofollow noopener noreferrer ugc">@text</a>
+                    }
+                    else
+                    {
+                        @text
+                    }
+                }
+            }
+        </p>
+    }
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; }
+
+    private static readonly Regex Link = new Regex(@"https?://[^\s<>""']+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private IEnumerable<string[]> Paragraphs =>
+        (Text ?? "").Replace("\r\n", "\n")
+            .Split("\n\n", StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim('\n').Split('\n'));
+
+    private static IEnumerable<(string text, bool isLink)> Pieces(string line)
+    {
+        var at = 0;
+        foreach (Match m in Link.Matches(line))
+        {
+            // a sentence's full stop or closing bracket is not part of the address
+            var url = m.Value.TrimEnd('.', ',', ')', '!', '?', ';', ':');
+            if (m.Index > at) yield return (line.Substring(at, m.Index - at), false);
+            yield return (url, true);
+            at = m.Index + url.Length;
+        }
+        if (at < line.Length) yield return (line.Substring(at), false);
+    }
+}

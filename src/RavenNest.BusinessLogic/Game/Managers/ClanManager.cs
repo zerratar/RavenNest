@@ -1324,6 +1324,7 @@ namespace RavenNest.BusinessLogic.Game
                 //builder.Values.CanAssignAllRoles = true;
                 builder.Values.CanDeleteInvite = true;
                 builder.Values.CanKickMembers = true;
+                builder.Values.CanPostNews = true;
             }
 
             return builder.GenerateString();
@@ -1365,6 +1366,9 @@ namespace RavenNest.BusinessLogic.Game
         ///     a daily allowance above zero for the rank, which is the knob that limits how much.
         /// </summary>
         public bool CanUseClanBank { get; set; }
+
+        /// <summary>Write, edit and pin news posts on the clan's page (docs/clan-pages-design.md, step 4).</summary>
+        public bool CanPostNews { get; set; }
     }
 
     public class ClanRolePermissionsBuilder
@@ -1403,6 +1407,9 @@ namespace RavenNest.BusinessLogic.Game
             // correct reading of a permission that did not exist when the row was written.
             values.CanUseClanBank = Bool(permissions, index++);
 
+            // 14, appended for the same reason: older rows read as not granted
+            values.CanPostNews = Bool(permissions, index++);
+
             return values;
         }
 
@@ -1436,7 +1443,8 @@ namespace RavenNest.BusinessLogic.Game
                 Bin(Values.CanDeleteInvite) +
                 Bin(Values.CanUseClanSkills) +
                 Bin(Values.CanSeeClanDetails) +
-                Bin(Values.CanUseClanBank);
+                Bin(Values.CanUseClanBank) +
+                Bin(Values.CanPostNews);
         }
         internal string GenerateString()
         {

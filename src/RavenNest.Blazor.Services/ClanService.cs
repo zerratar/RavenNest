@@ -18,6 +18,7 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly IClanManager clanManager;
+        private readonly ClanPageManager pages;
         private readonly RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager bank;
         private readonly PlayerInventoryProvider inventoryProvider;
         public const int MaxClanNameLength = 40;
@@ -27,6 +28,7 @@ namespace RavenNest.Blazor.Services
             IClanManager clanManager,
             RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager bank,
             PlayerInventoryProvider inventoryProvider,
+            ClanPageManager pages,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
@@ -35,6 +37,7 @@ namespace RavenNest.Blazor.Services
             this.clanManager = clanManager;
             this.bank = bank;
             this.inventoryProvider = inventoryProvider;
+            this.pages = pages;
         }
 
         public Clan GetClan()
@@ -401,6 +404,165 @@ namespace RavenNest.Blazor.Services
             if (character.CharacterIndex > 0)
                 name += " #" + character.CharacterIndex;
             return name;
+        }
+        #endregion
+
+        #region The clan's page: privacy, about, looks, Top 8, news, reports
+        // docs/clan-pages-design.md, steps 3 and 4. The page's settings are the owner's, as the Look tab is; news is
+        // for the owner and ranks with "Post clan news".
+
+        private bool OwnsClan(Guid clanId)
+        {
+            var session = GetSession();
+            return session.Authenticated && clanManager.GetClanByOwnerUserId(session.UserId)?.Id == clanId;
+        }
+
+        /// <summary>The page's settings for the owner's editor; null for anyone else.</summary>
+        public ClanPageEditorState GetPageEditor(Guid clanId)
+        {
+            if (!OwnsClan(clanId))
+                return null;
+
+            var settings = pages.Get(clanId);
+            var clan = gameData.GetClan(clanId);
+            var top = pages.GetTopMembers(clanId);
+            return new ClanPageEditorState
+            {
+                HideMembers = settings?.HideMembers == true,
+                HidePlaying = settings?.HidePlaying == true,
+                HideJoined = settings?.HideJoined == true,
+                HideRanks = settings?.HideRanks == true,
+                HideProgress = settings?.HideProgress == true,
+                About = settings?.About ?? "",
+                AboutHidden = settings?.AboutHidden == true,
+                AccentColor = settings?.AccentColor ?? "",
+                BannerUrl = clan?.BannerImageId != null ? "/api/clan/image/" + clan.BannerImageId : null,
+                TopMembers = top.ToList(),
+                Members = gameData.GetClanMemberships(clanId)
+                    .Select(x => gameData.GetCharacter(x.CharacterId))
+                    .Where(x => x != null)
+                    .Select(x => new ClanPageMemberOption { CharacterId = x.Id, Name = CharacterName(x) })
+                    .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
+            };
+        }
+
+        public bool SavePagePrivacy(Guid clanId, bool hideMembers, bool hidePlaying, bool hideJoined, bool hideRanks, bool hideProgress)
+        {
+            if (!OwnsClan(clanId)) return false;
+            pages.SetPrivacy(clanId, hideMembers, hidePlaying, hideJoined, hideRanks, hideProgress);
+            return true;
+        }
+
+        public bool SavePageAbout(Guid clanId, string about)
+        {
+            if (!OwnsClan(clanId)) return false;
+            pages.SetAbout(clanId, about);
+            return true;
+        }
+
+        public bool SavePageAccent(Guid clanId, string color) => OwnsClan(clanId) && pages.SetAccentColor(clanId, color);
+
+        public bool SavePageTopMembers(Guid clanId, IEnumerable<Guid> characterIds)
+        {
+            if (!OwnsClan(clanId)) return false;
+            pages.SetTopMembers(clanId, characterIds);
+            return true;
+        }
+
+        /// <summary>Every post of the clan for those who may write them (hidden ones marked); null for anyone else.</summary>
+        public IReadOnlyList<ClanNewsPost> GetNewsForEditor(Guid clanId, Guid? actingCharacterId)
+        {
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            if (mine == null || !mine.CanPostNews)
+                return null;
+
+            return pages.GetPosts(clanId, includeMembersOnly: true, includeHidden: true)
+                .Select(x => new ClanNewsPost
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Body = x.Body,
+                    MembersOnly = x.MembersOnly,
+                    Pinned = x.Pinned,
+                    Hidden = x.Hidden,
+                    Created = x.Created,
+                    Edited = x.Edited,
+                    Author = x.AuthorCharacterId != Guid.Empty ? CharacterName(gameData.GetCharacter(x.AuthorCharacterId)) : gameData.GetUser(x.AuthorUserId)?.UserName,
+                })
+                .ToList();
+        }
+
+        /// <summary>Writes a new post (empty id) or changes one of the clan's; the reason when it cannot.</summary>
+        public string SaveNewsPost(Guid clanId, Guid? actingCharacterId, Guid postId, string title, string body, bool membersOnly, bool pinned)
+        {
+            var session = GetSession();
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            if (mine == null || !mine.CanPostNews)
+                return "Your rank may not post news.";
+
+            string error;
+            if (postId == Guid.Empty)
+                pages.CreatePost(clanId, session.UserId, OwnsClan(clanId) ? Guid.Empty : actingCharacterId ?? Guid.Empty, title, body, membersOnly, pinned, out error);
+            else
+                pages.UpdatePost(clanId, postId, title, body, membersOnly, pinned, out error);
+            return error;
+        }
+
+        public bool DeleteNewsPost(Guid clanId, Guid? actingCharacterId, Guid postId)
+        {
+            var mine = GetMyPermissions(clanId, actingCharacterId);
+            return mine != null && mine.CanPostNews && pages.DeletePost(clanId, postId);
+        }
+
+        /// <summary>Anyone signed in reports a post, or the about text (empty post id), for an admin to look at.</summary>
+        public string ReportClanContent(Guid clanId, Guid postId, string reason)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return "Sign in to report something.";
+
+            return pages.Report(clanId, postId, session.UserId, reason, out var error)
+                ? null
+                : error;
+        }
+
+        /// <summary>Open reports for the admin page; null for anyone but an admin.</summary>
+        public IReadOnlyList<ClanReportEntry> GetOpenClanReports()
+        {
+            var session = GetSession();
+            if (!session.Authenticated || !session.Administrator)
+                return null;
+
+            var open = pages.GetOpenReports();
+            return open
+                .GroupBy(x => (x.ClanId, x.PostId))
+                .Select(group =>
+                {
+                    var first = group.First();
+                    var clan = gameData.GetClan(first.ClanId);
+                    var post = first.PostId != Guid.Empty ? gameData.GetClanPost(first.PostId) : null;
+                    return new ClanReportEntry
+                    {
+                        ReportId = first.Id,
+                        ClanName = clan?.Name ?? "(gone)",
+                        ClanUrl = clan != null ? "/clans/" + Uri.EscapeDataString(clan.Name) : null,
+                        What = post != null ? "News post" : "About text",
+                        Title = post?.Title,
+                        Text = post != null ? post.Body : pages.Get(first.ClanId)?.About,
+                        Reports = group.Count(),
+                        Reasons = group.Select(x => (gameData.GetUser(x.ReporterUserId)?.UserName ?? "someone") + (string.IsNullOrWhiteSpace(x.Reason) ? "" : ": " + x.Reason)).ToList(),
+                        Created = group.Min(x => x.Created),
+                    };
+                })
+                .OrderBy(x => x.Created)
+                .ToList();
+        }
+
+        public bool ResolveClanReport(Guid reportId, bool hide)
+        {
+            var session = GetSession();
+            return session.Authenticated && session.Administrator && pages.Resolve(reportId, session.UserId, hide);
         }
         #endregion
 
@@ -921,6 +1083,53 @@ namespace RavenNest.Blazor.Services
         public string PlayingOn { get; set; }
 
         public bool IsPlaying => !string.IsNullOrEmpty(PlayingOn);
+    }
+
+    public class ClanPageEditorState
+    {
+        public bool HideMembers { get; set; }
+        public bool HidePlaying { get; set; }
+        public bool HideJoined { get; set; }
+        public bool HideRanks { get; set; }
+        public bool HideProgress { get; set; }
+        public string About { get; set; }
+        public bool AboutHidden { get; set; }
+        public string AccentColor { get; set; }
+        public string BannerUrl { get; set; }
+        public List<Guid> TopMembers { get; set; }
+        public List<ClanPageMemberOption> Members { get; set; }
+    }
+
+    public class ClanPageMemberOption
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class ClanNewsPost
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Body { get; set; }
+        public bool MembersOnly { get; set; }
+        public bool Pinned { get; set; }
+        public bool Hidden { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime? Edited { get; set; }
+        public string Author { get; set; }
+    }
+
+    public class ClanReportEntry
+    {
+        public Guid ReportId { get; set; }
+        public string ClanName { get; set; }
+        public string ClanUrl { get; set; }
+        public string What { get; set; }
+        public string Title { get; set; }
+        public string Text { get; set; }
+        public int Reports { get; set; }
+        public List<string> Reasons { get; set; }
+        public DateTime Created { get; set; }
     }
 
     public class ClanJoinOptions

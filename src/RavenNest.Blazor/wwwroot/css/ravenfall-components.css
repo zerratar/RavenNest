@@ -4782,3 +4782,259 @@ a.rf-badge:hover {
     gap: var(--rf-space-2) var(--rf-space-3);
     margin: 0 0 var(--rf-space-3) 0;
 }
+
+/* ==========================================================================
+   A clan's own page (steps 3 and 4): banner, accent colour, about, Top 8,
+   news, reports and the visitor counter
+   ========================================================================== */
+
+/* the owner's accent colour (checked #RRGGBB) marks the page's panels; gold without one */
+.rf-clanpage {
+    --rf-clan-accent: var(--rf-gold);
+}
+
+.rf-clanpage > .rf-panel {
+    border-top: 3px solid var(--rf-clan-accent);
+}
+
+.rf-clanpage .rf-clan__logo {
+    border-color: var(--rf-clan-accent);
+}
+
+.rf-clanpage__banner {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 1;
+    object-fit: cover;
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-line-strong);
+    border-bottom: 3px solid var(--rf-clan-accent);
+    margin-bottom: var(--rf-space-4);
+    background: var(--rf-surface-2);
+}
+
+.rf-clanpage__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-2) var(--rf-space-3);
+}
+
+.rf-linkbtn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--rf-ink-faint);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+}
+
+.rf-linkbtn:hover,
+.rf-linkbtn:focus-visible {
+    color: var(--rf-ink);
+    text-decoration: underline;
+}
+
+.rf-clanpage__reportform {
+    max-width: 32rem;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-clantext p {
+    margin: 0 0 var(--rf-space-3) 0;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+}
+
+.rf-clantext p:last-child {
+    margin-bottom: 0;
+}
+
+.rf-clantext a {
+    color: var(--rf-clan-accent, var(--rf-gold));
+}
+
+/* Top 8, as MySpace had it: eight friends in a grid, picture over name */
+.rf-top8 {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-top8__member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-1);
+    text-align: center;
+}
+
+.rf-top8__member a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-ink);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.rf-top8__member a:hover .rf-top8__name {
+    text-decoration: underline;
+}
+
+.rf-top8__member img {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--rf-radius);
+    border: 2px solid var(--rf-clan-accent, var(--rf-gold));
+    background: var(--rf-surface-2);
+}
+
+.rf-top8__name {
+    overflow-wrap: anywhere;
+}
+
+.rf-clannews {
+    display: grid;
+    gap: var(--rf-space-5);
+}
+
+.rf-clannews__post + .rf-clannews__post {
+    border-top: 1px solid var(--rf-line);
+    padding-top: var(--rf-space-5);
+}
+
+.rf-clannews__title {
+    margin: 0;
+    font-size: var(--rf-size-large, 1.15rem);
+    font-weight: 800;
+}
+
+.rf-clannews__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: var(--rf-space-1) 0 var(--rf-space-3) 0;
+}
+
+/* the hit counter: green digits on black, as they were */
+.rf-clanpage__visitors {
+    text-align: center;
+    margin: var(--rf-space-5) 0 0 0;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-small);
+}
+
+.rf-counter {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: var(--rf-space-1);
+    background: #000;
+    color: #39ff14;
+    border: 1px solid #333;
+    border-radius: 2px;
+    font-family: "Courier New", Courier, monospace;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+
+/* the owner's editors on /clan */
+.rf-pageedit,
+.rf-newsedit {
+    display: grid;
+    gap: var(--rf-space-6, 2rem);
+}
+
+.rf-pageedit__toggles .rf-check {
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-pageedit__looks {
+    display: grid;
+    gap: var(--rf-space-4);
+}
+
+.rf-pageedit__color {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-pageedit__color input[type="color"] {
+    width: 3rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--rf-line-strong);
+    background: none;
+    cursor: pointer;
+}
+
+.rf-pageedit__banner {
+    display: block;
+    width: 100%;
+    max-width: 36rem;
+    aspect-ratio: 3 / 1;
+    object-fit: cover;
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-line-strong);
+    margin: var(--rf-space-2) 0;
+}
+
+.rf-pageedit__top,
+.rf-newsedit__list {
+    list-style: none;
+    margin: 0 0 var(--rf-space-3) 0;
+    padding: 0;
+    display: grid;
+    gap: var(--rf-space-2);
+}
+
+.rf-pageedit__top li,
+.rf-newsedit__post {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-newsedit__post .rf-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    align-items: center;
+}
+
+.rf-newsedit__form {
+    max-width: 44rem;
+}
+
+.rf-clanreport__reasons {
+    margin: var(--rf-space-2) 0 var(--rf-space-3) 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-clanreport__content {
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border-left: 3px solid var(--rf-bad);
+    border-radius: var(--rf-radius-sm);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-clanimg__thumb--banner {
+    width: 120px;
+    height: 40px;
+    object-fit: cover;
+}

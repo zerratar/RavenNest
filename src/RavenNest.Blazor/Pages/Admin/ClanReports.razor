@@ -1,0 +1,81 @@
+@layout AdminLayout
+@page "/admin/clan-reports"
+@using RavenNest.Blazor.Services
+@inject AuthService AuthService
+@inject ClanService ClanService
+
+@*
+    Reports on clans' own words: news posts and about texts on the public clan pages (the game's
+    docs/clan-pages-design.md, step 4). Hide takes the post (or the about text) off the public page and
+    closes every report on it; the clan still sees it, marked, until they edit it. Dismiss closes the
+    reports as nothing wrong.
+*@
+
+@if (isAdmin)
+{
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Clan reports</h1>
+        <p class="rf-page-subtitle">News posts and about texts on clan pages that players reported. The oldest come first.</p>
+    </header>
+
+    @if (message != null)
+    {
+        <div class="rf-banner rf-banner--good" role="status"><p>@message</p></div>
+    }
+
+    @if (reports == null || reports.Count == 0)
+    {
+        <p class="rf-meta">Nothing reported.</p>
+    }
+    else
+    {
+        @foreach (var report in reports)
+        {
+            <section class="rf-panel rf-clanreport">
+                <div class="rf-clanpage__head">
+                    <h2 class="rf-panel__title">
+                        @report.What on <a href="@report.ClanUrl" target="_blank">@report.ClanName</a>
+                    </h2>
+                    <span class="rf-meta">@report.Reports report@(report.Reports == 1 ? "" : "s"), first @report.Created.ToString("u")</span>
+                </div>
+                <ul class="rf-clanreport__reasons">
+                    @foreach (var reason in report.Reasons)
+                    {
+                        <li>@reason</li>
+                    }
+                </ul>
+                <div class="rf-clanreport__content">
+                    @if (!string.IsNullOrEmpty(report.Title))
+                    {
+                        <h3 class="rf-clannews__title">@report.Title</h3>
+                    }
+                    <ClanText Text="@report.Text" />
+                </div>
+                <div class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--primary" @onclick="() => Resolve(report, true)">Hide it</button>
+                    <button type="button" class="rf-btn" @onclick="() => Resolve(report, false)">Nothing wrong</button>
+                </div>
+            </section>
+        }
+    }
+}
+
+@code {
+    private bool isAdmin;
+    private IReadOnlyList<ClanReportEntry> reports;
+    private string message;
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (isAdmin) reports = ClanService.GetOpenClanReports();
+    }
+
+    private void Resolve(ClanReportEntry report, bool hide)
+    {
+        if (ClanService.ResolveClanReport(report.ReportId, hide))
+            message = hide ? "Hidden from the public page." : "Dismissed.";
+        reports = ClanService.GetOpenClanReports();
+    }
+}

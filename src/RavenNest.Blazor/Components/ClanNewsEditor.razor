@@ -1,0 +1,141 @@
+@*
+    /clan/news: news posts on the clan's page (the game's docs/clan-pages-design.md, step 4), for the owner
+    and ranks with "Post clan news". Public or members only, and one or more pinned at the top.
+*@
+@using RavenNest.Blazor.Services
+@inject ClanService ClanService
+
+@if (posts == null)
+{
+    <p class="rf-meta">Your rank cannot post news. The owner can allow it under Ranks ("Post clan news").</p>
+}
+else
+{
+    <div class="rf-newsedit">
+        @if (!string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
+        }
+
+        <section class="rf-newsedit__form" aria-labelledby="ne-form">
+            <h3 class="rf-panel__title" id="ne-form">@(editingId == Guid.Empty ? "Write a post" : "Edit the post")</h3>
+            <label class="rf-field">
+                <span class="rf-label">Title</span>
+                <input class="rf-input" maxlength="100" @bind="title" @bind:event="oninput" />
+            </label>
+            <label class="rf-field">
+                <span class="rf-label">Text. Plain text; a blank line starts a new paragraph, and links work. @(body?.Length ?? 0) / 4000</span>
+                <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="4000" @bind="body" @bind:event="oninput"></textarea>
+            </label>
+            <label class="rf-check"><input type="checkbox" @bind="membersOnly" /> <span>Members only (the public does not see it)</span></label>
+            <label class="rf-check"><input type="checkbox" @bind="pinned" /> <span>Pinned at the top</span></label>
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" disabled="@(string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body))" @onclick="Save">
+                    @(editingId == Guid.Empty ? "Post it" : "Save the changes")
+                </button>
+                @if (editingId != Guid.Empty)
+                {
+                    <button type="button" class="rf-btn" @onclick="Clear">Cancel</button>
+                }
+            </div>
+        </section>
+
+        <section aria-labelledby="ne-list">
+            <h3 class="rf-panel__title" id="ne-list">Posts</h3>
+            @if (posts.Count == 0)
+            {
+                <p class="rf-meta">Nothing posted yet.</p>
+            }
+            else
+            {
+                <ul class="rf-newsedit__list">
+                    @foreach (var post in posts)
+                    {
+                        <li class="rf-newsedit__post">
+                            <div>
+                                <b>@post.Title</b>
+                                <span class="rf-meta">
+                                    @post.Author, @post.Created.ToString("d MMM yyyy")
+                                    @if (post.Pinned) { <span class="rf-badge">Pinned</span> }
+                                    @if (post.MembersOnly) { <span class="rf-badge">Members only</span> }
+                                    @if (post.Hidden) { <span class="rf-badge rf-badge--bad">Hidden by an admin</span> }
+                                </span>
+                            </div>
+                            <span class="rf-actions">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => Edit(post)">Edit</button>
+                                @if (confirmDelete == post.Id)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => Delete(post)">Delete it</button>
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => confirmDelete = Guid.Empty">Keep</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => confirmDelete = post.Id">Delete</button>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid ClanId { get; set; }
+    [Parameter] public Guid? ActingCharacterId { get; set; }
+
+    private IReadOnlyList<ClanNewsPost> posts;
+    private Guid editingId;
+    private string title;
+    private string body;
+    private bool membersOnly;
+    private bool pinned;
+    private Guid confirmDelete;
+    private string status;
+    private bool statusIsBad;
+
+    protected override void OnParametersSet() => Load();
+
+    private void Load() => posts = ClanService.GetNewsForEditor(ClanId, ActingCharacterId);
+
+    private void Edit(ClanNewsPost post)
+    {
+        editingId = post.Id;
+        title = post.Title;
+        body = post.Body;
+        membersOnly = post.MembersOnly;
+        pinned = post.Pinned;
+        status = null;
+    }
+
+    private void Clear()
+    {
+        editingId = Guid.Empty;
+        title = body = null;
+        membersOnly = pinned = false;
+    }
+
+    private void Save()
+    {
+        var wasNew = editingId == Guid.Empty;
+        var error = ClanService.SaveNewsPost(ClanId, ActingCharacterId, editingId, title, body, membersOnly, pinned);
+        if (error == null)
+        {
+            Clear();
+            Load();
+        }
+        status = error ?? (wasNew ? "Posted. It is on the clan's page now." : "Saved.");
+        statusIsBad = error != null;
+    }
+
+    private void Delete(ClanNewsPost post)
+    {
+        var ok = ClanService.DeleteNewsPost(ClanId, ActingCharacterId, post.Id);
+        confirmDelete = Guid.Empty;
+        if (post.Id == editingId) Clear();
+        Load();
+        status = ok ? "The post is deleted." : "Could not delete that post.";
+        statusIsBad = !ok;
+    }
+}

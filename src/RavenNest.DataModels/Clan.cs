@@ -30,6 +30,9 @@ namespace RavenNest.DataModels
         [PersistentData] private Guid? logoImageId;
         [PersistentData] private Guid? capeImageId;
         [PersistentData] private int capeStyle;
+
+        /// <summary>The clan page's banner (a ClanImage of kind Banner), or null for none.</summary>
+        [PersistentData] private Guid? bannerImageId;
     }
 
     public partial class ClanRolePermissions : Entity<ClanRolePermissions>

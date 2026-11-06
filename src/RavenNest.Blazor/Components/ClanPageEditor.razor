@@ -1,0 +1,245 @@
+@*
+    /clan/page: the owner's settings for the clan's public page (the game's docs/clan-pages-design.md,
+    steps 3 and 4): what the public sees, the about text, the accent colour, the banner and the Top 8.
+*@
+@using RavenNest.Blazor.Services
+@using RavenNest.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@inject ClanService ClanService
+@inject ClanImageService ClanImageService
+@inject PublicClanService PublicClanService
+
+@if (state == null)
+{
+    <p class="rf-meta">Only the clan's owner can change its page.</p>
+}
+else
+{
+    <div class="rf-pageedit">
+        <p class="rf-meta">
+            Your clan's public page is <a href="@PageUrl" target="_blank">@PageUrl</a>. Members of the clan always see all of it.
+        </p>
+
+        @if (!string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
+        }
+
+        <section aria-labelledby="pe-privacy">
+            <h3 class="rf-panel__title" id="pe-privacy">What everyone can see</h3>
+            <div class="rf-pageedit__toggles">
+                <label class="rf-check"><input type="checkbox" checked="@(!state.HideMembers)" @onchange="e => { state.HideMembers = !(bool)e.Value; SavePrivacy(); }" /> <span>The member list</span></label>
+                <label class="rf-check"><input type="checkbox" checked="@(!state.HideRanks)" @onchange="e => { state.HideRanks = !(bool)e.Value; SavePrivacy(); }" /> <span>Ranks and who holds them</span></label>
+                <label class="rf-check"><input type="checkbox" checked="@(!state.HideJoined)" @onchange="e => { state.HideJoined = !(bool)e.Value; SavePrivacy(); }" /> <span>When members joined</span></label>
+                <label class="rf-check"><input type="checkbox" checked="@(!state.HidePlaying)" @onchange="e => { state.HidePlaying = !(bool)e.Value; SavePrivacy(); }" /> <span>Who is playing right now, and where</span></label>
+                <label class="rf-check"><input type="checkbox" checked="@(!state.HideProgress)" @onchange="e => { state.HideProgress = !(bool)e.Value; SavePrivacy(); }" /> <span>Progress towards the next clan and skill levels</span></label>
+            </div>
+            <p class="rf-meta">The clan's name, logo, owner, level, Enchanting level and member count are always shown, so players can compare clans.</p>
+        </section>
+
+        <section aria-labelledby="pe-about">
+            <h3 class="rf-panel__title" id="pe-about">About the clan</h3>
+            @if (state.AboutHidden)
+            {
+                <div class="rf-banner rf-banner--warn"><p>An admin hid this text after a report. Change it and it shows again.</p></div>
+            }
+            <label class="rf-field">
+                <span class="rf-label">Shown at the top of the page. Plain text; links work. @(about?.Length ?? 0) / 2000</span>
+                <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="2000" @bind="about" @bind:event="oninput"></textarea>
+            </label>
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveAbout">Save the about text</button>
+            </div>
+        </section>
+
+        <section aria-labelledby="pe-looks">
+            <h3 class="rf-panel__title" id="pe-looks">Looks</h3>
+            <div class="rf-pageedit__looks">
+                <label class="rf-field">
+                    <span class="rf-label">Accent colour</span>
+                    <span class="rf-pageedit__color">
+                        <input type="color" value="@(string.IsNullOrEmpty(accent) ? "#E8B04B" : accent)" @onchange="e => SaveAccent(e.Value?.ToString())" aria-label="Accent colour" />
+                        @if (!string.IsNullOrEmpty(accent))
+                        {
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => SaveAccent(null)">Back to gold</button>
+                        }
+                    </span>
+                </label>
+
+                <div class="rf-field">
+                    <span class="rf-label">Banner (any picture at least 600 pixels wide; it is cut to 3:1 from the middle)</span>
+                    @if (!string.IsNullOrEmpty(bannerUrl))
+                    {
+                        <img class="rf-pageedit__banner" src="@bannerUrl" alt="The clan's banner" />
+                    }
+                    @if (canUpload)
+                    {
+                        <span class="rf-actions">
+                            <InputFile OnChange="UploadBanner" accept="image/png,image/jpeg,image/webp" disabled="@uploading" />
+                            @if (!string.IsNullOrEmpty(bannerUrl))
+                            {
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="RemoveBanner">Remove the banner</button>
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="rf-meta">Your own clan images (logo, cape and banner) are a patron feature.</span>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section aria-labelledby="pe-top">
+            <h3 class="rf-panel__title" id="pe-top">Top 8</h3>
+            <p class="rf-meta">Up to eight members you want to show off, in your order.</p>
+            @if (top.Count > 0)
+            {
+                <ol class="rf-pageedit__top">
+                    @for (var i = 0; i < top.Count; i++)
+                    {
+                        var index = i;
+                        <li>
+                            <span>@NameOf(top[index])</span>
+                            <span class="rf-actions">
+                                <button type="button" class="rf-iconbtn" title="Move up" disabled="@(index == 0)" @onclick="() => MoveTop(index, -1)"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                                <button type="button" class="rf-iconbtn" title="Move down" disabled="@(index == top.Count - 1)" @onclick="() => MoveTop(index, 1)"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
+                                <button type="button" class="rf-iconbtn" title="Take off the Top 8" @onclick="() => RemoveTop(index)"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                            </span>
+                        </li>
+                    }
+                </ol>
+            }
+            @if (top.Count < 8)
+            {
+                <div class="rf-actions">
+                    <select class="rf-input" @bind="topCandidate" aria-label="Member to add to the Top 8">
+                        <option value="@Guid.Empty">Pick a member</option>
+                        @foreach (var member in state.Members.Where(x => !top.Contains(x.CharacterId)))
+                        {
+                            <option value="@member.CharacterId">@member.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="rf-btn" disabled="@(topCandidate == Guid.Empty)" @onclick="AddTop">Add</button>
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid ClanId { get; set; }
+    [Parameter] public string ClanName { get; set; }
+
+    private ClanPageEditorState state;
+    private string about;
+    private string accent;
+    private string bannerUrl;
+    private List<Guid> top = new();
+    private Guid topCandidate;
+    private string status;
+    private bool statusIsBad;
+    private bool uploading;
+    private bool canUpload;
+
+    private string PageUrl => "/clans/" + Uri.EscapeDataString(ClanName ?? "");
+
+    protected override void OnParametersSet()
+    {
+        state = ClanService.GetPageEditor(ClanId);
+        if (state == null) return;
+        about = state.About;
+        accent = state.AccentColor;
+        bannerUrl = state.BannerUrl;
+        top = state.TopMembers.ToList();
+        canUpload = ClanImageService.GetState()?.CanCustomize == true;
+    }
+
+    private string NameOf(Guid characterId) => state.Members.FirstOrDefault(x => x.CharacterId == characterId)?.Name ?? "Someone who left";
+
+    private void SavePrivacy()
+    {
+        var ok = ClanService.SavePagePrivacy(ClanId, state.HideMembers, state.HidePlaying, state.HideJoined, state.HideRanks, state.HideProgress);
+        PublicClanService.Forget();
+        Show(ok ? "Saved. The public page shows what is ticked." : "Could not save that.", !ok);
+    }
+
+    private void SaveAbout()
+    {
+        var ok = ClanService.SavePageAbout(ClanId, about);
+        if (ok) state.AboutHidden = false;
+        Show(ok ? "The about text is saved." : "Could not save the about text.", !ok);
+    }
+
+    private void SaveAccent(string color)
+    {
+        var ok = ClanService.SavePageAccent(ClanId, color);
+        if (ok) accent = string.IsNullOrEmpty(color) ? "" : color.ToUpperInvariant();
+        Show(ok ? "The accent colour is saved." : "That is not a colour the page can use.", !ok);
+    }
+
+    private async Task UploadBanner(InputFileChangeEventArgs e)
+    {
+        uploading = true;
+        try
+        {
+            using var stream = e.File.OpenReadStream(RavenNest.BusinessLogic.Game.ClanImages.ClanImageManager.MaxUploadBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            var result = ClanImageService.Upload(ClanImageKind.Banner, memory.ToArray());
+            if (result.Ok && !result.Waiting && result.ImageId != null)
+                bannerUrl = "/api/clan/image/" + result.ImageId;
+            Show(!result.Ok ? result.Error : result.Waiting ? "The banner is uploaded and waits for an admin to look at it." : "The banner is up.", !result.Ok);
+        }
+        catch (IOException)
+        {
+            Show("That picture is too large (4 MB at most).", true);
+        }
+        finally
+        {
+            uploading = false;
+        }
+    }
+
+    private void RemoveBanner()
+    {
+        var result = ClanImageService.UseDefault(ClanImageKind.Banner);
+        if (result.Ok) bannerUrl = null;
+        Show(result.Ok ? "The banner is removed." : result.Error, !result.Ok);
+    }
+
+    private void AddTop()
+    {
+        if (topCandidate == Guid.Empty || top.Count >= 8) return;
+        top.Add(topCandidate);
+        topCandidate = Guid.Empty;
+        SaveTop();
+    }
+
+    private void RemoveTop(int index)
+    {
+        top.RemoveAt(index);
+        SaveTop();
+    }
+
+    private void MoveTop(int index, int by)
+    {
+        var other = index + by;
+        if (other < 0 || other >= top.Count) return;
+        (top[index], top[other]) = (top[other], top[index]);
+        SaveTop();
+    }
+
+    private void SaveTop()
+    {
+        var ok = ClanService.SavePageTopMembers(ClanId, top);
+        Show(ok ? "The Top 8 is saved." : "Could not save the Top 8.", !ok);
+    }
+
+    private void Show(string message, bool bad)
+    {
+        status = message;
+        statusIsBad = bad;
+    }
+}

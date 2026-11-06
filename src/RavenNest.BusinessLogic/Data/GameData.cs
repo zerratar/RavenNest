@@ -129,6 +129,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanImage> clanImages;
         private readonly EntitySet<ClanBankWithdrawalLimit> clanBankLimits;
         private readonly EntitySet<ClanJoinRequest> clanJoinRequests;
+        private readonly EntitySet<ClanPageSettings> clanPageSettings;
+        private readonly EntitySet<ClanPost> clanPosts;
+        private readonly EntitySet<ClanPostReport> clanPostReports;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
         private readonly EntitySet<ItemDrop> itemDrops;
@@ -243,6 +246,9 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClanBankLog),
                 typeof(ClanBankWithdrawalLimit),
                 typeof(ClanJoinRequest),
+                typeof(ClanPageSettings),
+                typeof(ClanPost),
+                typeof(ClanPostReport),
                 typeof(StreamerShopListing),
                 typeof(StreamerShopTransaction),
                 typeof(ClanImage),
@@ -432,6 +438,12 @@ namespace RavenNest.BusinessLogic.Data
                     clanJoinRequests.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanJoinRequests.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
+                    clanPageSettings = new EntitySet<ClanPageSettings>(ctx.ClanPageSettings.ToList());
+                    clanPageSettings.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    clanPosts = new EntitySet<ClanPost>(ctx.ClanPost.ToList());
+                    clanPosts.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    clanPostReports = new EntitySet<ClanPostReport>(ctx.ClanPostReport.ToList());
+
                     // The tavern shelves: one streamer's listings, and the sales report reads one streamer's
                     // sales; the per viewer limit reads one listing's sales.
                     streamerShopListings = new EntitySet<StreamerShopListing>(ctx.StreamerShopListing.ToList());
@@ -558,7 +570,7 @@ namespace RavenNest.BusinessLogic.Data
                         syntyAppearances, characters, characterStates,
                         userProperties, vendorTransaction,
                         userBankItems,
-                        clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests,
+                        clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests, clanPageSettings, clanPosts, clanPostReports,
                         streamerShopListings, streamerShopTransactions,
                         clanImages,
                         characterSkillRecords,
@@ -3219,6 +3231,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(ClanBankWithdrawalLimit item) => Update(() => clanBankLimits.Add(item));
         public AddEntityResult Add(ClanJoinRequest item) => Update(() => clanJoinRequests.Add(item));
+        public AddEntityResult Add(ClanPageSettings item) => Update(() => clanPageSettings.Add(item));
+        public AddEntityResult Add(ClanPost item) => Update(() => clanPosts.Add(item));
+        public AddEntityResult Add(ClanPostReport item) => Update(() => clanPostReports.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
@@ -3799,6 +3814,13 @@ namespace RavenNest.BusinessLogic.Data
             => clanJoinRequests[nameof(Character), characterId].ToList();
 
         public ClanJoinRequest GetClanJoinRequest(Guid requestId) => clanJoinRequests[requestId];
+
+        /// <summary>The clan's page settings, or null while the owner has changed nothing.</summary>
+        public ClanPageSettings GetClanPageSettings(Guid clanId) => clanPageSettings[nameof(Clan), clanId].FirstOrDefault();
+        public IReadOnlyList<ClanPost> GetClanPosts(Guid clanId) => clanPosts[nameof(Clan), clanId].ToList();
+        public ClanPost GetClanPost(Guid postId) => clanPosts[postId];
+        public IReadOnlyList<ClanPostReport> GetClanPostReports() => clanPostReports.Entities.ToList();
+        public ClanPostReport GetClanPostReport(Guid reportId) => clanPostReports[reportId];
 
         public IReadOnlyList<ClanBankWithdrawalLimit> GetClanBankLimits(Guid clanId)
             => clanBankLimits[nameof(Clan), clanId].ToList();

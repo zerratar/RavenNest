@@ -16,6 +16,7 @@ namespace RavenNest.Blazor.Services
     public class PublicClanService : RavenNestService
     {
         private readonly GameData gameData;
+        private readonly RavenNest.BusinessLogic.Game.ClanPageManager pages;
 
         // the list is the same for everyone and costs a pass over every membership, so it is kept a minute
         private static readonly TimeSpan ListCacheDuration = TimeSpan.FromSeconds(60);
@@ -26,10 +27,12 @@ namespace RavenNest.Blazor.Services
         public PublicClanService(
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider,
-            GameData gameData)
+            GameData gameData,
+            RavenNest.BusinessLogic.Game.ClanPageManager pages)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
+            this.pages = pages;
         }
 
         /// <summary>Every clan with members, as the list shows them.</summary>
@@ -89,6 +92,21 @@ namespace RavenNest.Blazor.Services
             if (summary == null)
                 return null;
 
+            var session = GetSession();
+            var visitorIsMember = session.Authenticated && session.UserId != Guid.Empty
+                && (clan.UserId == session.UserId || memberships.Any(x => gameData.GetCharacter(x.CharacterId)?.UserId == session.UserId));
+
+            // what the public may see (step 3); the clan's own members see everything
+            var settings = pages.Get(clan.Id);
+            bool Shows(bool hidden) => visitorIsMember || !hidden;
+            var showMembers = Shows(settings?.HideMembers == true);
+            var showPlaying = Shows(settings?.HidePlaying == true);
+            var showJoined = Shows(settings?.HideJoined == true);
+            var showRanks = Shows(settings?.HideRanks == true);
+            var showProgress = Shows(settings?.HideProgress == true);
+            if (!showPlaying)
+                summary.PlayingHidden = true;
+
             var roles = (gameData.GetClanRoles(clan.Id) ?? Array.Empty<DataModels.ClanRole>()).ToDictionary(x => x.Id);
             var members = new List<PublicClanMember>();
             foreach (var membership in memberships)
@@ -105,8 +123,8 @@ namespace RavenNest.Blazor.Services
                     AvatarUrl = "/api/twitch/logo/" + (gameData.GetUserAccess(character.UserId, "twitch")?.PlatformId ?? character.UserId.ToString()),
                     Rank = role?.Name ?? "Member",
                     RankLevel = role?.Level ?? 0,
-                    Joined = membership.Joined,
-                    PlayingOn = PlayingOn(character, live),
+                    Joined = showJoined ? membership.Joined : DateTime.MinValue,
+                    PlayingOn = showPlaying ? PlayingOn(character, live) : null,
                     IsOwner = character.UserId == clan.UserId,
                 });
             }
@@ -136,20 +154,77 @@ namespace RavenNest.Blazor.Services
                 skills.Add(new PublicClanSkill { Name = skill.Name, Level = s.Level, Experience = s.Experience, MaxLevel = skill.MaxLevel });
             }
 
-            var session = GetSession();
-            var visitorIsMember = session.Authenticated && session.UserId != Guid.Empty
-                && (clan.UserId == session.UserId || members.Any(x => gameData.GetCharacter(x.CharacterId)?.UserId == session.UserId));
+            var byId = members.ToDictionary(x => x.CharacterId);
+            var top = pages.GetTopMembers(clan.Id).Where(byId.ContainsKey).Select(x => byId[x]).ToList();
 
+            var posts = pages.GetPosts(clan.Id, includeMembersOnly: visitorIsMember, includeHidden: visitorIsMember)
+                .Select(x => MapPost(x, clan))
+                .ToList();
+
+            var aboutHidden = settings?.AboutHidden == true;
             var owner = gameData.GetUser(clan.UserId);
             return new PublicClanPage
             {
                 Summary = summary,
                 Experience = clan.Experience,
                 Skills = skills,
-                Ranks = ranks,
-                Members = members,
+                Ranks = showRanks ? ranks : new List<PublicClanRank>(),
+                Members = showMembers ? members : new List<PublicClanMember>(),
                 OwnerLiveOn = owner != null && live.ContainsKey(owner.Id) ? live[owner.Id] : null,
                 VisitorIsMember = visitorIsMember,
+                VisitorSignedIn = session.Authenticated,
+                MembersHidden = !showMembers,
+                RanksHidden = !showRanks,
+                ProgressHidden = !showProgress,
+                ShowsRank = showRanks,
+                ShowsJoined = showJoined,
+                ShowsPlaying = showPlaying,
+                About = aboutHidden && !visitorIsMember ? null : settings?.About,
+                AboutHidden = aboutHidden,
+                AccentColor = settings?.AccentColor,
+                BannerUrl = clan.BannerImageId != null ? "/api/clan/image/" + clan.BannerImageId : null,
+                TopMembers = top,
+                Posts = posts,
+                VisitorCount = settings?.VisitorCount ?? 0,
+            };
+        }
+
+        /// <summary>Counts this visit (once a day per visitor) and returns the clan's visitor count.</summary>
+        public long CountVisit(Guid clanId)
+        {
+            var session = GetSession();
+            string key = null;
+            if (session.Authenticated && session.UserId != Guid.Empty)
+            {
+                key = "u:" + session.UserId;
+            }
+            else
+            {
+                // a hash, kept in memory for the day only: enough to count a visitor once without keeping addresses
+                var address = Context?.Connection?.RemoteIpAddress?.ToString();
+                if (!string.IsNullOrEmpty(address))
+                    key = "a:" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(address + clanId)));
+            }
+
+            return pages.CountVisit(clanId, key);
+        }
+
+        private PublicClanPost MapPost(DataModels.ClanPost post, DataModels.Clan clan)
+        {
+            var character = post.AuthorCharacterId != Guid.Empty ? gameData.GetCharacter(post.AuthorCharacterId) : null;
+            var user = gameData.GetUser(post.AuthorUserId);
+            return new PublicClanPost
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Body = post.Body,
+                Author = character != null ? NameOf(character) : (string.IsNullOrEmpty(user?.DisplayName) ? user?.UserName : user.DisplayName) ?? "The clan",
+                AuthorIsOwner = post.AuthorUserId == clan.UserId,
+                Created = post.Created,
+                Edited = post.Edited,
+                MembersOnly = post.MembersOnly,
+                Pinned = post.Pinned,
+                Hidden = post.Hidden,
             };
         }
 
@@ -169,6 +244,7 @@ namespace RavenNest.Blazor.Services
 
             var enchanting = 0;
             var enchantingMax = 0;
+            var hidePlaying = pages.Get(clan.Id)?.HidePlaying == true;
             foreach (var s in gameData.GetClanSkills(clan.Id) ?? Array.Empty<DataModels.ClanSkill>())
             {
                 var skill = gameData.GetSkill(s.SkillId);
@@ -190,7 +266,8 @@ namespace RavenNest.Blazor.Services
                 EnchantingLevel = enchanting,
                 EnchantingMaxLevel = enchantingMax,
                 Members = memberships.Count,
-                PlayingNow = playing,
+                PlayingNow = hidePlaying ? 0 : playing,
+                PlayingHidden = hidePlaying,
                 Founded = clan.Created,
                 JoinPolicy = (RavenNest.Models.ClanJoinPolicy)clan.JoinPolicy,
             };
@@ -246,6 +323,9 @@ namespace RavenNest.Blazor.Services
         public int EnchantingMaxLevel { get; set; }
         public int Members { get; set; }
         public int PlayingNow { get; set; }
+
+        /// <summary>The owner keeps who is playing to the clan (step 3).</summary>
+        public bool PlayingHidden { get; set; }
         public DateTime Founded { get; set; }
         public RavenNest.Models.ClanJoinPolicy JoinPolicy { get; set; }
 
@@ -273,6 +353,40 @@ namespace RavenNest.Blazor.Services
 
         /// <summary>The visitor has a character in the clan (or owns it), so the page links to /clan.</summary>
         public bool VisitorIsMember { get; set; }
+        public bool VisitorSignedIn { get; set; }
+
+        // what the owner keeps to the clan (step 3); false for the clan's own members
+        public bool MembersHidden { get; set; }
+        public bool RanksHidden { get; set; }
+        public bool ProgressHidden { get; set; }
+        public bool ShowsRank { get; set; }
+        public bool ShowsJoined { get; set; }
+        public bool ShowsPlaying { get; set; }
+
+        // the page the owner writes (step 4)
+        public string About { get; set; }
+
+        /// <summary>An admin hid the about text; only the clan's members see it, marked.</summary>
+        public bool AboutHidden { get; set; }
+        public string AccentColor { get; set; }
+        public string BannerUrl { get; set; }
+        public IReadOnlyList<PublicClanMember> TopMembers { get; set; }
+        public IReadOnlyList<PublicClanPost> Posts { get; set; }
+        public long VisitorCount { get; set; }
+    }
+
+    public class PublicClanPost
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Body { get; set; }
+        public string Author { get; set; }
+        public bool AuthorIsOwner { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime? Edited { get; set; }
+        public bool MembersOnly { get; set; }
+        public bool Pinned { get; set; }
+        public bool Hidden { get; set; }
     }
 
     public class PublicClanSkill

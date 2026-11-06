@@ -33,6 +33,10 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
         public const int CapeWidth = 512;
         public const int CapeHeight = 1024;
         public const int MinSize = 128;
+
+        // the clan page's banner: any picture, cut to 3:1 from its middle and made at most this wide
+        public const int BannerWidth = 1500;
+        public const int BannerMinWidth = 600;
         public const int MaxUploadBytes = 4 * 1024 * 1024;
         public const int StyleCount = 4;
         private static readonly TimeSpan UploadInterval = TimeSpan.FromSeconds(60);
@@ -263,6 +267,7 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
                     NeedsReview = user?.ClanImagesNeedReview == true,
                     Logo = Map(Shown(group, ClanImageKind.Logo)),
                     Cape = Map(Shown(group, ClanImageKind.Cape)),
+                    Banner = Map(Shown(group, ClanImageKind.Banner)),
                 };
 
                 if (!string.IsNullOrWhiteSpace(search)
@@ -421,6 +426,9 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
             width = bitmap.Width;
             height = bitmap.Height;
 
+            if (kind == ClanImageKind.Banner)
+                return ReencodeBanner(bitmap, out width, out height);
+
             var ok = kind == ClanImageKind.Logo
                 ? width == height && width >= MinSize && width <= LogoSize * 2
                 : height == width * 2 && width >= MinSize && width <= CapeWidth * 2;
@@ -433,6 +441,30 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
             var canvas = surface.Canvas;
             canvas.Clear(kind == ClanImageKind.Cape ? CapeCloth : SKColors.Transparent);
             canvas.DrawBitmap(bitmap, 0, 0);
+            using var image = surface.Snapshot();
+            using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            return encoded.ToArray();
+        }
+
+        /// <summary>
+        ///     A banner is not made in the editor: any picture at least <see cref="BannerMinWidth"/> wide is cut to 3:1
+        ///     around its middle and scaled to at most <see cref="BannerWidth"/> wide.
+        /// </summary>
+        private static byte[] ReencodeBanner(SKBitmap bitmap, out int width, out int height)
+        {
+            if (bitmap.Width < BannerMinWidth)
+                throw new InvalidDataException("A banner has to be at least " + BannerMinWidth + " pixels wide.");
+
+            var cropWidth = Math.Min(bitmap.Width, bitmap.Height * 3);
+            var cropHeight = cropWidth / 3;
+            var source = SKRectI.Create((bitmap.Width - cropWidth) / 2, (bitmap.Height - cropHeight) / 2, cropWidth, cropHeight);
+            width = Math.Min(BannerWidth, cropWidth);
+            height = width / 3;
+
+            using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+            using var picture = SKImage.FromBitmap(bitmap);
+            surface.Canvas.Clear(SKColors.Transparent);
+            surface.Canvas.DrawImage(picture, source, SKRect.Create(width, height), new SKSamplingOptions(SKCubicResampler.Mitchell));
             using var image = surface.Snapshot();
             using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             return encoded.ToArray();
@@ -459,12 +491,17 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
             image.ReviewedBy = adminUserId;
         }
 
-        private static Guid? ImageIdOf(DataModels.Clan clan, ClanImageKind kind)
-            => kind == ClanImageKind.Logo ? clan.LogoImageId : clan.CapeImageId;
+        private static Guid? ImageIdOf(DataModels.Clan clan, ClanImageKind kind) => kind switch
+        {
+            ClanImageKind.Logo => clan.LogoImageId,
+            ClanImageKind.Banner => clan.BannerImageId,
+            _ => clan.CapeImageId,
+        };
 
         private static void SetImageId(DataModels.Clan clan, ClanImageKind kind, Guid? id)
         {
             if (kind == ClanImageKind.Logo) clan.LogoImageId = id;
+            else if (kind == ClanImageKind.Banner) clan.BannerImageId = id;
             else clan.CapeImageId = id;
         }
 

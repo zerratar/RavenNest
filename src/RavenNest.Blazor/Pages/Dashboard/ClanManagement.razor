@@ -4,6 +4,8 @@
 @page "/clan/stash"
 @page "/clan/look"
 @page "/clan/requests"
+@page "/clan/page"
+@page "/clan/news"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
@@ -250,6 +252,14 @@ else
             <button type="button" role="tab" aria-selected="@(section == Section.Members)" class="rf-tab @(section == Section.Members ? "is-active" : "")" @onclick="() => ShowSection(Section.Members)">Members</button>
             <button type="button" role="tab" aria-selected="@(section == Section.Ranks)" class="rf-tab @(section == Section.Ranks ? "is-active" : "")" @onclick="() => ShowSection(Section.Ranks)">Ranks</button>
             <button type="button" role="tab" aria-selected="@(section == Section.Requests)" class="rf-tab @(section == Section.Requests ? "is-active" : "")" @onclick="() => ShowSection(Section.Requests)">Requests</button>
+            @if (canPostNews)
+            {
+                <button type="button" role="tab" aria-selected="@(section == Section.News)" class="rf-tab @(section == Section.News ? "is-active" : "")" @onclick="() => ShowSection(Section.News)">News</button>
+            }
+            @if (Selected?.IsOwner == true)
+            {
+                <button type="button" role="tab" aria-selected="@(section == Section.Page)" class="rf-tab @(section == Section.Page ? "is-active" : "")" @onclick="() => ShowSection(Section.Page)">Page</button>
+            }
             @if (canUseBank)
             {
                 <button type="button" role="tab" aria-selected="@(section == Section.Stash)" class="rf-tab @(section == Section.Stash ? "is-active" : "")" @onclick="() => ShowSection(Section.Stash)">Stash</button>
@@ -264,6 +274,14 @@ else
         {
             @* the logo, the cape image and the cape shapes: the owner's alone *@
             <ClanLookEditor @key="clan.Id"></ClanLookEditor>
+        }
+        else if (section == Section.Page && Selected?.IsOwner == true)
+        {
+            <ClanPageEditor @key="clan.Id" ClanId="@clan.Id" ClanName="@clan.Name"></ClanPageEditor>
+        }
+        else if (section == Section.News && canPostNews)
+        {
+            <ClanNewsEditor @key="@(clan.Id.ToString() + ActingCharacterId)" ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId"></ClanNewsEditor>
         }
         else if (section == Section.Requests)
         {
@@ -342,7 +360,8 @@ else
     private bool canRenameClan;
     private RavenNest.BusinessLogic.Game.TypedClanRolePermissions myPermissions;
     private bool editingClanName;
-    private enum Section { Members, Ranks, Requests, Stash, Look }
+    private enum Section { Members, Ranks, Requests, News, Page, Stash, Look }
+    private bool canPostNews;
 
     private Section section = Section.Members;
 
@@ -518,6 +537,8 @@ else
         else if (uri.IndexOf("/clan/stash", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Stash;
         else if (uri.IndexOf("/clan/look", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Look;
         else if (uri.IndexOf("/clan/requests", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Requests;
+        else if (uri.IndexOf("/clan/page", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Page;
+        else if (uri.IndexOf("/clan/news", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.News;
         else section = Section.Members;
     }
 
@@ -602,6 +623,7 @@ else
         // permission and then did nothing when pressed. It now matches what the service allows.
         canRenameClan = membership.IsOwner && myPermissions != null && myPermissions.CanRenameClan;
         canUseBank = myPermissions != null && myPermissions.CanUseClanBank;
+        canPostNews = myPermissions != null && myPermissions.CanPostNews;
 
         nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
         oldClanName = clan.Name;

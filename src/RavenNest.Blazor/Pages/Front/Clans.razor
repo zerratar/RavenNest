@@ -111,7 +111,11 @@
                                         <td class="rf-clans__num">@clan.Level</td>
                                         <td class="rf-clans__num">@clan.Members.ToString("N0")</td>
                                         <td class="rf-clans__num">
-                                            @if (clan.PlayingNow > 0)
+                                            @if (clan.PlayingHidden)
+                                            {
+                                                <span class="rf-table__quiet" title="The clan keeps this to itself">Hidden</span>
+                                            }
+                                            else if (clan.PlayingNow > 0)
                                             {
                                                 <span class="rf-badge rf-badge--good">@clan.PlayingNow</span>
                                             }
