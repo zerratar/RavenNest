@@ -38,7 +38,7 @@ namespace RavenNest.Combat
     /// </summary>
     public sealed class CombatSheet
     {
-        /// <summary>The fighter's combat level, which armour is measured against.</summary>
+        /// <summary>The fighter's combat level.</summary>
         public int CombatLevel = 1;
 
         public int MaxHealth = 100;

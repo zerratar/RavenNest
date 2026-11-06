@@ -53,13 +53,25 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void Armor_reduces_more_against_low_level_attackers_and_never_everything()
+        public void Armor_grows_and_never_takes_everything()
         {
-            var vsLow = CombatMath.ArmorReduction(500, 10);
-            var vsHigh = CombatMath.ArmorReduction(500, 300);
-            Assert.True(vsLow > vsHigh);
-            Assert.True(CombatMath.ArmorReduction(100000, 1) < 1);
-            Assert.Equal(0, CombatMath.ArmorReduction(0, 50));
+            Assert.Equal(0, CombatMath.ArmorReduction(0));
+            Assert.Equal(0.5, CombatMath.ArmorReduction(640), 6);
+            Assert.True(CombatMath.ArmorReduction(2000) > CombatMath.ArmorReduction(500));
+            Assert.True(CombatMath.ArmorReduction(100000) < 1);
+        }
+
+        [Theory]
+        [InlineData(100, 280)]
+        [InlineData(400, 1120)]
+        [InlineData(900, 2520)]
+        public void Matching_gear_lands_near_four_times_an_ungeared_blow(int power, int armor)
+        {
+            // gear has about 2.8 armour per point of power; with that, armour answers the power multiplier and a blow
+            // in matching gear stays a steady multiple of an ungeared one, so fights last about as long at every level
+            var withGear = CombatMath.MaxHit(500, power) * (1 - CombatMath.ArmorReduction(armor));
+            var bare = CombatMath.MaxHit(500, 0);
+            Assert.InRange(withGear / bare, 1.8, 4.0);
         }
 
         [Theory]

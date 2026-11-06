@@ -69,9 +69,16 @@ namespace RavenNest.Combat
         public const double MaxHitChance = 0.95;
         public const double PlayerResistanceCap = 0.75;
 
-        /// <summary>Armour against a level 0 attacker; every attacker level adds <see cref="ArmorPerAttackerLevel"/>.</summary>
-        public const double ArmorBase = 100;
-        public const double ArmorPerAttackerLevel = 25;
+        /// <summary>
+        ///     Armour's scale: physical damage taken is multiplied by ArmorScale / (ArmorScale + armour). The max hit
+        ///     multiplies by (1 + power / 57.1) (today's 0.1 + 0.00175 x power), and gear has about 2.8 armour per
+        ///     point of power, so in matching gear a blow ends up near ArmorScale / 160 times an ungeared one, at every
+        ///     level: 640 makes that four times, which the simulator puts at 4 to 9 swings to beat an equal fighter
+        ///     from level 10 to 999, while better gear still wins. The first simulator run (2026-11-07) showed why
+        ///     armour had to change: today high level fights only last because armour makes nearly every blow miss
+        ///     (12% at level 850); with misses fixed and armour measured by level, a level 999 fight took two swings.
+        /// </summary>
+        public const double ArmorScale = 640;
 
         /// <summary>An element's effect always has this chance when the element dealt damage, plus up to <see cref="ProcShareChance"/> by its share of the blow.</summary>
         public const double ProcBaseChance = 0.10;
@@ -97,11 +104,11 @@ namespace RavenNest.Combat
             return Clamp(0.5 + (accuracy - evasion) / scale, MinHitChance, MaxHitChance);
         }
 
-        /// <summary>The share of physical damage armour takes off, measured against the attacker's level so it never makes anyone untouchable.</summary>
-        public static double ArmorReduction(int armor, int attackerLevel)
+        /// <summary>The share of physical damage armour takes off; it grows with armour and never reaches all of it.</summary>
+        public static double ArmorReduction(int armor)
         {
             if (armor <= 0) return 0;
-            return armor / (armor + ArmorBase + ArmorPerAttackerLevel * Math.Max(0, attackerLevel));
+            return armor / (armor + ArmorScale);
         }
 
         /// <summary>What is left of an element's damage after resistance: players cap at 75%, enemies can be weak or immune.</summary>
@@ -172,7 +179,7 @@ namespace RavenNest.Combat
             split += attacker.ElementBonus;
             split.Physical = Math.Max(0, split.Physical);
 
-            var armorLeft = 1 - ArmorReduction((int)(defender.Armor * (1 - Clamp(options.ArmorIgnored, 0, 1))), attacker.CombatLevel);
+            var armorLeft = 1 - ArmorReduction((int)(defender.Armor * (1 - Clamp(options.ArmorIgnored, 0, 1))));
             var carried = 0;
             var immune = 0;
             foreach (var element in Elements.All)
