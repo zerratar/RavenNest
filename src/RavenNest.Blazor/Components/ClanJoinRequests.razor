@@ -28,17 +28,12 @@
         {
             <p class="rf-meta">Your rank cannot change this. The owner can allow it under Ranks ("Change who may join").</p>
         }
+        @StatusLine(false)
     </section>
-
-    @if (!string.IsNullOrEmpty(status))
-    {
-        <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
-            <p>@status</p>
-        </div>
-    }
 
     <section aria-labelledby="joinreq-list-title">
         <h3 class="rf-panel__title" id="joinreq-list-title">Requests to join</h3>
+        @StatusLine(true)
         @if (requests == null)
         {
             <p class="rf-meta">Your rank cannot see requests. Ranks that may invite players answer them.</p>
@@ -54,7 +49,7 @@
         else
         {
             <div class="rf-scroll-x">
-                <table class="rf-table">
+                <table class="rf-table rf-table--stack">
                     <thead>
                         <tr>
                             <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
@@ -79,8 +74,8 @@
                                         </span>
                                     </div>
                                 </td>
-                                <td>@request.CombatLevel</td>
-                                <td class="rf-joinreq__message">
+                                <td data-label="Combat">@request.CombatLevel</td>
+                                <td data-label="Message" class="rf-joinreq__message rf-table__wide">
                                     @if (string.IsNullOrWhiteSpace(request.Message))
                                     {
                                         <span class="rf-table__quiet">No message</span>
@@ -90,10 +85,10 @@
                                         @request.Message
                                     }
                                 </td>
-                                <td class="rf-table__quiet" title="@request.Created.ToString("f")">@AskedText(request.Created)</td>
+                                <td data-label="Asked" class="rf-table__quiet" title="@request.Created.ToString("f")">@AskedText(request.Created)</td>
                                 @if (CanAnswer)
                                 {
-                                    <td>
+                                    <td class="rf-table__wide">
                                         <div class="rf-actions">
                                             <button type="button" class="rf-btn rf-btn--small rf-btn--primary" disabled="@busy" @onclick="() => Answer(request, true)">Accept</button>
                                             <button type="button" class="rf-btn rf-btn--small" disabled="@busy" @onclick="() => Answer(request, false)">Decline</button>
@@ -122,6 +117,8 @@
     private IReadOnlyList<ClanJoinRequestEntry> requests;
     private string status;
     private bool statusIsBad;
+    // true when the last message is about a request rather than the policy, so it shows by the list
+    private bool statusForRequests;
     private bool busy;
 
     private record PolicyOption(ClanJoinPolicy Policy, string Icon, string Title, string Text);
@@ -154,11 +151,11 @@
                 ClanJoinPolicy.OnRequest => "The clan takes members on request now. Waiting requests show below.",
                 ClanJoinPolicy.InviteOnly => "The clan takes members by invite only now.",
                 _ => "Anyone can join the clan now.",
-            }, false);
+            }, false, false);
         }
         else
         {
-            Show("Could not change who may join.", true);
+            Show("Could not change who may join.", true, false);
         }
     }
 
@@ -166,18 +163,29 @@
     {
         busy = true;
         var outcome = ClanService.AnswerJoinRequest(ClanId, request.Id, accept, ActingCharacterId);
-        Show(outcome.Message, !outcome.Success);
+        Show(outcome.Message, !outcome.Success, true);
         Load();
         busy = false;
         if (outcome.Success && accept)
             await MembersChanged.InvokeAsync();
     }
 
-    private void Show(string message, bool bad)
+    private void Show(string message, bool bad, bool aboutRequests)
     {
         status = message;
         statusIsBad = bad;
+        statusForRequests = aboutRequests;
     }
+
+    private RenderFragment StatusLine(bool aboutRequests) => __builder =>
+    {
+        if (statusForRequests == aboutRequests && !string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner rf-banner--compact @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+                <p>@status</p>
+            </div>
+        }
+    };
 
     private static string AskedText(DateTime created)
     {

@@ -182,12 +182,18 @@ else
             }
         </div>
 
-        @if (canManageMembers)
-        {
-            <button type="button" class="rf-btn rf-btn--small" title="Refresh the clan logo from Twitch" disabled="@reloadingClanLogo" @onclick="ReloadClanLogo">
-                <i class="fas fa-sync" aria-hidden="true"></i> @(reloadingClanLogo ? "Refreshing" : "Refresh logo")
-            </button>
-        }
+        @* the way back to the public page, as that page has "Manage your clan" for the way here *@
+        <div class="rf-actions">
+            <a class="rf-btn rf-btn--small" href="@("/clans/" + Uri.EscapeDataString(clan.Name ?? ""))">
+                <i class="fa-solid fa-eye" aria-hidden="true"></i> See the clan's page
+            </a>
+            @if (canManageMembers)
+            {
+                <button type="button" class="rf-btn rf-btn--small" title="Refresh the clan logo from Twitch" disabled="@reloadingClanLogo" @onclick="ReloadClanLogo">
+                    <i class="fas fa-sync" aria-hidden="true"></i> @(reloadingClanLogo ? "Refreshing" : "Refresh logo")
+                </button>
+            }
+        </div>
     </div>
 
     @*
@@ -248,7 +254,8 @@ else
     }
 
     <section class="rf-panel">
-        <div class="rf-tabs" role="tablist">
+        @* up to seven tabs: tighter on a phone so they wrap to two rows rather than three *@
+        <div class="rf-tabs rf-tabs--tight" role="tablist">
             <button type="button" role="tab" aria-selected="@(section == Section.Members)" class="rf-tab @(section == Section.Members ? "is-active" : "")" @onclick="() => ShowSection(Section.Members)">Members</button>
             <button type="button" role="tab" aria-selected="@(section == Section.Ranks)" class="rf-tab @(section == Section.Ranks ? "is-active" : "")" @onclick="() => ShowSection(Section.Ranks)">Ranks</button>
             <button type="button" role="tab" aria-selected="@(section == Section.Requests)" class="rf-tab @(section == Section.Requests ? "is-active" : "")" @onclick="() => ShowSection(Section.Requests)">Requests</button>

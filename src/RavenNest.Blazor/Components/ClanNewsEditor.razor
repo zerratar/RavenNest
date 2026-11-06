@@ -11,12 +11,8 @@
 }
 else
 {
+    @* the form and the list side by side on a wide screen, so Edit fills the form right beside the post *@
     <div class="rf-newsedit">
-        @if (!string.IsNullOrEmpty(status))
-        {
-            <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
-        }
-
         <section class="rf-newsedit__form" aria-labelledby="ne-form">
             <h3 class="rf-panel__title" id="ne-form">@(editingId == Guid.Empty ? "Write a post" : "Edit the post")</h3>
             <label class="rf-field">
@@ -24,11 +20,13 @@ else
                 <input class="rf-input" maxlength="100" @bind="title" @bind:event="oninput" />
             </label>
             <label class="rf-field">
-                <span class="rf-label">Text. Plain text; a blank line starts a new paragraph, and links work. @(body?.Length ?? 0) / 4000</span>
+                <span class="rf-label">Text. Plain text, a blank line starts a new paragraph, and links work.</span>
                 <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="4000" @bind="body" @bind:event="oninput"></textarea>
             </label>
-            <label class="rf-check"><input type="checkbox" @bind="membersOnly" /> <span>Members only (the public does not see it)</span></label>
-            <label class="rf-check"><input type="checkbox" @bind="pinned" /> <span>Pinned at the top</span></label>
+            <div class="rf-newsedit__options">
+                <label class="rf-check"><input type="checkbox" @bind="membersOnly" /> <span>Members only (the public does not see it)</span></label>
+                <label class="rf-check"><input type="checkbox" @bind="pinned" /> <span>Pinned at the top</span></label>
+            </div>
             <div class="rf-actions">
                 <button type="button" class="rf-btn rf-btn--primary" disabled="@(string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body))" @onclick="Save">
                     @(editingId == Guid.Empty ? "Post it" : "Save the changes")
@@ -37,27 +35,30 @@ else
                 {
                     <button type="button" class="rf-btn" @onclick="Clear">Cancel</button>
                 }
+                <span class="rf-meta rf-pageedit__count">@(body?.Length ?? 0) / 4000</span>
             </div>
+            @StatusLine("form")
         </section>
 
         <section aria-labelledby="ne-list">
             <h3 class="rf-panel__title" id="ne-list">Posts</h3>
+            @StatusLine("list")
             @if (posts.Count == 0)
             {
-                <p class="rf-meta">Nothing posted yet.</p>
+                <p class="rf-meta">Nothing posted yet. Your first post shows on the clan's page as soon as it is up.</p>
             }
             else
             {
                 <ul class="rf-newsedit__list">
                     @foreach (var post in posts)
                     {
-                        <li class="rf-newsedit__post">
-                            <div>
+                        <li class="rf-newsedit__post @(post.Id == editingId ? "is-editing" : "")">
+                            <div class="rf-newsedit__what">
                                 <b>@post.Title</b>
                                 <span class="rf-meta">
                                     @post.Author, @post.Created.ToString("d MMM yyyy")
-                                    @if (post.Pinned) { <span class="rf-badge">Pinned</span> }
-                                    @if (post.MembersOnly) { <span class="rf-badge">Members only</span> }
+                                    @if (post.Pinned) { <span class="rf-badge rf-badge--gold">Pinned</span> }
+                                    @if (post.MembersOnly) { <span class="rf-badge rf-badge--quiet">Members only</span> }
                                     @if (post.Hidden) { <span class="rf-badge rf-badge--bad">Hidden by an admin</span> }
                                 </span>
                             </div>
@@ -94,6 +95,7 @@ else
     private Guid confirmDelete;
     private string status;
     private bool statusIsBad;
+    private string statusFor;
 
     protected override void OnParametersSet() => Load();
 
@@ -127,6 +129,7 @@ else
         }
         status = error ?? (wasNew ? "Posted. It is on the clan's page now." : "Saved.");
         statusIsBad = error != null;
+        statusFor = "form";
     }
 
     private void Delete(ClanNewsPost post)
@@ -137,5 +140,15 @@ else
         Load();
         status = ok ? "The post is deleted." : "Could not delete that post.";
         statusIsBad = !ok;
+        statusFor = "list";
     }
+
+    // the last message shows under the form or above the list, whichever was just used
+    private RenderFragment StatusLine(string where) => __builder =>
+    {
+        if (statusFor == where && !string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner rf-banner--compact @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
+        }
+    };
 }

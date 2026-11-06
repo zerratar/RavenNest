@@ -4661,6 +4661,159 @@ a.rf-badge:hover {
     color: var(--rf-gold);
 }
 
+/* the filters sit in the toolbar beside the search, so they drop the rail's own spacing */
+.rf-clans__bar .rf-filters {
+    margin: 0;
+}
+
+/* the owner under the clan's name: a name keeps its capitals, so this is not the uppercase item meta */
+.rf-clans__owner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-2);
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-clans__owner .rf-badge {
+    padding: 0 var(--rf-space-2);
+}
+
+.rf-clans__empty {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+}
+
+.rf-clans__empty p {
+    margin: 0;
+}
+
+/* Rows that fold into small cards on a phone: the first cell (what the row is) takes the
+   width, the rest sit three to a line with their column name above the value, taken from
+   data-label. Sideways scrolling hid every number behind the name column. */
+@media (max-width: 40rem) {
+    .rf-table--stack {
+        min-width: 0;
+    }
+
+    .rf-table--stack thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .rf-table--stack tbody,
+    .rf-table--stack td {
+        display: block;
+    }
+
+    .rf-table--stack tbody tr {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* dense: a short cell after a full width one moves up beside the cell before it */
+        grid-auto-flow: row dense;
+        gap: var(--rf-space-2) var(--rf-space-3);
+        /* inset a little, since site.css stripes every other row */
+        padding: var(--rf-space-3) var(--rf-space-2);
+        border-bottom: 1px solid var(--rf-line);
+    }
+
+    .rf-table--stack tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .rf-table--stack tbody tr:hover {
+        background: none;
+    }
+
+    .rf-table--stack td {
+        padding: 0;
+        border: 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .rf-table--stack td:first-child,
+    .rf-table--stack td.rf-table__wide {
+        grid-column: 1 / -1;
+    }
+
+    /* a label is one word or two and never breaks inside a word; tracking is lighter than
+       elsewhere so "Enchanting" fits a third of a phone */
+    .rf-table--stack td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 2px;
+        color: var(--rf-ink-faint);
+        font-size: var(--rf-size-tiny);
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow-wrap: normal;
+    }
+
+    .rf-table--stack .rf-item {
+        min-width: 0;
+    }
+
+    .rf-table--stack .rf-table__quiet {
+        white-space: normal;
+    }
+
+    /* The clan list keeps its headings on a phone as a row of sort buttons, since the
+       cards have no columns to click. */
+    .rf-clans thead {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        display: block;
+    }
+
+    .rf-clans thead tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--rf-space-1);
+        padding-bottom: var(--rf-space-3);
+        border-bottom: 1px solid var(--rf-line-strong);
+    }
+
+    .rf-clans thead tr::before {
+        content: "Sort by";
+        margin-right: var(--rf-space-1);
+        color: var(--rf-ink-faint);
+        font-size: var(--rf-size-small);
+    }
+
+    .rf-clans thead th {
+        display: block;
+        padding: 0;
+        border: 0;
+    }
+
+    .rf-clans thead .rf-th {
+        padding: var(--rf-space-1) var(--rf-space-2);
+        border: 1px solid var(--rf-line);
+        background: var(--rf-surface-2);
+    }
+
+    .rf-clans thead th[aria-sort="ascending"] .rf-th,
+    .rf-clans thead th[aria-sort="descending"] .rf-th {
+        border-color: var(--rf-gold);
+    }
+}
+
 .rf-clanranks {
     list-style: none;
     margin: 0;
@@ -4671,19 +4824,45 @@ a.rf-badge:hover {
 
 .rf-clanranks__rank {
     display: grid;
-    grid-template-columns: minmax(8rem, 12rem) 1fr;
+    grid-template-columns: minmax(7rem, 10rem) 1fr;
     gap: var(--rf-space-3);
     align-items: baseline;
 }
 
+.rf-clanranks__rank + .rf-clanranks__rank {
+    padding-top: var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+}
+
 .rf-clanranks__name {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
     font-weight: 700;
+}
+
+.rf-clanranks__count {
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-small);
+    font-variant-numeric: tabular-nums;
 }
 
 .rf-clanranks__who {
     display: flex;
     flex-wrap: wrap;
     gap: var(--rf-space-1) var(--rf-space-3);
+}
+
+/* names, not a column of blue links: ink until pointed at, then the clan's colour */
+.rf-clanranks__who a {
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+.rf-clanranks__who a:hover,
+.rf-clanranks__who a:focus-visible {
+    color: var(--rf-clan-accent, var(--rf-gold));
+    text-decoration: underline;
 }
 
 @media (max-width: 600px) {
@@ -4755,32 +4934,152 @@ a.rf-badge:hover {
     gap: var(--rf-space-5);
 }
 
+/* the clan dashboard's tab strip has up to seven tabs: tighter on a phone, so two rows rather than three */
+@media (max-width: 40rem) {
+    .rf-tabs--tight .rf-tab {
+        padding: var(--rf-space-2) var(--rf-space-3);
+    }
+}
+
 .rf-joinreq__message {
     max-width: 24rem;
     overflow-wrap: anywhere;
 }
 
-/* the clan page's join panel */
+/* Accept and Decline side by side, not stacked in a narrow column */
+.rf-joinreq .rf-table .rf-actions {
+    flex-wrap: nowrap;
+}
+
+/* The clan page's header card: banner, logo and name, then a strip saying how to join with the
+   button at its end. */
+.rf-clanhead {
+    padding-bottom: var(--rf-space-4);
+}
+
+.rf-clanhead .rf-clanhead__top {
+    margin-bottom: var(--rf-space-4);
+}
+
+/* the name shrinks beside the logo rather than wrapping under it on a phone */
+.rf-clanhead .rf-clan__id {
+    flex: 1 1 12rem;
+}
+
+.rf-clanhead__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-3);
+    margin: var(--rf-space-1) 0 0 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-clanhead__meta b {
+    color: var(--rf-ink);
+}
+
+/* The banner runs to the card's edges, under its accent line, as a profile header does. */
+.rf-clanhead .rf-clanpage__banner {
+    width: calc(100% + 2 * var(--rf-space-5));
+    max-width: none;
+    margin: calc(-1 * var(--rf-space-5)) calc(-1 * var(--rf-space-5)) var(--rf-space-4);
+    border: 0;
+    border-radius: 0;
+}
+
+.rf-clanjoin {
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
 .rf-clanjoin__head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--rf-space-2) var(--rf-space-3);
-    margin-bottom: var(--rf-space-3);
 }
 
-.rf-clanjoin__form {
-    display: grid;
-    gap: var(--rf-space-3);
-    max-width: 32rem;
+.rf-clanjoin__text {
+    flex: 1 1 18rem;
+    color: var(--rf-ink-muted);
 }
 
-.rf-clanjoin__waiting {
+/* a clan name can be longer than a phone is wide */
+.rf-clanjoin__text .rf-cmd {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.rf-clanjoin__go {
+    margin-left: auto;
+}
+
+.rf-clanjoin__note {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--rf-space-2) var(--rf-space-3);
-    margin: 0 0 var(--rf-space-3) 0;
+    margin: var(--rf-space-3) 0 0 0;
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-clanjoin__note i {
+    color: var(--rf-clan-accent, var(--rf-gold));
+}
+
+/* the sentence stays beside its icon and the button follows it, wrapping under on a phone */
+.rf-clanjoin__note > span {
+    flex: 1 1 12rem;
+    max-width: max-content;
+}
+
+.rf-clanjoin__note b {
+    color: var(--rf-ink);
+}
+
+/* who, what to say and the button, on one row when there is room; the button lines up with the inputs */
+.rf-clanjoin__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--rf-space-3);
+    margin-top: var(--rf-space-4);
+}
+
+.rf-clanjoin__form .rf-field {
+    margin: 0;
+}
+
+.rf-clanjoin__who {
+    flex: 0 1 14rem;
+}
+
+.rf-clanjoin__message {
+    flex: 1 1 18rem;
+}
+
+.rf-clanjoin__form .rf-input {
+    width: 100%;
+    min-height: 2.6rem;
+}
+
+@media (max-width: 40rem) {
+    .rf-clanjoin__who,
+    .rf-clanjoin__message,
+    .rf-clanjoin__form .rf-btn,
+    .rf-clanjoin__go {
+        flex: 1 1 100%;
+        justify-content: center;
+        margin-left: 0;
+    }
+}
+
+/* A status line under the thing it is about, rather than a page banner. */
+.rf-banner--compact {
+    padding: var(--rf-space-3) var(--rf-space-4);
+    margin: var(--rf-space-3) 0 0 0;
 }
 
 /* ==========================================================================
@@ -4793,12 +5092,95 @@ a.rf-badge:hover {
     --rf-clan-accent: var(--rf-gold);
 }
 
-.rf-clanpage > .rf-panel {
+.rf-clanpage .rf-panel {
     border-top: 3px solid var(--rf-clan-accent);
 }
 
 .rf-clanpage .rf-clan__logo {
-    border-color: var(--rf-clan-accent);
+    width: 72px;
+    height: 72px;
+    border: 2px solid var(--rf-clan-accent);
+}
+
+/* A badge in the clan's own colour (Pinned). color-mix gives the wash from whatever colour the owner picked. */
+.rf-badge--accent {
+    color: var(--rf-clan-accent, var(--rf-gold));
+    background: color-mix(in srgb, var(--rf-clan-accent, var(--rf-gold)) 12%, transparent);
+}
+
+/* Enchanting is the number players come to compare, so it is the one tile that stands out. On a
+   phone it takes the whole first row and the other four pair up under it. */
+.rf-clanstats .rf-stat--headline {
+    border-color: var(--rf-line-gold);
+    background: linear-gradient(135deg, var(--rf-gold-wash), transparent 70%), var(--rf-surface-2);
+}
+
+.rf-stat__of {
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    color: var(--rf-ink-faint);
+}
+
+@media (max-width: 40rem) {
+    .rf-clanpage .rf-clan__logo {
+        width: 56px;
+        height: 56px;
+    }
+
+    .rf-clanstats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--rf-space-3);
+    }
+
+    .rf-clanstats .rf-stat--headline {
+        grid-column: 1 / -1;
+    }
+
+    .rf-clanstats .rf-stat {
+        padding: var(--rf-space-3) var(--rf-space-4);
+    }
+}
+
+/* Two short panels side by side when there is room; one alone takes the row. */
+.rf-clanpage__pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+    gap: var(--rf-space-5);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-clanpage__pair > .rf-panel {
+    margin-bottom: 0;
+}
+
+.rf-clanpage__pair .rf-next + .rf-skills__list {
+    margin-top: var(--rf-space-5);
+}
+
+/* Half a page is too narrow for the four column skill row (the bar shrank to a dot), so it folds
+   to two lines here at every width, as it does on a phone: name and level, then bar and what is left. */
+.rf-clanpage__pair .rf-skill {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "name level"
+        "bar  next";
+    gap: var(--rf-space-2) var(--rf-space-3);
+    padding: var(--rf-space-3) var(--rf-space-4);
+}
+
+.rf-clanpage__pair .rf-skill__name { grid-area: name; }
+.rf-clanpage__pair .rf-skill__bar { grid-area: bar; align-self: center; }
+.rf-clanpage__pair .rf-skill__next { grid-area: next; }
+.rf-clanpage__pair .rf-skill__level { grid-area: level; }
+
+/* folded, a hidden bar's line would be an empty gap */
+.rf-clanpage__pair .rf-skill__bar.is-hidden {
+    display: none;
+}
+
+/* the clan keeps its progress to itself: the bar's place stays so the levels still line up */
+.rf-skill__bar.is-hidden {
+    visibility: hidden;
 }
 
 .rf-clanpage__banner {
@@ -4825,7 +5207,7 @@ a.rf-badge:hover {
     background: none;
     border: none;
     padding: 0;
-    color: var(--rf-ink-faint);
+    color: var(--rf-ink-muted);
     font-family: inherit;
     font-size: var(--rf-size-small);
     cursor: pointer;
@@ -4856,13 +5238,14 @@ a.rf-badge:hover {
     color: var(--rf-clan-accent, var(--rf-gold));
 }
 
-/* Top 8, as MySpace had it: eight friends in a grid, picture over name */
+/* Top 8, as MySpace had it: eight friends in a grid, picture over name. Sized so all eight fit
+   one row on a desktop and pair up on a phone; each card is one link. */
 .rf-top8 {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
     gap: var(--rf-space-3);
 }
 
@@ -4871,33 +5254,49 @@ a.rf-badge:hover {
     flex-direction: column;
     align-items: center;
     gap: var(--rf-space-1);
+    height: 100%;
+    padding: var(--rf-space-3) var(--rf-space-2);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink);
     text-align: center;
+    text-decoration: none;
+    transition: border-color var(--rf-transition), background var(--rf-transition);
 }
 
-.rf-top8__member a {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--rf-space-2);
+.rf-top8__member:hover,
+.rf-top8__member:focus-visible {
+    border-color: var(--rf-clan-accent, var(--rf-gold));
+    background: var(--rf-surface-3);
     color: var(--rf-ink);
     text-decoration: none;
-    font-weight: 700;
 }
 
-.rf-top8__member a:hover .rf-top8__name {
-    text-decoration: underline;
+.rf-top8__member:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
 }
 
 .rf-top8__member img {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--rf-space-1);
     border-radius: var(--rf-radius);
     border: 2px solid var(--rf-clan-accent, var(--rf-gold));
-    background: var(--rf-surface-2);
+    background: var(--rf-surface-1);
 }
 
 .rf-top8__name {
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    line-height: 1.3;
     overflow-wrap: anywhere;
+}
+
+.rf-top8__rank {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
 }
 
 .rf-clannews {
@@ -4921,7 +5320,21 @@ a.rf-badge:hover {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--rf-space-2);
-    margin: var(--rf-space-1) 0 var(--rf-space-3) 0;
+    margin: var(--rf-space-2) 0 var(--rf-space-3) 0;
+}
+
+/* Report goes to the end of the who-and-when line */
+.rf-clannews__meta .rf-clanpage__report {
+    margin-left: auto;
+}
+
+.rf-clannews__meta .rf-badge {
+    padding: 0 var(--rf-space-2);
+}
+
+.rf-clannews__post.is-pinned {
+    padding-left: var(--rf-space-4);
+    border-left: 3px solid var(--rf-clan-accent, var(--rf-gold));
 }
 
 /* the hit counter: green digits on black, as they were */
@@ -4945,35 +5358,95 @@ a.rf-badge:hover {
     letter-spacing: 3px;
 }
 
-/* the owner's editors on /clan */
+/* the owner's editors on /clan: sections split by a line, so five of them read as five steps */
 .rf-pageedit,
 .rf-newsedit {
     display: grid;
-    gap: var(--rf-space-6, 2rem);
+    gap: var(--rf-space-5);
+}
+
+.rf-pageedit > section + section {
+    padding-top: var(--rf-space-5);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-pageedit__intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-2) var(--rf-space-4);
+}
+
+.rf-pageedit__intro p {
+    margin: 0;
+}
+
+/* five ticks in two columns on a wide screen rather than one long list */
+.rf-pageedit__toggles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+    gap: var(--rf-space-3) var(--rf-space-5);
+    margin-bottom: var(--rf-space-3);
 }
 
 .rf-pageedit__toggles .rf-check {
-    margin-bottom: var(--rf-space-2);
+    margin-bottom: 0;
 }
 
+.rf-pageedit__about {
+    min-height: 10rem;
+}
+
+/* the character count sits at the end of the row with the save button, out of the label */
+.rf-pageedit__count {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+}
+
+/* the colour is one small control; beside the banner when there is room */
 .rf-pageedit__looks {
     display: grid;
-    gap: var(--rf-space-4);
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--rf-space-4) var(--rf-space-6);
+    align-items: start;
+}
+
+@media (min-width: 56rem) {
+    .rf-pageedit__looks {
+        grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+    }
+}
+
+.rf-pageedit__looks .rf-field {
+    margin-bottom: 0;
+}
+
+.rf-pageedit__looks .rf-field > .rf-label {
+    display: block;
+    margin-bottom: var(--rf-space-2);
 }
 
 .rf-pageedit__color {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--rf-space-3);
+    gap: var(--rf-space-2) var(--rf-space-3);
 }
 
 .rf-pageedit__color input[type="color"] {
     width: 3rem;
-    height: 2rem;
-    padding: 0;
+    height: 2.25rem;
+    padding: 2px;
     border: 1px solid var(--rf-line-strong);
-    background: none;
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
     cursor: pointer;
+}
+
+.rf-pageedit__hint {
+    display: block;
+    margin-top: var(--rf-space-2);
 }
 
 .rf-pageedit__banner {
@@ -4984,9 +5457,35 @@ a.rf-badge:hover {
     object-fit: cover;
     border-radius: var(--rf-radius);
     border: 1px solid var(--rf-line-strong);
-    margin: var(--rf-space-2) 0;
+    margin: 0 0 var(--rf-space-3) 0;
 }
 
+/* the browser's own file button is white on this page; this one matches the other buttons */
+.rf-pageedit input[type="file"] {
+    max-width: 100%;
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+}
+
+.rf-pageedit input[type="file"]::file-selector-button {
+    margin-right: var(--rf-space-3);
+    padding: var(--rf-space-2) var(--rf-space-4);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.rf-pageedit input[type="file"]::file-selector-button:hover {
+    border-color: var(--rf-line-gold);
+    background: var(--rf-surface-raised);
+}
+
+/* the Top 8 list and its add row stay narrow, so the arrows are next to the name they move */
 .rf-pageedit__top,
 .rf-newsedit__list {
     list-style: none;
@@ -4994,6 +5493,15 @@ a.rf-badge:hover {
     padding: 0;
     display: grid;
     gap: var(--rf-space-2);
+}
+
+.rf-pageedit__top,
+.rf-pageedit__add {
+    max-width: 30rem;
+}
+
+.rf-pageedit__add select {
+    flex: 1 1 12rem;
 }
 
 .rf-pageedit__top li,
@@ -5009,6 +5517,37 @@ a.rf-badge:hover {
     border-radius: var(--rf-radius-sm);
 }
 
+.rf-pageedit__top .rf-actions {
+    gap: 0;
+}
+
+.rf-pageedit__topname {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.rf-pageedit__place {
+    flex: 0 0 auto;
+    width: 1.5rem;
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.rf-newsedit__what {
+    display: grid;
+    gap: var(--rf-space-1);
+    min-width: 0;
+}
+
+.rf-newsedit__what b {
+    overflow-wrap: anywhere;
+}
+
 .rf-newsedit__post .rf-meta {
     display: flex;
     flex-wrap: wrap;
@@ -5016,8 +5555,33 @@ a.rf-badge:hover {
     align-items: center;
 }
 
-.rf-newsedit__form {
-    max-width: 44rem;
+.rf-newsedit__post .rf-badge {
+    padding: 0 var(--rf-space-2);
+}
+
+/* the post the form is editing, so it is clear which one Save changes */
+.rf-newsedit__post.is-editing {
+    border-color: var(--rf-gold);
+    background: linear-gradient(90deg, var(--rf-gold-wash), transparent 60%), var(--rf-surface-2);
+}
+
+.rf-newsedit__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2) var(--rf-space-5);
+}
+
+.rf-newsedit__options .rf-check {
+    margin-bottom: var(--rf-space-3);
+}
+
+/* the form and the list side by side on a wide screen: Edit fills the form right beside the post */
+@media (min-width: 64rem) {
+    .rf-newsedit {
+        grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr);
+        align-items: start;
+        gap: var(--rf-space-6);
+    }
 }
 
 .rf-clanreport__reasons {

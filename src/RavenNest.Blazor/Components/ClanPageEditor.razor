@@ -17,17 +17,14 @@
 else
 {
     <div class="rf-pageedit">
-        <p class="rf-meta">
-            Your clan's public page is <a href="@PageUrl" target="_blank">@PageUrl</a>. Members of the clan always see all of it.
-        </p>
-
-        @if (!string.IsNullOrEmpty(status))
-        {
-            <div class="rf-banner @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
-        }
+        <div class="rf-pageedit__intro">
+            <p class="rf-meta">Your clan's public page is <a href="@PageUrl" target="_blank">@PageUrl</a>. Members of the clan always see all of it.</p>
+            <a class="rf-btn rf-btn--small" href="@PageUrl" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Open the page</a>
+        </div>
 
         <section aria-labelledby="pe-privacy">
             <h3 class="rf-panel__title" id="pe-privacy">What everyone can see</h3>
+            @* five short ticks: two columns on a wide screen rather than one long list *@
             <div class="rf-pageedit__toggles">
                 <label class="rf-check"><input type="checkbox" checked="@(!state.HideMembers)" @onchange="e => { state.HideMembers = !(bool)e.Value; SavePrivacy(); }" /> <span>The member list</span></label>
                 <label class="rf-check"><input type="checkbox" checked="@(!state.HideRanks)" @onchange="e => { state.HideRanks = !(bool)e.Value; SavePrivacy(); }" /> <span>Ranks and who holds them</span></label>
@@ -36,6 +33,7 @@ else
                 <label class="rf-check"><input type="checkbox" checked="@(!state.HideProgress)" @onchange="e => { state.HideProgress = !(bool)e.Value; SavePrivacy(); }" /> <span>Progress towards the next clan and skill levels</span></label>
             </div>
             <p class="rf-meta">The clan's name, logo, owner, level, Enchanting level and member count are always shown, so players can compare clans.</p>
+            @StatusLine("privacy")
         </section>
 
         <section aria-labelledby="pe-about">
@@ -45,27 +43,32 @@ else
                 <div class="rf-banner rf-banner--warn"><p>An admin hid this text after a report. Change it and it shows again.</p></div>
             }
             <label class="rf-field">
-                <span class="rf-label">Shown at the top of the page. Plain text; links work. @(about?.Length ?? 0) / 2000</span>
-                <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="2000" @bind="about" @bind:event="oninput"></textarea>
+                <span class="rf-label">Shown near the top of the page. Plain text, links work.</span>
+                <textarea class="rf-input rf-textarea rf-textarea--tall rf-pageedit__about" maxlength="2000" @bind="about" @bind:event="oninput"></textarea>
             </label>
             <div class="rf-actions">
                 <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveAbout">Save the about text</button>
+                <span class="rf-meta rf-pageedit__count">@(about?.Length ?? 0) / 2000</span>
             </div>
+            @StatusLine("about")
         </section>
 
         <section aria-labelledby="pe-looks">
             <h3 class="rf-panel__title" id="pe-looks">Looks</h3>
+            @* the colour is one small control, so it sits beside the banner on a wide screen *@
             <div class="rf-pageedit__looks">
-                <label class="rf-field">
+                <div class="rf-field">
                     <span class="rf-label">Accent colour</span>
                     <span class="rf-pageedit__color">
                         <input type="color" value="@(string.IsNullOrEmpty(accent) ? "#E8B04B" : accent)" @onchange="e => SaveAccent(e.Value?.ToString())" aria-label="Accent colour" />
+                        <span class="rf-meta">@(string.IsNullOrEmpty(accent) ? "Gold, the default" : accent)</span>
                         @if (!string.IsNullOrEmpty(accent))
                         {
                             <button type="button" class="rf-btn rf-btn--small" @onclick="() => SaveAccent(null)">Back to gold</button>
                         }
                     </span>
-                </label>
+                    <span class="rf-meta rf-pageedit__hint">The page's lines, links and picture frames use it.</span>
+                </div>
 
                 <div class="rf-field">
                     <span class="rf-label">Banner (any picture at least 600 pixels wide; it is cut to 3:1 from the middle)</span>
@@ -89,11 +92,12 @@ else
                     }
                 </div>
             </div>
+            @StatusLine("looks")
         </section>
 
         <section aria-labelledby="pe-top">
             <h3 class="rf-panel__title" id="pe-top">Top 8</h3>
-            <p class="rf-meta">Up to eight members you want to show off, in your order.</p>
+            <p class="rf-meta">Up to eight members you want to show off, in your order (@top.Count of 8 picked).</p>
             @if (top.Count > 0)
             {
                 <ol class="rf-pageedit__top">
@@ -101,7 +105,7 @@ else
                     {
                         var index = i;
                         <li>
-                            <span>@NameOf(top[index])</span>
+                            <span class="rf-pageedit__topname"><b class="rf-pageedit__place">@(index + 1)</b> @NameOf(top[index])</span>
                             <span class="rf-actions">
                                 <button type="button" class="rf-iconbtn" title="Move up" disabled="@(index == 0)" @onclick="() => MoveTop(index, -1)"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                                 <button type="button" class="rf-iconbtn" title="Move down" disabled="@(index == top.Count - 1)" @onclick="() => MoveTop(index, 1)"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
@@ -113,7 +117,7 @@ else
             }
             @if (top.Count < 8)
             {
-                <div class="rf-actions">
+                <div class="rf-actions rf-pageedit__add">
                     <select class="rf-input" @bind="topCandidate" aria-label="Member to add to the Top 8">
                         <option value="@Guid.Empty">Pick a member</option>
                         @foreach (var member in state.Members.Where(x => !top.Contains(x.CharacterId)))
@@ -124,6 +128,7 @@ else
                     <button type="button" class="rf-btn" disabled="@(topCandidate == Guid.Empty)" @onclick="AddTop">Add</button>
                 </div>
             }
+            @StatusLine("top")
         </section>
     </div>
 }
@@ -140,6 +145,8 @@ else
     private Guid topCandidate;
     private string status;
     private bool statusIsBad;
+    // which section the last message belongs to, so it shows under the control that was used
+    private string statusFor;
     private bool uploading;
     private bool canUpload;
 
@@ -162,21 +169,21 @@ else
     {
         var ok = ClanService.SavePagePrivacy(ClanId, state.HideMembers, state.HidePlaying, state.HideJoined, state.HideRanks, state.HideProgress);
         PublicClanService.Forget();
-        Show(ok ? "Saved. The public page shows what is ticked." : "Could not save that.", !ok);
+        Show(ok ? "Saved. The public page shows what is ticked." : "Could not save that.", !ok, "privacy");
     }
 
     private void SaveAbout()
     {
         var ok = ClanService.SavePageAbout(ClanId, about);
         if (ok) state.AboutHidden = false;
-        Show(ok ? "The about text is saved." : "Could not save the about text.", !ok);
+        Show(ok ? "The about text is saved." : "Could not save the about text.", !ok, "about");
     }
 
     private void SaveAccent(string color)
     {
         var ok = ClanService.SavePageAccent(ClanId, color);
         if (ok) accent = string.IsNullOrEmpty(color) ? "" : color.ToUpperInvariant();
-        Show(ok ? "The accent colour is saved." : "That is not a colour the page can use.", !ok);
+        Show(ok ? "The accent colour is saved." : "That is not a colour the page can use.", !ok, "looks");
     }
 
     private async Task UploadBanner(InputFileChangeEventArgs e)
@@ -190,11 +197,11 @@ else
             var result = ClanImageService.Upload(ClanImageKind.Banner, memory.ToArray());
             if (result.Ok && !result.Waiting && result.ImageId != null)
                 bannerUrl = "/api/clan/image/" + result.ImageId;
-            Show(!result.Ok ? result.Error : result.Waiting ? "The banner is uploaded and waits for an admin to look at it." : "The banner is up.", !result.Ok);
+            Show(!result.Ok ? result.Error : result.Waiting ? "The banner is uploaded and waits for an admin to look at it." : "The banner is up.", !result.Ok, "looks");
         }
         catch (IOException)
         {
-            Show("That picture is too large (4 MB at most).", true);
+            Show("That picture is too large (4 MB at most).", true, "looks");
         }
         finally
         {
@@ -206,7 +213,7 @@ else
     {
         var result = ClanImageService.UseDefault(ClanImageKind.Banner);
         if (result.Ok) bannerUrl = null;
-        Show(result.Ok ? "The banner is removed." : result.Error, !result.Ok);
+        Show(result.Ok ? "The banner is removed." : result.Error, !result.Ok, "looks");
     }
 
     private void AddTop()
@@ -234,12 +241,21 @@ else
     private void SaveTop()
     {
         var ok = ClanService.SavePageTopMembers(ClanId, top);
-        Show(ok ? "The Top 8 is saved." : "Could not save the Top 8.", !ok);
+        Show(ok ? "The Top 8 is saved." : "Could not save the Top 8.", !ok, "top");
     }
 
-    private void Show(string message, bool bad)
+    private void Show(string message, bool bad, string section)
     {
         status = message;
         statusIsBad = bad;
+        statusFor = section;
     }
+
+    private RenderFragment StatusLine(string section) => __builder =>
+    {
+        if (statusFor == section && !string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner rf-banner--compact @(statusIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@status</p></div>
+        }
+    };
 }

@@ -27,49 +27,52 @@
         }
         else
         {
-            <div class="rf-toolbar">
+            @* search and the two filters share a row: two chips do not need a row of their own *@
+            <div class="rf-toolbar rf-clans__bar">
                 <SearchBox Placeholder="Search by clan or owner"
                            AriaLabel="Search clans by clan name or owner"
                            Value="@search"
                            ValueChanged="OnSearchChanged"
                            ClearSignal="@clearSignal" />
-                @if (!string.IsNullOrWhiteSpace(search) || onlyPlaying)
-                {
-                    <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
-                }
-                <span class="rf-meta">Showing @clans.Count.ToString("N0") of @all.Count.ToString("N0")</span>
-            </div>
-
-            <div class="rf-filters" role="group" aria-label="Filter clans">
-                <button type="button"
-                        class="rf-filter @(!onlyPlaying ? "is-active" : "")"
-                        aria-pressed="@(!onlyPlaying)"
-                        @onclick="() => SetOnlyPlaying(false)">
-                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-                    <span>All clans</span>
-                    <b>@all.Count</b>
-                </button>
-                <button type="button"
-                        class="rf-filter @(onlyPlaying ? "is-active" : "")"
-                        aria-pressed="@onlyPlaying"
-                        @onclick="() => SetOnlyPlaying(true)">
-                    <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
-                    <span>Playing right now</span>
-                    <b>@all.Count(x => x.PlayingNow > 0)</b>
-                </button>
+                <div class="rf-filters" role="group" aria-label="Filter clans">
+                    <button type="button"
+                            class="rf-filter @(!onlyPlaying ? "is-active" : "")"
+                            aria-pressed="@(!onlyPlaying)"
+                            @onclick="() => SetOnlyPlaying(false)">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        <span>All clans</span>
+                        <b>@all.Count</b>
+                    </button>
+                    <button type="button"
+                            class="rf-filter @(onlyPlaying ? "is-active" : "")"
+                            aria-pressed="@onlyPlaying"
+                            @onclick="() => SetOnlyPlaying(true)">
+                        <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
+                        <span>Playing right now</span>
+                        <b>@all.Count(x => x.PlayingNow > 0)</b>
+                    </button>
+                </div>
+                <div class="rf-actions rf-toolbar__end">
+                    @if (!string.IsNullOrWhiteSpace(search) || onlyPlaying)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+                    }
+                    <span class="rf-meta">Showing @clans.Count.ToString("N0") of @all.Count.ToString("N0")</span>
+                </div>
             </div>
 
             @if (clans.Count == 0)
             {
-                <div class="rf-panel">
-                    <p class="rf-meta">No clan matches that. Try another name or clear the search.</p>
+                <div class="rf-panel rf-clans__empty">
+                    <p class="rf-meta">No clan matches that. Try another name, or see every clan again.</p>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
                 </div>
             }
             else
             {
                 <div class="rf-panel">
                     <div class="rf-scroll-x">
-                        <table class="rf-table rf-clans">
+                        <table class="rf-table rf-table--stack rf-clans">
                             <thead>
                                 <tr>
                                     <th scope="col" aria-sort="@AriaSort(Sort.Name)">
@@ -103,14 +106,21 @@
                                                 </span>
                                                 <span class="rf-item__body">
                                                     <a class="rf-item__name" href="@clan.Url">@clan.Name</a>
-                                                    <span class="rf-item__meta">Owned by @clan.OwnerName &middot; @clan.JoinPolicyText</span>
+                                                    @* the owner keeps the capitals of their name; open is the default, so only the other two policies are named *@
+                                                    <span class="rf-clans__owner">
+                                                        Owned by @clan.OwnerName
+                                                        @if (clan.JoinPolicy != RavenNest.Models.ClanJoinPolicy.Open)
+                                                        {
+                                                            <span class="rf-badge @(clan.JoinPolicy == RavenNest.Models.ClanJoinPolicy.OnRequest ? "rf-badge--gold" : "rf-badge--quiet")">@clan.JoinPolicyText</span>
+                                                        }
+                                                    </span>
                                                 </span>
                                             </div>
                                         </td>
-                                        <td class="rf-clans__num"><b>@clan.EnchantingLevel</b></td>
-                                        <td class="rf-clans__num">@clan.Level</td>
-                                        <td class="rf-clans__num">@clan.Members.ToString("N0")</td>
-                                        <td class="rf-clans__num">
+                                        <td class="rf-clans__num" data-label="Enchanting"><b>@clan.EnchantingLevel</b></td>
+                                        <td class="rf-clans__num" data-label="Clan level">@clan.Level</td>
+                                        <td class="rf-clans__num" data-label="Members">@clan.Members.ToString("N0")</td>
+                                        <td class="rf-clans__num" data-label="Playing">
                                             @if (clan.PlayingHidden)
                                             {
                                                 <span class="rf-table__quiet" title="The clan keeps this to itself">Hidden</span>
@@ -124,7 +134,7 @@
                                                 <span class="rf-table__quiet">None</span>
                                             }
                                         </td>
-                                        <td class="rf-table__quiet" title="@clan.Founded.ToString("D")">@FoundedText(clan.Founded)</td>
+                                        <td class="rf-table__quiet" data-label="Founded" title="@clan.Founded.ToString("D")">@FoundedText(clan.Founded)</td>
                                     </tr>
                                 }
                             </tbody>
