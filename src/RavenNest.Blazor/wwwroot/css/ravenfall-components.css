@@ -4647,3 +4647,48 @@ a.rf-badge:hover {
     color: var(--rf-gold);
     line-height: 1.35;
 }
+
+/* ==========================================================================
+   Public clan list and clan pages (/clans, /clans/{name})
+   ========================================================================== */
+
+/* numbers line up in their columns, the way people compare them */
+.rf-clans__num {
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-clans__num b {
+    color: var(--rf-gold);
+}
+
+.rf-clanranks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--rf-space-3);
+}
+
+.rf-clanranks__rank {
+    display: grid;
+    grid-template-columns: minmax(8rem, 12rem) 1fr;
+    gap: var(--rf-space-3);
+    align-items: baseline;
+}
+
+.rf-clanranks__name {
+    font-weight: 700;
+}
+
+.rf-clanranks__who {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1) var(--rf-space-3);
+}
+
+@media (max-width: 600px) {
+    .rf-clanranks__rank {
+        grid-template-columns: 1fr;
+        gap: var(--rf-space-1);
+    }
+}

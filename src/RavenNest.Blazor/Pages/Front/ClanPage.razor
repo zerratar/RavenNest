@@ -1,0 +1,311 @@
+@page "/clans/{Key}"
+@*
+    One clan, for anyone: its level and skills, its ranks and who holds them, and its members (the
+    game's docs/clan-pages-design.md, step 1). Shows everything for now; the owner gets to hide parts
+    in step 3.
+*@
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
+@inject PublicClanService PublicClanService
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>@(clanPage?.Summary.Name ?? "Clan")</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section">
+        <p class="rf-meta"><a href="/clans"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All clans</a></p>
+
+        @if (!loaded)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (clanPage == null)
+        {
+            <div class="rf-prose">
+                <h2 class="rf-panel__title">No such clan</h2>
+                <p>There is no clan called "@Key". It may have been renamed.</p>
+                <div class="rf-actions">
+                    <a class="rf-btn rf-btn--primary" href="/clans">See all clans</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            var clan = clanPage.Summary;
+            <div class="rf-clan">
+                <img src="@clan.LogoUrl" class="rf-clan__logo" alt="@clan.Name" />
+                <div class="rf-clan__id">
+                    <h2 class="rf-clan__name">@clan.Name</h2>
+                    <p class="rf-meta">
+                        Owned by <b>@clan.OwnerName</b>
+                        @if (!string.IsNullOrEmpty(clanPage.OwnerLiveOn))
+                        {
+                            <a class="rf-badge rf-badge--good" href="https://www.twitch.tv/@clanPage.OwnerLiveOn" target="_blank" rel="noopener" title="Watch @(clan.OwnerName) live">
+                                <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Live now
+                            </a>
+                        }
+                    </p>
+                    <p class="rf-clan__level">Clan level <b>@clan.Level</b></p>
+                </div>
+                @if (clanPage.VisitorIsMember)
+                {
+                    <a class="rf-btn" href="/clan"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage your clan</a>
+                }
+            </div>
+
+            <div class="rf-stats">
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.EnchantingLevel</div>
+                    <div class="rf-label">Enchanting</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.Level</div>
+                    <div class="rf-label">Clan level</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.Members.ToString("N0")</div>
+                    <div class="rf-label">Members</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@clan.PlayingNow.ToString("N0")</div>
+                    <div class="rf-label">Playing now</div>
+                </div>
+                <div class="rf-stat" title="@clan.Founded.ToString("D")">
+                    <div class="rf-stat__value">@(clan.Founded > DateTime.UnixEpoch ? clan.Founded.ToString("yyyy") : "-")</div>
+                    <div class="rf-label">Founded</div>
+                </div>
+            </div>
+
+            <section class="rf-panel">
+                <h3 class="rf-panel__title">Clan progress</h3>
+                <div class="rf-next">
+                    <div class="rf-next__head">
+                        <span class="rf-label">Next clan level</span>
+                        <span class="rf-next__skill">Level <b>@(clan.Level + 1)</b></span>
+                    </div>
+                    <div class="rf-skill__bar rf-next__bar">
+                        <span class="rf-skill__fill" style="@Bar(Progress(clan.Level, clanPage.Experience))"></span>
+                    </div>
+                    <div class="rf-next__foot">
+                        <span>@Utility.FormatExp(ToGo(clan.Level, clanPage.Experience)) exp to go</span>
+                        <span class="rf-meta">@Math.Round(Progress(clan.Level, clanPage.Experience) * 100, 1)% of the way</span>
+                    </div>
+                </div>
+            </section>
+
+            @if (clanPage.Skills.Count > 0)
+            {
+                <section class="rf-panel">
+                    <h3 class="rf-panel__title">Clan skills</h3>
+                    <ul class="rf-skills__list">
+                        @foreach (var skill in clanPage.Skills)
+                        {
+                            <li class="rf-skill">
+                                <span class="rf-skill__name">@skill.Name</span>
+                                <span class="rf-skill__bar">
+                                    <span class="rf-skill__fill" style="@Bar(Progress(skill.Level, skill.Experience))"></span>
+                                </span>
+                                <span class="rf-skill__next">
+                                    @if (skill.MaxLevel > 0 && skill.Level >= skill.MaxLevel)
+                                    {
+                                        <span class="rf-skill__max">Max</span>
+                                    }
+                                    else
+                                    {
+                                        @Utility.FormatExp(ToGo(skill.Level, skill.Experience))
+                                        <span class="rf-skill__next-to">to @(skill.Level + 1)</span>
+                                    }
+                                </span>
+                                <span class="rf-skill__level">
+                                    @skill.Level@if (skill.MaxLevel > 0)
+                                    {
+                                        <span class="rf-skill__level-max"> / @skill.MaxLevel</span>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            @if (RankedRanks.Count > 0)
+            {
+                <section class="rf-panel">
+                    <h3 class="rf-panel__title">Ranks</h3>
+                    <ul class="rf-clanranks">
+                        @foreach (var rank in RankedRanks)
+                        {
+                            <li class="rf-clanranks__rank">
+                                <span class="rf-clanranks__name">@rank.Name <span class="rf-meta">(@rank.Members.Count)</span></span>
+                                <span class="rf-clanranks__who">
+                                    @if (rank.Members.Count <= RankNamesShown)
+                                    {
+                                        @foreach (var member in rank.Members)
+                                        {
+                                            <a href="/inspect/@member.CharacterId">@member.Name</a>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="rf-meta">@rank.Members.Count.ToString("N0") members, in the list below</span>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            <section class="rf-panel">
+                <h3 class="rf-panel__title">Members</h3>
+                <div class="rf-toolbar">
+                    <SearchBox Placeholder="Search members"
+                               AriaLabel="Search the clan's members by name"
+                               Value="@memberSearch"
+                               ValueChanged="OnMemberSearchChanged"
+                               ClearSignal="@clearSignal" />
+                    <span class="rf-meta">Showing @members.Count.ToString("N0") of @clanPage.Members.Count.ToString("N0")</span>
+                </div>
+
+                @if (members.Count == 0)
+                {
+                    <p class="rf-meta">Nobody by that name in this clan.</p>
+                }
+                else
+                {
+                    <div class="rf-scroll-x">
+                        <table class="rf-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Joined</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Now</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var member in members.Take(shown))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="rf-item">
+                                                <span class="rf-item__img">
+                                                    <img src="@member.AvatarUrl" alt="" loading="lazy" />
+                                                </span>
+                                                <span class="rf-item__body">
+                                                    <a class="rf-item__name" href="/inspect/@member.CharacterId">@member.Name</a>
+                                                    @if (member.IsOwner)
+                                                    {
+                                                        <span class="rf-item__meta">Clan owner</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td><span class="rf-table__quiet">@member.Rank</span></td>
+                                        <td class="rf-table__quiet" title="@(member.Joined > DateTime.UnixEpoch ? member.Joined.ToString("f") : "")">@JoinedText(member.Joined)</td>
+                                        <td>
+                                            @if (member.IsPlaying)
+                                            {
+                                                <a class="rf-badge rf-badge--good" href="https://www.twitch.tv/@member.PlayingOn" target="_blank" rel="noopener" title="Playing on @(member.PlayingOn)'s stream">
+                                                    <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> @member.PlayingOn
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="rf-table__quiet">Not playing</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (members.Count > shown)
+                    {
+                        <div class="rf-actions rf-vendor__more">
+                            <button type="button" class="rf-btn" @onclick="() => shown += PageSize">
+                                Show @Math.Min(PageSize, members.Count - shown) more (@((members.Count - shown).ToString("N0")) not shown)
+                            </button>
+                        </div>
+                    }
+                }
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Key { get; set; }
+
+    private PublicClanPage clanPage;
+    private bool loaded;
+    private List<PublicClanMember> members = new();
+    private string memberSearch;
+    private int clearSignal;
+
+    private const int PageSize = 50;
+    private const int RankNamesShown = 12;
+    private int shown = PageSize;
+
+    // the ranks with someone in them, highest first; a big rank (usually the one everybody joins as) is
+    // a count, since naming hundreds would only repeat the member list
+    private List<PublicClanRank> RankedRanks =>
+        clanPage?.Ranks == null
+            ? new List<PublicClanRank>()
+            : clanPage.Ranks.Where(x => x.Members.Count > 0).ToList();
+
+    protected override void OnParametersSet()
+    {
+        clanPage = PublicClanService.GetClan(Uri.UnescapeDataString(Key ?? ""));
+        memberSearch = null;
+        clearSignal++;
+        ApplyMemberSearch();
+        loaded = true;
+    }
+
+    private void OnMemberSearchChanged(string value)
+    {
+        memberSearch = value;
+        ApplyMemberSearch();
+    }
+
+    private void ApplyMemberSearch()
+    {
+        IEnumerable<PublicClanMember> q = clanPage?.Members ?? Array.Empty<PublicClanMember>();
+        if (!string.IsNullOrWhiteSpace(memberSearch))
+            q = q.Where(x => (x.Name ?? "").Contains(memberSearch.Trim(), StringComparison.OrdinalIgnoreCase));
+        members = q.ToList();
+        shown = PageSize;
+    }
+
+    // experience counts within the current level, as on /clan
+    private static double Progress(int level, double experience)
+    {
+        var forNext = GameMath.ExperienceForLevel(level + 1);
+        return forNext <= 0 ? 0 : Math.Clamp(experience / forNext, 0d, 1d);
+    }
+
+    private static double ToGo(int level, double experience) =>
+        Math.Max(0, GameMath.ExperienceForLevel(level + 1) - experience);
+
+    private static string Bar(double progress) =>
+        "width:" + Math.Round(progress * 100, 2).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
+
+    private static string JoinedText(DateTime joined)
+    {
+        if (joined <= DateTime.UnixEpoch)
+            return "Unknown";
+        var days = (int)(DateTime.UtcNow - joined).TotalDays;
+        if (days < 1) return "Today";
+        if (days == 1) return "Yesterday";
+        if (days < 30) return days + " days ago";
+        if (days < 365) return (days / 30) + ((days / 30) == 1 ? " month ago" : " months ago");
+        return joined.ToString("MMM yyyy");
+    }
+}

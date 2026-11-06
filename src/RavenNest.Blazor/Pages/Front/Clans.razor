@@ -1,0 +1,239 @@
+@page "/clans"
+@*
+    Every clan with members, for comparing them before joining one: asked for on Discord by a player
+    weighing up clans by their Enchanting level (the game's docs/clan-pages-design.md, step 1).
+*@
+@using RavenNest.Blazor.Services
+@inject PublicClanService PublicClanService
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Clans</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section">
+        <p class="rf-lead">
+            Every clan in Ravenfall. Members enchant with their clan's Enchanting level: the higher
+            it is, the more attributes an enchantment can get, the better the odds on high level
+            items and the shorter the wait between enchants. Open a clan to see its ranks and members.
+        </p>
+
+        @if (all == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            <div class="rf-toolbar">
+                <SearchBox Placeholder="Search by clan or owner"
+                           AriaLabel="Search clans by clan name or owner"
+                           Value="@search"
+                           ValueChanged="OnSearchChanged"
+                           ClearSignal="@clearSignal" />
+                @if (!string.IsNullOrWhiteSpace(search) || onlyPlaying)
+                {
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+                }
+                <span class="rf-meta">Showing @clans.Count.ToString("N0") of @all.Count.ToString("N0")</span>
+            </div>
+
+            <div class="rf-filters" role="group" aria-label="Filter clans">
+                <button type="button"
+                        class="rf-filter @(!onlyPlaying ? "is-active" : "")"
+                        aria-pressed="@(!onlyPlaying)"
+                        @onclick="() => SetOnlyPlaying(false)">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    <span>All clans</span>
+                    <b>@all.Count</b>
+                </button>
+                <button type="button"
+                        class="rf-filter @(onlyPlaying ? "is-active" : "")"
+                        aria-pressed="@onlyPlaying"
+                        @onclick="() => SetOnlyPlaying(true)">
+                    <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
+                    <span>Playing right now</span>
+                    <b>@all.Count(x => x.PlayingNow > 0)</b>
+                </button>
+            </div>
+
+            @if (clans.Count == 0)
+            {
+                <div class="rf-panel">
+                    <p class="rf-meta">No clan matches that. Try another name or clear the search.</p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-panel">
+                    <div class="rf-scroll-x">
+                        <table class="rf-table rf-clans">
+                            <thead>
+                                <tr>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Name)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Name)">Clan @Indicator(Sort.Name)</button>
+                                    </th>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Enchanting)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Enchanting)">Enchanting @Indicator(Sort.Enchanting)</button>
+                                    </th>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Level)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Level)">Clan level @Indicator(Sort.Level)</button>
+                                    </th>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Members)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Members)">Members @Indicator(Sort.Members)</button>
+                                    </th>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Playing)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Playing)">Playing now @Indicator(Sort.Playing)</button>
+                                    </th>
+                                    <th scope="col" aria-sort="@AriaSort(Sort.Founded)">
+                                        <button type="button" class="rf-th" @onclick="() => SortBy(Sort.Founded)">Founded @Indicator(Sort.Founded)</button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var clan in clans.Take(shown))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="rf-item">
+                                                <span class="rf-item__img">
+                                                    <img src="@clan.LogoUrl" alt="" loading="lazy" />
+                                                </span>
+                                                <span class="rf-item__body">
+                                                    <a class="rf-item__name" href="@clan.Url">@clan.Name</a>
+                                                    <span class="rf-item__meta">Owned by @clan.OwnerName</span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="rf-clans__num"><b>@clan.EnchantingLevel</b></td>
+                                        <td class="rf-clans__num">@clan.Level</td>
+                                        <td class="rf-clans__num">@clan.Members.ToString("N0")</td>
+                                        <td class="rf-clans__num">
+                                            @if (clan.PlayingNow > 0)
+                                            {
+                                                <span class="rf-badge rf-badge--good">@clan.PlayingNow</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="rf-table__quiet">None</span>
+                                            }
+                                        </td>
+                                        <td class="rf-table__quiet" title="@clan.Founded.ToString("D")">@FoundedText(clan.Founded)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (clans.Count > shown)
+                    {
+                        <div class="rf-actions rf-vendor__more">
+                            <button type="button" class="rf-btn" @onclick="ShowMore">
+                                Show @Math.Min(PageSize, clans.Count - shown) more (@((clans.Count - shown).ToString("N0")) not shown)
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private enum Sort { Name, Enchanting, Level, Members, Playing, Founded }
+
+    private IReadOnlyList<PublicClanSummary> all;
+    private List<PublicClanSummary> clans = new();
+    private string search;
+    private bool onlyPlaying;
+    private int clearSignal;
+    private Sort sort = Sort.Enchanting;
+    private bool descending = true;
+
+    // a page at a time, as the other lists: one render of every row is what dropped connections on the vendor page
+    private const int PageSize = 50;
+    private int shown = PageSize;
+
+    protected override void OnInitialized()
+    {
+        all = PublicClanService.GetClans();
+        Apply();
+    }
+
+    private void Apply()
+    {
+        IEnumerable<PublicClanSummary> q = all;
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var needle = search.Trim();
+            q = q.Where(x => (x.Name ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase)
+                          || (x.OwnerName ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase)
+                          || (x.OwnerUserName ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (onlyPlaying)
+            q = q.Where(x => x.PlayingNow > 0);
+
+        q = sort switch
+        {
+            Sort.Name => descending ? q.OrderByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase) : q.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
+            Sort.Level => descending ? q.OrderByDescending(x => x.Level).ThenByDescending(x => x.EnchantingLevel) : q.OrderBy(x => x.Level),
+            Sort.Members => descending ? q.OrderByDescending(x => x.Members) : q.OrderBy(x => x.Members),
+            Sort.Playing => descending ? q.OrderByDescending(x => x.PlayingNow).ThenByDescending(x => x.Members) : q.OrderBy(x => x.PlayingNow),
+            Sort.Founded => descending ? q.OrderByDescending(x => x.Founded) : q.OrderBy(x => x.Founded),
+            _ => descending ? q.OrderByDescending(x => x.EnchantingLevel).ThenByDescending(x => x.Level) : q.OrderBy(x => x.EnchantingLevel),
+        };
+
+        clans = q.ToList();
+        shown = PageSize;
+    }
+
+    private void SortBy(Sort value)
+    {
+        // a new column starts at its most interesting end: names from A, numbers and dates from the top
+        descending = sort == value ? !descending : value != Sort.Name;
+        sort = value;
+        Apply();
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        search = value;
+        Apply();
+    }
+
+    private void SetOnlyPlaying(bool value)
+    {
+        onlyPlaying = value;
+        Apply();
+    }
+
+    private void ClearFilters()
+    {
+        search = null;
+        onlyPlaying = false;
+        clearSignal++;
+        Apply();
+    }
+
+    private void ShowMore() => shown += PageSize;
+
+    private MarkupString Indicator(Sort value) =>
+        (MarkupString)(value != sort ? "" : descending ? "&darr;" : "&uarr;");
+
+    private string AriaSort(Sort value) =>
+        value != sort ? "none" : descending ? "descending" : "ascending";
+
+    private static string FoundedText(DateTime founded)
+    {
+        if (founded <= DateTime.UnixEpoch)
+            return "Long ago";
+        var days = (int)(DateTime.UtcNow - founded).TotalDays;
+        if (days < 1) return "Today";
+        if (days < 30) return days + (days == 1 ? " day ago" : " days ago");
+        if (days < 365) return (days / 30) + ((days / 30) == 1 ? " month ago" : " months ago");
+        return founded.ToString("MMM yyyy");
+    }
+}
