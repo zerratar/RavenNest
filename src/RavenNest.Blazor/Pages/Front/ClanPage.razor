@@ -63,9 +63,21 @@
                             }
                         </p>
                     </div>
-                    @if (clanPage.VisitorIsMember)
+                    @if (CanEdit || clanPage.VisitorIsMember)
                     {
-                        <a class="rf-btn" href="/clan"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage your clan</a>
+                        <div class="rf-actions rf-clanhead__actions">
+                            @* edit the page right here; the dashboard is still there for ranks, members and the stash *@
+                            @if (CanEdit)
+                            {
+                                <button type="button" class="rf-btn @(editing ? "rf-btn--primary" : "")" aria-pressed="@editing" @onclick="ToggleEditing">
+                                    <i class="fa-solid @(editing ? "fa-check" : "fa-pen")" aria-hidden="true"></i> @(editing ? "Done editing" : "Edit page")
+                                </button>
+                            }
+                            @if (clanPage.VisitorIsMember)
+                            {
+                                <a class="rf-btn" href="/clan"><i class="fa-solid fa-gear" aria-hidden="true"></i> Manage your clan</a>
+                            }
+                        </div>
                     }
                 </div>
 
@@ -190,9 +202,18 @@
                 </div>
             </div>
 
-            @if (!string.IsNullOrWhiteSpace(clanPage.About))
+            @if (editing && clanPage.VisitorIsOwner)
             {
-                <section class="rf-panel rf-clanpage__about">
+                @* what has no place on the page itself: who sees what, the colour and the banner *@
+                <section class="rf-panel rf-clanedit">
+                    <h3 class="rf-panel__title"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Page settings</h3>
+                    <ClanPageEditor ClanId="@clan.Id" ClanName="@clan.Name" Inline="true" Changed="OnSettingsChanged"></ClanPageEditor>
+                </section>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(clanPage.About) || (editing && clanPage.VisitorIsOwner))
+            {
+                <section class="rf-panel rf-clanpage__about @(editing && clanPage.VisitorIsOwner ? "is-editing" : "")">
                     <div class="rf-panel__head">
                         <h3 class="rf-panel__title">About @clan.Name</h3>
                         @ReportLink(Guid.Empty)
@@ -201,18 +222,40 @@
                     {
                         <p class="rf-banner rf-banner--warn">An admin hid this text after a report. Only the clan sees it until the owner changes it.</p>
                     }
-                    <ClanText Text="@clanPage.About" />
+                    @if (editing && clanPage.VisitorIsOwner)
+                    {
+                        <label class="rf-field">
+                            <span class="rf-label">Plain text. A blank line starts a new paragraph, and links work.</span>
+                            <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="2000" placeholder="Who you are, when you play, what you are looking for in members" @bind="aboutDraft" @bind:event="oninput"></textarea>
+                        </label>
+                        <div class="rf-actions">
+                            <button type="button" class="rf-btn rf-btn--primary" disabled="@(aboutDraft == (clanPage.About ?? ""))" @onclick="SaveAbout">Save</button>
+                            <span class="rf-meta">@(aboutDraft?.Length ?? 0) / 2000</span>
+                        </div>
+                        @EditStatus("about")
+                    }
+                    else
+                    {
+                        <ClanText Text="@clanPage.About" />
+                    }
                     @ReportForm(Guid.Empty)
                 </section>
             }
 
-            @if (clanPage.TopMembers.Count > 0)
+            @if (clanPage.TopMembers.Count > 0 || (editing && clanPage.VisitorIsOwner))
             {
-                <section class="rf-panel">
-                    <h3 class="rf-panel__title">Top @clanPage.TopMembers.Count</h3>
+                var editingTop = editing && clanPage.VisitorIsOwner;
+                <section class="rf-panel @(editingTop ? "is-editing" : "")">
+                    <h3 class="rf-panel__title">Top @(editingTop ? 8 : clanPage.TopMembers.Count)</h3>
+                    @if (editingTop && clanPage.TopMembers.Count == 0)
+                    {
+                        <p class="rf-meta">Up to eight members you want to show off, in your order.</p>
+                    }
                     <ol class="rf-top8">
-                        @foreach (var member in clanPage.TopMembers)
+                        @for (var i = 0; i < clanPage.TopMembers.Count; i++)
                         {
+                            var index = i;
+                            var member = clanPage.TopMembers[index];
                             @* the whole card is the link, so a phone does not need to hit the name *@
                             <li>
                                 <a class="rf-top8__member" href="/inspect/@member.CharacterId">
@@ -223,19 +266,65 @@
                                         <span class="rf-top8__rank">@member.Rank</span>
                                     }
                                 </a>
+                                @if (editingTop)
+                                {
+                                    <span class="rf-top8__tools">
+                                        <button type="button" class="rf-iconbtn" title="Move left" disabled="@(index == 0)" @onclick="() => MoveTop(index, -1)"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
+                                        <button type="button" class="rf-iconbtn" title="Take off the Top 8" @onclick="() => RemoveTop(index)"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                                        <button type="button" class="rf-iconbtn" title="Move right" disabled="@(index == clanPage.TopMembers.Count - 1)" @onclick="() => MoveTop(index, 1)"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                                    </span>
+                                }
                             </li>
                         }
                     </ol>
+                    @if (editingTop && clanPage.TopMembers.Count < 8)
+                    {
+                        <div class="rf-actions rf-top8__add">
+                            <select class="rf-input" @bind="topCandidate" aria-label="Member to add to the Top 8">
+                                <option value="@Guid.Empty">Add a member</option>
+                                @foreach (var m in clanPage.Members.Where(x => !clanPage.TopMembers.Any(t => t.CharacterId == x.CharacterId)).OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    <option value="@m.CharacterId">@m.Name</option>
+                                }
+                            </select>
+                            <button type="button" class="rf-btn" disabled="@(topCandidate == Guid.Empty)" @onclick="AddTop">Add</button>
+                        </div>
+                    }
+                    @if (editingTop)
+                    {
+                        @EditStatus("top")
+                    }
                 </section>
             }
 
-            @if (clanPage.Posts.Count > 0)
+            @if (clanPage.Posts.Count > 0 || (editing && canPost))
             {
-                <section class="rf-panel">
-                    <h3 class="rf-panel__title">News</h3>
+                var editingNews = editing && canPost;
+                <section class="rf-panel @(editingNews ? "is-editing" : "")">
+                    <div class="rf-panel__head">
+                        <h3 class="rf-panel__title">News</h3>
+                        @if (editingNews && postEditingId == null)
+                        {
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => StartPost(null)"><i class="fa-solid fa-plus" aria-hidden="true"></i> Write a post</button>
+                        }
+                    </div>
+                    @if (editingNews && postEditingId == Guid.Empty)
+                    {
+                        @PostForm()
+                    }
+                    @EditStatus("news")
+                    @if (editingNews && clanPage.Posts.Count == 0 && postEditingId == null)
+                    {
+                        <p class="rf-meta">Nothing posted yet. A post shows here as soon as it is up.</p>
+                    }
                     <div class="rf-clannews">
                         @foreach (var post in clanPage.Posts.Take(postsShown))
                         {
+                            if (editingNews && postEditingId == post.Id)
+                            {
+                                <article class="rf-clannews__post">@PostForm()</article>
+                                continue;
+                            }
                             <article class="rf-clannews__post @(post.Pinned ? "is-pinned" : "")">
                                 <h4 class="rf-clannews__title">@post.Title</h4>
                                 @* who and when, with Report at the end of the same line: quiet, but next to the post it is about *@
@@ -250,6 +339,21 @@
                                     }
                                     <span>@post.Author@(post.AuthorIsOwner ? " (owner)" : ""), @post.Created.ToString("d MMM yyyy")@(post.Edited != null ? ", edited" : "")</span>
                                     @ReportLink(post.Id)
+                                    @if (editingNews)
+                                    {
+                                        <span class="rf-actions rf-clannews__tools">
+                                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => StartPost(post)"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>
+                                            @if (confirmDeletePost == post.Id)
+                                            {
+                                                <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => DeletePost(post)">Delete it</button>
+                                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => confirmDeletePost = Guid.Empty">Keep</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => confirmDeletePost = post.Id">Delete</button>
+                                            }
+                                        </span>
+                                    }
                                 </div>
                                 @if (post.Hidden)
                                 {
@@ -502,6 +606,8 @@
         reportingId = null;
         postsShown = PostPageSize;
         Reload();
+        if (NavigationManager.Uri.Contains("edit=1", StringComparison.OrdinalIgnoreCase) && CanEdit && !editing)
+            ToggleEditing();
         if (clanPage != null && countedKey != Key)
         {
             countedKey = Key;
@@ -568,10 +674,178 @@
         clanPage = PublicClanService.GetClan(Uri.UnescapeDataString(Key ?? ""));
         joinOptions = clanPage != null ? ClanService.GetJoinOptions(clanPage.Summary.Id) : null;
         joinCharacterId = Candidates.FirstOrDefault()?.CharacterId ?? Guid.Empty;
+        FindPoster();
         memberSearch = null;
         clearSignal++;
         ApplyMemberSearch();
     }
+
+    #region Editing the page in place
+    // The owner edits the about text, the Top 8, the settings and news here; ranks with "Post clan news"
+    // edit news. The services check the same permissions again, so this only decides what is offered.
+
+    private bool editing;
+    private bool canPost;
+    private Guid? postAs;
+    private string aboutDraft;
+    private Guid topCandidate;
+    private Guid? postEditingId;   // null: no form open, empty: a new post, else the post being edited
+    private string postTitle;
+    private string postBody;
+    private bool postMembersOnly;
+    private bool postPinned;
+    private Guid confirmDeletePost;
+    private string editStatus;
+    private bool editStatusBad;
+    private string editStatusFor;
+
+    private bool CanEdit => clanPage != null && (clanPage.VisitorIsOwner || canPost);
+
+    // who posts: the owner as themselves, otherwise one of the visitor's characters whose rank may post
+    private void FindPoster()
+    {
+        canPost = false;
+        postAs = null;
+        if (clanPage == null || !clanPage.VisitorSignedIn) return;
+        if (clanPage.VisitorIsOwner)
+        {
+            canPost = true;
+            return;
+        }
+
+        foreach (var character in joinOptions?.Characters.Where(x => x.InThisClan) ?? Enumerable.Empty<ClanJoinCharacter>())
+        {
+            if (ClanService.GetMyPermissions(clanPage.Summary.Id, character.CharacterId)?.CanPostNews == true)
+            {
+                canPost = true;
+                postAs = character.CharacterId;
+                return;
+            }
+        }
+    }
+
+    private void ToggleEditing()
+    {
+        editing = !editing && CanEdit;
+        aboutDraft = clanPage?.About ?? "";
+        postEditingId = null;
+        editStatus = null;
+    }
+
+    private void OnSettingsChanged() => Reload();
+
+    private void SaveAbout()
+    {
+        var ok = ClanService.SavePageAbout(clanPage.Summary.Id, aboutDraft);
+        Reload();
+        aboutDraft = clanPage?.About ?? "";
+        ShowEdit(ok ? "Saved." : "Could not save the about text.", !ok, "about");
+    }
+
+    private void SaveTop(List<Guid> ids)
+    {
+        var ok = ClanService.SavePageTopMembers(clanPage.Summary.Id, ids);
+        Reload();
+        ShowEdit(ok ? "The Top 8 is saved." : "Could not save the Top 8.", !ok, "top");
+    }
+
+    private List<Guid> TopIds => clanPage.TopMembers.Select(x => x.CharacterId).ToList();
+
+    private void AddTop()
+    {
+        if (topCandidate == Guid.Empty) return;
+        var ids = TopIds;
+        ids.Add(topCandidate);
+        topCandidate = Guid.Empty;
+        SaveTop(ids);
+    }
+
+    private void RemoveTop(int index)
+    {
+        var ids = TopIds;
+        ids.RemoveAt(index);
+        SaveTop(ids);
+    }
+
+    private void MoveTop(int index, int by)
+    {
+        var ids = TopIds;
+        var other = index + by;
+        if (other < 0 || other >= ids.Count) return;
+        (ids[index], ids[other]) = (ids[other], ids[index]);
+        SaveTop(ids);
+    }
+
+    private void StartPost(PublicClanPost post)
+    {
+        postEditingId = post?.Id ?? Guid.Empty;
+        postTitle = post?.Title;
+        postBody = post?.Body;
+        postMembersOnly = post?.MembersOnly ?? false;
+        postPinned = post?.Pinned ?? false;
+        editStatus = null;
+    }
+
+    private void SavePost()
+    {
+        var isNew = postEditingId == Guid.Empty;
+        var error = ClanService.SaveNewsPost(clanPage.Summary.Id, postAs, postEditingId ?? Guid.Empty, postTitle, postBody, postMembersOnly, postPinned);
+        if (error == null)
+        {
+            postEditingId = null;
+            Reload();
+        }
+        ShowEdit(error ?? (isNew ? "Posted." : "Saved."), error != null, "news");
+    }
+
+    private void DeletePost(PublicClanPost post)
+    {
+        var ok = ClanService.DeleteNewsPost(clanPage.Summary.Id, postAs, post.Id);
+        confirmDeletePost = Guid.Empty;
+        Reload();
+        ShowEdit(ok ? "The post is deleted." : "Could not delete that post.", !ok, "news");
+    }
+
+    private RenderFragment PostForm() => __builder =>
+    {
+        <div class="rf-clanpostform">
+            <label class="rf-field">
+                <span class="rf-label">Title</span>
+                <input class="rf-input" maxlength="100" @bind="postTitle" @bind:event="oninput" />
+            </label>
+            <label class="rf-field">
+                <span class="rf-label">Text. A blank line starts a new paragraph, and links work.</span>
+                <textarea class="rf-input rf-textarea rf-textarea--tall" maxlength="4000" @bind="postBody" @bind:event="oninput"></textarea>
+            </label>
+            <div class="rf-clanpostform__row">
+                <label class="rf-check"><input type="checkbox" @bind="postMembersOnly" /> <span>Members only</span></label>
+                <label class="rf-check"><input type="checkbox" @bind="postPinned" /> <span>Pinned at the top</span></label>
+                <span class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--primary" disabled="@(string.IsNullOrWhiteSpace(postTitle) || string.IsNullOrWhiteSpace(postBody))" @onclick="SavePost">
+                        @(postEditingId == Guid.Empty ? "Post it" : "Save")
+                    </button>
+                    <button type="button" class="rf-btn" @onclick="() => postEditingId = null">Cancel</button>
+                    <span class="rf-meta">@(postBody?.Length ?? 0) / 4000</span>
+                </span>
+            </div>
+        </div>
+    };
+
+    private void ShowEdit(string message, bool bad, string where)
+    {
+        editStatus = message;
+        editStatusBad = bad;
+        editStatusFor = where;
+    }
+
+    private RenderFragment EditStatus(string where) => __builder =>
+    {
+        if (editing && editStatusFor == where && !string.IsNullOrEmpty(editStatus))
+        {
+            <div class="rf-banner rf-banner--compact @(editStatusBad ? "rf-banner--bad" : "rf-banner--good")" role="status"><p>@editStatus</p></div>
+        }
+    };
+    #endregion
 
     // joining
     private ClanJoinOptions joinOptions;

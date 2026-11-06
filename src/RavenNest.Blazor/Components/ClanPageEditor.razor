@@ -17,10 +17,16 @@
 else
 {
     <div class="rf-pageedit">
-        <div class="rf-pageedit__intro">
-            <p class="rf-meta">Your clan's public page is <a href="@PageUrl" target="_blank">@PageUrl</a>. Members of the clan always see all of it.</p>
-            <a class="rf-btn rf-btn--small" href="@PageUrl" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Open the page</a>
-        </div>
+        @if (!Inline)
+        {
+            <div class="rf-pageedit__intro">
+                <p class="rf-meta">
+                    Your clan's public page is <a href="@PageUrl" target="_blank">@PageUrl</a>. Members of the clan always see all of it.
+                    The about text, the Top 8 and news can also be edited right on the page, and news is written on the News tab too.
+                </p>
+                <a class="rf-btn rf-btn--small rf-btn--primary" href="@(PageUrl + "?edit=1")" target="_blank"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit on the page</a>
+            </div>
+        }
 
         <section aria-labelledby="pe-privacy">
             <h3 class="rf-panel__title" id="pe-privacy">What everyone can see</h3>
@@ -36,6 +42,8 @@ else
             @StatusLine("privacy")
         </section>
 
+        @if (!Inline)
+        {
         <section aria-labelledby="pe-about">
             <h3 class="rf-panel__title" id="pe-about">About the clan</h3>
             @if (state.AboutHidden)
@@ -52,6 +60,8 @@ else
             </div>
             @StatusLine("about")
         </section>
+
+        }
 
         <section aria-labelledby="pe-looks">
             <h3 class="rf-panel__title" id="pe-looks">Looks</h3>
@@ -95,6 +105,8 @@ else
             @StatusLine("looks")
         </section>
 
+        @if (!Inline)
+        {
         <section aria-labelledby="pe-top">
             <h3 class="rf-panel__title" id="pe-top">Top 8</h3>
             <p class="rf-meta">Up to eight members you want to show off, in your order (@top.Count of 8 picked).</p>
@@ -130,12 +142,22 @@ else
             }
             @StatusLine("top")
         </section>
+        }
     </div>
 }
 
 @code {
     [Parameter] public Guid ClanId { get; set; }
     [Parameter] public string ClanName { get; set; }
+
+    /// <summary>
+    ///     On the clan's own page in edit mode: only what has no place on the page itself (privacy, colour,
+    ///     banner), since the about text and the Top 8 are edited where they show.
+    /// </summary>
+    [Parameter] public bool Inline { get; set; }
+
+    /// <summary>Something the page shows changed, so a page showing it can load again.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
 
     private ClanPageEditorState state;
     private string about;
@@ -170,6 +192,7 @@ else
         var ok = ClanService.SavePagePrivacy(ClanId, state.HideMembers, state.HidePlaying, state.HideJoined, state.HideRanks, state.HideProgress);
         PublicClanService.Forget();
         Show(ok ? "Saved. The public page shows what is ticked." : "Could not save that.", !ok, "privacy");
+        if (ok) Changed.InvokeAsync();
     }
 
     private void SaveAbout()
@@ -184,6 +207,7 @@ else
         var ok = ClanService.SavePageAccent(ClanId, color);
         if (ok) accent = string.IsNullOrEmpty(color) ? "" : color.ToUpperInvariant();
         Show(ok ? "The accent colour is saved." : "That is not a colour the page can use.", !ok, "looks");
+        if (ok) Changed.InvokeAsync();
     }
 
     private async Task UploadBanner(InputFileChangeEventArgs e)
@@ -198,6 +222,7 @@ else
             if (result.Ok && !result.Waiting && result.ImageId != null)
                 bannerUrl = "/api/clan/image/" + result.ImageId;
             Show(!result.Ok ? result.Error : result.Waiting ? "The banner is uploaded and waits for an admin to look at it." : "The banner is up.", !result.Ok, "looks");
+            if (result.Ok) await Changed.InvokeAsync();
         }
         catch (IOException)
         {
@@ -214,6 +239,7 @@ else
         var result = ClanImageService.UseDefault(ClanImageKind.Banner);
         if (result.Ok) bannerUrl = null;
         Show(result.Ok ? "The banner is removed." : result.Error, !result.Ok, "looks");
+        if (result.Ok) Changed.InvokeAsync();
     }
 
     private void AddTop()

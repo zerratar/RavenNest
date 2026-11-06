@@ -172,6 +172,7 @@ namespace RavenNest.Blazor.Services
                 Members = showMembers ? members : new List<PublicClanMember>(),
                 OwnerLiveOn = owner != null && live.ContainsKey(owner.Id) ? live[owner.Id] : null,
                 VisitorIsMember = visitorIsMember,
+                VisitorIsOwner = session.Authenticated && session.UserId == clan.UserId,
                 VisitorSignedIn = session.Authenticated,
                 MembersHidden = !showMembers,
                 RanksHidden = !showRanks,
@@ -353,6 +354,9 @@ namespace RavenNest.Blazor.Services
 
         /// <summary>The visitor has a character in the clan (or owns it), so the page links to /clan.</summary>
         public bool VisitorIsMember { get; set; }
+
+        /// <summary>The visitor owns the clan, so the page offers to edit itself.</summary>
+        public bool VisitorIsOwner { get; set; }
         public bool VisitorSignedIn { get; set; }
 
         // what the owner keeps to the clan (step 3); false for the clan's own members

@@ -5602,3 +5602,82 @@ a.rf-badge:hover {
     height: 40px;
     object-fit: cover;
 }
+
+/* ==========================================================================
+   Editing a clan page in place (Edit page on /clans/{name})
+   ========================================================================== */
+
+/* Edit page and Manage sit together at the header's right; on a phone they share a row under the name */
+.rf-clanhead__actions {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .rf-clanhead__actions {
+        flex: 1 1 100%;
+    }
+}
+
+/* what is editable now gets a dashed accent outline, so the owner sees where they can type */
+.rf-clanpage > .rf-panel.is-editing {
+    outline: 2px dashed var(--rf-clan-accent);
+    outline-offset: -6px;
+}
+
+.rf-clanedit .rf-panel__title i {
+    color: var(--rf-clan-accent);
+    margin-right: var(--rf-space-1);
+}
+
+/* the Top 8 card's tools sit right under its card */
+.rf-top8 li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+}
+
+.rf-top8__tools {
+    display: flex;
+    justify-content: center;
+    gap: var(--rf-space-1);
+}
+
+.rf-top8__add {
+    margin-top: var(--rf-space-3);
+    max-width: 28rem;
+}
+
+.rf-top8__add .rf-input {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+/* Edit and Delete at the end of a post's byline */
+.rf-clannews__tools {
+    margin: 0 0 0 auto;
+    gap: var(--rf-space-2);
+}
+
+.rf-clanpostform {
+    display: grid;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-4);
+}
+
+/* both ticks and the buttons on one row when it fits */
+.rf-clanpostform__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-4);
+}
+
+.rf-clanpostform__row .rf-check {
+    margin: 0;
+}
+
+.rf-clanpostform__row .rf-actions {
+    margin: 0 0 0 auto;
+    align-items: center;
+}
