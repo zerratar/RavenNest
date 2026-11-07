@@ -17,6 +17,8 @@ namespace RavenNest.Combat
         Stun = 4,
         /// <summary>Physical damage over time (crits with bleed passives).</summary>
         Bleed = 5,
+        /// <summary>Cannot move, but can still attack what is in reach (Snare).</summary>
+        Root = 6,
     }
 
     public sealed class StatusEffect
@@ -77,6 +79,18 @@ namespace RavenNest.Combat
 
         /// <summary>Stunned or frozen: the fighter does nothing until it passes.</summary>
         public bool CannotAct => Has(StatusEffectKind.Stun) || Has(StatusEffectKind.Freeze);
+
+        /// <summary>Rooted, stunned or frozen: the fighter stays where it is.</summary>
+        public bool CannotMove => CannotAct || Has(StatusEffectKind.Root);
+
+        private double crowdControlImmunity;
+
+        /// <summary>Iron Skin: no stun, freeze or root lands for this long, and those on it end.</summary>
+        public void ImmuneToCrowdControl(double seconds)
+        {
+            crowdControlImmunity = Math.Max(crowdControlImmunity, seconds);
+            effects.RemoveAll(x => x.Kind == StatusEffectKind.Stun || x.Kind == StatusEffectKind.Freeze || x.Kind == StatusEffectKind.Root);
+        }
 
         /// <summary>Attack intervals are divided by this (chill slows attacks).</summary>
         public double AttackSpeedFactor
@@ -188,6 +202,7 @@ namespace RavenNest.Combat
         /// <summary>A stun or freeze; bosses take half and are then immune for a while. False when it did not land.</summary>
         public bool CrowdControl(StatusEffectKind kind, double seconds)
         {
+            if (crowdControlImmunity > 0) return false;
             if (IsBoss)
             {
                 if (crowdControlImmuneFor > 0) return false;
@@ -217,6 +232,7 @@ namespace RavenNest.Combat
         {
             var damage = new ElementValues();
             if (crowdControlImmuneFor > 0) crowdControlImmuneFor = Math.Max(0, crowdControlImmuneFor - seconds);
+            if (crowdControlImmunity > 0) crowdControlImmunity = Math.Max(0, crowdControlImmunity - seconds);
 
             for (var i = effects.Count - 1; i >= 0; i--)
             {
