@@ -31,6 +31,43 @@ namespace RavenNest.Combat
         public static double BossPool = 15;
 
         public static IReadOnlyList<TowerBand> Bands => bands;
+        public static IReadOnlyList<TowerTownDefinition> Towns => towns;
+
+        public static TowerTownDefinition Town(string key)
+        {
+            foreach (var t in towns) if (string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase)) return t;
+            return null;
+        }
+
+        /// <summary>The town a stream can visit: the one of the band its current floor is in.</summary>
+        public static TowerTownDefinition TownFor(int floor)
+        {
+            var band = BandOf(Math.Max(1, Math.Min(floor, TopFloor)));
+            foreach (var t in towns) if (band != null && t.Band == band.Number) return t;
+            return towns.Count > 0 ? towns[0] : null;
+        }
+
+        /// <summary>
+        ///     The highest floor the website may show (Zerratar 2026-11-07: no spoilers): the highest any stream has
+        ///     reached, the floor after the highest cleared one. <paramref name="highestCleared"/> is the world's.
+        /// </summary>
+        public static int Revealed(int highestCleared) => Math.Max(1, Math.Min(TopFloor, highestCleared + 1));
+
+        private static readonly List<TowerTownDefinition> towns = new List<TowerTownDefinition>
+        {
+            new TowerTownDefinition
+            {
+                Key = "mossgate", Name = "Mossgate", Band = 1, Layout = "Tower_Mossgate",
+                Description = "A mossy hamlet at the tower's foot, where climbers rest, trade rumours and lose their bunnies.",
+                People = new[]
+                {
+                    new TowerNpc { Key = "elm", Name = "Warden Elm", Role = "Keeper of the tower gate", Chain = "warden" },
+                    new TowerNpc { Key = "bramble", Name = "Bramble", Role = "Herbalist", Chain = "bramble" },
+                    new TowerNpc { Key = "pip", Name = "Pip", Role = "A boy who lost his bunny", Chain = "nibbles" },
+                    new TowerNpc { Key = "mossbeard", Name = "Old Mossbeard", Role = "Innkeeper of the Sleepy Stump" },
+                },
+            },
+        };
         public static IReadOnlyList<TowerFloorDefinition> Floors => floors;
 
         /// <summary>The highest floor that exists so far.</summary>
@@ -153,7 +190,7 @@ namespace RavenNest.Combat
                     new TowerBoss { Name = "Warchief Grubnose", Model = "ravebridge-goblin", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.15 }),
                 Floor(3, "The Nest", "Eggs the size of barrels, and the mothers who laid them.",
                     new[] { greenMetalon, goblin }, Defeat(greenMetalon, 35), Defeat(goblin, 25),
-                    new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.5 }),
+                    new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsCount = 4 }),
                 Floor(4, "Hall of Bones", "The roots grew through the old graves, and the graves did not like it.",
                     new[] { skeleton, greenMetalon }, Defeat(skeleton, 40), Defeat(greenMetalon, 30),
                     new TowerBoss { Name = "The Rootbound King", Model = "ravebridge-skeleton", Scale = 2.3f, Family = EnemyFamily.Undead, PowerScale = 1.1 }),
@@ -162,21 +199,39 @@ namespace RavenNest.Combat
                     new TowerBoss { Name = "Old Thornback", Model = "home-metalon-purple", Scale = 2.8f, Family = EnemyFamily.Insect, HealthPool = 1.1 }),
                 Floor(6, "The Pasture", "A peaceful meadow with cows. The cows are watching you.",
                     new[] { cow, bunny }, Defeat(cow, 40), Defeat(bunny, 40),
-                    new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Element = Element.Poison, ElementShare = 0.6, Line = "Moooo." }),
+                    new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Element = Element.Poison, ElementShare = 0.6, SpitEvery = 4, Line = "Moooo." }),
                 Floor(7, "Goblin Keep", "Every goblin you met so far had a cousin. They all live here.",
                     new[] { goblin, skeleton }, Defeat(goblin, 50), Defeat(skeleton, 35),
                     new TowerBoss { Name = "King Grubnose the Second", Model = "ravebridge-goblin", Scale = 2.6f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "My brother was the warchief. I am the king." }),
                 Floor(8, "Blighted Grove", "The rot starts here. The red Metalons carry it.",
                     new[] { redMetalon, purpleMetalon }, Defeat(redMetalon, 40), Defeat(purpleMetalon, 40),
-                    new TowerBoss { Name = "Redshell the Blighted", Model = "home-metalon-red", Scale = 3f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.6, HealthPool = 1.1 }),
+                    new TowerBoss { Name = "Redshell the Blighted", Model = "home-metalon-red", Scale = 3f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.6, HealthPool = 1.1, SpitEvery = 3 }),
                 Floor(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide.",
                     new[] { redMetalon, skeleton, goblin }, Defeat(redMetalon, 45), Defeat(skeleton, 45),
-                    new TowerBoss { Name = "The Gardener", Model = "ravebridge-skeleton", Scale = 2.8f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, Element = Element.Poison, ElementShare = 0.7, Line = "Everything grows. Even you, in time." }),
+                    new TowerBoss { Name = "The Gardener", Model = "ravebridge-skeleton", Scale = 2.8f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Everything grows. Even you, in time." }),
                 Floor(10, "The Verdant Throne", "At the top of the halls, on a throne of moss, sleeps the one who made it all grow.",
                     new[] { redMetalon, purpleMetalon }, Defeat(redMetalon, 50), Defeat(purpleMetalon, 50),
-                    new TowerBoss { Name = "Viridia, the Verdant Wyrm", Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3 }),
+                    new TowerBoss { Name = "Viridia, the Verdant Wyrm", Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
             };
             return list;
+        }
+
+        /// <summary>
+        ///     The first band's layouts (Zerratar 2026-11-07: floors should look different, and some should be real
+        ///     dungeons): the overgrown courtyard, a drowned marsh, and the crypt under the halls.
+        /// </summary>
+        public const string Overgrown = "Tower_Overgrown";
+        public const string Marsh = "Tower_Marsh";
+        public const string Crypt = "Tower_Crypt";
+
+        private static string LayoutOf(int number)
+        {
+            switch (number)
+            {
+                case 3: case 8: return Marsh;
+                case 4: case 7: case 9: case 10: return Crypt;
+                default: return Overgrown;
+            }
         }
 
         private static TowerFloorDefinition Floor(int number, string name, string description, TowerEnemy[] enemies, TowerQuest q1, TowerQuest q2, TowerBoss boss)
@@ -189,7 +244,7 @@ namespace RavenNest.Combat
                 Description = description,
                 Level = Level(number),
                 GroupSize = 5,
-                Layout = "Tower_Overgrown",
+                Layout = LayoutOf(number),
                 Enemies = enemies,
                 Quests = new[] { q1, q2 },
                 Boss = boss,
@@ -341,5 +396,51 @@ namespace RavenNest.Combat
         public double SlamShare = 0.6;
         /// <summary>What it says when the attempt starts, for chat; empty for nothing.</summary>
         public string Line = "";
+
+        /// <summary>
+        ///     Every this many swings it spits at one player who is not holding it (the farthest, healers first): a
+        ///     marked circle under them, then a hit of <see cref="SpitShare"/> to everyone in it (0: never).
+        /// </summary>
+        public int SpitEvery = 0;
+        public double SpitShare = 1.2;
+
+        /// <summary>
+        ///     At these shares of its health it calls help: <see cref="AddsCount"/> of the floor's first monster join the
+        ///     fight, and the players have to deal with them before the boss.
+        /// </summary>
+        public double[] AddsAt = { 0.5 };
+        public int AddsCount = 3;
+
+        /// <summary>After this many seconds of an attempt it enrages: it swings faster and harder (0: never).</summary>
+        public int EnrageSeconds = 360;
+        /// <summary>Its swing time and its power once enraged, as shares of what they were.</summary>
+        public double EnrageInterval = 0.6;
+        public double EnragePower = 1.5;
+    }
+
+    /// <summary>
+    ///     A town between the bands (docs/tower-design.md, section 4): a calm place with no fighting, the first one at the
+    ///     tower's foot. Its people talk, give each player their own quest chain (the server's QuestChains, by key) and
+    ///     tell rumours of the floors above.
+    /// </summary>
+    public sealed class TowerTownDefinition
+    {
+        public string Key = "";
+        public string Name = "";
+        /// <summary>The band it opens: its town is reachable once the floor before the band is cleared (band 1: always).</summary>
+        public int Band;
+        public string Layout = "";
+        public string Description = "";
+        public TowerNpc[] People = Array.Empty<TowerNpc>();
+    }
+
+    public sealed class TowerNpc
+    {
+        /// <summary>Who they are in the game's scene and texts: "elm".</summary>
+        public string Key = "";
+        public string Name = "";
+        public string Role = "";
+        /// <summary>The quest chain they give (QuestChains on the server), or null for none.</summary>
+        public string Chain;
     }
 }

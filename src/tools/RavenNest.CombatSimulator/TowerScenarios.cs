@@ -34,7 +34,7 @@ namespace RavenNest.CombatSimulator
                     var kit = gear.Melee(level);
                     var cells = Groups.Select(players =>
                     {
-                        var results = Enumerable.Range(0, fights).Select(_ => Fight(level, kit, players, floor.Boss, sheet, boss.AttackInterval, random)).ToList();
+                        var results = Enumerable.Range(0, fights).Select(_ => Fight(level, kit, players, floor, floor.Boss, sheet, boss.AttackInterval, random)).ToList();
                         var won = results.Count(r => r.Won) / (double)results.Count;
                         var wins = results.Where(r => r.Won).ToList();
                         var minutes = wins.Count > 0 ? wins.Average(r => r.Time) / 60 : 0;
@@ -69,7 +69,7 @@ namespace RavenNest.CombatSimulator
             public double Time;
         }
 
-        private static Result Fight(int level, Loadout kit, int players, TowerBoss def, CombatSheet boss, double bossSwing, ICombatRandom random)
+        private static Result Fight(int level, Loadout kit, int players, TowerFloorDefinition floor, TowerBoss def, CombatSheet boss, double bossSwing, ICombatRandom random)
         {
             var player = Player(level, kit);
             var health = Enumerable.Repeat((double)player.MaxHealth, players).ToArray();
@@ -79,8 +79,26 @@ namespace RavenNest.CombatSimulator
             var swings = 0;
             var time = 0.0;
 
+            // the adds: the floor's first monster at its level, called at each share of the boss's health
+            var addDef = Tower.Enemy(floor, floor.Enemies[0]);
+            var add = addDef.Sheet();
+            var adds = new System.Collections.Generic.List<(double Health, double Next)>();
+            var calls = 0;
+            var enraged = false;
+            var enragedBoss = boss;
+
             while (time < Tower.BossTimeLimitSeconds)
             {
+                if (!enraged && def.EnrageSeconds > 0 && time >= def.EnrageSeconds)
+                {
+                    enraged = true;
+                    bossSwing *= def.EnrageInterval;
+                    enragedBoss = boss.Copy();
+                    enragedBoss.Melee.Power = (int)(boss.Melee.Power * def.EnragePower);
+                    enragedBoss.Magic.Power = (int)(boss.Magic.Power * def.EnragePower);
+                }
+
+                // the next thing to happen: a player's swing, the boss's or an add's
                 var who = -1;
                 var when = nextBoss;
                 for (var i = 0; i < players; ++i)
@@ -88,33 +106,77 @@ namespace RavenNest.CombatSimulator
                     if (health[i] <= 0) continue;
                     if (nextSwing[i] < when) { when = nextSwing[i]; who = i; }
                 }
+                var addWho = -1;
+                for (var a = 0; a < adds.Count; ++a)
+                {
+                    if (adds[a].Health > 0 && adds[a].Next < when) { when = adds[a].Next; addWho = a; who = -1; }
+                }
                 time = when;
                 if (time >= Tower.BossTimeLimitSeconds) break;
 
+                if (addWho >= 0)
+                {
+                    var target = random.Next() < 0.5 ? Array.FindIndex(health, h => h > 0) : RandomStanding(health, random);
+                    if (target >= 0) health[target] -= CombatMath.Attack(add, addDef.Style, player, random).Total;
+                    adds[addWho] = (adds[addWho].Health, time + addDef.AttackInterval);
+                    if (health.All(h => h <= 0)) return new Result { Won = false, Time = time };
+                    continue;
+                }
+
                 if (who >= 0)
                 {
-                    bossHealth -= CombatMath.Attack(player, AttackStyle.Melee, boss, random).Total;
-                    if (bossHealth <= 0) return new Result { Won = true, Time = time };
+                    // the adds first: the players turn on them as they come
+                    var addIndex = adds.FindIndex(x => x.Health > 0);
+                    if (addIndex >= 0)
+                    {
+                        var hit = CombatMath.Attack(player, AttackStyle.Melee, add, random).Total;
+                        adds[addIndex] = (adds[addIndex].Health - hit, adds[addIndex].Next);
+                    }
+                    else
+                    {
+                        bossHealth -= CombatMath.Attack(player, AttackStyle.Melee, boss, random).Total;
+                        if (bossHealth <= 0) return new Result { Won = true, Time = time };
+                        while (def.AddsAt != null && calls < def.AddsAt.Length && bossHealth <= boss.MaxHealth * def.AddsAt[calls])
+                        {
+                            calls++;
+                            for (var a = 0; a < def.AddsCount; ++a) adds.Add((add.MaxHealth, time + addDef.AttackInterval * (1 + a * 0.2)));
+                        }
+                    }
                     nextSwing[who] = time + PlayerSwing;
                     continue;
                 }
 
                 swings++;
+                var striker = enraged ? enragedBoss : boss;
                 if (def.SlamEvery > 0 && swings % def.SlamEvery == 0)
                 {
                     for (var i = 0; i < players; ++i)
-                        if (health[i] > 0) health[i] -= CombatMath.Attack(boss, AttackStyle.Melee, player, random).Total * def.SlamShare;
+                        if (health[i] > 0) health[i] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SlamShare;
+                }
+                else if (def.SpitEvery > 0 && swings % def.SpitEvery == 0)
+                {
+                    // at someone who is not holding it
+                    var tank = Array.FindIndex(health, h => h > 0);
+                    var target = RandomStanding(health, random, tank);
+                    if (target < 0) target = tank;
+                    if (target >= 0) health[target] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SpitShare;
                 }
                 else
                 {
                     var target = Array.FindIndex(health, h => h > 0);
-                    if (target >= 0) health[target] -= CombatMath.Attack(boss, AttackStyle.Melee, player, random).Total;
+                    if (target >= 0) health[target] -= CombatMath.Attack(striker, def.Style, player, random).Total;
                 }
                 if (health.All(h => h <= 0)) return new Result { Won = false, Time = time };
                 nextBoss = time + bossSwing;
             }
 
             return new Result { Won = false, Time = time };
+        }
+
+        private static int RandomStanding(double[] health, ICombatRandom random, int except = -1)
+        {
+            var standing = Enumerable.Range(0, health.Length).Where(i => health[i] > 0 && i != except).ToList();
+            return standing.Count == 0 ? -1 : standing[Math.Min(standing.Count - 1, (int)(random.Next() * standing.Count))];
         }
     }
 }

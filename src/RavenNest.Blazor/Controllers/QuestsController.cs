@@ -103,6 +103,16 @@ namespace RavenNest.Controllers
             return questManager.AnswerStep(sessionToken, characterId, answer);
         }
 
+        /// <summary>Talks to someone in a tower town (the chain's talk step).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/talk/{npc}")]
+        public QuestActionResult Talk(Guid characterId, string npc)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return questManager.TalkStep(sessionToken, characterId, npc);
+        }
+
         /// <summary>The character's achievements, the titles earned and the one worn. See AchievementManager.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{characterId}/achievements")]

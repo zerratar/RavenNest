@@ -3,6 +3,23 @@ using System;
 namespace RavenNest.Models
 {
     /// <summary>
+    ///     Kills on tower floors since the last report, per character and kind of monster: the characters' own quests
+    ///     (the Mossgate chains) count them. The stream's floor quests are reported apart (api/tower/{floor}/progress).
+    /// </summary>
+    public class TowerKillReport
+    {
+        public TowerCharacterKills[] Kills { get; set; }
+    }
+
+    public class TowerCharacterKills
+    {
+        public System.Guid CharacterId { get; set; }
+        /// <summary>The monster's kind (RavenNest.Combat.TowerEnemy.Id): "hall-goblin".</summary>
+        public string Kind { get; set; }
+        public int Count { get; set; }
+    }
+
+    /// <summary>
     ///     A stream's place in the tower as the server has it (the game's docs/tower-design.md): the floor it is on, its
     ///     quests and how far they are, whether the boss is open, and how many floors the stream has cleared. The floors
     ///     themselves (names, enemies, bosses) are in RavenNest.Combat.Tower, shared by the game and the server.

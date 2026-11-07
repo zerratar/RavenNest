@@ -61,6 +61,12 @@ namespace RavenNest.Models
         public string Event { get; set; }
         public string RewardTitle { get; set; }
         public string RewardDecor { get; set; }
+
+        /// <summary>The tower town whose people give it ("mossgate"), or null.</summary>
+        public string Town { get; set; }
+
+        /// <summary>An item the finished chain gives, by name, or null.</summary>
+        public string RewardItem { get; set; }
     }
 
     /// <summary>A character's quests: the taken ones, today's offers, this week's quest and the daily streak.</summary>

@@ -5704,6 +5704,10 @@ namespace RavenNest.BusinessLogic.Data
         public Item Canvas;
         public Item IronFittings;
         public Item Rowboat;
+        // the tower's first town, Mossgate (the game's docs/tower-design.md): its people's quest chains give these
+        public Item WardensThornband;
+        public Item BrambleCharm;
+        public Item HolyHandGrenade;
         public Item FishingBoat;
         public Item Sloop;
         public Item Brigantine;

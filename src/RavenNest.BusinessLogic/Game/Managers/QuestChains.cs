@@ -35,6 +35,15 @@ namespace RavenNest.BusinessLogic.Game
 
             /// <summary>The skill the finishing experience goes to.</summary>
             public Skill RewardSkill;
+
+            /// <summary>
+            ///     The tower town whose people give it (RavenNest.Combat.Tower.Towns, "mossgate"), or null. The game begins
+            ///     a town's chain only for a player who is in the town.
+            /// </summary>
+            public string Town;
+
+            /// <summary>An item given (soulbound) when the chain is finished, by its name; null for none.</summary>
+            public string RewardItem;
             public Step[] Steps;
         }
 
@@ -102,6 +111,52 @@ namespace RavenNest.BusinessLogic.Game
                 },
             },
 
+            // ---- Mossgate, the tower's first town (2026-11-08) ------------------------------------------------
+            // Its people give one chain each; the monsters are the first band's (RavenNest.Combat.Tower). A talk step is
+            // done in the town (!tower talk elm); a tower kill counts kills on any floor, of one kind when it names one.
+
+            // Warden Elm keeps the tower gate and wants to know what is up there before more climbers go.
+            new Chain
+            {
+                Key = "warden", Town = "mossgate", RewardSkill = Skill.Defense, RewardItem = "Wardens Thornband",
+                Steps = new[]
+                {
+                    TowerKill(null, 60),
+                    TowerKill("hall-goblin", 40),
+                    Deliver("Iron Ore", 40),
+                    TowerClear(1),
+                    Talk("elm"),
+                },
+            },
+
+            // Bramble the herbalist is out of everything, and the good stuff grows on the floors.
+            new Chain
+            {
+                Key = "bramble", Town = "mossgate", RewardSkill = Skill.Alchemy, RewardItem = "Bramble Charm",
+                Steps = new[]
+                {
+                    Deliver("Mushroom", 15),
+                    TowerKill("hall-metalon-green", 30),
+                    Answer(3, 2),
+                    new Step { Objective = QuestManager.Brew, Amount = 10 },
+                    Talk("bramble"),
+                },
+            },
+
+            // Pip's bunny Nibbles ran up the tower. Pip is sure Nibbles is fine. Nibbles is not fine.
+            new Chain
+            {
+                Key = "nibbles", Town = "mossgate", RewardSkill = Skill.Slayer, RewardItem = "Holy Hand Grenade",
+                Steps = new[]
+                {
+                    TowerKill("hall-bunny", 30),
+                    Answer(3, 2),
+                    Deliver("Cabbage", 20),
+                    TowerClear(1),
+                    Talk("pip"),
+                },
+            },
+
             // Halloween: something stirs in the pumpkin patch.
             new Chain
             {
@@ -123,6 +178,9 @@ namespace RavenNest.BusinessLogic.Game
         private static Step Visit(string island) => new Step { Objective = QuestManager.Visit, Target = island };
         private static Step Answer(int options, int correct) => new Step { Objective = QuestManager.Answer, Options = options, Correct = correct };
         private static Step Gather(Skill skill, long amount) => new Step { Objective = QuestManager.Gather, Skill = (int)skill, Amount = amount };
+        private static Step TowerKill(string kind, long amount) => new Step { Objective = QuestManager.TowerKill, Target = kind, Amount = amount };
+        private static Step TowerClear(long amount) => new Step { Objective = QuestManager.TowerClear, Amount = amount };
+        private static Step Talk(string npc) => new Step { Objective = QuestManager.Talk, Target = npc };
         private static Step Kill(long amount) => new Step { Objective = QuestManager.Kill, Amount = amount };
     }
 }

@@ -5876,3 +5876,32 @@ a.rf-badge:hover {
 .rf-tower__leaders td {
     white-space: normal;
 }
+
+/* the town between the bands, and the floors no stream has reached yet */
+.rf-tower__people {
+    list-style: none;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: 0.5rem 1rem;
+}
+
+.rf-tower__people li {
+    display: flex;
+    flex-direction: column;
+}
+
+.rf-tower__hidden {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 0.6rem;
+    border-style: dashed;
+    color: var(--rf-ink-muted);
+}
+
+.rf-tower__hidden p {
+    margin: 0;
+}

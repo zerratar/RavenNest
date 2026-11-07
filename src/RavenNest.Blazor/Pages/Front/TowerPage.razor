@@ -3,9 +3,10 @@
 @inject RavenNest.BusinessLogic.Game.TowerManager TowerManager
 
 @*
-    The tower (the game's docs/tower-design.md, section 6): the floors that exist, each with its quests, its boss and
-    the level it is made for, the first stream in the world to clear it, and the streams that have climbed highest.
-    The floors are read from RavenNest.Combat.Tower, the same list the game and the server use.
+    The tower (the game's docs/tower-design.md, section 6): the floors some stream has reached, each with its quests, its
+    boss and the level it is made for, the first stream in the world to clear it, and the streams that have climbed
+    highest. Floors nobody has reached stay hidden (no spoilers, Zerratar 2026-11-07): they show once a stream gets
+    there. The floors are read from RavenNest.Combat.Tower, the same list the game and the server use.
 *@
 <div class="top-section">
     <div class="hero-text">
@@ -27,10 +28,26 @@
         <p class="rf-tower__rules">
             A boss attempt lasts at most @(Tower.BossTimeLimitSeconds / 60) minutes. Whoever falls is out of the attempt;
             if everyone falls, the stream regroups for @(Tower.BossRetrySeconds / 60) minutes before the next try.
-            Floors come out a band of ten at a time; @Tower.TopFloor floors so far.
+            Floors come out a band of ten at a time. A floor stays a mystery until some stream reaches it.
         </p>
 
-        @foreach (var band in Tower.Bands)
+        @foreach (var town in Tower.Towns.Where(t => Tower.Bands.Any(b => b.Number == t.Band && b.FirstFloor <= revealed)))
+        {
+            <h2 class="rf-tower__band">The town of @town.Name</h2>
+            <div class="rf-card rf-tower__town">
+                <p class="rf-tower__text">@town.Description Type <b>!tower town</b> to go there, and <b>!tower talk</b> to
+                    hear what its people have to say. Each of them has a quest chain of their own for every player, with a
+                    reward found nowhere else.</p>
+                <ul class="rf-tower__people">
+                    @foreach (var npc in town.People)
+                    {
+                        <li><b>@npc.Name</b><span class="rf-table__quiet">@npc.Role</span></li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @foreach (var band in Tower.Bands.Where(b => b.FirstFloor <= revealed))
         {
             <h2 class="rf-tower__band" style="--element: @ElementColor(band.Element)">Floors @band.FirstFloor to @band.LastFloor: @band.Name</h2>
             <div class="rf-tower__bandinfo">
@@ -49,7 +66,7 @@
             </div>
 
             <ol class="rf-tower__floors">
-                @foreach (var floor in Tower.Floors.Where(f => f.Number >= band.FirstFloor && f.Number <= band.LastFloor))
+                @foreach (var floor in Tower.Floors.Where(f => f.Number >= band.FirstFloor && f.Number <= band.LastFloor && f.Number <= revealed))
                 {
                     var first = firsts.TryGetValue(floor.Number, out var f) ? f : default;
                     <li class="rf-card rf-tower__floor@(floor.Number % 5 == 0 ? " rf-tower__floor--milestone" : "")">
@@ -78,6 +95,18 @@
                     </li>
                 }
             </ol>
+            @if (band.LastFloor > revealed)
+            {
+                <div class="rf-card rf-tower__hidden">
+                    <span class="rf-tower__number">?</span>
+                    <p>Floors @(revealed + 1) to @band.LastFloor are still hidden: no stream has reached them yet.
+                        Clear floor @revealed to see what waits above.</p>
+                </div>
+            }
+        }
+        @if (Tower.Bands.Any(b => b.FirstFloor > revealed))
+        {
+            <p class="rf-table__quiet">More bands lie above, unseen.</p>
         }
 
         <h2 class="rf-tower__band">The highest climbs</h2>
@@ -114,11 +143,13 @@
 </div>
 
 @code {
+    private int revealed = 1;
     private IReadOnlyDictionary<int, (string Name, DateTime Cleared)> firsts = new Dictionary<int, (string, DateTime)>();
     private IReadOnlyList<(Guid UserId, string Name, int Floor, DateTime Cleared)> leaders = new List<(Guid, string, int, DateTime)>();
 
     protected override void OnInitialized()
     {
+        revealed = TowerManager.Revealed();
         firsts = TowerManager.FirstClears();
         leaders = TowerManager.Leaderboard(25);
     }

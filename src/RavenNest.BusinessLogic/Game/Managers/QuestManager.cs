@@ -95,6 +95,18 @@ namespace RavenNest.BusinessLogic.Game
             if (waves > 0) Report(character, QuestManager.HeroWave, -1, waves);
         }
 
+        /// <summary>Kills of one kind of monster on a tower floor (the game reports them per character).</summary>
+        public static void TowerKills(Character character, string kind, long count)
+        {
+            if (count > 0) Listener?.Progress(character, QuestManager.TowerKill, -1, count, kind);
+        }
+
+        /// <summary>A character took part in a won tower boss attempt.</summary>
+        public static void TowerCleared(Character character)
+        {
+            Listener?.Progress(character, QuestManager.TowerClear, -1, 1);
+        }
+
         public static void Kills(Character character, long count)
         {
             if (count > 0) Report(character, QuestManager.Kill, -1, count);
@@ -140,6 +152,11 @@ namespace RavenNest.BusinessLogic.Game
         public const string Deliver = "deliver";
         public const string Visit = "visit";
         public const string Answer = "answer";
+        /// <summary>The tower: kills on its floors (of one kind of monster when the quest names one), floors cleared.</summary>
+        public const string TowerKill = "tower_kill";
+        public const string TowerClear = "tower_clear";
+        /// <summary>Talking to someone in a tower town (!tower talk elm), named by the step.</summary>
+        public const string Talk = "talk";
 
         /// <summary>Ravebridge: a row kept for each Ravebridge quest paid (ClaimRavebridge), never shown as a quest.</summary>
         public const int Daily = 0, Weekly = 1, Seasonal = 2, Chain = 3, Ravebridge = 4;
@@ -416,6 +433,28 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>
+        ///     Talks to someone in a tower town (!tower talk elm): finishes the chain's talk step when it names them. The
+        ///     game asks only for players who are in the town.
+        /// </summary>
+        public QuestActionResult TalkStep(SessionToken token, Guid characterId, string npc)
+        {
+            var character = CharacterOf(token, characterId);
+            if (character == null) return new QuestActionResult { Error = "notinsession" };
+            lock (mutex)
+            {
+                var quest = Refresh(character).FirstOrDefault(q => q.Kind == Chain && q.State == Active);
+                if (quest == null) return new QuestActionResult { Error = "unknown" };
+                if (quest.Objective != Talk || !string.Equals(quest.Target, npc, StringComparison.OrdinalIgnoreCase))
+                    return new QuestActionResult { Error = "notstep", Quest = Info(quest) };
+                quest.Progress = quest.Amount;
+                var info = Info(quest);
+                info.Progress = quest.Amount;
+                StepDone(character, quest);
+                return new QuestActionResult { Ok = true, Quest = info };
+            }
+        }
+
         /// <summary>Gives up a taken quest (an offer taken back is gone for the day; a chain begins again from the start).</summary>
         public QuestActionResult Abandon(SessionToken token, Guid characterId, Guid questId)
         {
@@ -490,7 +529,7 @@ namespace RavenNest.BusinessLogic.Game
 
         // ---- Progress -------------------------------------------------------------------------------------
 
-        internal void Progress(Character character, string objective, int skill, long amount)
+        internal void Progress(Character character, string objective, int skill, long amount, string target = null)
         {
             if (character == null || amount <= 0) return;
             try
@@ -504,6 +543,8 @@ namespace RavenNest.BusinessLogic.Game
                     foreach (var q in quests.ToList())
                     {
                         if (q.State != Active || q.Objective != objective || (q.Skill >= 0 && skill >= 0 && q.Skill != skill)) continue;
+                        // a tower kill that names a monster counts that monster only
+                        if (objective == TowerKill && !string.IsNullOrEmpty(q.Target) && !string.Equals(q.Target, target, StringComparison.OrdinalIgnoreCase)) continue;
                         if (q.Expires <= now) { q.State = Expired; continue; }
 
                         q.Progress = Math.Min(q.Amount, q.Progress + amount);
@@ -544,6 +585,8 @@ namespace RavenNest.BusinessLogic.Game
             var decor = session != null ? decorManager.UnlockForQuest(session.Id, quest.Key) : null;
             // the shipwright's chain ends with the character's own boat (docs/own-boats.md in the game)
             if (quest.Key == "shipwright") GiveBoat(character);
+            // a tower town's chain ends with an item found nowhere else
+            if (definition?.RewardItem != null) GiveOnce(character, definition.RewardItem);
             Reward(character, quest, done, decor);
             QuestTracker.Achievements?.Set(character, "storyteller",
                 gameData.GetCharacterQuests(character.Id).Count(q => q.Kind == Chain && q.State == Done));
@@ -560,6 +603,16 @@ namespace RavenNest.BusinessLogic.Game
             if (rowboat == null || inventory == null) return;
             if (inventory.GetAllItems().Any(i => i.ItemId == rowboat.Id)) return;
             inventory.AddItem(rowboat.Id, 1, equipped: false, soulbound: true);
+        }
+
+        /// <summary>An item by its name, soulbound, unless the character has one already.</summary>
+        private void GiveOnce(Character character, string itemName)
+        {
+            var item = gameData.GetItems().FirstOrDefault(i => string.Equals(i.Name, itemName, StringComparison.OrdinalIgnoreCase));
+            var inventory = inventoryProvider.Get(character.Id);
+            if (item == null || inventory == null) return;
+            if (inventory.GetAllItems().Any(i => i.ItemId == item.Id)) return;
+            inventory.AddItem(item.Id, 1, equipped: false, soulbound: true);
         }
 
         private static void SetStep(CharacterQuest quest, QuestChains.Chain definition, int index)
@@ -721,7 +774,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new QuestChainInfo
                 {
                     Key = c.Key, State = state, Step = active?.Step ?? (done ? c.Steps.Length : 0), Steps = c.Steps.Length,
-                    Event = c.Event, RewardTitle = c.Key, RewardDecor = DecorOf(c.Key),
+                    Event = c.Event, RewardTitle = c.Key, RewardDecor = DecorOf(c.Key), Town = c.Town, RewardItem = c.RewardItem,
                 };
             }).ToArray();
         }
@@ -765,6 +818,7 @@ namespace RavenNest.BusinessLogic.Game
                 info.Options = definition != null && q.Step < definition.Steps.Length ? definition.Steps[q.Step].Options : 0;
                 info.RewardTitle = q.Key;
                 info.RewardDecor = DecorOf(q.Key);
+                if (definition?.RewardItem != null) info.RewardItem = definition.RewardItem;
             }
             return info;
         }

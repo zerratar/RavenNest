@@ -52,6 +52,17 @@ namespace RavenNest.Controllers
             return tower.AddProgress(token, floor, Uri.UnescapeDataString(counts ?? ""));
         }
 
+        /// <summary>Kills per character and kind on the tower's floors, for the characters' own quests.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("kills")]
+        public bool Kills([FromBody] TowerKillReport report)
+        {
+            var token = GetSessionToken();
+            AssertSessionTokenValidity(token);
+            tower.AddCharacterKills(token, report);
+            return true;
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{floor}/boss")]
         public TowerState BossStarted(int floor)

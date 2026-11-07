@@ -302,6 +302,13 @@ namespace RavenNest.BusinessLogic.Data
                     Brigantine = GetOrCreateItem(i, "Brigantine", "A two-masted ship with room for six. Fast on the open sea.", ItemCategory.Vehicle, ItemType.Boat),
                     Galleon = GetOrCreateItem(i, "Galleon", "Three masts, ten aboard and a captain's cabin. The fastest thing at sea after the ferry.", ItemCategory.Vehicle, ItemType.Boat),
 
+                    // Mossgate, the tower's first town: one item from each of its people's quest chains, found nowhere else
+                    WardensThornband = GetOrCreateItem(i, "Wardens Thornband", "A ring of braided thornwood from Warden Elm of Mossgate. It still smells of the forest.", ItemCategory.Ring, ItemType.Ring)
+                        .SetStats(armor: 10, weaponAim: 12, weaponPower: 12, rangedAim: 6, rangedPower: 6),
+                    BrambleCharm = GetOrCreateItem(i, "Bramble Charm", "Dried herbs, a snail shell and a lot of string. Bramble swears it keeps the poison off.", ItemCategory.Amulet, ItemType.Amulet)
+                        .SetStats(armor: 14, magicAim: 10, magicPower: 10),
+                    HolyHandGrenade = GetOrCreateItem(i, "Holy Hand Grenade", "Pip's thank you. Count to three, no more, no less. Five is right out.", ItemCategory.QuestItem, ItemType.None),
+
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // accessories

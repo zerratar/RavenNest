@@ -85,6 +85,24 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>
+        ///     Kills per character and kind on any tower floor, for the characters' own quests (QuestTracker.TowerKills):
+        ///     characters of this session only, each count capped like a floor report.
+        /// </summary>
+        public void AddCharacterKills(SessionToken token, TowerKillReport report)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null || report?.Kills == null) return;
+            var characters = gameData.GetActiveSessionCharacters(session);
+            foreach (var k in report.Kills.Take(1000))
+            {
+                if (k == null || k.Count <= 0 || string.IsNullOrEmpty(k.Kind)) continue;
+                var character = characters.FirstOrDefault(c => c.Id == k.CharacterId);
+                if (character == null) continue;
+                QuestTracker.TowerKills(character, k.Kind, Math.Min(MaxKillsPerReport, k.Count));
+            }
+        }
+
         /// <summary>A boss attempt starts on the stream's floor: counted, if the floor's quests are done.</summary>
         public TowerState BossStarted(SessionToken token, int floor)
         {
@@ -163,6 +181,13 @@ namespace RavenNest.BusinessLogic.Game
             var villageResources = village != null ? gameData.GetResources(village.ResourcesId) : null;
             if (villageResources != null) villageResources.Coins += VillageCoinsPerFloor * floor;
 
+            // the characters' own quests count the clear (Mossgate's chains)
+            foreach (var id in ids)
+            {
+                var character = sessionCharacters.FirstOrDefault(c => c.Id == id);
+                if (character != null) QuestTracker.TowerCleared(character);
+            }
+
             var tier = Math.Min(4, (floor - 1) / 3);
             var rewards = gameManager.RollTowerChest(session, tier, ids, floor % 5 == 0 ? 2 : 1);
             gameData.Touch();
@@ -188,6 +213,16 @@ namespace RavenNest.BusinessLogic.Game
                 .Take(count)
                 .Select(x => (x.UserId, gameData.GetUser(x.UserId)?.UserName ?? "?", x.Floor, x.Cleared))
                 .ToList();
+        }
+
+        /// <summary>
+        ///     The highest floor the website shows in full (no spoilers, Zerratar 2026-11-07): the highest floor any stream
+        ///     has reached, the one after the highest cleared anywhere.
+        /// </summary>
+        public int Revealed()
+        {
+            var clears = gameData.GetTowerClears();
+            return Tower.Revealed(clears.Count == 0 ? 0 : clears.Max(x => x.Floor));
         }
 
         /// <summary>Each floor's first clear in the world: who and when.</summary>
