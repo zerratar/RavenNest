@@ -108,5 +108,8 @@
 
         /// <summary>The stream started on the newest release quickly: first on it, or an Early Bird (UpdateHonour).</summary>
         UpdateHonour = 57,
+
+        /// <summary>A character's skill trees changed (the website, or chat in another game): the build (SkillBuildInfo).</summary>
+        SkillBuildChanged = 58,
     }
 }

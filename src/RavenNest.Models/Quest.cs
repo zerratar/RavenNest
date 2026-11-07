@@ -42,6 +42,9 @@ namespace RavenNest.Models
         /// <summary>A chain's title and village decor piece, given when it is finished.</summary>
         public string RewardTitle { get; set; }
         public string RewardDecor { get; set; }
+
+        /// <summary>An item the quest gives besides coins and experience (weeklies and chains: a Tome of Forgetting), or null.</summary>
+        public string RewardItem { get; set; }
     }
 
     /// <summary>A quest chain as !quest chains shows it: whether it can be begun, how far it is, or done.</summary>

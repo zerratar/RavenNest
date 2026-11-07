@@ -67,7 +67,22 @@ namespace RavenNest.BusinessLogic.Game
             var character = gameData.GetCharacter(characterId);
             if (character == null) return null;
             var row = gameData.GetCharacterSkillBuild(characterId);
+            if (row != null) lock (mutex) Upgrade(row);
             return Info(character, SkillBuild.Parse(row?.Build), row);
+        }
+
+        /// <summary>A build from before the trees' last balance update: a free respec, and the version noted.</summary>
+        private static void Upgrade(CharacterSkillBuild row)
+        {
+            if (row.TreeVersion >= SkillTrees.Version) return;
+            if (SkillBuild.Parse(row.Build).Spent > 0) row.FreeRespecs++;
+            row.TreeVersion = SkillTrees.Version;
+        }
+
+        /// <summary>Puts when an active is used (the website); null rule text puts back the skill's default.</summary>
+        public SkillBuildResult SetRule(Guid characterId, string nodeId, SkillUse rule)
+        {
+            return Change(characterId, (character, skills, build, row) => build.SetRule(nodeId, rule));
         }
 
         public SkillBuildResult Raise(Guid characterId, string nodeText)
@@ -146,6 +161,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) return new SkillBuildResult { Message = "No such character." };
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 var row = GetOrCreate(characterId);
+                Upgrade(row);
                 var build = SkillBuild.Parse(row.Build);
                 var reason = change(character, skills, build, row);
                 if (reason == null)
@@ -153,15 +169,25 @@ namespace RavenNest.BusinessLogic.Game
                     row.Build = build.ToString();
                     row.Updated = DateTime.UtcNow;
                 }
-                return new SkillBuildResult { Success = reason == null, Message = reason, Info = Info(character, SkillBuild.Parse(row.Build), row) };
+                var info = Info(character, SkillBuild.Parse(row.Build), row);
+                if (reason == null) TellGame(character, info);
+                return new SkillBuildResult { Success = reason == null, Message = reason, Info = info };
             }
+        }
+
+        // a change made anywhere (the website, chat) reaches the game the character plays in, which follows the build
+        private void TellGame(Character character, SkillBuildInfo info)
+        {
+            var session = gameData.GetSessionByCharacterId(character.Id);
+            if (session == null) return;
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.SkillBuildChanged, session, info));
         }
 
         private CharacterSkillBuild GetOrCreate(Guid characterId)
         {
             var row = gameData.GetCharacterSkillBuild(characterId);
             if (row != null) return row;
-            row = new CharacterSkillBuild { Id = Guid.NewGuid(), CharacterId = characterId, Build = "", FreeRespecs = 1, Updated = DateTime.UtcNow };
+            row = new CharacterSkillBuild { Id = Guid.NewGuid(), CharacterId = characterId, Build = "", FreeRespecs = 1, TreeVersion = SkillTrees.Version, Updated = DateTime.UtcNow };
             gameData.Add(row);
             return row;
         }

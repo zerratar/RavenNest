@@ -595,9 +595,20 @@ namespace RavenNest.BusinessLogic.Game
 
             var resources = gameData.GetResources(character);
             if (resources != null) resources.Coins += quest.RewardCoins;
+
+            // the skill trees' free respec (combat v2): every weekly and every finished chain gives a Tome of Forgetting
+            if (GivesTome(quest))
+            {
+                var tome = gameData.GetItems().FirstOrDefault(x => x.Name == SkillTreeManager.TomeOfForgetting);
+                if (tome != null) inventoryProvider.Get(character.Id)?.AddItem(tome.Id, amount: 1);
+            }
+
             gameData.Touch();
             Tell(character, quest, stepDone, decor);
         }
+
+        /// <summary>Weeklies and finished chains give a Tome of Forgetting (a free skill tree respec).</summary>
+        private static bool GivesTome(CharacterQuest quest) => quest.Kind == Weekly || quest.Kind == Chain;
 
         private void Tell(Character character, CharacterQuest quest, int stepDone, string decor)
         {
@@ -742,6 +753,7 @@ namespace RavenNest.BusinessLogic.Game
                 RewardExp = Math.Round(q.RewardExp * bonus),
                 RewardSkill = q.RewardSkill,
                 Expires = q.Expires,
+                RewardItem = GivesTome(q) ? SkillTreeManager.TomeOfForgetting : null,
             };
 
             if (q.Kind == Chain)

@@ -146,6 +146,12 @@ namespace RavenNest.Combat
     public static class SkillTrees
     {
         public static readonly int[] TierLevels = { 1, 100, 300, 600 };
+
+        /// <summary>
+        ///     Raised whenever a balance update changes the trees (a node's numbers, its cost, one removed): everyone who
+        ///     had spent points then gets a free respec, so nobody is stuck with a build the update broke.
+        /// </summary>
+        public const int Version = 1;
         public const int BaseLoadoutSlots = 4;
         public const int RespecCostPerPoint = 1000;
 
@@ -357,6 +363,21 @@ namespace RavenNest.Combat
 
         public int Spent => Ranks.Sum(r => (SkillTrees.Get(r.Key)?.Cost ?? 0) * r.Value);
 
+        /// <summary>When each active is used (by node id), where the player chose other than its default (the website).</summary>
+        public readonly Dictionary<string, SkillUse> Rules = new Dictionary<string, SkillUse>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The use rule for an active: the player's choice, or the skill's default.</summary>
+        public SkillUse RuleOf(SkillNode node) => node?.Active == null ? SkillUse.InFight : Rules.TryGetValue(node.Id, out var rule) ? rule : node.Active.Use;
+
+        /// <summary>Sets when an active is used; its default clears the choice.</summary>
+        public string SetRule(string id, SkillUse rule)
+        {
+            var node = SkillTrees.Get(id);
+            if (node == null || !node.IsActive) return "That is not an active skill.";
+            if (rule == node.Active.Use) Rules.Remove(node.Id); else Rules[node.Id] = rule;
+            return null;
+        }
+
         public int LoadoutSlots => SkillTrees.BaseLoadoutSlots + Ranks.Count(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.ExtraLoadoutSlot ?? false));
 
         public bool HasLastStand => Ranks.Any(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.LastStand ?? false));
@@ -431,6 +452,7 @@ namespace RavenNest.Combat
         {
             Ranks.Clear();
             Loadout.Clear();
+            Rules.Clear();
         }
 
         /// <summary>Drops what is no longer allowed (a node removed in a balance update, ranks above the maximum, an emptied loadout slot).</summary>
@@ -465,11 +487,23 @@ namespace RavenNest.Combat
             {
                 foreach (var id in halves[1].Split(',')) build.Loadout.Add(id.Trim());
             }
+            if (halves.Length > 2)
+            {
+                foreach (var part in halves[2].Split(','))
+                {
+                    var kv = part.Split(':');
+                    if (kv.Length == 2 && Enum.TryParse<SkillUse>(kv[1].Trim(), true, out var rule)) build.Rules[kv[0].Trim()] = rule;
+                }
+            }
             build.Clean();
             return build;
         }
 
-        public override string ToString() =>
-            string.Join(";", Ranks.Where(r => r.Value > 0).OrderBy(r => r.Key).Select(r => r.Key + ":" + r.Value)) + "|" + string.Join(",", Loadout);
+        public override string ToString()
+        {
+            var text = string.Join(";", Ranks.Where(r => r.Value > 0).OrderBy(r => r.Key).Select(r => r.Key + ":" + r.Value)) + "|" + string.Join(",", Loadout);
+            var rules = Rules.Where(r => Has(r.Key)).OrderBy(r => r.Key).Select(r => r.Key + ":" + r.Value).ToList();
+            return rules.Count == 0 ? text : text + "|" + string.Join(",", rules);
+        }
     }
 }

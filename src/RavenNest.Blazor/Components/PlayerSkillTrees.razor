@@ -70,6 +70,24 @@ else
                         {
                             <span>@(RavenNest.Combat.SkillTrees.Get(current)?.Name ?? "(empty)")</span>
                         }
+                        @{ var slotted = RavenNest.Combat.SkillTrees.Get(current); }
+                        @if (slotted != null && slotted.IsActive)
+                        {
+                            var rule = build.RuleOf(slotted);
+                            @if (canManage)
+                            {
+                                <select class="rf-trees__rule" title="When your character uses it" value="@rule" @onchange="e => SetRule(slotted.Id, e.Value?.ToString())">
+                                    @foreach (SkillUse use in Enum.GetValues(typeof(SkillUse)))
+                                    {
+                                        <option value="@use">@RuleText(use)@(use == slotted.Active.Use ? " (default)" : "")</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <span class="rf-meta">@RuleText(rule)</span>
+                            }
+                        }
                     </label>
                 }
             </div>
@@ -153,13 +171,35 @@ else
     {
         if (!canManage) return;
         var node = RavenNest.Combat.SkillTrees.Get(id);
-        Apply(SkillTrees.Raise(Player.Id, id), "Learned " + node?.Name + ". If the character is playing, the game follows when it next asks (!tree).");
+        Apply(SkillTrees.Raise(Player.Id, id), "Learned " + node?.Name + ".");
     }
 
     private void SetSlot(int slot, string id)
     {
         if (!canManage) return;
         Apply(SkillTrees.SetLoadout(Player.Id, slot + 1, string.IsNullOrEmpty(id) ? null : id), "Loadout saved.");
+    }
+
+    private static string RuleText(SkillUse use)
+    {
+        switch (use)
+        {
+            case SkillUse.InFight: return "In any fight";
+            case SkillUse.EnemiesNear: return "Three or more enemies near";
+            case SkillUse.OnBoss: return "On bosses";
+            case SkillUse.AllyHurt: return "An ally below 60% health";
+            case SkillUse.SelfHurt: return "Me below half health";
+            case SkillUse.TargetLow: return "The target below 20% health";
+            case SkillUse.EnemyOnAlly: return "An enemy attacks someone else";
+            case SkillUse.AllyHarmed: return "An ally burns, bleeds or is poisoned";
+            default: return use.ToString();
+        }
+    }
+
+    private void SetRule(string id, string value)
+    {
+        if (!canManage || !Enum.TryParse<SkillUse>(value, out var rule)) return;
+        Apply(SkillTrees.SetRule(Player.Id, id, rule), "Saved when " + RavenNest.Combat.SkillTrees.Get(id)?.Name + " is used.");
     }
 
     private void Respec()

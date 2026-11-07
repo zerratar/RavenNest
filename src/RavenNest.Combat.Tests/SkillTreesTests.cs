@@ -84,6 +84,22 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void Use_rules_are_kept_with_the_build_and_the_default_clears_them()
+        {
+            var build = new SkillBuild();
+            build.Raise("cleave", All, 100);
+            build.SetLoadout(0, "cleave");
+            Assert.Equal(SkillUse.InFight, build.RuleOf(SkillTrees.Get("cleave")));
+            Assert.Null(build.SetRule("cleave", SkillUse.OnBoss));
+            Assert.Equal("cleave:1|cleave|cleave:OnBoss", build.ToString());
+            var again = SkillBuild.Parse(build.ToString());
+            Assert.Equal(SkillUse.OnBoss, again.RuleOf(SkillTrees.Get("cleave")));
+            again.SetRule("cleave", SkillUse.InFight);
+            Assert.Equal("cleave:1|cleave", again.ToString());
+            Assert.NotNull(build.SetRule("brute-force", SkillUse.OnBoss));
+        }
+
+        [Fact]
         public void Passive_bonuses_change_the_blow()
         {
             var a = new CombatSheet { CombatLevel = 100, CritChance = 0 };

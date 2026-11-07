@@ -5698,3 +5698,4 @@ a.rf-badge:hover {
 .rf-trees__node.is-locked { opacity: 0.55; }
 .rf-trees__node-head { display: flex; justify-content: space-between; align-items: center; gap: var(--rf-space-2); }
 .rf-trees__node .rf-btn { align-self: flex-start; }
+.rf-trees__rule { max-width: 15rem; }

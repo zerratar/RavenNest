@@ -16,6 +16,9 @@ namespace RavenNest.DataModels
         /// <summary>Respecs that cost nothing: one when the trees arrive, one after each balance update that changes them.</summary>
         [PersistentData] private int freeRespecs;
 
+        /// <summary>RavenNest.Combat.SkillTrees.Version when the build was last looked at: an older one earns a free respec.</summary>
+        [PersistentData] private int treeVersion;
+
         [PersistentData] private DateTime? updated;
     }
 }
