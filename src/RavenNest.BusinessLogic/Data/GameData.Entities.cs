@@ -36,6 +36,8 @@ namespace RavenNest.BusinessLogic.Data
                 });
             }
 
+            EnsureMagicalGearAttributes(attributes);
+
             if (attributes.FirstOrDefault(x => x.Name == "AIM") == null)
             {
                 Add(new ItemAttribute

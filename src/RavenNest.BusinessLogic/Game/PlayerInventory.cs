@@ -1213,7 +1213,8 @@ namespace RavenNest.BusinessLogic.Game
         {
             return (attr.Name == "ARMOR" && item.ArmorPower == 0) ||
                    (attr.Name == "POWER" && ((item.MagicPower + item.RangedPower + item.WeaponPower) == 0)) ||
-                   (attr.Name == "AIM" && ((item.MagicAim + item.RangedAim + item.WeaponAim) == 0));
+                   (attr.Name == "AIM" && ((item.MagicAim + item.RangedAim + item.WeaponAim) == 0)) ||
+                   !Data.GameData.MagicalAttributeFits(attr.Name, (RavenNest.Models.ItemCategory)item.Category, (RavenNest.Models.ItemType)item.Type);
         }
 
         //public List<InventoryItemAttribute> CreateRandomAttributes(InventoryItem s)

@@ -123,11 +123,12 @@ namespace RavenNest.BusinessLogic.Game.Enchantment
                 }
             }
 
-            if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim, aimBonus));
-            if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower, powerBonus));
-            if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim, aimBonus));
+            // combat v2's names: aim is accuracy now (the columns keep their old names while 0.9.6 games read them)
+            if (i.WeaponAim > 0) stats.Add(new ItemStat("Melee Accuracy", i.WeaponAim, aimBonus));
+            if (i.WeaponPower > 0) stats.Add(new ItemStat("Melee Power", i.WeaponPower, powerBonus));
+            if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Accuracy", i.RangedAim, aimBonus));
             if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower, powerBonus));
-            if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim, aimBonus));
+            if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Accuracy", i.MagicAim, aimBonus));
             if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower, powerBonus));
             if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower, armorBonus));
 
