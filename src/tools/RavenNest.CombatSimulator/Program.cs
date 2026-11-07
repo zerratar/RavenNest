@@ -42,6 +42,12 @@ namespace RavenNest.CombatSimulator
                         args.Length > 2 && double.TryParse(args[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gs) ? gs : 1.0,
                         args.Length > 3 && double.TryParse(args[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var go) ? go : 1.0);
                     return 0;
+                case "pets":
+                    PetScenarios.Run(gear,
+                        args.Length > 1 && int.TryParse(args[1], out var pf) ? pf : 200,
+                        args.Length > 2 && double.TryParse(args[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pa) ? pa : 0.75,
+                        args.Length > 3 && double.TryParse(args[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var po) ? po : 0.5);
+                    return 0;
                 case "builds":
                     BuildScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bb) ? bb : 200);
                     return 0;
@@ -58,7 +64,7 @@ namespace RavenNest.CombatSimulator
                     BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200, args.Contains("tuned"));
                     return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], pets [runs] [armour share] [offence share]");
                     return 1;
             }
         }

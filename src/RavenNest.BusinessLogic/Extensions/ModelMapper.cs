@@ -180,9 +180,9 @@ namespace RavenNest.BusinessLogic.Extensions
             if (user == null) return null;
 
             var clanSkills = gameData.GetClanSkills(clan.Id);
-            if (clanSkills.Count == 0) // we only have 1 clan skill.
+            if (clanSkills.Count < ClanProcessor.EligibleClanSkillCount(gameData, clan))
             {
-                // check which skills the clan is eligble for and add those in.
+                // a clan skill the clan's level opens that it does not have yet (a new clan, or a clan skill added later)
                 ClanProcessor.EnsureClanSkills(gameData, clan, clanSkills);
                 clanSkills = gameData.GetClanSkills(clan.Id);
             }

@@ -60,9 +60,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Clan clan)
         {
             var clanSkills = gameData.GetClanSkills(clan.Id);
-            if (clanSkills.Count == 0) // we only have 1 clan skill.
+            if (clanSkills.Count < ClanProcessor.EligibleClanSkillCount(gameData, clan))
             {
-                // check which skills the clan is eligble for and add those in.
+                // a clan skill the clan's level opens that it does not have yet (a new clan, or a clan skill added later)
                 EnsureClanSkills(gameData, clan, clanSkills);
                 clanSkills = gameData.GetClanSkills(clan.Id);
             }
@@ -75,30 +75,37 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // if level up, send announcement. Otherwise send it every other second for the game session if exp is being updated
             // incase someone training the clan skill on a different stream.
 
-            var enchanting = clanSkills.FirstOrDefault();
-            var key = session.Id + "_" + enchanting.Id;
+            // every clan skill the clan has (Enchanting today; the pet clan skill later), each sent on its own
             var now = DateTime.UtcNow;
-
-            var currentLevel = enchanting.Level;
-            var currentExp = (long)enchanting.Experience;
-            if (!skillUpdate.TryGetValue(key, out var lastAnnouncement))
-                skillUpdate[key] = lastAnnouncement = new ClanSkillUpdate();
-
-            if ((now - lastAnnouncement.LastUpdate > SkillExpUpdateInterval && lastAnnouncement.Experience != currentExp)
-                || enchanting.Level != currentLevel)
+            foreach (var clanSkill in clanSkills)
             {
-                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.ClanSkillLevelChanged,
-                    session,
-                    new ClanSkillLevelChanged
-                    {
-                        ClanId = clan.Id,
-                        SkillId = enchanting.Id,
-                        Experience = currentExp,
-                        Level = currentLevel,
-                    }));
+                if (clanSkill == null) continue;
+                var key = session.Id + "_" + clanSkill.Id;
+                var currentLevel = clanSkill.Level;
+                var currentExp = (long)clanSkill.Experience;
+                if (!skillUpdate.TryGetValue(key, out var lastAnnouncement))
+                    skillUpdate[key] = lastAnnouncement = new ClanSkillUpdate();
 
-                lastAnnouncement.Experience = currentExp;
-                lastAnnouncement.Level = currentLevel;
+                // a level up goes out at once; experience every few seconds, and only when it changed
+                if ((now - lastAnnouncement.LastUpdate > SkillExpUpdateInterval && lastAnnouncement.Experience != currentExp)
+                    || lastAnnouncement.Level != currentLevel)
+                {
+                    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.ClanSkillLevelChanged,
+                        session,
+                        new ClanSkillLevelChanged
+                        {
+                            ClanId = clan.Id,
+                            SkillId = clanSkill.Id,
+                            // the first update of a session only reports where the skill is
+                            LevelDelta = lastAnnouncement.Level > 0 ? currentLevel - lastAnnouncement.Level : 0,
+                            Experience = currentExp,
+                            Level = currentLevel,
+                        }));
+
+                    lastAnnouncement.Experience = currentExp;
+                    lastAnnouncement.Level = currentLevel;
+                    lastAnnouncement.LastUpdate = now;
+                }
             }
         }
         private void UpdateClanExperience(GameData gameData, GameSession session, Clan clan)
@@ -146,6 +153,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 clanExpAnnouncement[announcementKey] = now;
             }
         }
+        /// <summary>How many clan skills the clan's level opens (Enchanting, and later the pet clan skill).</summary>
+        public static int EligibleClanSkillCount(GameData gameData, Clan clan)
+        {
+            var count = 0;
+            foreach (var s in gameData.GetSkills())
+                if (s.RequiredClanLevel <= clan.Level) ++count;
+            return count;
+        }
+
         public static void EnsureClanSkills(GameData gameData, Clan clan, IReadOnlyList<ClanSkill> clanSkills)
         {
             foreach (var s in gameData
