@@ -316,7 +316,10 @@ namespace RavenNest.Blazor
             app.Map(RavenNest.Protocol.ProtocolInfo.Path, v2 => v2.Run(context =>
                 context.RequestServices.GetRequiredService<GameConnectionHub>().HandleAsync(context)));
 
-            app.UseHttpsRedirection();
+            // local testing in a browser that does not take the development certificate: RAVENNEST_HTTP=1 (Development
+            // only) keeps plain http instead of redirecting to https
+            if (!(env.IsDevelopment() && System.Environment.GetEnvironmentVariable("RAVENNEST_HTTP") == "1"))
+                app.UseHttpsRedirection();
             app.UseResponseCaching();
 
             app.UseRewriter(new RewriteOptions()

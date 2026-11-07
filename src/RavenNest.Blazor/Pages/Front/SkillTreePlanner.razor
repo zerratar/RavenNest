@@ -227,6 +227,7 @@
 
     private void Changed()
     {
+        // the address keeps the build and the levels; Copy link reads it
         copied = false;
         Recount();
         // the address keeps the build, so it can be shared and survives a reload
@@ -235,7 +236,8 @@
             ["build"] = build.Spent > 0 ? build.ToString() : null,
             ["levels"] = string.Join(",", levelValues),
         });
-        Navigation.NavigateTo(url, forceLoad: false, replace: true);
+        // replaceState, not NavigateTo: a navigation would scroll the page to the top at every click
+        _ = JS.InvokeVoidAsync("history.replaceState", null, "", url).AsTask();
     }
 
     private void Learn(string id)
@@ -282,7 +284,12 @@
     {
         try
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Navigation.Uri);
+            var url = Navigation.GetUriWithQueryParameters(new Dictionary<string, object>
+            {
+                ["build"] = build.Spent > 0 ? build.ToString() : null,
+                ["levels"] = string.Join(",", levelValues),
+            });
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
             copied = true;
         }
         catch { }

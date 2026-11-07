@@ -245,7 +245,7 @@ function drawLabels(g, view) {
         g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
         const half = Math.max(titleWidth, g.measureText(`${hub.skill} ${hub.level}`).width) / 2 + 6;
         g.font = `800 ${size}px "FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif`;
-        if (half * 2 < w) x = Math.min(w - half, Math.max(half, x));
+        if (half * 2 < w && cam.zoom < LABEL_MIN_ZOOM) x = Math.min(w - half, Math.max(half, x)); // only in the overview: up close it would sit on the nodes
         shadowText(g, hub.name, x, y - size * 0.35, hub.color);
         g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
         shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.55, 'rgba(236,228,214,0.8)');
