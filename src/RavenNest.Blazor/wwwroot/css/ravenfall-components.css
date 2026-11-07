@@ -5699,3 +5699,12 @@ a.rf-badge:hover {
 .rf-trees__node-head { display: flex; justify-content: space-between; align-items: center; gap: var(--rf-space-2); }
 .rf-trees__node .rf-btn { align-self: flex-start; }
 .rf-trees__rule { max-width: 15rem; }
+.rf-trees__views { display: flex; gap: var(--rf-space-2); }
+.rf-trees__mapwrap { position: relative; display: flex; flex-direction: column; gap: var(--rf-space-2); }
+.rf-trees__map { position: relative; width: 100%; height: min(72vh, 760px); min-height: 360px; border-radius: var(--rf-radius); overflow: hidden; background: #0d0f15; }
+.rf-trees__map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rf-trees__mapcontrols { position: absolute; top: calc(var(--rf-space-4) + 4px); right: calc(var(--rf-space-4) + 4px); display: flex; gap: 4px; }
+.rf-trees__hint { margin: 0; }
+.rf-trees__picked { border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius); padding: var(--rf-space-3); background: var(--rf-surface-2); display: flex; flex-direction: column; gap: var(--rf-space-2); }
+.rf-trees__picked.is-learned { border-color: var(--rf-line-gold); background: var(--rf-gold-wash); }
+@media (max-width: 600px) { .rf-trees__map { height: 62vh; } }

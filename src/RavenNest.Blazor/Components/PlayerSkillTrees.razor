@@ -1,13 +1,19 @@
+@using RavenNest.Blazor.Extensions
 @using RavenNest.Combat
 @using RavenNest.BusinessLogic.Game
 @inject SkillTreeManager SkillTrees
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@implements IAsyncDisposable
 
 @*
-    The skill trees (combat v2, the game's docs/combat-skills-design.md, section 6): points to spend, the loadout of
-    active skills in priority order, a respec, and the eight trees side by side with what each skill does, what it
-    needs and a Learn button. Chat has !tree, !learn, !loadout and !respec; a tree of seventy skills reads better here.
-    The rules are RavenNest.Combat's, the same the game and the server use; the server saves through SkillTreeManager.
+    The skill trees (combat v2, the game's docs/combat-skills-design.md, section 6): points to spend, a respec, the
+    loadout of active skills in priority order with when each is used, and the trees themselves: as a map
+    (js/rf-skill-tree.js: the eight trees as wedges around a centre, drag and pinch to move and zoom; WebGL where the
+    browser has it, a plain canvas where not) or as a list. A tap on the map picks a skill; the panel under it explains it
+    and has its Learn button. Chat has !tree, !learn, !loadout and !respec. The rules are RavenNest.Combat's, the same the
+    game and the server use; the server saves through SkillTreeManager and tells the game.
 *@
 @if (info == null)
 {
@@ -93,37 +99,92 @@ else
             </div>
         </div>
 
-        <div class="rf-trees__grid">
-            @foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
+        <div class="rf-trees__views" role="tablist">
+            <button type="button" role="tab" class="rf-tab @(listView ? "" : "is-active")" aria-selected="@(!listView)" @onclick="() => listView = false">Map</button>
+            <button type="button" role="tab" class="rf-tab @(listView ? "is-active" : "")" aria-selected="@listView" @onclick="() => listView = true">List</button>
+        </div>
+
+        <div class="rf-panel rf-trees__mapwrap" style="@(listView ? "display:none" : "")">
+            <div class="rf-trees__map" @ref="mapHost"></div>
+            <div class="rf-trees__mapcontrols">
+                <button type="button" class="rf-btn rf-btn--small" title="Show every tree" @onclick='() => Map("fit")'>Fit</button>
+                <button type="button" class="rf-btn rf-btn--small" title="Zoom in" @onclick='() => Map("zoomBy", 1.4)'>+</button>
+                <button type="button" class="rf-btn rf-btn--small" title="Zoom out" @onclick='() => Map("zoomBy", 1 / 1.4)'>-</button>
+            </div>
+            <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a skill to see it. Diamonds are active skills, circles passives, hexagons the special ones; a number in gold is its loadout slot.</p>
+            @if (selected != null)
             {
-                var skill = RavenNest.Combat.SkillTrees.SkillOf(tree);
-                var level = levels(skill);
-                <div class="rf-panel rf-trees__tree">
-                    <h3 class="rf-panel__title">@tree <span class="rf-meta">@skill @level</span></h3>
-                    @foreach (var node in RavenNest.Combat.SkillTrees.Of(tree).OrderBy(n => n.Tier))
+                var node = selected;
+                var rank = build.Rank(node.Id);
+                var skill = RavenNest.Combat.SkillTrees.SkillOf(node.Tree);
+                var reason = build.CanRaise(node.Id, levels, info.Earned);
+                <div class="rf-trees__picked @(rank > 0 ? "is-learned" : "")">
+                    <div class="rf-trees__node-head">
+                        <strong>@node.Name</strong>
+                        <span class="rf-chip">@node.Tree, @(node.IsActive ? "active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "learned" : "passive")</span>
+                    </div>
+                    <div class="rf-trees__node-text">@node.Description</div>
+                    <div class="rf-meta">
+                        @if (node.IsActive) { <span>Every @node.Active.Cooldown s, @RuleText(build.RuleOf(node)).ToLowerInvariant(). </span> }
+                        <span>Needs @skill @node.RequiredLevel (you have @levels(skill)), @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+                    </div>
+                    @if (canManage)
                     {
-                        var rank = build.Rank(node.Id);
-                        var open = level >= node.RequiredLevel;
-                        var reason = build.CanRaise(node.Id, levels, info.Earned);
-                        <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open ? "" : "is-locked")">
-                            <div class="rf-trees__node-head">
-                                <strong>@node.Name</strong>
-                                <span class="rf-chip">@(node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
-                            </div>
-                            <div class="rf-trees__node-text">@node.Description</div>
-                            <div class="rf-meta">
-                                @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
-                                <span>@skill @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
-                            </div>
-                            @if (canManage && rank < node.MaxRank)
+                        <div class="rf-actions">
+                            @if (rank < node.MaxRank)
                             {
-                                <button type="button" class="rf-btn rf-btn--small" disabled="@(reason != null)" title="@reason" @onclick="() => Learn(node.Id)">Learn</button>
+                                <button type="button" class="rf-btn rf-btn--primary rf-btn--small" disabled="@(reason != null)" @onclick="() => Learn(node.Id)">Learn</button>
+                                @if (reason != null) { <span class="rf-meta">@reason</span> }
+                            }
+                            @if (node.IsActive && rank > 0)
+                            {
+                                @for (var i = 0; i < build.LoadoutSlots; ++i)
+                                {
+                                    var slot = i;
+                                    var inSlot = slot < build.Loadout.Count && string.Equals(build.Loadout[slot], node.Id, StringComparison.OrdinalIgnoreCase);
+                                    <button type="button" class="rf-btn rf-btn--small @(inSlot ? "rf-btn--primary" : "")" title="Put it in slot @(slot + 1)" @onclick="() => SetSlot(slot, node.Id)">Slot @(slot + 1)</button>
+                                }
                             }
                         </div>
                     }
                 </div>
             }
         </div>
+
+        @if (listView)
+        {
+            <div class="rf-trees__grid">
+                @foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
+                {
+                    var skill = RavenNest.Combat.SkillTrees.SkillOf(tree);
+                    var level = levels(skill);
+                    <div class="rf-panel rf-trees__tree">
+                        <h3 class="rf-panel__title">@tree <span class="rf-meta">@skill @level</span></h3>
+                        @foreach (var node in RavenNest.Combat.SkillTrees.Of(tree).OrderBy(n => n.Tier))
+                        {
+                            var rank = build.Rank(node.Id);
+                            var open = level >= node.RequiredLevel;
+                            var reason = build.CanRaise(node.Id, levels, info.Earned);
+                            <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open ? "" : "is-locked")">
+                                <div class="rf-trees__node-head">
+                                    <strong>@node.Name</strong>
+                                    <span class="rf-chip">@(node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
+                                </div>
+                                <div class="rf-trees__node-text">@node.Description</div>
+                                <div class="rf-meta">
+                                    @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
+                                    <span>@skill @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+                                </div>
+                                @if (canManage && rank < node.MaxRank)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" disabled="@(reason != null)" title="@reason" @onclick="() => Learn(node.Id)">Learn</button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
     </div>
 }
 
@@ -134,13 +195,25 @@ else
     [Parameter]
     public bool CanManage { get; set; }
 
+    /// <summary>The trees' colours on the map, in SkillTree order.</summary>
+    private static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b" };
+
     private RavenNest.Models.SkillBuildInfo info;
     private SkillBuild build = new SkillBuild();
     private Func<CombatSkill, int> levels = _ => 1;
     private List<SkillNode> learnedActives = new List<SkillNode>();
     private bool canManage;
     private bool confirmRespec;
+    private bool listView;
     private string message;
+    private SkillNode selected;
+
+    private ElementReference mapHost;
+    private IJSObjectReference module;
+    private IJSObjectReference map;
+    private DotNetObjectReference<PlayerSkillTrees> self;
+    private bool mapStale = true;
+    private Guid shownPlayer;
 
     private string RespecPrice => info.FreeRespecs > 0 ? "nothing (a free respec)" : info.TomesOfForgetting > 0 ? "a Tome of Forgetting" : info.RespecCost.ToString("N0") + " coins";
 
@@ -148,7 +221,70 @@ else
     {
         var session = AuthService.GetSession();
         canManage = CanManage && session != null && SkillTrees.Owns(session.UserId, Player.Id);
+        if (shownPlayer != Player.Id) selected = null;
         Load(SkillTrees.Get(Player.Id));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (info == null || !mapStale) return;
+        mapStale = false;
+        try
+        {
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-skill-tree.js"));
+            self ??= DotNetObjectReference.Create(this);
+            if (map == null || shownPlayer != Player.Id)
+            {
+                if (map != null) { await map.InvokeVoidAsync("dispose"); await map.DisposeAsync(); }
+                map = await module.InvokeAsync<IJSObjectReference>("open", mapHost, MapData(), self, new { });
+                shownPlayer = Player.Id;
+            }
+            else
+            {
+                await map.InvokeVoidAsync("update", MapData(), false);
+            }
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>A tap on the map (js/rf-skill-tree.js).</summary>
+    [JSInvokable]
+    public Task OnNodeSelected(string id)
+    {
+        selected = RavenNest.Combat.SkillTrees.Get(id);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Map(string method, params object[] args)
+    {
+        if (map == null) return;
+        try { await map.InvokeVoidAsync(method, args); } catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>The trees and every node as the map draws them, with where this character stands on each.</summary>
+    private object MapData()
+    {
+        var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Select(t => new
+        {
+            name = t.ToString(),
+            skill = RavenNest.Combat.SkillTrees.SkillOf(t).ToString(),
+            level = levels(RavenNest.Combat.SkillTrees.SkillOf(t)),
+            color = TreeColors[(int)t],
+        }).ToList();
+        var nodes = RavenNest.Combat.SkillTrees.All.Select(n =>
+        {
+            var rank = build.Rank(n.Id);
+            var level = levels(RavenNest.Combat.SkillTrees.SkillOf(n.Tree));
+            var state = rank >= n.MaxRank ? "maxed" : rank > 0 ? "learned" : level < n.RequiredLevel ? "locked" : build.CanRaise(n.Id, levels, info.Earned) == null ? "available" : "open";
+            var slot = build.Loadout.FindIndex(x => string.Equals(x, n.Id, StringComparison.OrdinalIgnoreCase)) + 1;
+            return new
+            {
+                id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
+                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand) ? "special" : "passive",
+                rank, max = n.MaxRank, state, slot,
+            };
+        }).ToList();
+        return new { trees, nodes };
     }
 
     private void Load(RavenNest.Models.SkillBuildInfo next)
@@ -158,6 +294,7 @@ else
         build = SkillBuild.Parse(info.Build);
         levels = SkillTrees.LevelsOf(Player.Id);
         learnedActives = build.Ranks.Keys.Select(RavenNest.Combat.SkillTrees.Get).Where(n => n != null && n.IsActive).OrderBy(n => n.Name).ToList();
+        mapStale = true;
     }
 
     private void Apply(RavenNest.Models.SkillBuildResult result, string done)
@@ -165,19 +302,6 @@ else
         if (result == null) { message = "That did not go through. Try again in a moment."; return; }
         Load(result.Info);
         message = result.Success ? done : result.Message;
-    }
-
-    private void Learn(string id)
-    {
-        if (!canManage) return;
-        var node = RavenNest.Combat.SkillTrees.Get(id);
-        Apply(SkillTrees.Raise(Player.Id, id), "Learned " + node?.Name + ".");
-    }
-
-    private void SetSlot(int slot, string id)
-    {
-        if (!canManage) return;
-        Apply(SkillTrees.SetLoadout(Player.Id, slot + 1, string.IsNullOrEmpty(id) ? null : id), "Loadout saved.");
     }
 
     private static string RuleText(SkillUse use)
@@ -196,6 +320,19 @@ else
         }
     }
 
+    private void Learn(string id)
+    {
+        if (!canManage) return;
+        var node = RavenNest.Combat.SkillTrees.Get(id);
+        Apply(SkillTrees.Raise(Player.Id, id), "Learned " + node?.Name + ".");
+    }
+
+    private void SetSlot(int slot, string id)
+    {
+        if (!canManage) return;
+        Apply(SkillTrees.SetLoadout(Player.Id, slot + 1, string.IsNullOrEmpty(id) ? null : id), "Loadout saved.");
+    }
+
     private void SetRule(string id, string value)
     {
         if (!canManage || !Enum.TryParse<SkillUse>(value, out var rule)) return;
@@ -207,5 +344,16 @@ else
         if (!canManage) return;
         confirmRespec = false;
         Apply(SkillTrees.Respec(Player.Id), "Every point is back to spend.");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (map != null) { await map.InvokeVoidAsync("dispose"); await map.DisposeAsync(); }
+            if (module != null) await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+        self?.Dispose();
     }
 }

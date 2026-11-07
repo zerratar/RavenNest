@@ -45,6 +45,15 @@ namespace RavenNest.CombatSimulator
                 case "builds":
                     BuildScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bb) ? bb : 200);
                     return 0;
+                case "treejson":
+                    // the trees as the website's map takes them (js/rf-skill-tree.js), for a test page
+                    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(SkillTrees.All.Select(n => new
+                    {
+                        id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
+                        kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand) ? "special" : "passive",
+                        max = n.MaxRank, cost = n.Cost,
+                    })));
+                    return 0;
                 case "bosses":
                     BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200, args.Contains("tuned"));
                     return 0;
