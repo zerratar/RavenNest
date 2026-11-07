@@ -28,6 +28,15 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly ConcurrentDictionary<Guid, double> reportedCoinsAmount
             = new ConcurrentDictionary<Guid, double>();
 
+        private readonly ConcurrentDictionary<Guid, DateTime> coinsReportedAt
+            = new ConcurrentDictionary<Guid, DateTime>();
+
+        /// <summary>
+        ///     Coins are sent again this often even when they have not changed, so a game whose own number went wrong
+        ///     is put right without waiting for the next change.
+        /// </summary>
+        private static readonly TimeSpan CoinsResendInterval = TimeSpan.FromSeconds(60);
+
         private readonly GameData gameData;
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenbotApi;
@@ -257,20 +266,28 @@ namespace RavenNest.BusinessLogic.Game.Processors
             gameData.EnqueueGameEvent(gameEvent);
         }
 
-        private void SyncCharacterResources(DataModels.GameSession session, Character character)
+        /// <summary>
+        ///     The server owns every character's coins and the game shows what this sends (ResourceUpdate, the whole
+        ///     amount, never a change). Sent when the coins change, the first time a character is seen (the coins may
+        ///     have changed after the game got them with the character), and again every minute, so a game that changed
+        ///     its own number (0.9.6 took gifted coins off after the server had already sent the new amount, and showed
+        ///     minus the gift) is put right.
+        /// </summary>
+        private void SyncCharacterResources(DataModels.GameSession session, Character character, DateTime utcNow)
         {
             var resources = gameData.GetResources(character);
-            var exists = reportedCoinsAmount.TryGetValue(character.Id, out var val);
-            if (val != resources.Coins)
-            {
-                reportedCoinsAmount[character.Id] = resources.Coins;
+            if (resources == null) return;
 
-                // only send the update if it already exists, this makes sure that players that join in late dont get spammed these messages.
-                if (exists)
-                {
-                    UpdateResources(gameData, session, character, resources);
-                }
+            var known = reportedCoinsAmount.TryGetValue(character.Id, out var reported);
+            var due = !coinsReportedAt.TryGetValue(character.Id, out var reportedAt) || utcNow - reportedAt >= CoinsResendInterval;
+            if (known && reported == resources.Coins && !due)
+            {
+                return;
             }
+
+            reportedCoinsAmount[character.Id] = resources.Coins;
+            coinsReportedAt[character.Id] = utcNow;
+            UpdateResources(gameData, session, character, resources);
         }
 
 
@@ -312,7 +329,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     //}
                     var user = gameData.GetUser(character.UserId);
                     var inventory = inventoryProvider.Get(character.Id);
-                    SyncCharacterResources(session, character);
+                    SyncCharacterResources(session, character, utcNow);
                     UpdateActiveStatusEffects(utcNow, character);
 
                     var state = gameData.GetCharacterState(character.StateId);
