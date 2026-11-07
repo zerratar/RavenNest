@@ -16,6 +16,7 @@ namespace RavenNest.Controllers
         private readonly VillageManager villageManager;
         private readonly VillageRoadManager roadManager;
         private readonly VillageDecorManager decorManager;
+        private readonly SessionManager sessions;
 
         public VillageController(
             ILogger<VillageController> logger,
@@ -32,6 +33,7 @@ namespace RavenNest.Controllers
             this.villageManager = villageManager;
             this.roadManager = roadManager;
             this.decorManager = decorManager;
+            this.sessions = sessionManager;
         }
 
         // ---- Decor, placed in build mode. See VillageDecorManager. ----
@@ -226,7 +228,16 @@ namespace RavenNest.Controllers
         {
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
-            return villageManager.UpgradeTownHall(sessionToken.SessionId);
+            var hall = villageManager.UpgradeTownHall(sessionToken.SessionId);
+
+            // the village's resources after the cost, sent now rather than with the next 30 s update: the game shows what
+            // the server sends and no longer takes the cost off itself (that raced this update and could count it twice)
+            if (hall != null)
+            {
+                var session = GameData.GetSession(sessionToken.SessionId);
+                if (session != null) sessions.SendVillageInfo(session);
+            }
+            return hall;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
