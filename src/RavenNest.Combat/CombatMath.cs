@@ -43,6 +43,12 @@ namespace RavenNest.Combat
 
         /// <summary>Life steal: what the blow heals the attacker.</summary>
         public int Healed;
+
+        /// <summary>The defender blocked: the blow did half.</summary>
+        public bool Blocked;
+
+        /// <summary>Bleed on crit: damage to deal over 4 s (the status effects do it).</summary>
+        public double Bleed;
     }
 
     public struct ElementProc
@@ -103,6 +109,10 @@ namespace RavenNest.Combat
         public const double MaxLifeSteal = 0.25;
         public const double MaxArmorPenetration = 0.75;
         public const double MaxAttackSpeed = 2.0;
+        public const double MaxBlockChance = 0.5;
+
+        /// <summary>Below this share of health a target takes the attacker's ExecuteDamage.</summary>
+        public const double ExecuteThreshold = 0.3;
 
         public static int MaxHealth(int healthLevel, int bonus = 0) => Math.Max(1, healthLevel * HealthPerLevel + bonus);
 
@@ -164,14 +174,17 @@ namespace RavenNest.Combat
 
             if (!options.CannotMiss)
             {
-                var accuracy = AccuracyRating(stats.AimLevel, stats.Accuracy);
+                var accuracy = AccuracyRating(stats.AimLevel, stats.EffectiveAccuracy);
                 var evasion = EvasionRating(defender.DefenseLevel, defender.GearEvasion);
                 if (random.Next() >= HitChance(accuracy, evasion))
                     return result;
             }
 
             result.Hit = true;
-            var raw = MaxHit(stats.DamageLevel, stats.Power) * RollHitShare(random) * multiplier * attacker.DamageMultiplier;
+            var raw = MaxHit(stats.DamageLevel, stats.EffectivePower) * RollHitShare(random) * multiplier * attacker.DamageMultiplier;
+            if (defender.IsBoss) raw *= 1 + attacker.BossDamage;
+            if (defender.CurrentHealthShare < ExecuteThreshold) raw *= 1 + attacker.ExecuteDamage;
+            if (defender.Family == EnemyFamily.Undead) raw *= 1 + attacker.UndeadDamage;
             if (random.Next() < attacker.CritChance)
             {
                 result.Critical = true;
@@ -200,7 +213,7 @@ namespace RavenNest.Combat
             split.Physical = Math.Max(0, split.Physical);
 
             var ignored = Clamp(options.ArmorIgnored + attacker.ArmorPenetration, 0, MaxArmorPenetration);
-            var reduction = ArmorReduction((int)(defender.Armor * (1 - ignored)));
+            var reduction = ArmorReduction((int)(defender.EffectiveArmor * (1 - ignored)));
             var armorLeft = 1 - reduction;
             var elementArmorLeft = 1 - reduction * ElementArmorShare;
             var carried = 0;
@@ -212,11 +225,21 @@ namespace RavenNest.Combat
                 carried++;
                 var amount = raw * share;
                 amount *= element == Element.Physical ? armorLeft : elementArmorLeft;
-                var left = ResistanceMultiplier(defender.Resistance[element], defender.IsPlayer);
+                var resistance = defender.Resistance[element] - (element == Element.Physical ? 0 : attacker.ResistanceShred);
+                var left = ResistanceMultiplier(resistance, defender.IsPlayer);
                 if (left <= 0) immune++;
                 amount *= left * defender.DamageTakenMultiplier;
                 result.Damage[element] = amount;
             }
+
+            // a block takes half; the low health passive takes its share while below half health
+            if (defender.BlockChance > 0 && random.Next() < Math.Min(defender.BlockChance, MaxBlockChance))
+            {
+                result.Blocked = true;
+                result.Damage = result.Damage * 0.5;
+            }
+            if (defender.LowHealthReduction > 0 && defender.CurrentHealthShare < 0.5)
+                result.Damage = result.Damage * (1 - Math.Min(defender.LowHealthReduction, MaxDamageReduction));
 
             var total = result.Damage.Total;
             result.Immune = carried > 0 && immune == carried;
@@ -227,6 +250,8 @@ namespace RavenNest.Combat
                     result.Reflected = (int)Math.Round(result.Total * Math.Min(defender.Thorns, MaxThorns));
                 if (attacker.LifeSteal > 0)
                     result.Healed = (int)Math.Round(result.Total * Math.Min(attacker.LifeSteal, MaxLifeSteal));
+                if (result.Critical && attacker.BleedOnCrit > 0)
+                    result.Bleed = result.Total * attacker.BleedOnCrit;
             }
 
             // element effects: a share of the blow in an element gives that element's effect a chance
@@ -250,7 +275,7 @@ namespace RavenNest.Combat
         public static HealResult Heal(CombatSheet healer, ICombatRandom random, double multiplier = 1)
         {
             var stats = healer.Healing;
-            var amount = MaxHit(stats.DamageLevel, stats.Power) * RollHitShare(random) * multiplier * healer.HealingMultiplier;
+            var amount = MaxHit(stats.DamageLevel, stats.EffectivePower) * RollHitShare(random) * multiplier * healer.HealingMultiplier;
             var result = new HealResult();
             if (random.Next() < healer.CritChance)
             {

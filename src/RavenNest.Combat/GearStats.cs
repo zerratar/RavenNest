@@ -50,6 +50,47 @@ namespace RavenNest.Combat
         AttackSpeed,
         /// <summary>A share of the target's armour your blows ignore (caps at 75%).</summary>
         ArmorPenetration,
+
+        // shares that the skill trees' passives mostly give (2026-11-07), usable on gear too
+        /// <summary>A share more melee power (power from gear times 1 + this).</summary>
+        MeleePowerBonus,
+        RangedPowerBonus,
+        MagicPowerBonus,
+        HealingPowerBonus,
+        /// <summary>A share more accuracy from gear, every style.</summary>
+        AccuracyBonus,
+        /// <summary>A share more armour.</summary>
+        ArmorBonus,
+        /// <summary>A share more maximum health.</summary>
+        MaxHealthBonus,
+        /// <summary>The chance to block a blow, taking half of it (caps at 50%; the game asks for a shield).</summary>
+        BlockChance,
+        /// <summary>A share faster heals and spells.</summary>
+        CastSpeed,
+        /// <summary>A share more healing received from anyone.</summary>
+        HealingReceived,
+        /// <summary>A share more damage to bosses.</summary>
+        BossDamage,
+        /// <summary>A share more damage to enemies below 30% health.</summary>
+        ExecuteDamage,
+        /// <summary>A share less damage taken while below half health (caps at 50%).</summary>
+        LowHealthReduction,
+        /// <summary>Critical hits make the target bleed this share of the hit over 4 s.</summary>
+        BleedOnCrit,
+        /// <summary>Heals also give the target a shield of this share of the heal.</summary>
+        HealShield,
+        /// <summary>A share of maximum health regained every second in combat.</summary>
+        CombatRegen,
+        /// <summary>Burns you cause hurt this share more.</summary>
+        BurnBonus,
+        /// <summary>Your blows treat the target's element resistances as this much lower.</summary>
+        ResistanceShred,
+        /// <summary>A share more loot in raids and dungeons (the server rolls it).</summary>
+        LootLuck,
+        /// <summary>Your stuns, freezes and roots last this share longer.</summary>
+        CrowdControlDuration,
+        /// <summary>A share more damage to the undead.</summary>
+        UndeadDamage,
     }
 
     /// <summary>
@@ -61,7 +102,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.ArmorPenetration + 1;
+        public const int Count = (int)GearStat.UndeadDamage + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
@@ -350,6 +391,32 @@ namespace RavenNest.Combat
             sheet.LifeSteal += this[GearStat.LifeSteal];
             sheet.AttackSpeed = Math.Min(CombatMath.MaxAttackSpeed, sheet.AttackSpeed + this[GearStat.AttackSpeed]);
             sheet.ArmorPenetration += this[GearStat.ArmorPenetration];
+
+            sheet.Melee.PowerBonus += this[GearStat.MeleePowerBonus];
+            sheet.Ranged.PowerBonus += this[GearStat.RangedPowerBonus];
+            sheet.Magic.PowerBonus += this[GearStat.MagicPowerBonus];
+            sheet.Healing.PowerBonus += this[GearStat.HealingPowerBonus];
+            var accuracy = this[GearStat.AccuracyBonus];
+            sheet.Melee.AccuracyBonus += accuracy;
+            sheet.Ranged.AccuracyBonus += accuracy;
+            sheet.Magic.AccuracyBonus += accuracy;
+            sheet.ArmorBonus += this[GearStat.ArmorBonus];
+            sheet.BlockChance += this[GearStat.BlockChance];
+            sheet.CastSpeed += this[GearStat.CastSpeed];
+            sheet.HealingReceived += this[GearStat.HealingReceived];
+            sheet.BossDamage += this[GearStat.BossDamage];
+            sheet.ExecuteDamage += this[GearStat.ExecuteDamage];
+            sheet.LowHealthReduction += this[GearStat.LowHealthReduction];
+            sheet.BleedOnCrit += this[GearStat.BleedOnCrit];
+            sheet.HealShield += this[GearStat.HealShield];
+            sheet.CombatRegen += this[GearStat.CombatRegen];
+            sheet.BurnBonus += this[GearStat.BurnBonus];
+            sheet.ResistanceShred += this[GearStat.ResistanceShred];
+            sheet.LootLuck += this[GearStat.LootLuck];
+            sheet.CrowdControlDuration += this[GearStat.CrowdControlDuration];
+            sheet.UndeadDamage += this[GearStat.UndeadDamage];
+            // health: the share is of the pool the sheet already holds (the game adds it to the Health pool itself)
+            if (this[GearStat.MaxHealthBonus] != 0) sheet.MaxHealth = (int)(sheet.MaxHealth * (1 + this[GearStat.MaxHealthBonus]));
 
             var element = ElementDamage;
             if (element.Total == 0) return;

@@ -94,6 +94,7 @@ namespace RavenNest.Combat
                 Resistance = Resistance,
                 IsPlayer = false,
                 IsBoss = IsBoss,
+                Family = Family,
             };
 
             sheet.Melee.DamageLevel = Strength;
@@ -117,6 +118,7 @@ namespace RavenNest.Combat
         {
             sheet.Resistance = Resistance;
             sheet.IsBoss = IsBoss;
+            sheet.Family = Family;
             if (Element != Element.Physical && ElementShare > 0)
             {
                 var share = ElementShare > 1 ? 1 : ElementShare;

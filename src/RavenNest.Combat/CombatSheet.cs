@@ -29,6 +29,13 @@ namespace RavenNest.Combat
         /// </summary>
         public ElementValues Conversion;
 
+        /// <summary>Shares more power and accuracy (passives, gear): power times 1 + PowerBonus.</summary>
+        public double PowerBonus;
+        public double AccuracyBonus;
+
+        public int EffectivePower => (int)(Power * (1 + PowerBonus));
+        public int EffectiveAccuracy => (int)(Accuracy * (1 + AccuracyBonus));
+
         public StyleStats Copy() => (StyleStats)MemberwiseClone();
     }
 
@@ -86,6 +93,31 @@ namespace RavenNest.Combat
 
         /// <summary>The share of the target's armour the fighter's blows ignore.</summary>
         public double ArmorPenetration;
+
+        // the skill trees' passives (and gear that carries the same stats); 0 means none
+        public double ArmorBonus;
+        public double BlockChance;
+        public double CastSpeed = 1;
+        public double HealingReceived;
+        public double BossDamage;
+        public double ExecuteDamage;
+        public double LowHealthReduction;
+        public double BleedOnCrit;
+        public double HealShield;
+        public double CombatRegen;
+        public double BurnBonus;
+        public double ResistanceShred;
+        public double LootLuck;
+        public double CrowdControlDuration;
+        public double UndeadDamage;
+
+        /// <summary>Health left as a share of the pool (1 is full): for execute damage and low health passives.</summary>
+        public double CurrentHealthShare = 1;
+
+        /// <summary>An enemy's family (undead take more from UndeadDamage); null for players.</summary>
+        public EnemyFamily? Family;
+
+        public int EffectiveArmor => (int)(Armor * (1 + ArmorBonus));
 
         /// <summary>Players cap their resistances (75%); enemies may be immune.</summary>
         public bool IsPlayer;
