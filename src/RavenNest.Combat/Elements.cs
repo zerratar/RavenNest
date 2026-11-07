@@ -26,6 +26,7 @@ namespace RavenNest.Combat
     ///     One number per element: element damage shares, resistances, or damage dealt by element. A struct, so a
     ///     sheet copies cleanly and nothing allocates in a fight.
     /// </summary>
+    [Serializable]
     public struct ElementValues
     {
         public double Physical;

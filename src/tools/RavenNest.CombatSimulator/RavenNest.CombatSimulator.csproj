@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <None Update="data\items.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="data\enemies.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
