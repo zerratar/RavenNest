@@ -131,6 +131,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanJoinRequest> clanJoinRequests;
         private readonly EntitySet<ClanPageSettings> clanPageSettings;
         private readonly EntitySet<CharacterSkillBuild> characterSkillBuilds;
+        private readonly EntitySet<StreamTower> streamTowers;
+        private readonly EntitySet<TowerClear> towerClears;
         private readonly EntitySet<ClanPost> clanPosts;
         private readonly EntitySet<ClanPostReport> clanPostReports;
         private readonly EntitySet<InventoryItem> inventoryItems;
@@ -249,6 +251,8 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClanJoinRequest),
                 typeof(ClanPageSettings),
                 typeof(CharacterSkillBuild),
+                typeof(StreamTower),
+                typeof(TowerClear),
                 typeof(ClanPost),
                 typeof(ClanPostReport),
                 typeof(StreamerShopListing),
@@ -444,6 +448,10 @@ namespace RavenNest.BusinessLogic.Data
                     clanPageSettings.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     characterSkillBuilds = new EntitySet<CharacterSkillBuild>(ctx.CharacterSkillBuild.ToList());
                     characterSkillBuilds.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    streamTowers = new EntitySet<StreamTower>(ctx.StreamTower.ToList());
+                    streamTowers.RegisterLookupGroup(nameof(User), x => x.UserId);
+                    towerClears = new EntitySet<TowerClear>(ctx.TowerClear.ToList());
+                    towerClears.RegisterLookupGroup(nameof(User), x => x.UserId);
                     clanPosts = new EntitySet<ClanPost>(ctx.ClanPost.ToList());
                     clanPosts.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanPostReports = new EntitySet<ClanPostReport>(ctx.ClanPostReport.ToList());
@@ -575,7 +583,7 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties, vendorTransaction,
                         userBankItems,
                         clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests, clanPageSettings, clanPosts, clanPostReports,
-                        characterSkillBuilds,
+                        characterSkillBuilds, streamTowers, towerClears,
                         streamerShopListings, streamerShopTransactions,
                         clanImages,
                         characterSkillRecords,
@@ -3239,6 +3247,8 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(ClanJoinRequest item) => Update(() => clanJoinRequests.Add(item));
         public AddEntityResult Add(ClanPageSettings item) => Update(() => clanPageSettings.Add(item));
         public AddEntityResult Add(CharacterSkillBuild item) => Update(() => characterSkillBuilds.Add(item));
+        public AddEntityResult Add(StreamTower item) => Update(() => streamTowers.Add(item));
+        public AddEntityResult Add(TowerClear item) => Update(() => towerClears.Add(item));
         public AddEntityResult Add(ClanPost item) => Update(() => clanPosts.Add(item));
         public AddEntityResult Add(ClanPostReport item) => Update(() => clanPostReports.Add(item));
 
@@ -3825,6 +3835,10 @@ namespace RavenNest.BusinessLogic.Data
         /// <summary>The clan's page settings, or null while the owner has changed nothing.</summary>
         public ClanPageSettings GetClanPageSettings(Guid clanId) => clanPageSettings[nameof(Clan), clanId].FirstOrDefault();
         public CharacterSkillBuild GetCharacterSkillBuild(Guid characterId) => characterSkillBuilds[nameof(Character), characterId].FirstOrDefault();
+        public StreamTower GetStreamTower(Guid userId) => streamTowers[nameof(User), userId].FirstOrDefault();
+        public IReadOnlyList<StreamTower> GetStreamTowers() => streamTowers.Entities.ToList();
+        public IReadOnlyList<TowerClear> GetTowerClears(Guid userId) => towerClears[nameof(User), userId].ToList();
+        public IReadOnlyList<TowerClear> GetTowerClears() => towerClears.Entities.ToList();
         public IReadOnlyList<ClanPost> GetClanPosts(Guid clanId) => clanPosts[nameof(Clan), clanId].ToList();
         public ClanPost GetClanPost(Guid postId) => clanPosts[postId];
         public IReadOnlyList<ClanPostReport> GetClanPostReports() => clanPostReports.Entities.ToList();

@@ -63,8 +63,11 @@ namespace RavenNest.CombatSimulator
                 case "bosses":
                     BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200, args.Contains("tuned"));
                     return 0;
+                case "tower":
+                    TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
+                    return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], pets [runs] [armour share] [offence share]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], pets [runs] [armour share] [offence share], tower [attempts]");
                     return 1;
             }
         }

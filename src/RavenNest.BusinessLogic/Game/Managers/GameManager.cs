@@ -492,6 +492,36 @@ namespace RavenNest.BusinessLogic.Game
             return rewards.ToArray();
         }
 
+        /// <summary>
+        /// A tower floor's chest (the game's docs/tower-design.md): for every character, <paramref name="rolls"/> items from
+        /// the dungeon drop table of <paramref name="tier"/>, the ones their Slayer level allows. No throttle and no quest
+        /// progress here: the tower's manager decides when a floor pays.
+        /// </summary>
+        public EventItemReward[] RollTowerChest(DataModels.GameSession gameSession, int tier, Guid[] characters, int rolls)
+        {
+            var rewards = new List<EventItemReward>();
+            if (gameSession == null || characters == null) return rewards.ToArray();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+            var dropList = GetDungeonDropList(Math.Clamp(tier, 0, 4));
+            foreach (var id in characters.Distinct())
+            {
+                var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
+                if (character == null) continue;
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                if (dl.Count == 0) continue;
+                for (var r = 0; r < rolls; ++r)
+                {
+                    var dropRates = dl.Select((x, index) => new { DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                    var item = dropRates.Weighted(x => x.DropRate, rng);
+                    var stack = inventoryProvider.Get(character.Id).AddItem(item.ItemId, 1).FirstOrDefault();
+                    rewards.Add(new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = item.ItemId, InventoryItemId = stack.Id });
+                }
+            }
+            return rewards.ToArray();
+        }
+
         public EventItemReward[] GetRaidRewardsAsync(SessionToken session, Guid[] characters)
         {
             try

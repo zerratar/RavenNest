@@ -91,6 +91,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ClanPageSettings> ClanPageSettings { get; set; }
         public virtual DbSet<ClanPost> ClanPost { get; set; }
         public virtual DbSet<CharacterSkillBuild> CharacterSkillBuild { get; set; }
+        public virtual DbSet<StreamTower> StreamTower { get; set; }
+        public virtual DbSet<TowerClear> TowerClear { get; set; }
         public virtual DbSet<ClanPostReport> ClanPostReport { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
@@ -255,6 +257,8 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<ClanPageSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanPost>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterSkillBuild>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<StreamTower>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<TowerClear>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanPostReport>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
