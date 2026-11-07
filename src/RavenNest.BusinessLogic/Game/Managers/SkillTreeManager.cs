@@ -48,6 +48,20 @@ namespace RavenNest.BusinessLogic.Game
             }
         };
 
+        /// <summary>The character's combat levels, for which nodes are open (the website's skill tree page).</summary>
+        public Func<CombatSkill, int> LevelsOf(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            return LevelOf(character != null ? gameData.GetCharacterSkills(character.SkillsId) : null);
+        }
+
+        /// <summary>Whether the user may change this character's trees (their own character).</summary>
+        public bool Owns(Guid userId, Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            return character != null && character.UserId == userId;
+        }
+
         public SkillBuildInfo Get(Guid characterId)
         {
             var character = gameData.GetCharacter(characterId);

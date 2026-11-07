@@ -1,0 +1,171 @@
+@using RavenNest.Combat
+@using RavenNest.BusinessLogic.Game
+@inject SkillTreeManager SkillTrees
+@inject RavenNest.Blazor.Services.AuthService AuthService
+
+@*
+    The skill trees (combat v2, the game's docs/combat-skills-design.md, section 6): points to spend, the loadout of
+    active skills in priority order, a respec, and the eight trees side by side with what each skill does, what it
+    needs and a Learn button. Chat has !tree, !learn, !loadout and !respec; a tree of seventy skills reads better here.
+    The rules are RavenNest.Combat's, the same the game and the server use; the server saves through SkillTreeManager.
+*@
+@if (info == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else
+{
+    <div class="rf-trees">
+        <div class="rf-panel rf-panel--accent rf-trees__head">
+            <div>
+                <h3 class="rf-panel__title">@(info.Earned - info.Spent) of @info.Earned skill points to spend</h3>
+                <p class="rf-meta">
+                    Points come from your combat levels (one per ten levels up to 1,000, then one per forty). A skill also
+                    needs a level in its tree's combat skill. Passives always work; your character uses the active skills in
+                    its loadout by itself, the first one that fits first.
+                </p>
+            </div>
+            @if (canManage)
+            {
+                <div class="rf-actions">
+                    @if (!confirmRespec)
+                    {
+                        <button type="button" class="rf-btn" disabled="@(info.Spent == 0)" @onclick="() => confirmRespec = true">Respec</button>
+                    }
+                    else
+                    {
+                        <span class="rf-meta">Give back all @info.Spent points for @RespecPrice?</span>
+                        <button type="button" class="rf-btn rf-btn--primary" @onclick="Respec">Yes, respec</button>
+                        <button type="button" class="rf-btn" @onclick="() => confirmRespec = false">Cancel</button>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="rf-panel rf-trees__message">@message</div>
+        }
+
+        <div class="rf-panel">
+            <h3 class="rf-panel__title">Loadout</h3>
+            <div class="rf-trees__loadout">
+                @for (var i = 0; i < build.LoadoutSlots; ++i)
+                {
+                    var slot = i;
+                    var current = slot < build.Loadout.Count ? build.Loadout[slot] : "";
+                    <label class="rf-trees__slot">
+                        <span class="rf-trees__slot-number">@(slot + 1)</span>
+                        @if (canManage)
+                        {
+                            <select value="@current" @onchange="e => SetSlot(slot, e.Value?.ToString())">
+                                <option value="">(empty)</option>
+                                @foreach (var node in learnedActives)
+                                {
+                                    <option value="@node.Id">@node.Name</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <span>@(RavenNest.Combat.SkillTrees.Get(current)?.Name ?? "(empty)")</span>
+                        }
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="rf-trees__grid">
+            @foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
+            {
+                var skill = RavenNest.Combat.SkillTrees.SkillOf(tree);
+                var level = levels(skill);
+                <div class="rf-panel rf-trees__tree">
+                    <h3 class="rf-panel__title">@tree <span class="rf-meta">@skill @level</span></h3>
+                    @foreach (var node in RavenNest.Combat.SkillTrees.Of(tree).OrderBy(n => n.Tier))
+                    {
+                        var rank = build.Rank(node.Id);
+                        var open = level >= node.RequiredLevel;
+                        var reason = build.CanRaise(node.Id, levels, info.Earned);
+                        <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open ? "" : "is-locked")">
+                            <div class="rf-trees__node-head">
+                                <strong>@node.Name</strong>
+                                <span class="rf-chip">@(node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
+                            </div>
+                            <div class="rf-trees__node-text">@node.Description</div>
+                            <div class="rf-meta">
+                                @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
+                                <span>@skill @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+                            </div>
+                            @if (canManage && rank < node.MaxRank)
+                            {
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(reason != null)" title="@reason" @onclick="() => Learn(node.Id)">Learn</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RavenNest.BusinessLogic.Extended.WebsitePlayer Player { get; set; }
+
+    [Parameter]
+    public bool CanManage { get; set; }
+
+    private RavenNest.Models.SkillBuildInfo info;
+    private SkillBuild build = new SkillBuild();
+    private Func<CombatSkill, int> levels = _ => 1;
+    private List<SkillNode> learnedActives = new List<SkillNode>();
+    private bool canManage;
+    private bool confirmRespec;
+    private string message;
+
+    private string RespecPrice => info.FreeRespecs > 0 ? "nothing (a free respec)" : info.TomesOfForgetting > 0 ? "a Tome of Forgetting" : info.RespecCost.ToString("N0") + " coins";
+
+    protected override void OnParametersSet()
+    {
+        var session = AuthService.GetSession();
+        canManage = CanManage && session != null && SkillTrees.Owns(session.UserId, Player.Id);
+        Load(SkillTrees.Get(Player.Id));
+    }
+
+    private void Load(RavenNest.Models.SkillBuildInfo next)
+    {
+        if (next == null) return;
+        info = next;
+        build = SkillBuild.Parse(info.Build);
+        levels = SkillTrees.LevelsOf(Player.Id);
+        learnedActives = build.Ranks.Keys.Select(RavenNest.Combat.SkillTrees.Get).Where(n => n != null && n.IsActive).OrderBy(n => n.Name).ToList();
+    }
+
+    private void Apply(RavenNest.Models.SkillBuildResult result, string done)
+    {
+        if (result == null) { message = "That did not go through. Try again in a moment."; return; }
+        Load(result.Info);
+        message = result.Success ? done : result.Message;
+    }
+
+    private void Learn(string id)
+    {
+        if (!canManage) return;
+        var node = RavenNest.Combat.SkillTrees.Get(id);
+        Apply(SkillTrees.Raise(Player.Id, id), "Learned " + node?.Name + ". If the character is playing, the game follows when it next asks (!tree).");
+    }
+
+    private void SetSlot(int slot, string id)
+    {
+        if (!canManage) return;
+        Apply(SkillTrees.SetLoadout(Player.Id, slot + 1, string.IsNullOrEmpty(id) ? null : id), "Loadout saved.");
+    }
+
+    private void Respec()
+    {
+        if (!canManage) return;
+        confirmRespec = false;
+        Apply(SkillTrees.Respec(Player.Id), "Every point is back to spend.");
+    }
+}

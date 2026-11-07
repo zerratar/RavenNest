@@ -91,6 +91,7 @@
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Overview)" class="rf-tab @SelectedClass(CharacterViewState.Overview)" @onclick="ShowOverview">Overview</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Skills)" class="rf-tab @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Inventory)" class="rf-tab @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+        <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.SkillTrees)" class="rf-tab @SelectedClass(CharacterViewState.SkillTrees)" @onclick="() => viewState = CharacterViewState.SkillTrees">Skill trees</button>
 
         @if (CanManage)
         {
@@ -129,6 +130,9 @@
             break;
         case CharacterViewState.Clan:
             <PlayerClan Player="@SelectedPlayer" CanManage="CanManage"></PlayerClan>
+            break;
+        case CharacterViewState.SkillTrees:
+            <PlayerSkillTrees Player="@SelectedPlayer" CanManage="CanManage"></PlayerSkillTrees>
             break;
         case CharacterViewState.Customization:
             <div class="rf-panel">
@@ -250,6 +254,8 @@
             case "customise":
             case "customize": viewState = CharacterViewState.Customization; break;
             case "boats": viewState = CharacterViewState.Boats; break;
+            case "trees":
+            case "skill-trees": viewState = CharacterViewState.SkillTrees; break;
             default: viewState = CharacterViewState.Overview; break;
         }
     }
@@ -322,7 +328,8 @@
         Clan,
         Customization,
         Map,
-        Boats
+        Boats,
+        SkillTrees
     }
 
     /// <summary>The character's own boats (the signed-in player's; none for somebody else's character).</summary>

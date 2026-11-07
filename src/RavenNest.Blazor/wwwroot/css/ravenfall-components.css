@@ -5681,3 +5681,20 @@ a.rf-badge:hover {
     margin: 0 0 0 auto;
     align-items: center;
 }
+
+/* ---- Skill trees (combat v2, PlayerSkillTrees.razor) ------------------------------------------------- */
+
+.rf-trees { display: flex; flex-direction: column; gap: var(--rf-space-4); }
+.rf-trees__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--rf-space-4); }
+.rf-trees__message { border-color: var(--rf-line-gold); }
+.rf-trees__loadout { display: flex; flex-wrap: wrap; gap: var(--rf-space-3); }
+.rf-trees__slot { display: flex; align-items: center; gap: var(--rf-space-2); background: var(--rf-surface-2); border: 1px solid var(--rf-line); border-radius: var(--rf-radius); padding: var(--rf-space-2) var(--rf-space-3); }
+.rf-trees__slot select { background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
+.rf-trees__slot-number { color: var(--rf-gold); font-weight: 700; }
+.rf-trees__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--rf-space-4); }
+.rf-trees__tree { display: flex; flex-direction: column; gap: var(--rf-space-2); }
+.rf-trees__node { border: 1px solid var(--rf-line); border-radius: var(--rf-radius); padding: var(--rf-space-2) var(--rf-space-3); background: var(--rf-surface-2); display: flex; flex-direction: column; gap: var(--rf-space-1); }
+.rf-trees__node.is-learned { border-color: var(--rf-line-gold); background: var(--rf-gold-wash); }
+.rf-trees__node.is-locked { opacity: 0.55; }
+.rf-trees__node-head { display: flex; justify-content: space-between; align-items: center; gap: var(--rf-space-2); }
+.rf-trees__node .rf-btn { align-self: flex-start; }
