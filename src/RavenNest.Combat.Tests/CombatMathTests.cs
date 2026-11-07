@@ -154,7 +154,7 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void Armor_only_reduces_physical()
+        public void Armor_reduces_physical_fully_and_elements_by_half_its_share()
         {
             var a = Fighter(100, 200);
             var armored = Fighter(100, 0, 2000);
@@ -164,7 +164,8 @@ namespace RavenNest.Combat.Tests
             double Average(CombatSheet target, AttackOptions o) =>
                 Enumerable.Range(0, 3000).Average(i => CombatMath.Attack(a, AttackStyle.Melee, target, new SeededCombatRandom(i), o).Total);
             Assert.True(Average(armored, physical) < Average(bare, physical) * 0.7);
-            Assert.InRange(Average(armored, fire) / Average(bare, fire), 0.99, 1.01);
+            // 2000 armour takes 2000 / 2640 = 75.8% off physical, half of that (37.9%) off fire
+            Assert.InRange(Average(armored, fire) / Average(bare, fire), 0.61, 0.63);
         }
 
         [Fact]

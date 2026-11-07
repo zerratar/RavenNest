@@ -36,6 +36,20 @@ namespace RavenNest.Combat
         IceResistance,
         LightningResistance,
         PoisonResistance,
+
+        // the magical ones (2026-11-07): new values go at the end, the text form names them
+        /// <summary>A share of every melee blow taken that hurts the attacker back (players cap at 50%).</summary>
+        Thorns,
+        /// <summary>More threat from everything you do: enemies come for you (a tank's stat).</summary>
+        Threat,
+        /// <summary>A share taken off all damage (players cap at 50%).</summary>
+        DamageReduction,
+        /// <summary>A share of the damage you deal heals you (caps at 25%).</summary>
+        LifeSteal,
+        /// <summary>Attacks this share more often (10% swings 1.5 s every 1.36 s).</summary>
+        AttackSpeed,
+        /// <summary>A share of the target's armour your blows ignore (caps at 75%).</summary>
+        ArmorPenetration,
     }
 
     /// <summary>
@@ -47,7 +61,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.PoisonResistance + 1;
+        public const int Count = (int)GearStat.ArmorPenetration + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
@@ -329,6 +343,13 @@ namespace RavenNest.Combat
             sheet.CritChance += this[GearStat.CritChance];
             sheet.CritDamage += this[GearStat.CritDamage];
             sheet.Resistance += Resistance;
+            sheet.Thorns += this[GearStat.Thorns];
+            sheet.ThreatMultiplier += this[GearStat.Threat];
+            if (this[GearStat.DamageReduction] != 0)
+                sheet.DamageTakenMultiplier *= 1 - Math.Min(this[GearStat.DamageReduction], CombatMath.MaxDamageReduction);
+            sheet.LifeSteal += this[GearStat.LifeSteal];
+            sheet.AttackSpeed = Math.Min(CombatMath.MaxAttackSpeed, sheet.AttackSpeed + this[GearStat.AttackSpeed]);
+            sheet.ArmorPenetration += this[GearStat.ArmorPenetration];
 
             var element = ElementDamage;
             if (element.Total == 0) return;

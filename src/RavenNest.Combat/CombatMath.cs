@@ -37,6 +37,12 @@ namespace RavenNest.Combat
 
         /// <summary>The element effects that triggered (burn, chill, shock, poison), for the status effect system.</summary>
         public List<ElementProc> Procs = new List<ElementProc>();
+
+        /// <summary>Thorns: what the blow does back to the attacker (melee blows only).</summary>
+        public int Reflected;
+
+        /// <summary>Life steal: what the blow heals the attacker.</summary>
+        public int Healed;
     }
 
     public struct ElementProc
@@ -83,6 +89,20 @@ namespace RavenNest.Combat
         /// <summary>An element's effect always has this chance when the element dealt damage, plus up to <see cref="ProcShareChance"/> by its share of the blow.</summary>
         public const double ProcBaseChance = 0.10;
         public const double ProcShareChance = 0.40;
+
+        /// <summary>
+        ///     Armour takes this share of its usual cut off element damage too. Elements skipping armour altogether made
+        ///     any element the target did not resist end armoured fights a third sooner (simulator, 2026-11-07); at half,
+        ///     armour still counts and elements still pay off against weaknesses and lightly armoured foes.
+        /// </summary>
+        public const double ElementArmorShare = 0.5;
+
+        /// <summary>Caps on the new gear stats for players, so stacking one never breaks a fight.</summary>
+        public const double MaxDamageReduction = 0.5;
+        public const double MaxThorns = 0.5;
+        public const double MaxLifeSteal = 0.25;
+        public const double MaxArmorPenetration = 0.75;
+        public const double MaxAttackSpeed = 2.0;
 
         public static int MaxHealth(int healthLevel, int bonus = 0) => Math.Max(1, healthLevel * HealthPerLevel + bonus);
 
@@ -179,7 +199,10 @@ namespace RavenNest.Combat
             split += attacker.ElementBonus;
             split.Physical = Math.Max(0, split.Physical);
 
-            var armorLeft = 1 - ArmorReduction((int)(defender.Armor * (1 - Clamp(options.ArmorIgnored, 0, 1))));
+            var ignored = Clamp(options.ArmorIgnored + attacker.ArmorPenetration, 0, MaxArmorPenetration);
+            var reduction = ArmorReduction((int)(defender.Armor * (1 - ignored)));
+            var armorLeft = 1 - reduction;
+            var elementArmorLeft = 1 - reduction * ElementArmorShare;
             var carried = 0;
             var immune = 0;
             foreach (var element in Elements.All)
@@ -188,7 +211,7 @@ namespace RavenNest.Combat
                 if (share <= 0) continue;
                 carried++;
                 var amount = raw * share;
-                if (element == Element.Physical) amount *= armorLeft;
+                amount *= element == Element.Physical ? armorLeft : elementArmorLeft;
                 var left = ResistanceMultiplier(defender.Resistance[element], defender.IsPlayer);
                 if (left <= 0) immune++;
                 amount *= left * defender.DamageTakenMultiplier;
@@ -198,6 +221,13 @@ namespace RavenNest.Combat
             var total = result.Damage.Total;
             result.Immune = carried > 0 && immune == carried;
             result.Total = result.Immune ? 0 : Math.Max(1, (int)Math.Round(total));
+            if (result.Total > 0)
+            {
+                if (style == AttackStyle.Melee && defender.Thorns > 0)
+                    result.Reflected = (int)Math.Round(result.Total * Math.Min(defender.Thorns, MaxThorns));
+                if (attacker.LifeSteal > 0)
+                    result.Healed = (int)Math.Round(result.Total * Math.Min(attacker.LifeSteal, MaxLifeSteal));
+            }
 
             // element effects: a share of the blow in an element gives that element's effect a chance
             if (total > 0)

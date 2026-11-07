@@ -75,6 +75,18 @@ namespace RavenNest.Combat
         public double HealingMultiplier = 1;
         public double ThreatMultiplier = 1;
 
+        /// <summary>Attacks per second times this (1.1 swings 10% more often); the game divides swing times by it.</summary>
+        public double AttackSpeed = 1;
+
+        /// <summary>The share of a melee blow taken that hurts the attacker back.</summary>
+        public double Thorns;
+
+        /// <summary>The share of damage dealt that heals the attacker.</summary>
+        public double LifeSteal;
+
+        /// <summary>The share of the target's armour the fighter's blows ignore.</summary>
+        public double ArmorPenetration;
+
         /// <summary>Players cap their resistances (75%); enemies may be immune.</summary>
         public bool IsPlayer;
 
