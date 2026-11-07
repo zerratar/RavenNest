@@ -77,11 +77,20 @@ namespace RavenNest.CombatSimulator
 
         private readonly List<ItemData> items;
 
+        /// <summary>The metal sets every player climbs through; leaves out Black and the joke weapons (Bacon 2H Sword at level 1).</summary>
+        private static readonly string[] StandardSets = { "Bronze", "Iron", "Steel", "Mithril", "Adamantite", "Rune", "Dragon", "Abraxas", "Phantom", "Lionsbane", "Ether", "Ancient", "Atlarus", "Elder Bronze", "Elder Iron", "Elder Steel", "Elder Mithril", "Elder Adamantite", "Elder Rune", "Elder Dragon", "Elder Abraxas", "Elder Phantom", "Elder Lionsbane", "Elder Ether", "Elder Ancient", "Elder Atlarus" };
+
         public GearPicker(string path)
         {
             var json = File.ReadAllText(path);
             items = JsonSerializer.Deserialize<List<ItemData>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
+
+        private GearPicker(List<ItemData> items) => this.items = items;
+
+        /// <summary>Only the standard metal sets (no rings, amulets, Black or joke items): what a typical player wears.</summary>
+        public GearPicker Standard() => new GearPicker(items.Where(x => StandardSets.Any(s => x.Name.StartsWith(s + " "))
+            && !x.Name.StartsWith("Elder Black")).ToList());
 
         public int Count => items.Count;
 

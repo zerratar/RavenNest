@@ -24,13 +24,24 @@ namespace RavenNest.CombatSimulator
         private const double Downtime = 10;
         private const double TimeLimit = 3600;
 
-        public static void Run(GearPicker gear, int fights)
+        /// <summary>
+        ///     The tuning knobs the game uses with the new combat (CombatRules): the raid boss's pool times
+        ///     <see cref="RaidPool"/> times (expected raiders / 10, at least half); a dungeon boss's pool times its
+        ///     difficulty's pool share, and its combat scale moved toward 1 by <see cref="DungeonCombatEase"/>.
+        /// </summary>
+        public static double RaidPool = 2.5, NormalPool = 3, HeroicPool = 2, DungeonCombatEase = 0.27;
+
+        public static void Run(GearPicker gear, int fights, bool tuned)
         {
-            Console.WriteLine($"Raids and dungeons, new rules; {fights} fights per cell. Each cell: minutes to beat the boss / player falls.");
-            Report("Raid boss", gear, fights, (level, kit, players) => RaidBoss(level, kit), 3.0);
-            Report("Dungeon boss, Normal", gear, fights, (level, kit, players) => DungeonBoss(level, kit, players, 1.0), 2.0);
-            Report("Dungeon boss, Heroic", gear, fights, (level, kit, players) => DungeonBoss(level, kit, players, 2.5), 2.0);
+            Console.WriteLine($"Raids and dungeons, new rules{(tuned ? $", tuned (raid pool x{RaidPool} by group, Normal pool x{NormalPool}, Heroic pool x{HeroicPool}, combat scale eased {DungeonCombatEase:P0})" : ", as the game makes them today")}; {fights} fights per cell.");
+            Console.WriteLine("Each cell: minutes to beat the boss / player falls.");
+            Report("Raid boss", gear, fights, (level, kit, players) => RaidBoss(level, kit, tuned ? RaidPool * Math.Max(0.5, players / 10.0) : 1), 3.0);
+            Report("Dungeon boss, Normal", gear, fights, (level, kit, players) => DungeonBoss(level, kit, players, 1.0, tuned ? NormalPool : 1, tuned), 2.0);
+            Report("Dungeon boss, Heroic", gear, fights, (level, kit, players) => DungeonBoss(level, kit, players, 2.5, tuned ? HeroicPool : 1, tuned), 2.0);
         }
+
+        /// <summary>A dungeon type's boss combat scale with the new combat: toward 1 by DungeonCombatEase (2.5 becomes about 1.4).</summary>
+        public static double EasedScale(double scale) => 1 + (scale - 1) * DungeonCombatEase;
 
         private static void Report(string title, GearPicker gear, int fights, Func<int, Loadout, int, CombatSheet> boss, double bossSwing)
         {
@@ -72,12 +83,12 @@ namespace RavenNest.CombatSimulator
             return sheet;
         }
 
-        private static CombatSheet RaidBoss(int level, Loadout kit)
+        private static CombatSheet RaidBoss(int level, Loadout kit, double pool)
         {
             var sheet = new CombatSheet
             {
                 CombatLevel = level,
-                MaxHealth = CombatMath.MaxHealth(EnemyScenarios.HealthLevel(level) * 100),
+                MaxHealth = (int)(CombatMath.MaxHealth(EnemyScenarios.HealthLevel(level) * 100) * pool),
                 DefenseLevel = level,
                 Armor = kit.ArmorPower,
                 IsBoss = true,
@@ -89,14 +100,15 @@ namespace RavenNest.CombatSimulator
             return sheet;
         }
 
-        private static CombatSheet DungeonBoss(int level, Loadout kit, int players, double scale)
+        private static CombatSheet DungeonBoss(int level, Loadout kit, int players, double healthScaleOfType, double pool, bool tuned)
         {
+            var scale = tuned ? EasedScale(healthScaleOfType) : healthScaleOfType;
             var stat = (int)(level * 0.75 * scale);
-            var healthScale = 100 * (Math.Max(10, players) / 10.0) * scale;
+            var healthScale = 100 * (Math.Max(10, players) / 10.0) * healthScaleOfType;
             var sheet = new CombatSheet
             {
                 CombatLevel = stat,
-                MaxHealth = CombatMath.MaxHealth((int)(stat * healthScale * 1.15)),
+                MaxHealth = (int)(CombatMath.MaxHealth((int)(stat * healthScale * 1.15)) * pool),
                 DefenseLevel = stat / 2,
                 Armor = (int)(kit.ArmorPower * 0.33 * scale * 0.25),
                 IsBoss = true,

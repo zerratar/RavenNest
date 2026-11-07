@@ -36,11 +36,17 @@ namespace RavenNest.CombatSimulator
                 case "elements":
                     ElementScenarios.Run(gear, Path.Combine(AppContext.BaseDirectory, "data", "enemies.json"), args.Length > 1 && int.TryParse(args[1], out var ef) ? ef : 2000);
                     return 0;
+                case "enemygear":
+                    EnemyGearScenarios.Run(gear, Path.Combine(AppContext.BaseDirectory, "data", "enemies.json"),
+                        args.Length > 1 && int.TryParse(args[1], out var gf) ? gf : 1000,
+                        args.Length > 2 && double.TryParse(args[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gs) ? gs : 1.0,
+                        args.Length > 3 && double.TryParse(args[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var go) ? go : 1.0);
+                    return 0;
                 case "bosses":
-                    BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200);
+                    BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200, args.Contains("tuned"));
                     return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share]");
                     return 1;
             }
         }
