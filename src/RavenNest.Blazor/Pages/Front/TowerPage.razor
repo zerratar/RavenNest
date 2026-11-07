@@ -1,0 +1,145 @@
+@page "/tower"
+@using RavenNest.Combat
+@inject RavenNest.BusinessLogic.Game.TowerManager TowerManager
+
+@*
+    The tower (the game's docs/tower-design.md, section 6): the floors that exist, each with its quests, its boss and
+    the level it is made for, the first stream in the world to clear it, and the streams that have climbed highest.
+    The floors are read from RavenNest.Combat.Tower, the same list the game and the server use.
+*@
+<div class="top-section">
+    <div class="hero-text">
+        <h1>The tower</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section rf-tower">
+        <p class="rf-lead">
+            A climb the whole stream makes together. Type <b>!tower</b> to go up to your stream's floor and fight its
+            monsters; the players who stay behind keep training as usual. Every floor has quests for everyone in the
+            stream. When they are done, its <b>boss</b> can be challenged with <b>!tower boss</b>: the streamer or a
+            moderator starts it, or three players in the tower vote for it, and everyone has a minute to join. A boss
+            has fixed numbers for its floor and can be tried again and again. Beat it and the floor is cleared for good,
+            the next one opens, and everyone who fought gets coins and a chest.
+        </p>
+        <p class="rf-tower__rules">
+            A boss attempt lasts at most @(Tower.BossTimeLimitSeconds / 60) minutes. Whoever falls is out of the attempt;
+            if everyone falls, the stream regroups for @(Tower.BossRetrySeconds / 60) minutes before the next try.
+            Floors come out a band of ten at a time; @Tower.TopFloor floors so far.
+        </p>
+
+        @foreach (var band in Tower.Bands)
+        {
+            <h2 class="rf-tower__band" style="--element: @ElementColor(band.Element)">Floors @band.FirstFloor to @band.LastFloor: @band.Name</h2>
+            <div class="rf-tower__bandinfo">
+                <p>@band.Description</p>
+                <div class="rf-badges">
+                    <span class="rf-badge" style="--element: @ElementColor(band.Element)">Its monsters strike with @band.Element.ToString().ToLowerInvariant()</span>
+                    @foreach (var weak in Weaknesses(band.Resistance))
+                    {
+                        <span class="rf-badge rf-badge--good">Weak to @weak</span>
+                    }
+                    @foreach (var strong in Resists(band.Resistance))
+                    {
+                        <span class="rf-badge rf-badge--warn">Resists @strong</span>
+                    }
+                </div>
+            </div>
+
+            <ol class="rf-tower__floors">
+                @foreach (var floor in Tower.Floors.Where(f => f.Number >= band.FirstFloor && f.Number <= band.LastFloor))
+                {
+                    var first = firsts.TryGetValue(floor.Number, out var f) ? f : default;
+                    <li class="rf-card rf-tower__floor@(floor.Number % 5 == 0 ? " rf-tower__floor--milestone" : "")">
+                        <div class="rf-tower__number">@floor.Number</div>
+                        <div class="rf-tower__body">
+                            <h3 class="rf-card__title">@floor.Name</h3>
+                            <p class="rf-tower__text">@floor.Description</p>
+                            <div class="rf-tower__facts">
+                                <span><b>Made for</b> combat level @floor.Level, @floor.GroupSize players</span>
+                                <span><b>Quests</b> @string.Join(", ", floor.Quests.Select(q => q.Text))</span>
+                                <span><b>Boss</b> @floor.Boss.Name</span>
+                            </div>
+                        </div>
+                        <div class="rf-tower__first">
+                            @if (first.Name != null)
+                            {
+                                <span class="rf-tower__firstlabel">First clear</span>
+                                <b>@first.Name</b>
+                                <span class="rf-table__quiet" title="@first.Cleared.ToString("f")">@first.Cleared.ToString("d MMM yyyy")</span>
+                            }
+                            else
+                            {
+                                <span class="rf-table__quiet">Not cleared by anyone yet</span>
+                            }
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
+
+        <h2 class="rf-tower__band">The highest climbs</h2>
+        @if (leaders.Count == 0)
+        {
+            <p class="rf-table__quiet">No stream has cleared a floor yet. Be the first.</p>
+        }
+        else
+        {
+            <table class="rf-table rf-table--stack rf-tower__leaders">
+                <thead>
+                    <tr>
+                        <th scope="col" class="rf-table__num">#</th>
+                        <th scope="col">Stream</th>
+                        <th scope="col" class="rf-table__num">Highest floor cleared</th>
+                        <th scope="col">When</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < leaders.Count; i++)
+                    {
+                        var l = leaders[i];
+                        <tr>
+                            <td class="rf-table__num" data-label="#">@(i + 1)</td>
+                            <td data-label="Stream"><b>@l.Name</b></td>
+                            <td class="rf-table__num" data-label="Highest floor">@l.Floor</td>
+                            <td class="rf-table__quiet" data-label="When" title="@l.Cleared.ToString("f")">@l.Cleared.ToString("d MMM yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private IReadOnlyDictionary<int, (string Name, DateTime Cleared)> firsts = new Dictionary<int, (string, DateTime)>();
+    private IReadOnlyList<(Guid UserId, string Name, int Floor, DateTime Cleared)> leaders = new List<(Guid, string, int, DateTime)>();
+
+    protected override void OnInitialized()
+    {
+        firsts = TowerManager.FirstClears();
+        leaders = TowerManager.Leaderboard(25);
+    }
+
+    private static string ElementColor(Element e) => e switch
+    {
+        Element.Fire => "#ff7a59",
+        Element.Ice => "#6ec6ff",
+        Element.Lightning => "#ffd166",
+        Element.Poison => "#8fdc5a",
+        _ => "#c9c3b6",
+    };
+
+    private static IEnumerable<string> Weaknesses(ElementValues r) => Each(r).Where(x => x.Value < 0).Select(x => x.Name);
+    private static IEnumerable<string> Resists(ElementValues r) => Each(r).Where(x => x.Value > 0).Select(x => x.Name);
+
+    private static IEnumerable<(string Name, double Value)> Each(ElementValues r)
+    {
+        yield return ("fire", r.Fire);
+        yield return ("ice", r.Ice);
+        yield return ("lightning", r.Lightning);
+        yield return ("poison", r.Poison);
+    }
+}

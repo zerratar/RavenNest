@@ -5778,3 +5778,101 @@ a.rf-badge:hover {
     font-weight: 700;
     color: var(--rf-gold-bright);
 }
+
+
+/* The tower page (/tower): bands of floors, a card per floor with its number, and the first clear on the right */
+.rf-tower__rules {
+    color: var(--rf-ink-muted);
+}
+
+.rf-tower__band {
+    margin: 2rem 0 0.6rem;
+    padding-left: 0.8rem;
+    border-left: 4px solid var(--element, #d4a24c);
+}
+
+.rf-tower__bandinfo {
+    margin-bottom: 1rem;
+}
+
+.rf-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.rf-tower__floors {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.rf-tower__floor {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr 12rem;
+    gap: 1rem;
+    align-items: center;
+}
+
+.rf-tower__floor--milestone {
+    border-color: #d4a24c;
+}
+
+.rf-tower__number {
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    color: #d4a24c;
+}
+
+.rf-tower__text {
+    margin: 0.2rem 0 0.4rem;
+}
+
+.rf-tower__facts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.95rem;
+}
+
+.rf-tower__first {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 0.1rem;
+}
+
+.rf-tower__firstlabel {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #d4a24c;
+}
+
+@media (max-width: 700px) {
+    .rf-tower__floor {
+        grid-template-columns: 2.4rem 1fr;
+    }
+
+    .rf-tower__first {
+        grid-column: 2;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+.rf-tower__leaders {
+    width: 100%;
+    min-width: 0;
+}
+
+.rf-tower__leaders th,
+.rf-tower__leaders td {
+    white-space: normal;
+}
