@@ -14,6 +14,8 @@ namespace RavenNest.CombatSimulator
     ///                      exported from the game): swings and time to win, health left, fights lost.
     ///   elements [fights] the same player and enemies, the weapon's hits a quarter physical, fire, ice, lightning
     ///                      or poison: what each element does against each enemy's resistances.
+    ///   bosses [fights]   raids and dungeons: groups of 5 to 50 players of a level against the boss the game makes
+    ///                      for them, minutes to beat it and player falls.
     /// </summary>
     public static class Program
     {
@@ -34,8 +36,11 @@ namespace RavenNest.CombatSimulator
                 case "elements":
                     ElementScenarios.Run(gear, Path.Combine(AppContext.BaseDirectory, "data", "enemies.json"), args.Length > 1 && int.TryParse(args[1], out var ef) ? ef : 2000);
                     return 0;
+                case "bosses":
+                    BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200);
+                    return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights]");
                     return 1;
             }
         }
