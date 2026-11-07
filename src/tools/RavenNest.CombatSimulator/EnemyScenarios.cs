@@ -35,7 +35,7 @@ namespace RavenNest.CombatSimulator
             return match.Success ? Math.Max(1, int.Parse(match.Groups[1].Value)) : Math.Max(1, d.CombatLevel);
         }
 
-        private struct Outcome
+        internal struct Outcome
         {
             public bool Won;
             public double Time;
@@ -76,7 +76,7 @@ namespace RavenNest.CombatSimulator
         }
 
         /// <summary>Plays a fight on a timeline: the player swings every 1.5 s from the start, the enemy every interval.</summary>
-        private static Outcome Fight(double playerHealth, double enemyHealth, double enemyInterval,
+        internal static Outcome Fight(double playerHealth, double enemyHealth, double enemyInterval,
             Func<double> playerBlow, Func<double> enemyBlow)
         {
             var playerMax = playerHealth;
@@ -136,6 +136,7 @@ namespace RavenNest.CombatSimulator
             player.Melee.AimLevel = level;
             player.Melee.Power = kit.WeaponPower;
             player.Melee.Accuracy = kit.WeaponAim;
+            kit.ApplyExtras(player);
             var enemy = d.Sheet();
             return Fight(player.MaxHealth, enemy.MaxHealth, Interval(d),
                 () => CombatMath.Attack(player, AttackStyle.Melee, enemy, random).Total,
@@ -143,8 +144,8 @@ namespace RavenNest.CombatSimulator
         }
 
         /// <summary>Characters start with Health 10.</summary>
-        private static int HealthLevel(int level) => Math.Max(10, level);
+        internal static int HealthLevel(int level) => Math.Max(10, level);
 
-        private static double Interval(EnemyDefinition d) => d.AttackInterval > 0 ? d.AttackInterval : 1;
+        internal static double Interval(EnemyDefinition d) => d.AttackInterval > 0 ? d.AttackInterval : 1;
     }
 }

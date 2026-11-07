@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using RavenNest.Combat;
 
 namespace RavenNest.CombatSimulator
 {
@@ -23,6 +24,13 @@ namespace RavenNest.CombatSimulator
         public int RequiredDefenseLevel { get; set; }
         public int RequiredMagicLevel { get; set; }
         public int RequiredRangedLevel { get; set; }
+
+        /// <summary>Combat v2's full stat list (RavenNest.Models.Item.Stats), null in lists from servers before it.</summary>
+        public string Stats { get; set; }
+
+        public GearStats GearStats() => string.IsNullOrEmpty(Stats)
+            ? Combat.GearStats.FromLegacy(WeaponAim, WeaponPower, RangedAim, RangedPower, MagicAim, MagicPower, ArmorPower)
+            : Combat.GearStats.Parse(Stats);
     }
 
     /// <summary>What a fighter wears, summed the way the game sums equipment (Core/EquipmentStats.cs).</summary>
@@ -36,6 +44,25 @@ namespace RavenNest.CombatSimulator
         public int RangedAim => Items.Sum(x => x.RangedAim);
         public int RangedPower => Items.Sum(x => x.RangedPower);
         public int ArmorPower => Items.Sum(x => x.ArmorPower);
+
+        /// <summary>
+        ///     Combat v2's stats beyond power, accuracy and armour (element damage, resistances, evasion, health,
+        ///     crits) on a sheet that already has those, the way the game does it: a weapon's element converts its own
+        ///     style's hits, other gear's adds to every hit.
+        /// </summary>
+        public void ApplyExtras(CombatSheet sheet)
+        {
+            foreach (var item in Items)
+            {
+                var stats = item.GearStats();
+                var style = MeleeWeaponTypes.Contains(item.Type) || item.Type == 5 || item.Type == 6 ? stats.WeaponStyle() : null;
+                stats.ApplyExtras(sheet, style);
+            }
+        }
+
+        private static readonly int[] MeleeWeaponTypes = { 1, 2, 3, 4, 7 };
+
+        public ItemData Weapon => Items.FirstOrDefault(x => MeleeWeaponTypes.Contains(x.Type) || x.Type == 5 || x.Type == 6);
 
         public override string ToString() => string.Join(", ", Items.Select(x => x.Name));
     }

@@ -12,6 +12,8 @@ namespace RavenNest.CombatSimulator
     ///                      their gear: hit rate, damage per swing and swings to kill an equal opponent.
     ///   enemies [fights]  a player at each fighting area's requirement against its enemies (data/enemies.json,
     ///                      exported from the game): swings and time to win, health left, fights lost.
+    ///   elements [fights] the same player and enemies, the weapon's hits a quarter physical, fire, ice, lightning
+    ///                      or poison: what each element does against each enemy's resistances.
     /// </summary>
     public static class Program
     {
@@ -29,8 +31,11 @@ namespace RavenNest.CombatSimulator
                 case "enemies":
                     EnemyScenarios.Run(gear, Path.Combine(AppContext.BaseDirectory, "data", "enemies.json"), args.Length > 1 && int.TryParse(args[1], out var f) ? f : 2000);
                     return 0;
+                case "elements":
+                    ElementScenarios.Run(gear, Path.Combine(AppContext.BaseDirectory, "data", "enemies.json"), args.Length > 1 && int.TryParse(args[1], out var ef) ? ef : 2000);
+                    return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights]");
                     return 1;
             }
         }

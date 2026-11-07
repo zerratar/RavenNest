@@ -660,6 +660,7 @@ namespace RavenNest.BusinessLogic.Data
                 //ConvertUserResources();
 
                 EnsureItemNamesWithoutApostrophes();
+                EnsureThemedGearStats();
 
                 FixVillageHouses();
 
