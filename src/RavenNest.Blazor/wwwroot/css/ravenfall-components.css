@@ -5710,3 +5710,71 @@ a.rf-badge:hover {
 @media (max-width: 600px) { .rf-trees__map { height: 62vh; } }
 .rf-trees__levels { display: flex; flex-wrap: wrap; gap: var(--rf-space-2); }
 .rf-trees__levels input { width: 5rem; background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
+
+/* ---- Combat guide (/combat) ---------------------------------------------
+   Cards for each step, element and attribute; the element cards carry their
+   colour as a left edge, the same colours as the skill tree map. */
+
+.rf-combat__heading {
+    margin: var(--rf-space-6) 0 var(--rf-space-3);
+}
+
+.rf-combat__subheading {
+    margin: var(--rf-space-5) 0 var(--rf-space-3);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-gold);
+}
+
+.rf-combat .rf-cards + .rf-panel {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-combat__steps {
+    /* four steps: two by two on wide screens, never three and a lonely one */
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.rf-combat__element {
+    border-left: 4px solid var(--element);
+}
+
+.rf-combat__element .rf-card__title {
+    color: var(--element);
+}
+
+.rf-combat__list {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-combat__calc {
+    margin-top: var(--rf-space-4);
+}
+
+.rf-combat__calcgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-combat__calcgroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-combat__calcgroup h4 {
+    margin: 0;
+}
+
+.rf-combat__result {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--rf-gold-bright);
+}

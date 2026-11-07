@@ -1,0 +1,237 @@
+@page "/combat"
+@using RavenNest.Combat
+
+@*
+    How combat v2 works (the game's docs/combat-v2-design.md), for players. Every number on the page is read from
+    RavenNest.Combat, the library the game, the server and the simulator share, so a balance change shows up here
+    without anyone editing the text. The calculator runs the same formulas the game uses.
+*@
+<div class="top-section">
+    <div class="hero-text">
+        <h1>How combat works</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section rf-combat">
+        <p class="rf-lead">
+            Your character still fights on its own. What you decide is what it brings: gear, enchantments, the
+            elements on your weapon and the skills in your <a href="/skill-trees">skill trees</a>. This page explains
+            what each of those does, with the game's own numbers.
+        </p>
+
+        <h2 class="rf-combat__heading">A blow, step by step</h2>
+        <div class="rf-cards rf-combat__steps">
+            <div class="rf-card">
+                <h3 class="rf-card__title">1. Does it hit?</h3>
+                <div class="rf-card__body">
+                    Your <b>accuracy</b> (twice your Attack, Ranged or Magic level, plus your gear's accuracy) against
+                    their <b>evasion</b> (twice their Defense level, plus evasion from gear). Even numbers hit half the
+                    time, twice the accuracy hits three in four. Never below @P(CombatMath.MinHitChance), never above @P(CombatMath.MaxHitChance).
+                </div>
+            </div>
+            <div class="rf-card">
+                <h3 class="rf-card__title">2. How hard?</h3>
+                <div class="rf-card__body">
+                    The <b>max hit</b> comes from your Strength, Ranged or Magic level and your gear's <b>power</b>.
+                    Most blows land between half and nine tenths of it; one in twenty is a full max hit.
+                </div>
+            </div>
+            <div class="rf-card">
+                <h3 class="rf-card__title">3. Armour and resistance</h3>
+                <div class="rf-card__body">
+                    <b>Armour</b> takes a share off physical damage that grows with it but never reaches all of it, and
+                    @P(CombatMath.ElementArmorShare) of that share off element damage. Each element is also cut by its
+                    <b>resistance</b>.
+                </div>
+            </div>
+            <div class="rf-card">
+                <h3 class="rf-card__title">4. Critical hits</h3>
+                <div class="rf-card__body">
+                    Every blow has a @P(CombatMath.BaseCritChance) chance to crit for @P(CombatMath.BaseCritDamage) damage.
+                    Crit chance and crit damage on gear and in the trees raise both.
+                </div>
+            </div>
+        </div>
+
+        <div class="rf-panel rf-combat__calc">
+            <h3 class="rf-panel__title">Try the numbers</h3>
+            <p class="rf-meta">The same formulas the game uses. Change any number.</p>
+            <div class="rf-combat__calcgrid">
+                <div class="rf-combat__calcgroup">
+                    <h4>Hit chance</h4>
+                    <label class="rf-trees__slot"><span>Your Attack level</span><input type="number" min="1" max="999" @bind="aimLevel" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Your gear's accuracy</span><input type="number" min="0" max="5000" @bind="gearAccuracy" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Their Defense level</span><input type="number" min="1" max="999" @bind="defenseLevel" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Their gear's evasion</span><input type="number" min="0" max="5000" @bind="gearEvasion" @bind:event="oninput" /></label>
+                    <div class="rf-combat__result">@P(HitChance) to hit</div>
+                </div>
+                <div class="rf-combat__calcgroup">
+                    <h4>Max hit</h4>
+                    <label class="rf-trees__slot"><span>Your Strength level</span><input type="number" min="1" max="999" @bind="damageLevel" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Your gear's power</span><input type="number" min="0" max="5000" @bind="power" @bind:event="oninput" /></label>
+                    <div class="rf-combat__result">@MaxHit.ToString("N0") max hit</div>
+                </div>
+                <div class="rf-combat__calcgroup">
+                    <h4>Armour</h4>
+                    <label class="rf-trees__slot"><span>Their armour</span><input type="number" min="0" max="20000" @bind="armor" @bind:event="oninput" /></label>
+                    <div class="rf-combat__result">@P(ArmorCut) off physical</div>
+                    <div class="rf-meta">@P(ArmorCut * CombatMath.ElementArmorShare) off element damage</div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="rf-combat__heading">Elements</h2>
+        <p>
+            A weapon can turn part of its hit into an element, and rings, amulets and gems can add element damage to every
+            blow. Each element has an effect: it always has a @P(CombatMath.ProcBaseChance) chance when the element dealt
+            damage, plus up to @P(CombatMath.ProcShareChance) more the bigger the element's share of the blow.
+        </p>
+        <div class="rf-cards">
+            @foreach (var e in ElementCards)
+            {
+                <div class="rf-card rf-combat__element" style="--element: @e.Color">
+                    <h3 class="rf-card__title">@e.Name</h3>
+                    <div class="rf-card__body">@e.Text</div>
+                </div>
+            }
+        </div>
+        <div class="rf-panel">
+            <h3 class="rf-panel__title">Resistances and weaknesses</h3>
+            <ul class="rf-combat__list">
+                <li>A resistance takes its share off that element: 30% fire resistance takes 30% off fire damage.</li>
+                <li>Players cap at @P(CombatMath.PlayerResistanceCap), so nobody is immune. Enemies can be: a fire spirit shrugs off fire.</li>
+                <li>A negative resistance is a weakness and takes extra. Many enemies are weak to one element; bring it.</li>
+                <li>Physical resistance is rare (stone golems). Armour is the answer to physical damage.</li>
+            </ul>
+        </div>
+
+        <h2 class="rf-combat__heading">Magical attributes</h2>
+        <p>
+            Gear, enchantments and the skill trees' passives use the same attributes. Some have caps so stacking one never
+            breaks a fight.
+        </p>
+        @foreach (var group in AttributeGroups)
+        {
+            <h3 class="rf-combat__subheading">@group.Name</h3>
+            <div class="rf-cards">
+                @foreach (var a in group.Attributes)
+                {
+                    <div class="rf-card">
+                        <h3 class="rf-card__title">@GearStats.Label(a.Stat)</h3>
+                        <div class="rf-card__body">@a.Text</div>
+                        @if (a.Cap != null)
+                        {
+                            <div class="rf-meta">Cap: @a.Cap</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <h2 class="rf-combat__heading">Threat: who the enemy hits</h2>
+        <div class="rf-panel">
+            <ul class="rf-combat__list">
+                <li>Every enemy remembers who hurt it. Damage adds <b>threat</b>; so do heals, at @P(ThreatTable<int>.HealingThreatShare) of the amount, shared by the enemies fighting the one healed.</li>
+                <li>It attacks whoever has the most. To pull it away from its target you need @P(ThreatTable<int>.MeleeSwitchFactor - 1) more threat than that target (@P(ThreatTable<int>.RangedSwitchFactor - 1) for ranged and magic enemies, who switch less eagerly).</li>
+                <li><b>Tanks</b> get more threat from the Threat attribute and the Bulwark tree, and <b>Taunt</b> makes enemies attack them outright for a few seconds.</li>
+                <li>So a tank in front, damage behind and a healer keeping everyone up really works, in raids, dungeons and on the islands.</li>
+            </ul>
+        </div>
+
+        <h2 class="rf-combat__heading">Stuns, freezes and roots</h2>
+        <div class="rf-panel">
+            <ul class="rf-combat__list">
+                <li>Stunned and frozen fighters do nothing until it passes. Rooted ones cannot move but still hit what is in reach.</li>
+                <li>Bosses take crowd control for @P(ElementRules.BossCrowdControlShare) of its time, then ignore it for @ElementRules.BossImmunitySeconds.ToString("0") seconds, so a group cannot keep one stunned.</li>
+            </ul>
+        </div>
+
+        <h2 class="rf-combat__heading">Skill trees</h2>
+        <div class="rf-panel rf-panel--accent">
+            <ul class="rf-combat__list">
+                <li>Eight trees, one per combat skill: Bulwark (Defense), Restoration (Healing), Might (Strength), Precision (Attack), Marksman (Ranged), Elements (Magic), Vitality (Health) and Hunter (Slayer).</li>
+                <li>Points come from your eight combat levels added up: one per ten levels up to 1,000, then one per forty. Every combat skill at 999 gives @SkillTrees.EarnedPoints(999 * 8) points, far fewer than the trees cost, so every build is a choice.</li>
+                <li>Each tree starts with a few skills and opens more at its skill's level @SkillTrees.TierLevels[1], @SkillTrees.TierLevels[2] and @SkillTrees.TierLevels[3].</li>
+                <li><b>Passives</b> work all the time. <b>Actives</b> go in your loadout (@SkillTrees.BaseLoadoutSlots slots, one more with Battle Rhythm) and your character uses them by itself on their cooldowns, one every @SkillTrees.SharedPause.ToString("0.#") seconds at most, when their rule says so: a heal when someone is hurt, Cleave when three enemies are near.</li>
+                <li>A respec costs @SkillTrees.RespecCostPerPoint.ToString("N0") coins per point spent, and is free whenever a balance update changes the trees.</li>
+                <li>In chat: <span class="rf-cmd">!tree</span> shows your trees, <span class="rf-cmd">!learn cleave</span> learns a skill, <span class="rf-cmd">!loadout</span> sets the actives, <span class="rf-cmd">!respec</span> starts over. On the website, the Skill trees tab on your character page does the same.</li>
+            </ul>
+            <div class="rf-actions">
+                <a class="rf-btn rf-btn--primary" href="/skill-trees">Open the planner</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int aimLevel = 100, gearAccuracy = 120, defenseLevel = 100, gearEvasion = 0, damageLevel = 100, power = 150, armor = 400;
+
+    private double HitChance => CombatMath.HitChance(CombatMath.AccuracyRating(Clamp(aimLevel, 1, 999), Math.Max(0, gearAccuracy)), CombatMath.EvasionRating(Clamp(defenseLevel, 1, 999), Math.Max(0, gearEvasion)));
+    private double MaxHit => CombatMath.MaxHit(Clamp(damageLevel, 1, 999), Math.Max(0, power));
+    private double ArmorCut => CombatMath.ArmorReduction(Math.Max(0, armor));
+
+    private static int Clamp(int v, int min, int max) => v < min ? min : v > max ? max : v;
+
+    private static string P(double share)
+    {
+        var percent = share * 100;
+        return (Math.Abs(percent - Math.Round(percent)) < 0.05 ? percent.ToString("0") : percent.ToString("0.#")) + "%";
+    }
+
+    private sealed record ElementCard(string Name, string Color, string Text);
+
+    private static readonly ElementCard[] ElementCards =
+    {
+        new("Physical", "#c9c3b6", "What every weapon deals unless it says otherwise. Armour cuts it."),
+        new("Fire", "#ff7a59", $"Burns: the target takes {P(ElementRules.BurnShare)} of the fire damage again over {ElementRules.BurnSeconds:0} seconds. A new burn refreshes it."),
+        new("Ice", "#6ec6ff", $"Chills: each stack slows the target's attacks by {P(ElementRules.ChillSlowPerStack)} for {ElementRules.ChillSeconds:0} seconds. At {ElementRules.ChillStacksToFreeze} stacks it freezes solid for {ElementRules.FreezeSeconds:0.#} seconds."),
+        new("Lightning", "#ffd166", $"Jumps to one more enemy nearby with {P(ElementRules.ShockChainShare)} of the blow, and stuns for {ElementRules.ShockStunSeconds:0.#} seconds {P(ElementRules.ShockStunChance)} of the time."),
+        new("Poison", "#8fdc5a", $"Stacks up to {ElementRules.PoisonMaxStacks} times; each stack deals {P(ElementRules.PoisonSharePerSecond)} of the poison damage every second for {ElementRules.PoisonSeconds:0} seconds, and armour does not stop it."),
+    };
+
+    private sealed record Attribute(GearStat Stat, string Text, string Cap = null);
+    private sealed record AttributeGroup(string Name, Attribute[] Attributes);
+
+    private static readonly AttributeGroup[] AttributeGroups =
+    {
+        new("Offence", new[]
+        {
+            new Attribute(GearStat.CritChance, "Points added to the chance of a critical hit."),
+            new Attribute(GearStat.CritDamage, $"Makes critical hits bigger: +25% turns {P(CombatMath.BaseCritDamage)} into {P(CombatMath.BaseCritDamage + 0.25)}."),
+            new Attribute(GearStat.AttackSpeed, "Attacks more often: 10% faster swings every 1.36 seconds instead of 1.5.", P(CombatMath.MaxAttackSpeed - 1) + " faster"),
+            new Attribute(GearStat.ArmorPenetration, "Your blows ignore this share of the target's armour.", P(CombatMath.MaxArmorPenetration)),
+            new Attribute(GearStat.MeleePowerBonus, "A share more of your gear's power; Ranged, Magic and Healing Power Bonus work the same for their style."),
+            new Attribute(GearStat.AccuracyBonus, "A share more of your gear's accuracy, every style."),
+            new Attribute(GearStat.BossDamage, "More damage to raid, dungeon and island bosses."),
+            new Attribute(GearStat.ExecuteDamage, $"More damage to enemies below {P(CombatMath.ExecuteThreshold)} health."),
+            new Attribute(GearStat.UndeadDamage, "More damage to the undead."),
+            new Attribute(GearStat.BleedOnCrit, "Critical hits make the target bleed this share of the hit over 4 seconds."),
+            new Attribute(GearStat.BurnBonus, "Burns you cause hurt more."),
+            new Attribute(GearStat.ResistanceShred, "Your blows treat the target's element resistances as this much lower."),
+            new Attribute(GearStat.CrowdControlDuration, "Your stuns, freezes and roots last longer."),
+        }),
+        new("Defence", new[]
+        {
+            new Attribute(GearStat.DamageReduction, "A share taken off all damage you take.", P(CombatMath.MaxDamageReduction)),
+            new Attribute(GearStat.Thorns, "A share of every melee blow you take hurts the attacker back.", P(CombatMath.MaxThorns)),
+            new Attribute(GearStat.BlockChance, "The chance to block a blow and take half of it. Needs a shield.", P(CombatMath.MaxBlockChance)),
+            new Attribute(GearStat.ArmorBonus, "A share more armour from your gear."),
+            new Attribute(GearStat.MaxHealthBonus, "A share more maximum health."),
+            new Attribute(GearStat.LowHealthReduction, "Less damage taken while below half health.", P(CombatMath.MaxDamageReduction)),
+            new Attribute(GearStat.Evasion, "Added to the evasion your Defense level gives, so fewer blows land."),
+            new Attribute(GearStat.FireResistance, $"Takes a share off fire damage; Ice, Lightning and Poison Resistance work the same.", P(CombatMath.PlayerResistanceCap)),
+        }),
+        new("Support and sustain", new[]
+        {
+            new Attribute(GearStat.Threat, "More threat from everything you do, so enemies come for you. A tank's attribute."),
+            new Attribute(GearStat.LifeSteal, "A share of the damage you deal heals you.", P(CombatMath.MaxLifeSteal)),
+            new Attribute(GearStat.CombatRegen, "A share of your maximum health regained every second in combat."),
+            new Attribute(GearStat.HealingReceived, "More healing from anyone, yourself included."),
+            new Attribute(GearStat.HealShield, "Your heals also give the target a shield of this share of the heal."),
+            new Attribute(GearStat.CastSpeed, "Faster heals and spells."),
+            new Attribute(GearStat.LootLuck, "More loot from raids and dungeons."),
+        }),
+    };
+}
