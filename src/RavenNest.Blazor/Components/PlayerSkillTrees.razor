@@ -111,7 +111,7 @@ else
                 <button type="button" class="rf-btn rf-btn--small" title="Zoom in" @onclick='() => Map("zoomBy", 1.4)'>+</button>
                 <button type="button" class="rf-btn rf-btn--small" title="Zoom out" @onclick='() => Map("zoomBy", 1 / 1.4)'>-</button>
             </div>
-            <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a skill to see it. Diamonds are active skills, circles passives, hexagons the special ones; a number in gold is its loadout slot.</p>
+            <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a skill to see it. Diamonds are active skills, circles passives, hexagons the special ones; a number in gold is its loadout slot. <a href="/skill-trees?build=@Uri.EscapeDataString(build.ToString())&levels=@string.Join(",", Enum.GetValues(typeof(CombatSkill)).Cast<CombatSkill>().Select(s => levels(s)))">Try changes in the planner</a>.</p>
             @if (selected != null)
             {
                 var node = selected;

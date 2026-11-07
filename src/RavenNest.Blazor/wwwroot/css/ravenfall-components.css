@@ -5708,3 +5708,5 @@ a.rf-badge:hover {
 .rf-trees__picked { border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius); padding: var(--rf-space-3); background: var(--rf-surface-2); display: flex; flex-direction: column; gap: var(--rf-space-2); }
 .rf-trees__picked.is-learned { border-color: var(--rf-line-gold); background: var(--rf-gold-wash); }
 @media (max-width: 600px) { .rf-trees__map { height: 62vh; } }
+.rf-trees__levels { display: flex; flex-wrap: wrap; gap: var(--rf-space-2); }
+.rf-trees__levels input { width: 5rem; background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }

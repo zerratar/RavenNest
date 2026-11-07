@@ -420,6 +420,20 @@ namespace RavenNest.Combat
             return null;
         }
 
+        /// <summary>One rank off a node (the website's planner); out of the loadout when none is left.</summary>
+        public void Lower(string id)
+        {
+            var node = SkillTrees.Get(id);
+            if (node == null || Rank(node.Id) <= 0) return;
+            var rank = Rank(node.Id) - 1;
+            if (rank > 0) { Ranks[node.Id] = rank; return; }
+            Ranks.Remove(node.Id);
+            Rules.Remove(node.Id);
+            for (var i = 0; i < Loadout.Count; ++i)
+                if (string.Equals(Loadout[i], node.Id, StringComparison.OrdinalIgnoreCase)) Loadout[i] = "";
+            Trim();
+        }
+
         /// <summary>Puts an active in a slot (0 based); null when done, otherwise why not.</summary>
         public string SetLoadout(int slot, string id)
         {
