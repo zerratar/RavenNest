@@ -89,6 +89,9 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             if (given > 0) logger.LogInformation("Themed gear stats given to {Count} item(s).", given);
+
+            // the skill trees' free respec (combat v2, docs/combat-skills-design.md): quests hand it out
+            GetOrCreateItem(items.Entities, "Tome of Forgetting", "Gives back every skill tree point once, free of charge (!respec).", RavenNest.DataModels.ItemCategory.Scroll, RavenNest.DataModels.ItemType.Scroll);
         }
     }
 }

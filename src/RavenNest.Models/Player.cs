@@ -32,6 +32,9 @@ namespace RavenNest.Models
         public int CharacterIndex { get; set; }
         public int PatreonTier { get; set; }
         public bool IsHiddenInHighscore { get; set; }
+
+        /// <summary>The skill trees (combat v2): RavenNest.Combat.SkillBuild's text form, null without one.</summary>
+        public string SkillBuild { get; set; }
         public IReadOnlyList<AuthServiceConnection> Connections { get; set; }
         public AuthServiceConnection Twitch => Connections.FirstOrDefault(x => x.Platform.Equals("twitch", StringComparison.OrdinalIgnoreCase));
         public AuthServiceConnection Discord => Connections.FirstOrDefault(x => x.Platform.Equals("discord", StringComparison.OrdinalIgnoreCase));

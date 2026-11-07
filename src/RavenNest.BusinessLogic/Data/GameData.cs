@@ -130,6 +130,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanBankWithdrawalLimit> clanBankLimits;
         private readonly EntitySet<ClanJoinRequest> clanJoinRequests;
         private readonly EntitySet<ClanPageSettings> clanPageSettings;
+        private readonly EntitySet<CharacterSkillBuild> characterSkillBuilds;
         private readonly EntitySet<ClanPost> clanPosts;
         private readonly EntitySet<ClanPostReport> clanPostReports;
         private readonly EntitySet<InventoryItem> inventoryItems;
@@ -247,6 +248,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClanBankWithdrawalLimit),
                 typeof(ClanJoinRequest),
                 typeof(ClanPageSettings),
+                typeof(CharacterSkillBuild),
                 typeof(ClanPost),
                 typeof(ClanPostReport),
                 typeof(StreamerShopListing),
@@ -440,6 +442,8 @@ namespace RavenNest.BusinessLogic.Data
 
                     clanPageSettings = new EntitySet<ClanPageSettings>(ctx.ClanPageSettings.ToList());
                     clanPageSettings.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    characterSkillBuilds = new EntitySet<CharacterSkillBuild>(ctx.CharacterSkillBuild.ToList());
+                    characterSkillBuilds.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     clanPosts = new EntitySet<ClanPost>(ctx.ClanPost.ToList());
                     clanPosts.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanPostReports = new EntitySet<ClanPostReport>(ctx.ClanPostReport.ToList());
@@ -571,6 +575,7 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties, vendorTransaction,
                         userBankItems,
                         clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests, clanPageSettings, clanPosts, clanPostReports,
+                        characterSkillBuilds,
                         streamerShopListings, streamerShopTransactions,
                         clanImages,
                         characterSkillRecords,
@@ -3233,6 +3238,7 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(ClanBankWithdrawalLimit item) => Update(() => clanBankLimits.Add(item));
         public AddEntityResult Add(ClanJoinRequest item) => Update(() => clanJoinRequests.Add(item));
         public AddEntityResult Add(ClanPageSettings item) => Update(() => clanPageSettings.Add(item));
+        public AddEntityResult Add(CharacterSkillBuild item) => Update(() => characterSkillBuilds.Add(item));
         public AddEntityResult Add(ClanPost item) => Update(() => clanPosts.Add(item));
         public AddEntityResult Add(ClanPostReport item) => Update(() => clanPostReports.Add(item));
 
@@ -3818,6 +3824,7 @@ namespace RavenNest.BusinessLogic.Data
 
         /// <summary>The clan's page settings, or null while the owner has changed nothing.</summary>
         public ClanPageSettings GetClanPageSettings(Guid clanId) => clanPageSettings[nameof(Clan), clanId].FirstOrDefault();
+        public CharacterSkillBuild GetCharacterSkillBuild(Guid characterId) => characterSkillBuilds[nameof(Character), characterId].FirstOrDefault();
         public IReadOnlyList<ClanPost> GetClanPosts(Guid clanId) => clanPosts[nameof(Clan), clanId].ToList();
         public ClanPost GetClanPost(Guid postId) => clanPosts[postId];
         public IReadOnlyList<ClanPostReport> GetClanPostReports() => clanPostReports.Entities.ToList();

@@ -620,6 +620,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<RavenNest.BusinessLogic.Game.StreamerShop.StreamerShopManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanImages.ClanImageManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanPageManager>();
+            services.AddSingleton<RavenNest.BusinessLogic.Game.SkillTreeManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();

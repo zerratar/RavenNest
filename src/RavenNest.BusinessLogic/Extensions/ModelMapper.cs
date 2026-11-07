@@ -447,7 +447,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
-                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
             };
         }
 
@@ -558,7 +559,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 CharacterIndex = character.CharacterIndex,
                 SessionName = sessionName,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
-                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
             };
         }
 
@@ -614,7 +616,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 OriginUserId = character.OriginUserId,
                 SessionInfo = sessionInfo,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
-                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
             };
         }
         public static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Guid characterId)
