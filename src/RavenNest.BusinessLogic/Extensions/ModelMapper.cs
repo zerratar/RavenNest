@@ -282,13 +282,16 @@ namespace RavenNest.BusinessLogic.Extensions
             if (item == null) return null;
             var i = DataMapper.Map<RavenNest.Models.Item>(item);
             i.HeadMask = (HeadMask)item.HeadMask;
+            i.Stats = item.GearStats().ToString();
             return i;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Item Map(RavenNest.Models.Item itemsItem)
         {
-            return DataMapper.Map<Item>(itemsItem);
+            var item = DataMapper.Map<Item>(itemsItem);
+            item.ExtraStats = ItemGearStats.ExtrasOf(itemsItem.Stats);
+            return item;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

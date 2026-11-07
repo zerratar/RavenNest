@@ -131,6 +131,17 @@ namespace RavenNest.BusinessLogic.Game.Enchantment
             if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower, powerBonus));
             if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower, armorBonus));
 
+            // combat v2's stats beyond the columns: element damage, resistances, evasion, health, crits
+            var extras = RavenNest.Combat.GearStats.Parse(ItemGearStats.ExtrasOf(i.Stats));
+            for (var s = 0; s < RavenNest.Combat.GearStats.Count; ++s)
+            {
+                var stat = (RavenNest.Combat.GearStat)s;
+                var value = extras[stat];
+                if (value == 0) continue;
+                var share = RavenNest.Combat.GearStats.IsShare(stat);
+                stats.Add(new ItemStat(RavenNest.Combat.GearStats.Label(stat), (int)System.Math.Round(share ? value * 100 : value), 0) { Unit = share ? "%" : null });
+            }
+
             return stats;
         }
 

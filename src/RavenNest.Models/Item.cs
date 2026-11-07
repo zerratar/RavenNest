@@ -16,6 +16,14 @@ namespace RavenNest.Models
         public int RangedAim { get; set; }
         public int RangedPower { get; set; }
         public int ArmorPower { get; set; }
+
+        /// <summary>
+        /// Every gear stat of the item in RavenNest.Combat.GearStats' text form
+        /// ("MELEE_POWER:120;MELEE_ACCURACY:95;FIRE_DAMAGE:30%"): the columns above as power, accuracy and armour,
+        /// and what they cannot hold (element damage, resistances, evasion, health, crits). Combat v2 reads this;
+        /// games before it read the columns. Null from servers before it.
+        /// </summary>
+        public string Stats { get; set; }
         public int RequiredAttackLevel { get; set; }
         public int RequiredDefenseLevel { get; set; }
         public int RequiredMagicLevel { get; set; }

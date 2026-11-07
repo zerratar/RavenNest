@@ -20,5 +20,8 @@
         public string Name { get; set; }
         public int Value { get; set; }
         public int Bonus { get; set; }
+
+        /// <summary>Written after the value: "%" for shares (fire damage, resistances, crits), empty otherwise.</summary>
+        public string Unit { get; set; }
     }
 }

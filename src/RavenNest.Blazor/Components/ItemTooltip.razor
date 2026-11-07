@@ -10,7 +10,7 @@
             <div class="item-stat">
                 <div class="item-stat-name">@stat.Name</div>
                 <div class="item-stat-value">
-                    <span>@stat.Value</span>
+                    <span>@stat.Value@stat.Unit</span>
                     @if (stat.Bonus > 0)
                     {
                         <span class="item-stat-enchantment" title="Enchantment Bonus">+ @stat.Bonus</span>

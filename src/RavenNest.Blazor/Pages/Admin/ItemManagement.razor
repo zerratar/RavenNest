@@ -236,6 +236,13 @@
                                                     <InputNumber id="rangedAim" @bind-Value="editedItem.RangedAim" />
                                                 </div>
                                             }
+                                            @if (CanBeEquipped())
+                                            {
+                                                <div class="input-row">
+                                                    <label class="input-label">Combat v2 stats (element damage on a weapon converts its hits; on other gear it adds to every hit)</label>
+                                                    <InputText id="extraStats" @bind-Value="editedItem.ExtraStatsText" placeholder="FIRE_DAMAGE:30%;ICE_RESISTANCE:10%;CRIT_CHANCE:5%;EVASION:20;MAX_HEALTH:100" />
+                                                </div>
+                                            }
                                         </div>
                                     }
 
@@ -454,6 +461,11 @@
                                             @if (item.ArmorPower > 0)
                                             {
                                                 <span class="rf-chip" title="Armour power, decreases the hit rate of your attacker"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
+                                            }
+                                            @{ var extraStats = RavenNest.BusinessLogic.Extensions.ItemGearStats.ExtrasOf(item.Stats); }
+                                            @if (!string.IsNullOrEmpty(extraStats))
+                                            {
+                                                <span class="rf-chip" title="Combat v2 stats: element damage, resistances, evasion, health, crits"><i class="fas fa-fire" aria-hidden="true"></i>@extraStats.Replace(";", ", ")</span>
                                             }
                                         </div>
                                     </td>
@@ -953,6 +965,13 @@
 
     public class ItemEdit : RavenNest.Models.Item
     {
+        /// <summary>Combat v2's stats beyond the columns (element damage, resistances, evasion, health, crits), as text.</summary>
+        public string ExtraStatsText
+        {
+            get => RavenNest.BusinessLogic.Extensions.ItemGearStats.ExtrasOf(Stats);
+            set => Stats = value ?? ""; // the server keeps only what the columns cannot hold; empty clears them
+        }
+
         public string IdString
         {
             get => Id.ToString();

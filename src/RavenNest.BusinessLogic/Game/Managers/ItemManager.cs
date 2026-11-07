@@ -156,6 +156,7 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.MagicAim = item.MagicAim;
             dataItem.RangedPower = item.RangedPower;
             dataItem.RangedAim = item.RangedAim;
+            if (item.Stats != null) dataItem.ExtraStats = ItemGearStats.ExtrasOf(item.Stats); // an editor without the new stats leaves them be
 
             dataItem.Category = (int)item.Category;
             dataItem.FemaleModelId = item.FemaleModelId;

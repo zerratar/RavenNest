@@ -17,6 +17,13 @@ namespace RavenNest.DataModels
         [PersistentData] private int rangedAim;
         [PersistentData] private int rangedPower;
         [PersistentData] private int armorPower;
+        /// <summary>
+        /// Gear stats the classic columns above cannot hold, in RavenNest.Combat.GearStats' text form
+        /// ("FIRE_DAMAGE:30%;ICE_RESISTANCE:10%;CRIT_CHANCE:5%"): element damage, resistances, evasion, health, crits,
+        /// healing power (combat v2, the game's docs/combat-v2-design.md). Power, accuracy and armour stay in their
+        /// columns while 0.9.6 games still read them; RavenNest.Models.Item.Stats carries both together.
+        /// </summary>
+        [PersistentData] private string extraStats;
         [PersistentData] private int requiredAttackLevel;
         [PersistentData] private int requiredDefenseLevel;
         [PersistentData] private int requiredMagicLevel;
