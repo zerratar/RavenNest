@@ -140,10 +140,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             ResourceDrop drop = null;
             try
             {
+                // a gatherer pet out with its owner (docs/battle-pets-design.md): Forage, Keen Nose and Dig
+                var pet = BattlePetManager.GatherBonusOf(gameData, character.Id);
                 var chance = resProcessor.Random.NextDouble();
                 if (chance > ItemDropRateSettings.InitDropChance)
                 {
-                    return false;
+                    // Dig: now and then a find anyway
+                    return pet.BonusItem > 0 && resProcessor.Random.NextDouble() < pet.BonusItem &&
+                        TryDropAny(logger, gameData, inventory, session, resProcessor, character, skillLevel, canDrop);
                 }
 
                 LoadDropsIfRequired(gameData);
@@ -188,7 +192,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (target != null)
                 {
                     drop = target;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop, pet))
                     {
                         return true;
                     }
@@ -205,7 +209,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
 
                     drop = res;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop, pet))
                     {
                         return true;
                     }
@@ -227,6 +231,18 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
+        /// <summary>Dig: one of the drops this skill can give at this level, ignoring the odds (cooldowns still count).</summary>
+        private bool TryDropAny(ILogger logger, GameData gameData, PlayerInventory inventory, GameSession session, ResourceTaskProcessor resProcessor,
+            Character character, int skillLevel, Func<ResourceDrop, bool> canDrop)
+        {
+            LoadDropsIfRequired(gameData);
+            List<ResourceDrop> dr;
+            lock (dropsMutex) dr = drops.Where(d => d != null && d.ItemId != Guid.Empty && skillLevel >= d.SkillLevel).ToList();
+            if (dr.Count == 0) return false;
+            var pick = dr[resProcessor.Random.Next(dr.Count)];
+            return TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, pick, canDrop, new PetGatherBonus { RareDrop = double.MaxValue });
+        }
+
         private bool TryDrop(
             ILogger logger,
             GameData gameData,
@@ -235,7 +251,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             ResourceTaskProcessor resProcessor,
             Character character,
             int skillLevel, ResourceDrop targetDrop,
-            Func<ResourceDrop, bool> canDrop = null)
+            Func<ResourceDrop, bool> canDrop = null,
+            PetGatherBonus pet = default)
         {
             var now = DateTime.UtcNow;
 
@@ -284,7 +301,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             try
             {
                 var chance = resProcessor.Random.NextDouble();
-                var dropChance = targetDrop.GetDropChance(skillLevel);
+                // Keen Nose: better odds (Dig passes the most there is, so its pick always lands)
+                var dropChance = pet.RareDrop >= double.MaxValue ? 1 : targetDrop.GetDropChance(skillLevel) * (1 + pet.RareDrop);
                 if (skillLevel >= targetDrop.SkillLevel && (chance <= dropChance))
                 {
                     if (canDrop == null || canDrop(targetDrop))
@@ -294,6 +312,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         // the stream's story may want it delivered: then it goes to the village instead
                         if (QuestTracker.ItemFound(character, targetDrop.ItemId)) return true;
                         resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
+                        // Forage: sometimes one more
+                        if (pet.ExtraResource > 0 && resProcessor.Random.NextDouble() < pet.ExtraResource)
+                            resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
                         return true;
                     }
                 }

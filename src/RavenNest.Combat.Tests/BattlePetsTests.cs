@@ -21,6 +21,7 @@ namespace RavenNest.Combat.Tests
                 if (s.Source == PetSource.Tamed)
                 {
                     Assert.NotEmpty(s.Creatures);
+                    Assert.NotEmpty(s.Treats);
                     Assert.NotEmpty(s.StageModels);
                     Assert.Equal(3, s.StageHeights.Length);
                 }

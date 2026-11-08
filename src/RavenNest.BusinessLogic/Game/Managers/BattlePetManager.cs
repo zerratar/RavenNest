@@ -9,6 +9,7 @@ using RavenNest.Models;
 using Character = RavenNest.DataModels.Character;
 using ItemCategory = RavenNest.DataModels.ItemCategory;
 using Item = RavenNest.DataModels.Item;
+using RavenNest.BusinessLogic.Extensions;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -18,6 +19,14 @@ namespace RavenNest.BusinessLogic.Game
     ///     woken to fight, which pet is out, names, skill slots, evolving and experience. The species and rules are
     ///     RavenNest.Combat.BattlePets, shared with the game and the website.
     /// </summary>
+    /// <summary>A gatherer pet's help while its owner gathers (BattlePetManager.GatherBonusOf).</summary>
+    public struct PetGatherBonus
+    {
+        public double ExtraResource;
+        public double RareDrop;
+        public double BonusItem;
+    }
+
     public class BattlePetManager
     {
         /// <summary>A character tames at most one creature in this many seconds: a check on the game's rolls.</summary>
@@ -48,7 +57,7 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The stable of any character, for the website.</summary>
         public BattlePet[] Stable(Guid characterId) => gameData.GetPets(characterId).Where(IsBattlePet).OrderByDescending(p => p.Active).ThenByDescending(p => p.Level).Select(Map).ToArray();
 
-        public PetResult Tame(SessionToken token, Guid characterId, string speciesId)
+        public PetResult Tame(SessionToken token, Guid characterId, string speciesId, Guid treatItemId = default)
         {
             var character = GetCharacter(token, characterId);
             if (character == null) return PetResult.Fail(PetResultStatus.Error);
@@ -65,6 +74,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (Count(characterId) >= BattlePets.StableSize(taming)) return PetResult.Fail(PetResultStatus.StableFull, BattlePets.StableSize(taming).ToString());
 
                 lastTame[characterId] = DateTime.UtcNow;
+                if (treatItemId != Guid.Empty) EatTreat(character, species, treatItemId);
                 var pet = Create(character, species, PetSource.Tamed, null);
                 return Ok(character, pet);
             }
@@ -224,6 +234,42 @@ namespace RavenNest.BusinessLogic.Game
                 if (gained > 0) FillSlots(pet, BattlePets.GetSpecies(pet.Species), TamingLevel(character));
                 return new PetResult { Status = PetResultStatus.Ok, Pet = Map(pet), LevelsGained = gained };
             }
+        }
+
+        /// <summary>The treat that helped is eaten: one of it, if it is one the species loves and the character has it.</summary>
+        private void EatTreat(Character character, PetSpecies species, Guid itemId)
+        {
+            var item = gameData.GetItem(itemId);
+            if (item == null || !species.Treats.Any(t => string.Equals(t, item.Name, StringComparison.OrdinalIgnoreCase))) return;
+            var inventory = inventories.Get(character.Id);
+            var stack = inventory.GetAllItems().FirstOrDefault(x => x.ItemId == itemId && !x.Equipped && x.Amount > 0);
+            if (stack.IsNull()) return;
+            inventory.RemoveItem(stack, 1);
+        }
+
+        // ---------------------------------------------------------------- gatherer pets
+
+        /// <summary>
+        ///     What the pet out with a character adds to its gathering (the gather skills in its slots, added up): a
+        ///     chance of one more of a drop, better drop odds, and the chance of a find when nothing dropped.
+        /// </summary>
+        public static PetGatherBonus GatherBonusOf(GameData gameData, Guid characterId)
+        {
+            var pet = gameData.GetActivePet(characterId);
+            if (pet == null || string.IsNullOrEmpty(pet.Species)) return default;
+            var bonus = new PetGatherBonus();
+            foreach (var id in (pet.Slots ?? "").Split(','))
+            {
+                var skill = BattlePets.GetSkill(id);
+                if (skill == null) continue;
+                switch (skill.Gather)
+                {
+                    case RavenNest.Combat.PetGatherBonus.ExtraResource: bonus.ExtraResource += skill.GatherAmount; break;
+                    case RavenNest.Combat.PetGatherBonus.RareDrop: bonus.RareDrop += skill.GatherAmount; break;
+                    case RavenNest.Combat.PetGatherBonus.BonusItem: bonus.BonusItem += skill.GatherAmount; break;
+                }
+            }
+            return bonus;
         }
 
         // ---------------------------------------------------------------- helpers

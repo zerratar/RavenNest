@@ -254,6 +254,14 @@ namespace RavenNest.Combat
                 Companion("companion-crachy", PetRole.Gatherer, PetStrike.Pounce, Element.Physical, N("Crachy", "Big Crachy", "Crachy the Great"),
                     new[] { "Pets/Crachy" }, "Nobody knows what Crachy is. Crachy does not know either."),
             };
+            // the treats each creature loves (Cooking and Farming make them)
+            void Treats(string id, params string[] items) { var t = list.Find(x => x.Id == id); if (t != null) t.Treats = items; }
+            Treats("bunny", "Carrots", "Cabbage");
+            Treats("cow", "Wheat", "Corn");
+            Treats("tormented-soul", "Apple Pie", "Bread");
+            Treats("metalon", "Raw Meat");
+            foreach (var dragon in new[] { "red-dragon", "blue-dragon", "white-dragon", "green-dragon", "purple-dragon" }) Treats(dragon, "Steak", "Raw Meat");
+            Treats("lord-quackers", "Bread", "Banana Bread"); // one feeds ducks bread
             return list;
         }
     }

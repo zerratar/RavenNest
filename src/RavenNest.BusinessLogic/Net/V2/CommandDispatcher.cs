@@ -123,7 +123,7 @@ namespace RavenNest.BusinessLogic.Net.V2
 
             // battle pets
             Add(Commands.PetList, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return pets.List(c.SessionToken, ch); });
-            Add(Commands.PetTame, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string species); return pets.Tame(c.SessionToken, ch, species); });
+            Add(Commands.PetTame, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string species, out Guid treat); return pets.Tame(c.SessionToken, ch, species, treat); });
             Add(Commands.PetWake, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); return pets.Wake(c.SessionToken, ch, item); });
             Add(Commands.PetUse, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Use(c.SessionToken, ch, pet); });
             Add(Commands.PetRename, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out string name); return pets.Rename(c.SessionToken, ch, pet, name); });

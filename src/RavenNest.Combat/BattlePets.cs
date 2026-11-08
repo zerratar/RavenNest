@@ -166,6 +166,9 @@ namespace RavenNest.Combat
         /// <summary>A multiplier on the tame chance: 1 for most, small for the rare ones.</summary>
         public double TameRarity = 1;
 
+        /// <summary>The foods it loves (item names): carrying one makes a tame likelier, and one is eaten when it works.</summary>
+        public string[] Treats = Array.Empty<string>();
+
         /// <summary>Companions: the pet item's prefab ("Pets/Raven") that wakes into this species.</summary>
         public string[] ItemPrefabs = Array.Empty<string>();
 
@@ -242,6 +245,7 @@ namespace RavenNest.Combat
             copy.StageHeights = (double[])(StageHeights ?? Array.Empty<double>()).Clone();
             copy.Creatures = (string[])(Creatures ?? Array.Empty<string>()).Clone();
             copy.ItemPrefabs = (string[])(ItemPrefabs ?? Array.Empty<string>()).Clone();
+            copy.Treats = (string[])(Treats ?? Array.Empty<string>()).Clone();
             return copy;
         }
     }
