@@ -62,6 +62,10 @@ else
                                     <span class="rf-chip">@(node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
                                 </div>
                                 <div class="rf-trees__node-text">@node.Description</div>
+                                @if (!string.IsNullOrEmpty(node.EffectText()))
+                                {
+                                    <div class="rf-trees__node-effect">@node.EffectText()@(node.MaxRank > 1 && !node.IsActive ? " (" + node.TotalText(rank) + ")" : "")</div>
+                                }
                                 <div class="rf-meta">
                                     @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
                                     <span>@skill @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>

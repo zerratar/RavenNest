@@ -89,10 +89,19 @@ function layout(data) {
         return { ...t, index: i, angle, x: Math.cos(angle) * HUB_RADIUS, y: Math.sin(angle) * HUB_RADIUS };
     });
 
+    const byId = new Map(nodes.map(n => [n.id, n]));
     for (let t = 0; t < trees.length; t++) {
         const centre = hubs[t].angle;
         for (let tier = 0; tier < 4; tier++) {
-            const ring = byTree[t][tier];
+            let ring = byTree[t][tier];
+            // above the first ring, each node sits under the middle of the nodes its path comes from, so links rarely cross
+            if (tier > 0 && ring.some(n => n.requires && n.requires.length)) {
+                const placeOf = n => {
+                    const from = (n.requires || []).map(id => byId.get(id)).filter(m => m && m.angle !== undefined);
+                    return from.length ? from.reduce((s, m) => s + m.angle, 0) / from.length : centre;
+                };
+                ring = byTree[t][tier] = ring.map((n, i) => ({ n, key: placeOf(n), i })).sort((a, b) => a.key - b.key || a.i - b.i).map(x => x.n);
+            }
             const radius = FIRST_RING + tier * RING_STEP;
             const span = wedge - WEDGE_PADDING * 2;
             ring.forEach((n, i) => {
@@ -105,10 +114,19 @@ function layout(data) {
         }
     }
 
-    // links: the hub to its first ring, then each node to the nearest of the ring below it (the tiers' order)
+    // links: the hub to its first ring, then the paths (data.nodes[].requires: one of them learned opens the node);
+    // without paths in the data, each node to the nearest of the ring below it
     const links = [];
+    const hasPaths = nodes.some(n => n.requires && n.requires.length);
     for (let t = 0; t < trees.length; t++) {
         for (const n of byTree[t][0]) links.push({ a: hubs[t], b: n, tree: t });
+        if (hasPaths) {
+            for (const n of nodes) {
+                if (n.tree !== t) continue;
+                for (const id of n.requires || []) { const m = byId.get(id); if (m) links.push({ a: m, b: n, tree: t }); }
+            }
+            continue;
+        }
         for (let tier = 1; tier < 4; tier++) {
             const below = byTree[t][tier - 1].length ? byTree[t][tier - 1] : byTree[t][Math.max(0, tier - 2)];
             for (const n of byTree[t][tier]) {
@@ -131,6 +149,14 @@ function layout(data) {
 }
 
 function lit(node) { return node.state === 'learned' || node.state === 'maxed'; }
+
+/** A path's line: walked (both ends learned) bright, open (the lower end learned) half, the rest faint in the tree's colour. */
+function linkStyle(l) {
+    const from = l.a.state === undefined || lit(l.a);
+    if (from && lit(l.b)) return { alpha: 0.95, width: 3.5 };
+    if (from && l.b.state !== 'locked') return { alpha: 0.55, width: 2.6 };
+    return { alpha: 0.22, width: 1.8 };
+}
 
 // ---- the camera and the pointer, shared by both ways of drawing ----------------------------------------------------
 
@@ -212,11 +238,11 @@ function drawShapes2d(g, view) {
     // links
     for (const l of map.links) {
         const color = map.hubs[l.tree].color;
-        const on = (l.a.state === undefined || lit(l.a)) && lit(l.b);
+        const style = linkStyle(l);
         const [ax, ay] = cam.toScreen(l.a.x, l.a.y, w, h);
         const [bx, by] = cam.toScreen(l.b.x, l.b.y, w, h);
-        g.strokeStyle = on ? rgba(color, 0.95) : 'rgba(170,185,255,0.16)';
-        g.lineWidth = Math.max(1, (on ? 3.5 : 1.6) * cam.zoom);
+        g.strokeStyle = rgba(color, style.alpha);
+        g.lineWidth = Math.max(1, style.width * cam.zoom);
         g.beginPath();
         g.moveTo(ax, ay);
         g.lineTo(bx, by);
@@ -628,12 +654,12 @@ class GlScene {
 
         // links
         for (const l of map.links) {
-            const on = (l.a.state === undefined || lit(l.a)) && lit(l.b);
+            const style = linkStyle(l);
             const color = new THREE.Color(map.hubs[l.tree].color);
-            const width = on ? 3.5 : 1.6;
+            const width = style.width;
             const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y, len = Math.hypot(dx, dy);
             const geom = new THREE.PlaneGeometry(len, width);
-            const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: on ? color : new THREE.Color(0xaab9ff), transparent: true, opacity: on ? 0.95 : 0.16 }));
+            const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: style.alpha }));
             mesh.position.set((l.a.x + l.b.x) / 2, -(l.a.y + l.b.y) / 2, -0.5);
             mesh.rotation.z = -Math.atan2(dy, dx);
             this.groups.add(mesh);

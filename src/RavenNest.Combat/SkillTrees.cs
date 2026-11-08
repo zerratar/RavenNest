@@ -74,6 +74,130 @@ namespace RavenNest.Combat
         CrowdControlImmunity // Seconds
     }
 
+    /// <summary>The numbers of skills in words (SkillNode.EffectText).</summary>
+    public static class SkillTexts
+    {
+        private static string Pct(double v) => (v * 100).ToString(Math.Abs(v * 100) < 10 && Math.Abs(v * 100 - Math.Round(v * 100)) > 0.001 ? "0.#" : "0", System.Globalization.CultureInfo.InvariantCulture) + "%";
+        private static string Num(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+        // a stat in plain words: {0} is the amount; "less" ones turn round when negative
+        private static readonly Dictionary<GearStat, (string More, string Less)> Phrases = new Dictionary<GearStat, (string, string)>
+        {
+            [GearStat.ArmorBonus] = ("{0} more armour", "{0} less armour"),
+            [GearStat.Threat] = ("{0} more threat", "{0} less threat"),
+            [GearStat.BlockChance] = ("{0} chance to block half a blow", null),
+            [GearStat.DamageReduction] = ("{0} less damage taken", null),
+            [GearStat.Thorns] = ("{0} of melee damage taken hurts the attacker", null),
+            [GearStat.LowHealthReduction] = ("{0} less damage taken below half health", null),
+            [GearStat.HealingPowerBonus] = ("{0} stronger heals", null),
+            [GearStat.CastSpeed] = ("{0} faster heals and spells", null),
+            [GearStat.HealShield] = ("{0} of each heal also as a shield", null),
+            [GearStat.UndeadDamage] = ("{0} more damage to the undead", null),
+            [GearStat.MeleePowerBonus] = ("{0} more melee damage", null),
+            [GearStat.RangedPowerBonus] = ("{0} more ranged damage", null),
+            [GearStat.MagicPowerBonus] = ("{0} more magic damage", null),
+            [GearStat.BleedOnCrit] = ("crits bleed {0} of the hit over 4 s", null),
+            [GearStat.ExecuteDamage] = ("{0} more damage to enemies below 30% health", null),
+            [GearStat.MaxHealthBonus] = ("{0} more health", null),
+            [GearStat.AccuracyBonus] = ("{0} more accuracy", null),
+            [GearStat.CritChance] = ("{0} crit chance", null),
+            [GearStat.CritDamage] = ("{0} crit damage", null),
+            [GearStat.AttackSpeed] = ("{0} faster attacks", null),
+            [GearStat.ArmorPenetration] = ("{0} of the target's armour ignored", null),
+            [GearStat.BurnBonus] = ("{0} stronger burns", null),
+            [GearStat.ResistanceShred] = ("{0} of the target's resistances ignored", null),
+            [GearStat.CombatRegen] = ("{0} of your health back each second in fights", null),
+            [GearStat.LifeSteal] = ("{0} of the damage you deal heals you", null),
+            [GearStat.HealingReceived] = ("{0} more healing received", null),
+            [GearStat.BossDamage] = ("{0} more damage to bosses", null),
+            [GearStat.LootLuck] = ("{0} more loot in raids and dungeons", null),
+            [GearStat.CrowdControlDuration] = ("{0} longer stuns, freezes and roots", null),
+        };
+
+        /// <summary>Only the amounts ("5%", or "10% and 5%" for two stats), for totals beside the full words.</summary>
+        public static string Amounts(GearStats stats, int ranks)
+        {
+            var parts = new List<string>();
+            for (var i = 0; i < GearStats.Count; ++i)
+            {
+                var v = stats.Values[i] * ranks;
+                if (v != 0) parts.Add(GearStats.IsShare((GearStat)i) ? Pct(Math.Abs(v)) : Num(Math.Abs(v)));
+            }
+            return string.Join(" and ", parts);
+        }
+
+        public static string Stats(GearStats stats, int ranks)
+        {
+            var parts = new List<string>();
+            for (var i = 0; i < GearStats.Count; ++i)
+            {
+                var v = stats.Values[i] * ranks;
+                if (v == 0) continue;
+                var stat = (GearStat)i;
+                var amount = GearStats.IsShare(stat) ? Pct(Math.Abs(v)) : Num(Math.Abs(v));
+                if (Phrases.TryGetValue(stat, out var p) && (v > 0 || p.Less != null))
+                    parts.Add(string.Format(v > 0 ? p.More : p.Less, amount));
+                else
+                    parts.Add((v > 0 ? "+" : "-") + amount + " " + GearStats.Label(stat));
+            }
+            return string.Join(", ", parts);
+        }
+
+        public static string Active(ActiveSkill a)
+        {
+            var parts = new List<string>();
+            foreach (var e in a.Effects) parts.Add(Effect(e));
+            var who = Targets(a);
+            var text = string.Join(", ", parts.Where(p => p.Length > 0));
+            return who.Length > 0 ? text + " " + who : text;
+        }
+
+        private static string Effect(SkillEffect e)
+        {
+            var element = e.Element.HasValue ? " " + e.Element.Value.ToString().ToLowerInvariant() : "";
+            switch (e.Kind)
+            {
+                case SkillEffectKind.Damage:
+                    var hit = e.Hits > 1 ? e.Hits + " hits of " + Pct(e.Amount) + " of a hit" : Pct(e.Amount) + " of a hit as" + (element.Length > 0 ? element : "") + " damage";
+                    if (e.Hits > 1 && element.Length > 0) hit += " (" + element.Trim() + ")";
+                    if (e.Hits <= 1 && element.Length == 0) hit = Pct(e.Amount) + " of a hit";
+                    return e.ArmorIgnored > 0 ? hit + ", ignoring " + Pct(e.ArmorIgnored) + " of armour" : hit;
+                case SkillEffectKind.DamageOverTime: return Pct(e.Amount) + " of a hit" + (element.Length > 0 ? " as" + element + " damage" : "") + " over " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Heal: return "a heal of " + Pct(e.Amount) + " of a normal heal";
+                case SkillEffectKind.HealOverTime: return Pct(e.Amount) + " of a normal heal over " + Num(e.Seconds) + " s";
+                case SkillEffectKind.HealPercent: return "heals " + Pct(e.Amount) + " of maximum health";
+                case SkillEffectKind.Shield: return "a shield of " + Pct(e.Amount) + " of a heal for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.DamageTaken: return (e.Amount > 0 ? "+" : "") + Pct(e.Amount) + " damage taken for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.DamageDealt: return (e.Amount > 0 ? "+" : "") + Pct(e.Amount) + " damage dealt for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.AttackSpeed: return "+" + Pct(e.Amount) + " attack speed for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Taunt: return "taunted for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Stun: return "stunned for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Root: return "rooted for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Freeze: return "frozen for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.Cleanse: return "burns, poison, chills and bleeding removed";
+                case SkillEffectKind.CrowdControlImmunity: return "immune to stuns, freezes and roots for " + Num(e.Seconds) + " s";
+                default: return "";
+            }
+        }
+
+        private static string Targets(ActiveSkill a)
+        {
+            var r = a.Radius > 0 ? " within " + Num(a.Radius) + " m" : "";
+            switch (a.Targeting)
+            {
+                case SkillTargeting.Self: return "(you)";
+                case SkillTargeting.LowestAlly: return "(the ally with the least health" + r + ")";
+                case SkillTargeting.Allies: return "(up to " + a.MaxTargets + " allies" + r + ")";
+                case SkillTargeting.Cone: return "(up to " + a.MaxTargets + " enemies in front)";
+                case SkillTargeting.Around: return "(up to " + a.MaxTargets + " enemies" + r + ")";
+                case SkillTargeting.AroundTarget: return "(the target and up to " + Math.Max(0, a.MaxTargets - 1) + " enemies" + r + " of it)";
+                case SkillTargeting.Chain: return "(jumps to " + Math.Max(0, a.MaxTargets - 1) + " more enemies)";
+                case SkillTargeting.FarthestEnemy: return "(an enemy up to " + Num(a.Radius) + " m away)";
+                default: return "(the target)";
+            }
+        }
+    }
+
     /// <summary>One thing an active does.</summary>
     public sealed class SkillEffect
     {
@@ -134,8 +258,35 @@ namespace RavenNest.Combat
         /// <summary>Last Stand: once per fight, survive a killing blow with 1 health.</summary>
         public bool LastStand;
 
+        /// <summary>
+        ///     The path: one of these (the nodes linked to it in the tier below) must be learned first. Empty on the first
+        ///     tier. The map draws these links.
+        /// </summary>
+        public string[] Requires = Array.Empty<string>();
+
         public bool IsActive => Active != null;
         public int RequiredLevel => SkillTrees.TierLevels[Tier];
+
+        /// <summary>
+        ///     What the node does in numbers, for the website and chat: a passive's stats a rank ("+1% Damage Reduction a
+        ///     rank"), an active's effects ("80% of a hit to up to 3 enemies within 4 m"). Empty for the specials, whose
+        ///     description says it all.
+        /// </summary>
+        public string EffectText()
+        {
+            if (Active != null) return SkillTexts.Active(Active);
+            if (string.IsNullOrEmpty(Passive)) return "";
+            var text = SkillTexts.Stats(GearStats.Parse(Passive), 1);
+            return MaxRank > 1 ? text + " a rank" : text;
+        }
+
+        /// <summary>A ranked passive's total now and at its last rank ("2% now, 5% at 5/5"); empty otherwise.</summary>
+        public string TotalText(int rank)
+        {
+            if (Active != null || string.IsNullOrEmpty(Passive) || MaxRank <= 1) return "";
+            var stats = GearStats.Parse(Passive);
+            return (rank > 0 ? SkillTexts.Amounts(stats, rank) + " now, " : "") + SkillTexts.Amounts(stats, MaxRank) + " at " + MaxRank + "/" + MaxRank;
+        }
     }
 
     /// <summary>
@@ -346,7 +497,64 @@ namespace RavenNest.Combat
             Passive(L, 1, "treasure-hunter", "Treasure Hunter", "More loot in raids and dungeons.", "LOOT_LUCK:2%");
             Passive(L, 2, "pressure-points", "Pressure Points", "Your stuns, freezes and roots last longer.", "CROWD_CONTROL_DURATION:10%");
             Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:10%", ranks: 1, cost: 10);
+
+            // the paths (2026-11-08): a node needs one of the nodes linked to it in the tier below; the first tier is open
+            Path("shield-wall", "taunt", "thick-skin");
+            Path("shield-training", "thick-skin");
+            Path("steadfast", "watchful", "thick-skin");
+            Path("shield-bash", "shield-training", "shield-wall");
+            Path("spiked-armour", "steadfast", "shield-training");
+            Path("hold-the-line", "steadfast");
+            Path("rally", "hold-the-line", "shield-bash");
+            Path("last-stand", "spiked-armour", "hold-the-line");
+            Path("renew", "mend");
+            Path("quick-hands", "mend", "devotion");
+            Path("gentle-presence", "devotion");
+            Path("barrier", "renew");
+            Path("cleanse", "renew", "quick-hands");
+            Path("warding-light", "gentle-presence", "quick-hands");
+            Path("sanctuary", "barrier", "cleanse");
+            Path("smite", "warding-light");
+            Path("crushing-blow", "cleave", "brute-force");
+            Path("rend", "brute-force");
+            Path("whirlwind", "crushing-blow");
+            Path("executioner", "rend", "crushing-blow");
+            Path("leap", "whirlwind");
+            Path("titan", "executioner");
+            Path("expose-weakness", "keen-eye");
+            Path("deadly", "sharp-edge", "keen-eye");
+            Path("flurry", "expose-weakness", "deadly");
+            Path("swift", "deadly");
+            Path("disarm", "flurry");
+            Path("precision-strikes", "swift", "flurry");
+            Path("piercing-shot", "steady-aim", "multishot");
+            Path("eagle-eye", "steady-aim");
+            Path("arrow-rain", "piercing-shot");
+            Path("hunters-pace", "eagle-eye");
+            Path("snare", "arrow-rain", "hunters-pace");
+            Path("rapid-fire", "hunters-pace");
+            Path("frost-nova", "fireball");
+            Path("quickened-casting", "arcane-power");
+            Path("searing", "fireball", "arcane-power");
+            Path("chain-lightning", "frost-nova", "quickened-casting");
+            Path("toxic-cloud", "searing");
+            Path("unravel", "quickened-casting");
+            Path("meteor", "toxic-cloud", "chain-lightning");
+            Path("regeneration", "hardy");
+            Path("bloodthirst", "second-wind", "hardy");
+            Path("battle-rhythm", "regeneration", "bloodthirst");
+            Path("resilience", "bloodthirst");
+            Path("iron-skin", "battle-rhythm", "resilience");
+            Path("execute", "mark-prey");
+            Path("treasure-hunter", "big-game");
+            Path("pressure-points", "execute", "treasure-hunter");
+            Path("apex-predator", "pressure-points");
         }
+
+        private static void Path(string id, params string[] requires) => byId[id].Requires = requires;
+
+        /// <summary>The nodes whose path goes through this one (the tier above).</summary>
+        public static IEnumerable<SkillNode> Dependents(string id) => all.Where(n => n.Requires.Any(r => string.Equals(r, id, StringComparison.OrdinalIgnoreCase)));
     }
 
     /// <summary>
@@ -406,6 +614,9 @@ namespace RavenNest.Combat
             if (Rank(id) >= node.MaxRank) return node.Name + " is already at its highest rank.";
             var level = levelOf(SkillTrees.SkillOf(node.Tree));
             if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.SkillOf(node.Tree) + " " + node.RequiredLevel + ".";
+            // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path)
+            if (Rank(id) == 0 && node.Requires.Length > 0 && !node.Requires.Any(Has))
+                return node.Name + " needs " + string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r)) + " first.";
             var left = earnedPoints - Spent;
             if (left < node.Cost) return node.Name + " costs " + node.Cost + " point" + (node.Cost == 1 ? "" : "s") + "; you have " + Math.Max(0, left) + ".";
             return null;
@@ -420,11 +631,25 @@ namespace RavenNest.Combat
             return null;
         }
 
+        /// <summary>Null when a rank can come off the node, otherwise why not (a learned node above needs it for its path).</summary>
+        public string CanLower(string id)
+        {
+            var node = SkillTrees.Get(id);
+            if (node == null || Rank(node.Id) <= 0) return "Nothing to take back.";
+            if (Rank(node.Id) > 1) return null;
+            foreach (var above in SkillTrees.Dependents(node.Id))
+            {
+                if (Has(above.Id) && !above.Requires.Any(r => !string.Equals(r, node.Id, StringComparison.OrdinalIgnoreCase) && Has(r)))
+                    return above.Name + " needs " + node.Name + " for its path; take it back first.";
+            }
+            return null;
+        }
+
         /// <summary>One rank off a node (the website's planner); out of the loadout when none is left.</summary>
         public void Lower(string id)
         {
             var node = SkillTrees.Get(id);
-            if (node == null || Rank(node.Id) <= 0) return;
+            if (node == null || Rank(node.Id) <= 0 || CanLower(id) != null) return;
             var rank = Rank(node.Id) - 1;
             if (rank > 0) { Ranks[node.Id] = rank; return; }
             Ranks.Remove(node.Id);

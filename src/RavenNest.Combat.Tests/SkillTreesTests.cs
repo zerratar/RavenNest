@@ -57,6 +57,8 @@ namespace RavenNest.Combat.Tests
             Assert.Null(build.SetLoadout(0, "cleave"));
             Assert.Equal(4, build.LoadoutSlots);
             Assert.NotNull(build.SetLoadout(4, "cleave"));
+            build.Raise("hardy", All, 100);
+            build.Raise("regeneration", All, 100);
             build.Raise("battle-rhythm", All, 100);
             Assert.Equal(5, build.LoadoutSlots);
             Assert.Null(build.SetLoadout(4, "cleave")); // moves it from slot 1 to slot 5
@@ -69,7 +71,8 @@ namespace RavenNest.Combat.Tests
         {
             var build = new SkillBuild();
             for (var i = 0; i < 3; ++i) build.Raise("sharp-edge", All, 100);
-            build.Raise("titan", All, 100);
+            Assert.Contains("needs Executioner first", build.CanRaise("titan", All, 100));
+            build.Ranks["titan"] = 1; // learned before the paths: kept
             var stats = build.Passives();
             Assert.Equal(0.03, stats[GearStat.CritChance], 6);
             Assert.Equal(0.10, stats[GearStat.MeleePowerBonus], 6);
@@ -116,6 +119,46 @@ namespace RavenNest.Combat.Tests
             GearStats.Parse("BLOCK_CHANCE:50%").ApplyExtras(blocker, null);
             var blocked = Enumerable.Range(0, 400).Select(_ => CombatMath.Attack(a, AttackStyle.Melee, blocker, random)).Count(r => r.Blocked);
             Assert.InRange(blocked, 150, 250);
+        }
+
+        [Fact]
+        public void Paths_go_one_tier_down_in_the_same_tree_and_hold_up_what_is_above()
+        {
+            foreach (var node in SkillTrees.All)
+            {
+                if (node.Tier == 0) { Assert.Empty(node.Requires); continue; }
+                Assert.NotEmpty(node.Requires);
+                foreach (var r in node.Requires)
+                {
+                    var below = SkillTrees.Get(r);
+                    Assert.NotNull(below);
+                    Assert.Equal(node.Tree, below.Tree);
+                    Assert.Equal(node.Tier - 1, below.Tier);
+                }
+            }
+
+            var build = new SkillBuild();
+            Assert.Contains("needs Regeneration or Bloodthirst first", build.CanRaise("battle-rhythm", All, 100));
+            Assert.Null(build.Raise("hardy", All, 100));
+            Assert.Null(build.Raise("bloodthirst", All, 100));
+            Assert.Null(build.Raise("battle-rhythm", All, 100));
+            Assert.Contains("Battle Rhythm needs Bloodthirst", build.CanLower("bloodthirst"));
+            Assert.Null(build.Raise("regeneration", All, 100));
+            Assert.Null(build.CanLower("bloodthirst")); // Regeneration holds the path now
+        }
+
+        [Fact]
+        public void Every_node_says_its_numbers()
+        {
+            Assert.Equal("1% less damage taken a rank", SkillTrees.Get("steadfast").EffectText());
+            Assert.Equal("2% now, 5% at 5/5", SkillTrees.Get("steadfast").TotalText(2));
+            Assert.Equal("80% of a hit (up to 3 enemies in front)", SkillTrees.Get("cleave").EffectText());
+            Assert.Equal("taunted for 4 s (up to 8 enemies within 6 m)", SkillTrees.Get("taunt").EffectText());
+            foreach (var node in SkillTrees.All)
+            {
+                if (node.ExtraLoadoutSlot || node.LastStand) continue;
+                Assert.False(string.IsNullOrEmpty(node.EffectText()), node.Id);
+            }
         }
     }
 }

@@ -135,7 +135,17 @@
                 <button type="button" class="rf-stage__close" title="Close" @onclick="Deselect">×</button>
             </div>
             <p class="rf-stage__pop-text">@node.Description</p>
+            var effect = node.EffectText(); var total = node.TotalText(rank);
+            @if (!string.IsNullOrEmpty(effect))
+            {
+                <p class="rf-stage__pop-effect">@effect@if (!string.IsNullOrEmpty(total)) { <span class="rf-stage__pop-total"> (@total)</span> }</p>
+            }
             <p class="rf-stage__pop-meta">
+                @if (node.Requires.Length > 0)
+                {
+                    var onPath = node.Requires.Any(Build.Has);
+                    <span class="@(onPath || rank > 0 ? "" : "is-short")">After @string.Join(" or ", node.Requires.Select(r => RavenNest.Combat.SkillTrees.Get(r)?.Name ?? r)). </span>
+                }
                 @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
                 <span class="@(Levels(skill) >= node.RequiredLevel ? "" : "is-short")">Needs @skill @node.RequiredLevel (@(Planner ? "set to" : "you have") @Levels(skill)).</span>
                 <span>@node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
@@ -149,7 +159,8 @@
                     }
                     @if (Planner && rank > 0)
                     {
-                        <button type="button" class="rf-stage__btn" @onclick="() => OnLower.InvokeAsync(node.Id)">Take back</button>
+                        var lowerWhy = Build.CanLower(node.Id);
+                        <button type="button" class="rf-stage__btn" disabled="@(lowerWhy != null)" title="@lowerWhy" @onclick="() => OnLower.InvokeAsync(node.Id)">Take back</button>
                     }
                 </div>
                 @if (reason != null && rank < node.MaxRank)
@@ -380,7 +391,7 @@
             {
                 id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
                 kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand) ? "special" : "passive",
-                rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1,
+                rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = n.Requires,
             };
         }).ToList();
         return new { trees, nodes };
