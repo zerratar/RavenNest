@@ -15,6 +15,32 @@ namespace RavenNest.Combat
         Gatherer = 4,
     }
 
+    /// <summary>
+    ///     How a pet's attacks look, apart from its role (docs/battle-pets-design.md, section 9), so every model can fight:
+    ///     a model with an attack clip bites with it, a beast without one pounces (a leap done in code), and small or
+    ///     magical pets stay back and fire a bolt of their element.
+    /// </summary>
+    public enum PetStrike
+    {
+        /// <summary>Up close with the model's own attack clip.</summary>
+        Bite = 0,
+        /// <summary>Up close with a leap done in code: crouch, jump in, squash on the hit, hop back. Needs no clips.</summary>
+        Pounce = 1,
+        /// <summary>From a few metres back: a little hop and a bolt of its element.</summary>
+        Bolt = 2,
+    }
+
+    /// <summary>Where a pet came from.</summary>
+    public enum PetSource
+    {
+        /// <summary>Tamed from a creature on the islands (!tame).</summary>
+        Tamed = 0,
+        /// <summary>A pet item its owner has, woken to fight (!pet wake); it keeps its own look.</summary>
+        Companion = 1,
+        /// <summary>Hatched from an egg.</summary>
+        Egg = 2,
+    }
+
     /// <summary>What a gatherer pet's skill adds while its owner gathers.</summary>
     public enum PetGatherBonus
     {
@@ -117,6 +143,45 @@ namespace RavenNest.Combat
         /// <summary>Where its eggs come from, for people reading the list.</summary>
         public string Origin = "";
 
+        public PetSource Source;
+
+        /// <summary>How its attacks look (Bite needs an attack clip on the model).</summary>
+        public PetStrike Strike = PetStrike.Pounce;
+
+        /// <summary>
+        ///     The game's model per stage: "enemy:Red Metalon" (an enemy's model, scaled to pet size) or "pet:Pets/Raven"
+        ///     (a pet item's prefab). One entry means the same model at every stage, growing.
+        /// </summary>
+        public string[] StageModels = Array.Empty<string>();
+
+        /// <summary>The pet's height in metres per stage; the game scales its model to it.</summary>
+        public double[] StageHeights = { 0.6, 0.75, 0.9 };
+
+        /// <summary>The creatures that can be tamed into it: enemy definition ids or kind names ("home-bunny", "Red Metalon").</summary>
+        public string[] Creatures = Array.Empty<string>();
+
+        /// <summary>The Taming level a try needs.</summary>
+        public int TameLevel = 1;
+
+        /// <summary>A multiplier on the tame chance: 1 for most, small for the rare ones.</summary>
+        public double TameRarity = 1;
+
+        /// <summary>Companions: the pet item's prefab ("Pets/Raven") that wakes into this species.</summary>
+        public string[] ItemPrefabs = Array.Empty<string>();
+
+        /// <summary>One line about it, for the website and !pet.</summary>
+        public string Blurb = "";
+
+        public string ModelAt(int stage) =>
+            StageModels == null || StageModels.Length == 0 ? "" : StageModels[Math.Max(0, Math.Min(StageModels.Length - 1, stage))];
+
+        /// <summary>Its height at a stage, or 0 for a companion, which keeps its item's size (grown by BattlePets.CompanionGrowth).</summary>
+        public double HeightAt(int stage) =>
+            StageHeights == null || StageHeights.Length == 0 ? 0 : StageHeights[Math.Max(0, Math.Min(StageHeights.Length - 1, stage))];
+
+        /// <summary>How far from its target it attacks from.</summary>
+        public double Reach => Strike == PetStrike.Bolt ? 6.0 : 1.4 + Math.Max(0.6, HeightAt(0)) * 0.5;
+
         public string NameAt(int stage) =>
             StageNames != null && StageNames.Length > 0 ? StageNames[Math.Max(0, Math.Min(StageNames.Length - 1, stage))] : Id;
 
@@ -173,6 +238,10 @@ namespace RavenNest.Combat
             copy.StageNames = (string[])(StageNames ?? Array.Empty<string>()).Clone();
             copy.Skills = (string[])(Skills ?? Array.Empty<string>()).Clone();
             copy.Stats = (Stats ?? new PetStatProfile()).Copy();
+            copy.StageModels = (string[])(StageModels ?? Array.Empty<string>()).Clone();
+            copy.StageHeights = (double[])(StageHeights ?? Array.Empty<double>()).Clone();
+            copy.Creatures = (string[])(Creatures ?? Array.Empty<string>()).Clone();
+            copy.ItemPrefabs = (string[])(ItemPrefabs ?? Array.Empty<string>()).Clone();
             return copy;
         }
     }
@@ -182,7 +251,7 @@ namespace RavenNest.Combat
     ///     numbers are a starting point for the simulator's "pets" scenario, and nothing in the game or on the server
     ///     uses them yet. The skill's name is not decided; the code calls it the pet skill.
     /// </summary>
-    public static class BattlePets
+    public static partial class BattlePets
     {
         /// <summary>The pet skill gains this share of the experience of the skill being trained while a pet is out; so does the pet.</summary>
         public const double ExperienceShare = 0.25;
@@ -344,6 +413,41 @@ namespace RavenNest.Combat
                 Description = "10% better chance at rare drops while gathering.", Gather = PetGatherBonus.RareDrop, GatherAmount = 0.10 });
             Add(new PetSkill { Id = "dig", Name = "Dig", Role = PetRole.Gatherer, LearnLevel = 60,
                 Description = "Now and then digs up a bonus item from the island.", Gather = PetGatherBonus.BonusItem, GatherAmount = 0.01 });
+
+            // the species' own skills (PetSpeciesList.cs)
+            Add(new PetSkill { Id = "moo", Name = "Moo", Role = PetRole.Tank, LearnLevel = 1,
+                Description = "Moos at the enemies attacking its owner. They cannot help but look, for 5 s.",
+                Active = Area(14, SkillTargeting.Around, SkillUse.EnemyOnAlly, 6, 6, E(SkillEffectKind.Taunt, 0, 5)) });
+            Add(new PetSkill { Id = "binky", Name = "Binky", Role = PetRole.Support, LearnLevel = 1,
+                Description = "A happy little leap in the air. Its owner and allies near attack 20% faster for 6 s.",
+                Active = Area(20, SkillTargeting.Allies, SkillUse.InFight, 3, 5, E(SkillEffectKind.AttackSpeed, 0.2, 6)) });
+            Add(new PetSkill { Id = "venom-sting", Name = "Venom Sting", Role = PetRole.Damage, LearnLevel = 1,
+                Description = "Stings the target with its tail; the poison works for 6 s.",
+                Active = Active(14, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 0.8, 0, Element.Poison), E(SkillEffectKind.DamageOverTime, 1.4, 6, Element.Poison)) });
+            Add(new PetSkill { Id = "frost-breath", Name = "Frost Breath", Role = PetRole.Damage, LearnLevel = 60,
+                Description = "Breathes frost on the enemies in front of it, and they slow.",
+                Active = Area(16, SkillTargeting.Cone, SkillUse.InFight, 4, 4, E(SkillEffectKind.Damage, 1.6, 0, Element.Ice)) });
+            Add(new PetSkill { Id = "venom-breath", Name = "Venom Breath", Role = PetRole.Damage, LearnLevel = 60,
+                Description = "Breathes a poison cloud on the enemies in front of it.",
+                Active = Area(16, SkillTargeting.Cone, SkillUse.InFight, 4, 4, E(SkillEffectKind.Damage, 0.8, 0, Element.Poison), E(SkillEffectKind.DamageOverTime, 1.4, 6, Element.Poison)) });
+            Add(new PetSkill { Id = "storm-breath", Name = "Storm Breath", Role = PetRole.Damage, LearnLevel = 60,
+                Description = "Breathes lightning that jumps between enemies.",
+                Active = Area(16, SkillTargeting.Chain, SkillUse.InFight, 4, 6, E(SkillEffectKind.Damage, 1.4, 0, Element.Lightning)) });
+            Add(new PetSkill { Id = "wail", Name = "Wail", Role = PetRole.Support, LearnLevel = 25,
+                Description = "A cold wail: enemies near deal 15% less damage for 6 s.",
+                Active = Area(20, SkillTargeting.Around, SkillUse.InFight, 5, 6, E(SkillEffectKind.DamageDealt, -0.15, 6)) });
+            Add(new PetSkill { Id = "quack", Name = "QUACK", Role = PetRole.Damage, LearnLevel = 1,
+                Description = "QUACK. The enemies near are stunned for 1.5 s, from sheer confusion.",
+                Active = Area(25, SkillTargeting.Around, SkillUse.EnemiesNear, 5, 5, E(SkillEffectKind.Stun, 0, 1.5)) });
+            Add(new PetSkill { Id = "banana-toss", Name = "Banana Toss", Role = PetRole.Damage, LearnLevel = 1,
+                Description = "Throws a banana peel at the target's feet. It hurts, and they slip for 1 s.",
+                Active = Active(14, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 1.3), E(SkillEffectKind.Stun, 0, 1)) });
+            Add(new PetSkill { Id = "barrage", Name = "Barrage", Role = PetRole.Damage, LearnLevel = 1,
+                Description = "Three quick bolts at the target.",
+                Active = Active(12, SkillTargeting.Target, SkillUse.InFight, new SkillEffect(SkillEffectKind.Damage, 0.7) { Hits = 3 }) });
+            Add(new PetSkill { Id = "spark", Name = "Spark", Role = PetRole.Support, LearnLevel = 1,
+                Description = "A spark at the target: it takes 10% more damage for 6 s.",
+                Active = Active(16, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 0.8), E(SkillEffectKind.DamageTaken, 0.10, 6)) });
         }
     }
 }
