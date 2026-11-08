@@ -80,6 +80,21 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>A starter pet (fox, bear or fawn) for a character whose stable is empty.</summary>
+        public PetResult Starter(SessionToken token, Guid characterId, string speciesId)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return PetResult.Fail(PetResultStatus.Error);
+            var species = BattlePets.FindStarter(speciesId);
+            if (species == null) return PetResult.Fail(PetResultStatus.NoSuchSpecies);
+            lock (mutex)
+            {
+                if (Count(characterId) > 0) return PetResult.Fail(PetResultStatus.StableFull, "starter");
+                var pet = Create(character, species, PetSource.Egg, null);
+                return Ok(character, pet);
+            }
+        }
+
         /// <summary>A pet item the character has, woken to fight: one battle pet per kind of item.</summary>
         public PetResult Wake(SessionToken token, Guid characterId, Guid itemId)
         {

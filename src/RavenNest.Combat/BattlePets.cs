@@ -37,7 +37,7 @@ namespace RavenNest.Combat
         Tamed = 0,
         /// <summary>A pet item its owner has, woken to fight (!pet wake); it keeps its own look.</summary>
         Companion = 1,
-        /// <summary>Hatched from an egg.</summary>
+        /// <summary>Hatched from an egg, or a starter pet given to someone with an empty stable.</summary>
         Egg = 2,
     }
 

@@ -29,6 +29,17 @@ namespace RavenNest.Combat
 
         public static IEnumerable<PetSpecies> Companions => Species.Where(s => s.Source == PetSource.Companion);
 
+        /// <summary>The three starter pets (docs/battle-pets-design.md, section 2): one of them for anyone whose stable is empty.</summary>
+        public static IEnumerable<PetSpecies> Starters => Species.Where(s => s.Id.StartsWith("starter-"));
+
+        /// <summary>A starter by what people call it: "fox", "bear", "fawn", or tank, damage, healer.</summary>
+        public static PetSpecies FindStarter(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            var t = text.Trim().ToLowerInvariant();
+            return Starters.FirstOrDefault(s => s.Id == t || s.Id == "starter-" + t || s.StageNames.Any(n => n.ToLowerInvariant() == t) || s.Role.ToString().ToLowerInvariant() == t);
+        }
+
         /// <summary>The species a creature tames into: by its definition id or its kind's name ("home-bunny", "Bunny", "Red Metalon").</summary>
         public static PetSpecies SpeciesForCreature(string definitionId, string kindName = null)
         {
@@ -176,6 +187,23 @@ namespace RavenNest.Combat
                     new[] { "ironhill-lord-quackers", "Lord Quackers" }, new[] { "enemy:Lord Quackers" }, H(0.45, 0.75, 1.1), EnemyFamily.Dragon,
                     "One of a kind. Very rare to tame, and very loud about it.",
                     s => { s.Skills = new[] { "quack", "barrage", "fire-breath" }; s.TameRarity = 0.1; }),
+
+                // ---------------------------------------------------------------- starters: one for anyone whose stable is empty
+                Make("starter-fox", PetRole.Damage, PetStrike.Pounce, Element.Fire, N("Fox Cub", "Ember Fox", "Ninetail"), s =>
+                {
+                    s.Source = PetSource.Egg; s.StageModels = new[] { "pet:Pets/Fox_HD" }; s.StageHeights = H(0.5, 0.65, 0.8); s.Origin = "Starter";
+                    s.Blurb = "A starter pet: quick, clever and a little bit on fire.";
+                }),
+                Make("starter-bear", PetRole.Tank, PetStrike.Pounce, Element.Physical, N("Bear Cub", "Grizzly", "Ursa Major"), s =>
+                {
+                    s.Source = PetSource.Egg; s.StageModels = new[] { "pet:Pets/Bear_HD" }; s.StageHeights = H(0.6, 0.8, 1.0); s.Origin = "Starter";
+                    s.Blurb = "A starter pet: small now, and already in the way of anything that wants to hurt you.";
+                }),
+                Make("starter-fawn", PetRole.Healer, PetStrike.Bolt, Element.Physical, N("Fawn", "Deer", "Forest Spirit"), s =>
+                {
+                    s.Source = PetSource.Egg; s.StageModels = new[] { "pet:Pets/Deer_HD" }; s.StageHeights = H(0.6, 0.8, 1.0); s.Origin = "Starter";
+                    s.Blurb = "A starter pet: gentle, and it keeps you on your feet.";
+                }),
 
                 // ---------------------------------------------------------------- companions: every pet item can fight
                 Companion("companion-raven", PetRole.Support, PetStrike.Bolt, Element.Lightning, N("Raven", "Storm Raven", "Thunder Raven"),
