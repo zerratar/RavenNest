@@ -305,10 +305,14 @@ namespace RavenNest.BusinessLogic.Game
         ///     What the pet out with a character adds to its gathering (the gather skills in its slots, added up): a
         ///     chance of one more of a drop, better drop odds, and the chance of a find when nothing dropped.
         /// </summary>
+        /// <summary>A woken pet whose pet item the character no longer has, worn or carried (sold, gifted, banked): it sleeps again.</summary>
+        public static bool ItemGone(GameData gameData, Pet pet) =>
+            pet.ItemId != null && !gameData.GetAllPlayerItems(pet.CharacterId).Any(x => x.ItemId == pet.ItemId.Value && x.Amount > 0);
+
         public static PetGatherBonus GatherBonusOf(GameData gameData, Guid characterId)
         {
             var pet = gameData.GetActivePet(characterId);
-            if (pet == null || string.IsNullOrEmpty(pet.Species)) return default;
+            if (pet == null || string.IsNullOrEmpty(pet.Species) || ItemGone(gameData, pet)) return default;
             var bonus = new PetGatherBonus();
             foreach (var id in (pet.Slots ?? "").Split(','))
             {

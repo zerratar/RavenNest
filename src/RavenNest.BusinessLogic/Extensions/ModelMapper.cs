@@ -461,6 +461,7 @@ namespace RavenNest.BusinessLogic.Extensions
             foreach (var p in pets)
             {
                 if (string.IsNullOrEmpty(p.Species)) continue; // the old, never used pet rows
+                if (p.Active && Game.BattlePetManager.ItemGone(gameData, p)) p.Active = false; // its pet item is gone: asleep again
                 battlePets.Add(Game.BattlePetManager.Map(p));
                 if (p.Active)
                 {

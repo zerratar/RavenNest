@@ -134,6 +134,9 @@ namespace RavenNest.BusinessLogic.Data
                 entity.Property(e => e.Tier).HasConversion(v => (int)v, v => (PetTier)v);
                 entity.Property(e => e.DateOfBirth).HasColumnType("datetime");
                 entity.Property(e => e.PlayTime).HasConversion<long>();
+                // float columns in the database (8 bytes); read as double, kept as float (an empty table hid this)
+                entity.Property(e => e.Happiness).HasConversion<double>();
+                entity.Property(e => e.Hunger).HasConversion<double>();
             });
 
             modelBuilder.Entity<DailyAggregatedMarketplaceData>(entity =>
