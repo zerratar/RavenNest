@@ -460,7 +460,8 @@ namespace RavenNest.BusinessLogic.Extensions
             var battlePets = new List<BattlePet>();
             foreach (var p in pets)
             {
-                battlePets.Add(DataMapper.Map<BattlePet>(p));
+                if (string.IsNullOrEmpty(p.Species)) continue; // the old, never used pet rows
+                battlePets.Add(Game.BattlePetManager.Map(p));
                 if (p.Active)
                 {
                     activeBattlePet = p.Id;

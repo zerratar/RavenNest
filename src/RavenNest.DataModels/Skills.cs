@@ -27,7 +27,8 @@ namespace RavenNest.DataModels
             nameof(Sailing),
             nameof(Healing),
             nameof(Gathering),
-            nameof(Alchemy)
+            nameof(Alchemy),
+            nameof(Taming)
         };
 
         private static readonly ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
@@ -51,6 +52,7 @@ namespace RavenNest.DataModels
         [PersistentData] private double healing;
         [PersistentData] private double gathering;
         [PersistentData] private double alchemy;
+        [PersistentData] private double taming;
 
         [PersistentData] private int attackLevel;
         [PersistentData] private int defenseLevel;
@@ -69,6 +71,7 @@ namespace RavenNest.DataModels
         [PersistentData] private int healingLevel;
         [PersistentData] private int gatheringLevel;
         [PersistentData] private int alchemyLevel;
+        [PersistentData] private int tamingLevel;
 
         //public double Attack { get => attack; set => Set(ref attack, value); }
         //public double Defense { get => defense; set => Set(ref defense, value); }

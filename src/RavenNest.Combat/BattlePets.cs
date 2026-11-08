@@ -259,8 +259,11 @@ namespace RavenNest.Combat
         /// <summary>A pet at 0 health lies down and gets back up after this many seconds, with no penalty.</summary>
         public const double KnockoutSeconds = 30;
 
-        /// <summary>The pet skill levels that open a stable place each: 5 pets in all, one out at a time.</summary>
-        public static readonly int[] StableLevels = { 1, 50, 150, 300, 500 };
+        /// <summary>The Taming levels that open a stable place each: three to begin with (a tame and a woken pet item or two), 8 in all, one out at a time.</summary>
+        public static readonly int[] StableLevels = { 1, 1, 1, 30, 75, 150, 300, 500 };
+
+        /// <summary>The longest pet name.</summary>
+        public const int MaxNameLength = 24;
 
         /// <summary>Pet levels for the two evolutions, and the pet skill level each needs as well.</summary>
         public static readonly int[] EvolveLevels = { 30, 100 };

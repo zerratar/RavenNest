@@ -372,6 +372,7 @@ namespace RavenNest.Blazor.Services
             ["UI_SKILL_HEALING"] = "Healing",
             ["UI_SKILL_GATHERING"] = "Gathering",
             ["UI_SKILL_ALCHEMY"] = "Alchemy",
+            ["UI_SKILL_TAMING"] = "Taming",
             ["UI_SKILL_MELEE"] = "Melee",
             ["UI_SKILL_ALL"] = "All",
             ["UI_SKILL_ENCHANTING"] = "Enchanting",

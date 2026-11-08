@@ -714,6 +714,7 @@ namespace RavenNest.BusinessLogic.Game
             mainSkills.Woodcutting += altSkills.Woodcutting;
             mainSkills.Gathering += altSkills.Gathering;
             mainSkills.Alchemy += altSkills.Alchemy;
+            mainSkills.Taming += altSkills.Taming;
         }
 
         public bool RefreshVillageInfo()

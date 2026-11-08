@@ -625,6 +625,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanPageManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.SkillTreeManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.GemManager>();
+            services.AddSingleton<RavenNest.BusinessLogic.Game.BattlePetManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.TowerManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 

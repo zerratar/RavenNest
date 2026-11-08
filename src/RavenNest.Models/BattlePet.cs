@@ -23,5 +23,17 @@ namespace RavenNest.Models
         public string Prefab { get; set; }
         //public string Customization { get; set; }
         public TimeSpan PlayTime { get; set; }
+
+        // battle pets (the game's docs/battle-pets-design.md)
+        /// <summary>RavenNest.Combat.PetSpecies.Id.</summary>
+        public string Species { get; set; }
+        public int Stage { get; set; }
+        /// <summary>The pet skills in its slots, comma separated ids in slot order.</summary>
+        public string Slots { get; set; }
+        /// <summary>RavenNest.Combat.PetSource.</summary>
+        public int Source { get; set; }
+        /// <summary>A woken pet item's item id.</summary>
+        public Guid? ItemId { get; set; }
+        public bool Active { get; set; }
     }
 }

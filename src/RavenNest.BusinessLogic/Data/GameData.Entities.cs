@@ -17,6 +17,8 @@ namespace RavenNest.BusinessLogic.Data
             for (var i = 0; i < DataModels.Skills.SkillNames.Length; ++i)
             {
                 var sn = DataModels.Skills.SkillNames[i];
+                // Taming has no enchantment attribute: index 17 is POWER's (AIM, POWER and ARMOR were made after the skills)
+                if (sn == nameof(DataModels.Skills.Taming)) continue;
                 var existing = attributes.FirstOrDefault(x => x.Name == sn.ToUpper());
                 if (existing != null)
                 {

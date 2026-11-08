@@ -941,7 +941,9 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var a = s.AlchemyLevel;
                 var g = s.GatheringLevel;
+                var t = s.TamingLevel;
                 if (a <= 0 || a >= GameMath.MaxLevel + 10 || double.IsNaN(a)) s.AlchemyLevel = 1;
+                if (t <= 0 || t >= GameMath.MaxLevel + 10) s.TamingLevel = 1; // Taming arrived at 0 in every row
                 if (g <= 0 || g >= GameMath.MaxLevel + 10 || double.IsNaN(g)) s.GatheringLevel = 1;
             }
         }
@@ -5491,6 +5493,7 @@ namespace RavenNest.BusinessLogic.Data
                 WoodcuttingLevel = 1,
                 HealingLevel = 1,
                 AlchemyLevel = 1,
+                TamingLevel = 1,
                 GatheringLevel = 1,
             };
         }

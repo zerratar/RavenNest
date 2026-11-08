@@ -601,6 +601,7 @@ namespace RavenNest.BusinessLogic
             Healing = 14,
             Gathering = 15,
             Alchemy = 16,
+            Taming = 17,
         }
     }
 }

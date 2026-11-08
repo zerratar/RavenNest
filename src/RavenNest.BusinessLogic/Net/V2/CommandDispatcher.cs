@@ -76,7 +76,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly Dictionary<string, Handler> handlers = new Dictionary<string, Handler>(StringComparer.Ordinal);
         private readonly PlayerInventoryProvider inventories;
 
-        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed, Game.GemManager gems)
+        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed, Game.GemManager gems, Game.BattlePetManager pets)
         {
             this.inventories = inventories;
             var p = players;
@@ -120,6 +120,17 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.GemCombine, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int kind, out int tier, out int times); c.Watch(ch); return gems.Combine(c.SessionToken, ch, kind, tier, times); });
             Add(Commands.GemSocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int kind, out int tier, out int socket); c.Watch(ch); return gems.Socket(c.SessionToken, ch, inv, kind, tier, socket); });
             Add(Commands.GemUnsocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int socket); c.Watch(ch); return gems.Unsocket(c.SessionToken, ch, inv, socket); });
+
+            // battle pets
+            Add(Commands.PetList, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return pets.List(c.SessionToken, ch); });
+            Add(Commands.PetTame, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string species); return pets.Tame(c.SessionToken, ch, species); });
+            Add(Commands.PetWake, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); return pets.Wake(c.SessionToken, ch, item); });
+            Add(Commands.PetUse, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Use(c.SessionToken, ch, pet); });
+            Add(Commands.PetRename, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out string name); return pets.Rename(c.SessionToken, ch, pet, name); });
+            Add(Commands.PetSlot, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out int slot, out string skill); return pets.Slot(c.SessionToken, ch, pet, slot, skill); });
+            Add(Commands.PetEvolve, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Evolve(c.SessionToken, ch, pet); });
+            Add(Commands.PetRelease, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Release(c.SessionToken, ch, pet); });
+            Add(Commands.PetExperience, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out double exp); return pets.AddExperience(c.SessionToken, ch, pet, exp); });
 
             // raids and dungeons
             Add(Commands.AutoJoinRaid, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinRaid(c.SessionToken, ids ?? Array.Empty<Guid>()); });

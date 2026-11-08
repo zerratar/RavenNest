@@ -23,6 +23,7 @@ namespace RavenNest.Models
         public double Healing { get; set; }
         public double Gathering { get; set; }
         public double Alchemy { get; set; }
+        public double Taming { get; set; }
         public int AttackLevel { get; set; }
         public int DefenseLevel { get; set; }
         public int StrengthLevel { get; set; }
@@ -40,6 +41,7 @@ namespace RavenNest.Models
         public int HealingLevel { get; set; }
         public int GatheringLevel { get; set; }
         public int AlchemyLevel { get; set; }
+        public int TamingLevel { get; set; }
         public int Revision { get; set; }
     }
 }
