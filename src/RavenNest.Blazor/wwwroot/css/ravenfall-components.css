@@ -2716,6 +2716,7 @@ a.rf-badge:hover {
 
 .rf-skill__next-to {
     color: var(--rf-ink-faint);
+    margin-left: 0.3em; /* Razor drops the space between the amount and "to" */
 }
 
 /* Rare enough that spending the accent on it is fair: the level cap is 999. */

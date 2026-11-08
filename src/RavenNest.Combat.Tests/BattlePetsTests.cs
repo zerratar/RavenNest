@@ -78,6 +78,17 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void Menagerie_is_modest()
+        {
+            Assert.Equal(0, Menagerie.ExperienceBonus(0));
+            Assert.Equal(0.1, Menagerie.ExperienceBonus(100), 6);
+            Assert.Equal(0.5, Menagerie.ExperienceBonus(999), 6);
+            Assert.Equal(0, Menagerie.ExtraStablePlaces(99));
+            Assert.Equal(1, Menagerie.ExtraStablePlaces(100));
+            Assert.Equal(2, Menagerie.ExtraStablePlaces(999));
+        }
+
+        [Fact]
         public void Strikes_fit_the_models()
         {
             // a bolt pet keeps its distance and fights with magic; a pounce or bite pet fights up close

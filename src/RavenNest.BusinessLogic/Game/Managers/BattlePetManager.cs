@@ -9,6 +9,7 @@ using RavenNest.Models;
 using Character = RavenNest.DataModels.Character;
 using ItemCategory = RavenNest.DataModels.ItemCategory;
 using Item = RavenNest.DataModels.Item;
+using ClanSkill = RavenNest.DataModels.ClanSkill;
 using RavenNest.BusinessLogic.Extensions;
 
 namespace RavenNest.BusinessLogic.Game
@@ -71,7 +72,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (lastTame.TryGetValue(characterId, out var last) && (DateTime.UtcNow - last).TotalSeconds < SecondsBetweenTames)
                     return PetResult.Fail(PetResultStatus.TooSoon);
-                if (Count(characterId) >= BattlePets.StableSize(taming)) return PetResult.Fail(PetResultStatus.StableFull, BattlePets.StableSize(taming).ToString());
+                if (Count(characterId) >= StableSize(character)) return PetResult.Fail(PetResultStatus.StableFull, StableSize(character).ToString());
 
                 lastTame[characterId] = DateTime.UtcNow;
                 if (treatItemId != Guid.Empty) EatTreat(character, species, treatItemId);
@@ -111,8 +112,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var awake = gameData.GetPets(characterId).FirstOrDefault(p => IsBattlePet(p) && p.ItemId == itemId);
                 if (awake != null) return new PetResult { Status = PetResultStatus.AlreadyAwake, Pet = Map(awake) };
-                var taming = TamingLevel(character);
-                if (Count(characterId) >= BattlePets.StableSize(taming)) return PetResult.Fail(PetResultStatus.StableFull, BattlePets.StableSize(taming).ToString());
+                if (Count(characterId) >= StableSize(character)) return PetResult.Fail(PetResultStatus.StableFull, StableSize(character).ToString());
                 var pet = Create(character, species, PetSource.Companion, item);
                 return Ok(character, pet);
             }
@@ -234,7 +234,15 @@ namespace RavenNest.BusinessLogic.Game
                 if (pet == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
                 var cap = BattlePets.LevelCap(TamingLevel(character));
                 var gained = 0;
-                var exp = pet.Experience + (long)Math.Min(experience, MaxExperiencePerReport);
+                experience = Math.Min(experience, MaxExperiencePerReport);
+                // the clan's Menagerie: more for the pet, and a share for the clan
+                var menagerie = MenagerieOf(character);
+                if (menagerie != null)
+                {
+                    experience *= 1 + Menagerie.ExperienceBonus(menagerie.Level);
+                    GrowMenagerie(menagerie, experience * Menagerie.ClanShare);
+                }
+                var exp = pet.Experience + (long)experience;
                 while (pet.Level < cap && pet.Level < GameMath.MaxLevel)
                 {
                     var need = (long)GameMath.ExperienceForLevel(pet.Level + 1);
@@ -247,9 +255,38 @@ namespace RavenNest.BusinessLogic.Game
                 if (pet.Level >= cap) exp = Math.Min(exp, (long)GameMath.ExperienceForLevel(pet.Level + 1) - 1);
                 pet.Experience = Math.Max(0, exp);
                 if (gained > 0) FillSlots(pet, BattlePets.GetSpecies(pet.Species), TamingLevel(character));
-                return new PetResult { Status = PetResultStatus.Ok, Pet = Map(pet), LevelsGained = gained };
+                return new PetResult { Status = PetResultStatus.Ok, Pet = Map(pet), LevelsGained = gained, StableSize = StableSize(character) };
             }
         }
+
+        // ---------------------------------------------------------------- Menagerie, the clan skill
+
+        /// <summary>The character's clan's Menagerie, or null (no clan, or the clan is below its level).</summary>
+        private ClanSkill MenagerieOf(Character character)
+        {
+            var membership = gameData.GetClanMembership(character.Id);
+            if (membership == null) return null;
+            var skill = gameData.GetSkills().FirstOrDefault(x => x.Name == Menagerie.Name);
+            if (skill == null) return null;
+            return gameData.GetClanSkills(membership.ClanId)?.FirstOrDefault(x => x.SkillId == skill.Id);
+        }
+
+        private static void GrowMenagerie(ClanSkill skill, double experience)
+        {
+            if (experience <= 0 || skill.Level >= GameMath.MaxLevel) return;
+            skill.Experience = Math.Floor(skill.Experience + experience);
+            var next = GameMath.ExperienceForLevel(skill.Level + 1);
+            while (skill.Experience >= next && skill.Level < GameMath.MaxLevel)
+            {
+                skill.Experience -= next;
+                ++skill.Level;
+                next = GameMath.ExperienceForLevel(skill.Level + 1);
+            }
+        }
+
+        /// <summary>The stable's places: Taming's, and the clan's Menagerie's.</summary>
+        public int StableSize(Character character) =>
+            BattlePets.StableSize(TamingLevel(character)) + Menagerie.ExtraStablePlaces(MenagerieOf(character)?.Level ?? 0);
 
         /// <summary>The treat that helped is eaten: one of it, if it is one the species loves and the character has it.</summary>
         private void EatTreat(Character character, PetSpecies species, Guid itemId)
@@ -362,7 +399,7 @@ namespace RavenNest.BusinessLogic.Game
         private int TamingLevel(Character character) => Math.Max(1, gameData.GetCharacterSkills(character.SkillsId)?.TamingLevel ?? 1);
 
         private PetResult Ok(Character character, Pet pet) =>
-            new PetResult { Status = PetResultStatus.Ok, Pet = pet != null ? Map(pet) : null, Pets = Stable(character.Id) };
+            new PetResult { Status = PetResultStatus.Ok, Pet = pet != null ? Map(pet) : null, Pets = Stable(character.Id), StableSize = StableSize(character) };
 
         public static BattlePet Map(Pet p) => new BattlePet
         {

@@ -37,6 +37,9 @@ namespace RavenNest.Models
         /// <summary>Levels the pet gained (experience).</summary>
         public int LevelsGained { get; set; }
 
+        /// <summary>How many pets the stable holds (Taming, and the clan's Menagerie).</summary>
+        public int StableSize { get; set; }
+
         public static PetResult Fail(PetResultStatus status, string missing = null) => new PetResult { Status = status, Missing = missing };
     }
 }

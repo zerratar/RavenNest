@@ -295,6 +295,26 @@ namespace RavenNest.Combat
     }
 
     /// <summary>
+    ///     Menagerie, the clan skill that goes with Taming (docs/battle-pets-design.md, section 6): the clan's members'
+    ///     pets feed it a share of what they earn, and it makes their pets grow faster and their stables bigger. Modest,
+    ///     so nobody without a clan is locked out of anything.
+    /// </summary>
+    public static class Menagerie
+    {
+        public const string Name = "Menagerie";
+        public const int RequiredClanLevel = 20;
+
+        /// <summary>The share of a member's pet experience that goes to the clan's Menagerie.</summary>
+        public const double ClanShare = 0.1;
+
+        /// <summary>More pet experience for members: 0.1% a level, 50% at most (level 500).</summary>
+        public static double ExperienceBonus(int level) => Math.Min(0.5, Math.Max(0, level) * 0.001);
+
+        /// <summary>Stable places on top of Taming's: one at level 100, two at 300.</summary>
+        public static int ExtraStablePlaces(int level) => level >= 300 ? 2 : level >= 100 ? 1 : 0;
+    }
+
+    /// <summary>
     ///     Taming (docs/battle-pets-design.md, section 2): !tame a kind of creature and each kill of one is a try. The
     ///     chance comes from the Taming level against the species' level; every try gives Taming experience, so a high
     ///     level player trains Taming by trying rather than starting from nothing.

@@ -21,6 +21,23 @@ namespace RavenNest.BusinessLogic.Data
         ///     and the website know a gem from its id alone. Prices follow the raw gem, three times per tier, so
         ///     combining never pays at the vendor.
         /// </summary>
+        /// <summary>Menagerie, the clan skill that goes with Taming (RavenNest.Combat.Menagerie), made once like Enchanting's row.</summary>
+        private void EnsureMenagerie()
+        {
+            var all = System.Linq.Enumerable.ToList(skills.Entities);
+            if (all.Exists(x => x.Name == RavenNest.Combat.Menagerie.Name)) return;
+            var enchanting = all.Find(x => x.Name == "Enchanting");
+            skills.Add(new Skill
+            {
+                // a fixed id: the clans' Menagerie rows point at it, so it must be the same after every start
+                Id = new Guid("6d656e61-6765-7269-6500-000000000001"),
+                Name = RavenNest.Combat.Menagerie.Name,
+                MaxLevel = enchanting?.MaxLevel ?? GameMath.MaxLevel,
+                RequiredClanLevel = RavenNest.Combat.Menagerie.RequiredClanLevel,
+                Type = enchanting?.Type ?? 0,
+            });
+        }
+
         private void EnsureGems()
         {
             var mining = RavenNest.Models.Skill.Mining;
