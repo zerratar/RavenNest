@@ -88,6 +88,30 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(2, Menagerie.ExtraStablePlaces(999));
         }
 
+        /// <summary>Days of play (minutes a day with at least one member's pet out, members out at once) to reach a Menagerie level.</summary>
+        private static double DaysTo(int target, double minutesADay, int membersOut)
+        {
+            var minutes = 0d;
+            for (var level = 1; level < target; ++level)
+                minutes += 1 / (Menagerie.ShareOfLevel(level, membersOut, 1) * membersOut); // the clan's minutes for this level
+            return minutes / minutesADay;
+        }
+
+        [Fact]
+        public void Menagerie_grows_slower_than_enchanting()
+        {
+            // a big clan: 20 members with a pet out at once, 16 hours a day; Enchanting's best after five years is 412
+            var big = DaysTo(250, 16 * 60, 20);
+            Assert.InRange(big, 300, 450);
+            Assert.True(DaysTo(412, 16 * 60, 20) > 2 * 365);
+            // a small clan: 3 members, 4 hours a day
+            Assert.InRange(DaysTo(90, 4 * 60, 3), 300, 450);
+            // hundreds of members out at once barely beat dozens
+            Assert.True(DaysTo(250, 16 * 60, 300) > 0.5 * big);
+            // the first levels come in an evening
+            Assert.True(DaysTo(5, 4 * 60, 3) < 1);
+        }
+
         [Fact]
         public void Strikes_fit_the_models()
         {

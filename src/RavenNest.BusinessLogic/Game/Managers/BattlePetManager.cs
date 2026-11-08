@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
@@ -41,6 +42,9 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger<BattlePetManager> logger;
         private readonly ConcurrentDictionary<Guid, DateTime> lastTame = new ConcurrentDictionary<Guid, DateTime>();
         private readonly object mutex = new object();
+
+        /// <summary>When each clan's members last reported pet experience: the members out at once, and the minutes each report covers.</summary>
+        private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> menagerieReports = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
 
         public BattlePetManager(GameData gameData, PlayerInventoryProvider inventories, ILogger<BattlePetManager> logger)
         {
@@ -235,12 +239,12 @@ namespace RavenNest.BusinessLogic.Game
                 var cap = BattlePets.LevelCap(TamingLevel(character));
                 var gained = 0;
                 experience = Math.Min(experience, MaxExperiencePerReport);
-                // the clan's Menagerie: more for the pet, and a share for the clan
+                // the clan's Menagerie: more for the pet, and the clan's skill grows from the time the pet was out
                 var menagerie = MenagerieOf(character);
                 if (menagerie != null)
                 {
                     experience *= 1 + Menagerie.ExperienceBonus(menagerie.Level);
-                    GrowMenagerie(menagerie, experience * Menagerie.ClanShare);
+                    GrowMenagerie(menagerie, characterId);
                 }
                 var exp = pet.Experience + (long)experience;
                 while (pet.Level < cap && pet.Level < GameMath.MaxLevel)
@@ -271,10 +275,22 @@ namespace RavenNest.BusinessLogic.Game
             return gameData.GetClanSkills(membership.ClanId)?.FirstOrDefault(x => x.SkillId == skill.Id);
         }
 
-        private static void GrowMenagerie(ClanSkill skill, double experience)
+        /// <summary>
+        ///     A member's pet report: the minutes since this member's last one (a minute for the first, at most
+        ///     Menagerie.MaxMinutesPerReport), shared with the members out at once (RavenNest.Combat.Menagerie: from time,
+        ///     not experience, so it grows slower than Enchanting however many members a clan has). Called inside the lock.
+        /// </summary>
+        private void GrowMenagerie(ClanSkill skill, Guid characterId)
         {
-            if (experience <= 0 || skill.Level >= GameMath.MaxLevel) return;
-            skill.Experience = Math.Floor(skill.Experience + experience);
+            if (skill.Level >= GameMath.MaxLevel) return;
+            var now = DateTime.UtcNow;
+            if (!menagerieReports.TryGetValue(skill.ClanId, out var members)) menagerieReports[skill.ClanId] = members = new Dictionary<Guid, DateTime>();
+            var minutes = members.TryGetValue(characterId, out var last) ? Math.Clamp((now - last).TotalMinutes, 0, Menagerie.MaxMinutesPerReport) : 1d;
+            members[characterId] = now;
+            foreach (var gone in members.Where(x => (now - x.Value).TotalMinutes > 2).Select(x => x.Key).ToList()) members.Remove(gone);
+            var experience = Menagerie.ShareOfLevel(skill.Level, members.Count, minutes) * GameMath.ExperienceForLevel(skill.Level + 1);
+            if (experience <= 0) return;
+            skill.Experience += experience;
             var next = GameMath.ExperienceForLevel(skill.Level + 1);
             while (skill.Experience >= next && skill.Level < GameMath.MaxLevel)
             {

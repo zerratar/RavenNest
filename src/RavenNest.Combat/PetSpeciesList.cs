@@ -295,17 +295,35 @@ namespace RavenNest.Combat
     }
 
     /// <summary>
-    ///     Menagerie, the clan skill that goes with Taming (docs/battle-pets-design.md, section 6): the clan's members'
-    ///     pets feed it a share of what they earn, and it makes their pets grow faster and their stables bigger. Modest,
-    ///     so nobody without a clan is locked out of anything.
+    ///     Menagerie, the clan skill that goes with Taming (docs/battle-pets-design.md, section 6): it grows while the
+    ///     clan's members have pets out, and it makes their pets grow faster and their stables bigger. Modest, so nobody
+    ///     without a clan is locked out of anything, and slow, since nobody has to do anything for it.
     /// </summary>
     public static class Menagerie
     {
         public const string Name = "Menagerie";
         public const int RequiredClanLevel = 20;
 
-        /// <summary>The share of a member's pet experience that goes to the clan's Menagerie.</summary>
-        public const double ClanShare = 0.1;
+        // ---- How it grows: from time, not from experience ------------------------------------------------------
+        // Enchanting, the other clan skill, only grows when members use a command on a cooldown: after five years the
+        // best clan (655 members) is level 412 and the average 54. Menagerie is idle, so it must be slower. It grows from
+        // the minutes members have a pet out, not from what the pets earn (that grows with levels and would max it in
+        // days), and many members at once count for less each: n members out together count as 1 + log2(n) of one.
+        // Each level takes longer than the last (MinutesPerLevel). With that, a big clan (some 20 members with a pet out
+        // for 16 hours a day) reaches about level 250 in a year, a small one (3 members, 4 hours a day) about 90.
+
+        /// <summary>Minutes of one member's pet out that a level takes (one hour for level 2, 100 hours for level 101).</summary>
+        public static double MinutesPerLevel(int level) => 60d * Math.Max(1, level);
+
+        /// <summary>What n members with a pet out at once count as, in members: 1 + log2(n).</summary>
+        public static double Pace(int membersOut) => 1 + Math.Log(Math.Max(1, membersOut), 2);
+
+        /// <summary>A member's pet was out for these minutes, with this many members out at once: the share of the next level it gives.</summary>
+        public static double ShareOfLevel(int level, int membersOut, double minutes) =>
+            Math.Max(0, minutes) * Pace(membersOut) / Math.Max(1, membersOut) / MinutesPerLevel(level);
+
+        /// <summary>A member's report counts for this long at most (reports come every minute while a pet earns).</summary>
+        public const double MaxMinutesPerReport = 1.5;
 
         /// <summary>More pet experience for members: 0.1% a level, 50% at most (level 500).</summary>
         public static double ExperienceBonus(int level) => Math.Min(0.5, Math.Max(0, level) * 0.001);
