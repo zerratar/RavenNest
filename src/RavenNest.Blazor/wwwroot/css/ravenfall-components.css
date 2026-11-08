@@ -5751,6 +5751,9 @@ a.rf-badge:hover {
 .rf-stage__pop-effect { margin: 0; color: #9fe0ff; font-weight: 700; font-size: 0.92rem; }
 .rf-stage__pop-total { color: rgba(236,228,214,0.7); font-weight: 600; }
 .rf-trees__node-effect { color: var(--rf-gold); font-weight: 700; font-size: 0.9rem; }
+.rf-pets { display: flex; flex-direction: column; gap: var(--rf-space-4); }
+.rf-pets__tame { display: flex; flex-direction: column; gap: var(--rf-space-2); }
+.rf-pets__tame .is-locked { opacity: 0.6; }
 .rf-stage__pop-meta { margin: 0; color: rgba(236,228,214,0.72); font-size: 0.84rem; }
 .rf-stage__pop-meta .is-short { color: #ff9a7a; }
 .rf-stage__pop-why { margin: 0; color: #ffb48f; font-size: 0.82rem; }

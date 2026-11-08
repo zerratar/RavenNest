@@ -1,0 +1,95 @@
+@using RavenNest.Combat
+@inject RavenNest.BusinessLogic.Game.BattlePetManager Pets
+@inject RavenNest.BusinessLogic.Data.GameData GameData
+
+@*
+    The character's battle pets (the game's docs/battle-pets-design.md): the stable with each pet's kind, level, role,
+    element, how it attacks, the skills in its slots with their numbers and what its next evolution needs, and below it
+    the creatures there are to tame. Read only; chat changes pets (!pets, !tame).
+*@
+<div class="rf-pets">
+    <div class="rf-panel rf-pets__head">
+        <h3 class="rf-panel__title">Battle pets <span class="rf-meta">Taming @taming, @stable.Length of @BattlePets.StableSize(taming) places</span></h3>
+        <p class="rf-meta">Pets fight beside you, learn skills and evolve. <strong>!tame (creature)</strong> while you fight tames one; <strong>!pets wake (pet item)</strong> wakes a pet item you have so it fights too. <strong>!pets</strong> does the rest in chat.</p>
+    </div>
+
+    @if (stable.Length == 0)
+    {
+        <p class="rf-meta">No battle pets yet.</p>
+    }
+    else
+    {
+        <div class="rf-trees__grid">
+            @foreach (var pet in stable)
+            {
+                var species = BattlePets.GetSpecies(pet.Species);
+                if (species == null) continue;
+                var slots = (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).ToList();
+                var sheet = species.Sheet(Math.Max(1, pet.Level), pet.Stage);
+                <div class="rf-panel rf-trees__node @(pet.Active ? "is-learned" : "")">
+                    <div class="rf-trees__node-head">
+                        <strong>@pet.Name</strong>
+                        <span class="rf-chip">@(pet.Active ? "Out" : "Resting")</span>
+                    </div>
+                    <div>Level @pet.Level @species.NameAt(pet.Stage) <span class="rf-meta">(@Role(species.Role), @Element(species.Element), @Strike(species.Strike))</span></div>
+                    <div class="rf-meta">Health @sheet.MaxHealth.ToString("N0")@(species.Source == PetSource.Companion ? ", a woken pet item" : "")</div>
+                    @if (!string.IsNullOrEmpty(species.Blurb))
+                    {
+                        <div class="rf-trees__node-text">@species.Blurb</div>
+                    }
+                    @foreach (var skill in slots)
+                    {
+                        <div><strong>@skill.Name</strong> <span class="rf-meta">@skill.Description</span>
+                            @if (skill.IsActive)
+                            {
+                                <div class="rf-trees__node-effect">@SkillTexts.Active(skill.Active), every @skill.Active.Cooldown s</div>
+                            }
+                        </div>
+                    }
+                    <div class="rf-meta">
+                        @if (pet.Stage >= BattlePets.MaxStage)
+                        {
+                            <span>Fully evolved.</span>
+                        }
+                        else
+                        {
+                            <span>Evolves into @species.NameAt(pet.Stage + 1) at level @BattlePets.EvolveLevels[pet.Stage] (Taming @BattlePets.EvolveSkillLevels[pet.Stage]).</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="rf-panel">
+        <h3 class="rf-panel__title">Creatures to tame</h3>
+        <div class="rf-pets__tame">
+            @foreach (var s in BattlePets.Tameable)
+            {
+                <div class="@(taming >= s.TameLevel ? "" : "is-locked")">
+                    <strong>@s.NameAt(0)</strong> <span class="rf-meta">Taming @s.TameLevel, @Role(s.Role), @Element(s.Element). @s.Blurb Grows into @s.NameAt(1) and @s.NameAt(2).</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RavenNest.BusinessLogic.Extended.WebsitePlayer Player { get; set; }
+
+    private RavenNest.Models.BattlePet[] stable = Array.Empty<RavenNest.Models.BattlePet>();
+    private int taming = 1;
+
+    protected override void OnParametersSet()
+    {
+        stable = Pets.Stable(Player.Id);
+        var character = GameData.GetCharacter(Player.Id);
+        var skills = character != null ? GameData.GetCharacterSkills(character.SkillsId) : null;
+        taming = Math.Max(1, skills?.TamingLevel ?? 1);
+    }
+
+    private static string Strike(PetStrike s) => s == PetStrike.Bite ? "bites" : s == PetStrike.Pounce ? "pounces" : "fires bolts";
+    private static string Element(Element e) => e == RavenNest.Combat.Element.Physical ? "no element" : e.ToString().ToLowerInvariant();
+    private static string Role(PetRole r) => r.ToString().ToLowerInvariant();
+}
