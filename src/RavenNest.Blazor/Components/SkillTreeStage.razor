@@ -1,0 +1,503 @@
+@using RavenNest.Blazor.Extensions
+@using RavenNest.Combat
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@implements IAsyncDisposable
+
+@*
+    The skill tree map with everything on it (the character page's Skill trees tab and the planner page): the points
+    and the respec (or the planner's tools) in its top corner, the picked skill's panel beside the star that was tapped
+    (a press elsewhere puts it down), and the loadout along the bottom: the active skills the character uses by itself in
+    fights, the first that fits first. The map is js/rf-skill-tree.js; the rules are RavenNest.Combat's. The page owning it
+    saves (or, in the planner, keeps the build in the address).
+*@
+<div class="rf-stage @(Planner ? "is-planner" : "")" @ref="root">
+    <div class="rf-stage__map" @ref="mapHost"></div>
+
+    @* points, and the respec or the planner's tools *@
+    <div class="rf-stage__hud">
+        <div class="rf-stage__points" title="Points come from your combat levels: one per ten levels up to 1,000, then one per forty. A skill also needs a level in its tree's combat skill.">
+            <img src="/imgs/skills/point.webp" alt="" />
+            <span class="rf-stage__points-left">@(Earned - Build.Spent)</span>
+            <span class="rf-stage__points-of">of @Earned points left</span>
+            @if (Planner)
+            {
+                <button type="button" class="rf-stage__btn rf-stage__more-toggle" @onclick="() => hudOpen = !hudOpen">@(hudOpen ? "Hide" : "Tools")</button>
+            }
+        </div>
+        @if (Planner)
+        {
+            <div class="rf-stage__more @(hudOpen ? "is-open" : "")">
+            <div class="rf-stage__row">
+                <button type="button" class="rf-stage__btn" @onclick="() => showLevels = !showLevels">Levels</button>
+                <button type="button" class="rf-stage__btn" disabled="@(Build.Spent == 0)" @onclick="OnReset">Start over</button>
+                <button type="button" class="rf-stage__btn" @onclick="CopyLink">@(copied ? "Link copied" : "Copy link")</button>
+            </div>
+            <div class="rf-stage__row">
+                <select class="rf-stage__select" value="" @onchange="e => LoadPlan(e.Value?.ToString())">
+                    <option value="">Saved plans (@plans.Count)</option>
+                    @for (var i = 0; i < plans.Count; ++i)
+                    {
+                        <option value="@i">@plans[i].Name</option>
+                    }
+                </select>
+                @if (!naming)
+                {
+                    <button type="button" class="rf-stage__btn" @onclick="() => { naming = true; planName = NextPlanName(); }">Save</button>
+                }
+            </div>
+            @if (naming)
+            {
+                <div class="rf-stage__row">
+                    <input class="rf-stage__input" @bind="planName" @bind:event="oninput" maxlength="40" />
+                    <button type="button" class="rf-stage__btn rf-stage__btn--gold" @onclick="SavePlan">Save</button>
+                    <button type="button" class="rf-stage__btn" @onclick="() => naming = false">Cancel</button>
+                </div>
+            }
+            @if (loadedPlan >= 0 && loadedPlan < plans.Count)
+            {
+                <button type="button" class="rf-stage__link" @onclick="DeletePlan">Forget "@plans[loadedPlan].Name"</button>
+            }
+            @if (showLevels && LevelValues != null)
+            {
+                <div class="rf-stage__levels">
+                    @foreach (CombatSkill skill in Enum.GetValues(typeof(CombatSkill)))
+                    {
+                        var s = skill;
+                        <label><span>@s</span><input type="number" min="1" max="999" value="@LevelValues[(int)s]" @onchange="e => SetLevel(s, e.Value?.ToString())" /></label>
+                    }
+                    <label><span>All</span><input type="number" min="1" max="999" placeholder="all" @onchange="e => SetAll(e.Value?.ToString())" /></label>
+                </div>
+            }
+            </div>
+        }
+        else if (RespecLabel != null)
+        {
+            @if (!confirmRespec)
+            {
+                <button type="button" class="rf-stage__btn" disabled="@(Build.Spent == 0)" @onclick="() => confirmRespec = true">Respec <span class="rf-stage__cost">@RespecLabel</span></button>
+            }
+            else
+            {
+                <div class="rf-stage__confirm">
+                    <span>Give back all @Build.Spent points for @RespecLabel?</span>
+                    <div class="rf-stage__row">
+                        <button type="button" class="rf-stage__btn rf-stage__btn--gold" @onclick="DoRespec">Yes, respec</button>
+                        <button type="button" class="rf-stage__btn" @onclick="() => confirmRespec = false">Cancel</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    @* the mode and the zoom *@
+    <div class="rf-stage__tools">
+        @if (ShowModeToggle)
+        {
+            <div class="rf-stage__modes" role="tablist">
+                <button type="button" role="tab" class="@(!Planner ? "is-active" : "")" aria-selected="@(!Planner)" @onclick="() => PlannerChanged.InvokeAsync(false)">My build</button>
+                <button type="button" role="tab" class="@(Planner ? "is-active" : "")" aria-selected="@Planner" @onclick="() => PlannerChanged.InvokeAsync(true)">Planner</button>
+            </div>
+        }
+        <div class="rf-stage__zoom">
+            <button type="button" class="rf-stage__btn" title="Show every tree" @onclick='() => Map("fit")'>Fit</button>
+            <button type="button" class="rf-stage__btn" title="Zoom in" @onclick='() => Map("zoomBy", 1.4)'>+</button>
+            <button type="button" class="rf-stage__btn" title="Zoom out" @onclick='() => Map("zoomBy", 1 / 1.4)'>-</button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Note))
+    {
+        <div class="rf-stage__note">@Note</div>
+    }
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="rf-stage__message" @key="Message">@Message</div>
+    }
+
+    @* the picked skill, beside its star (placed by the map) *@
+    <div class="rf-stage__pop" @ref="popover">
+        @if (selected != null)
+        {
+            var node = selected;
+            var rank = Build.Rank(node.Id);
+            var skill = RavenNest.Combat.SkillTrees.SkillOf(node.Tree);
+            var reason = Build.CanRaise(node.Id, Levels, Earned);
+            <div class="rf-stage__pop-head">
+                @if (node.IsActive || node.ExtraLoadoutSlot || node.LastStand)
+                {
+                    <img src="/imgs/skills/@(node.Id).webp" alt="" />
+                }
+                <div>
+                    <strong>@node.Name</strong>
+                    <span class="rf-stage__pop-kind">@node.Tree · @(node.IsActive ? "active" : node.MaxRank > 1 ? $"passive {rank}/{node.MaxRank}" : node.ExtraLoadoutSlot || node.LastStand ? "special" : "passive")@(rank > 0 && node.MaxRank == 1 ? " · learned" : "")</span>
+                </div>
+                <button type="button" class="rf-stage__close" title="Close" @onclick="Deselect">×</button>
+            </div>
+            <p class="rf-stage__pop-text">@node.Description</p>
+            <p class="rf-stage__pop-meta">
+                @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
+                <span class="@(Levels(skill) >= node.RequiredLevel ? "" : "is-short")">Needs @skill @node.RequiredLevel (@(Planner ? "set to" : "you have") @Levels(skill)).</span>
+                <span>@node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+            </p>
+            @if (CanEdit)
+            {
+                <div class="rf-stage__row">
+                    @if (rank < node.MaxRank)
+                    {
+                        <button type="button" class="rf-stage__btn rf-stage__btn--gold" disabled="@(reason != null)" @onclick="() => OnLearn.InvokeAsync(node.Id)">@(rank > 0 ? "Learn a rank" : "Learn")</button>
+                    }
+                    @if (Planner && rank > 0)
+                    {
+                        <button type="button" class="rf-stage__btn" @onclick="() => OnLower.InvokeAsync(node.Id)">Take back</button>
+                    }
+                </div>
+                @if (reason != null && rank < node.MaxRank)
+                {
+                    <p class="rf-stage__pop-why">@reason</p>
+                }
+                @if (node.IsActive && rank > 0)
+                {
+                    var slotOf = SlotOf(node.Id);
+                    <div class="rf-stage__pop-loadout">
+                        <span>Loadout slot</span>
+                        @for (var i = 0; i < Build.LoadoutSlots; ++i)
+                        {
+                            var slot = i;
+                            <button type="button" class="rf-stage__slotbtn @(slotOf == slot ? "is-on" : "")" title="@(slotOf == slot ? "In slot " + (slot + 1) : "Put it in slot " + (slot + 1))" @onclick="() => OnSlot.InvokeAsync((slot, slotOf == slot ? null : node.Id))">@(slot + 1)</button>
+                        }
+                    </div>
+                    <label class="rf-stage__pop-rule">
+                        <span>Used when</span>
+                        <select value="@Build.RuleOf(node)" @onchange="e => SetRule(node.Id, e.Value?.ToString())">
+                            @foreach (SkillUse use in Enum.GetValues(typeof(SkillUse)))
+                            {
+                                <option value="@use">@RuleText(use)@(use == node.Active.Use ? " (default)" : "")</option>
+                            }
+                        </select>
+                    </label>
+                }
+            }
+        }
+    </div>
+
+    @* the loadout *@
+    <div class="rf-stage__loadout">
+        <div class="rf-stage__loadout-title" title="Your character uses these active skills by itself in fights, on their cooldowns, the first one that fits first. Learn an active skill to fill a slot; Battle Rhythm adds a fifth.">
+            Loadout <span class="rf-stage__help">?</span>
+        </div>
+        <div class="rf-stage__slots">
+            @for (var i = 0; i < Build.LoadoutSlots; ++i)
+            {
+                var slot = i;
+                var id = slot < Build.Loadout.Count ? Build.Loadout[slot] : "";
+                var node = RavenNest.Combat.SkillTrees.Get(id);
+                <button type="button" class="rf-stage__slot @(node == null ? "is-empty" : "") @(slotMenu == slot ? "is-open" : "")" title="@(node?.Name ?? "Empty slot")" @onclick="() => ToggleSlotMenu(slot)">
+                    <span class="rf-stage__slot-number">@(slot + 1)</span>
+                    @if (node != null)
+                    {
+                        <img src="/imgs/skills/@(node.Id).webp" alt="@node.Name" />
+                        <span class="rf-stage__slot-name">@node.Name</span>
+                    }
+                    else
+                    {
+                        <span class="rf-stage__slot-plus">+</span>
+                    }
+                </button>
+            }
+        </div>
+        @if (slotMenu >= 0)
+        {
+            var learned = LearnedActives();
+            var current = slotMenu < Build.Loadout.Count ? RavenNest.Combat.SkillTrees.Get(Build.Loadout[slotMenu]) : null;
+            <div class="rf-stage__slotmenu">
+                <div class="rf-stage__slotmenu-head">
+                    <strong>Slot @(slotMenu + 1)</strong>
+                    <button type="button" class="rf-stage__close" title="Close" @onclick="() => slotMenu = -1">×</button>
+                </div>
+                @if (!CanEdit)
+                {
+                    <p class="rf-stage__pop-meta">@(current?.Name ?? "Empty"). @(current != null ? "Used when: " + RuleText(Build.RuleOf(current)).ToLowerInvariant() + "." : "")</p>
+                }
+                else if (learned.Count == 0)
+                {
+                    <p class="rf-stage__pop-meta">No active skills learned yet. Diamonds on the map are active skills: learn one and it goes into a free slot.</p>
+                }
+                else
+                {
+                    <div class="rf-stage__slotmenu-list">
+                        @foreach (var n in learned)
+                        {
+                            var pick = n;
+                            <button type="button" class="@(current?.Id == pick.Id ? "is-on" : "")" @onclick="() => PickForSlot(pick.Id)">
+                                <img src="/imgs/skills/@(pick.Id).webp" alt="" /> @pick.Name
+                            </button>
+                        }
+                    </div>
+                    @if (current != null)
+                    {
+                        <label class="rf-stage__pop-rule">
+                            <span>Used when</span>
+                            <select value="@Build.RuleOf(current)" @onchange="e => SetRule(current.Id, e.Value?.ToString())">
+                                @foreach (SkillUse use in Enum.GetValues(typeof(SkillUse)))
+                                {
+                                    <option value="@use">@RuleText(use)@(use == current.Active.Use ? " (default)" : "")</option>
+                                }
+                            </select>
+                        </label>
+                        <button type="button" class="rf-stage__link" @onclick="() => PickForSlot(null)">Empty this slot</button>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>The trees' colours on the map, in SkillTree order.</summary>
+    public static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b" };
+
+    [Parameter] public SkillBuild Build { get; set; } = new SkillBuild();
+    [Parameter] public Func<CombatSkill, int> Levels { get; set; } = _ => 1;
+    [Parameter] public int Earned { get; set; }
+
+    /// <summary>Learn, take back and loadout buttons (the owner, or the planner).</summary>
+    [Parameter] public bool CanEdit { get; set; }
+
+    /// <summary>Planner tools in the corner: levels, start over, link, saved plans; Take back in the panel.</summary>
+    [Parameter] public bool Planner { get; set; }
+    [Parameter] public int[] LevelValues { get; set; }
+    [Parameter] public EventCallback<int[]> OnLevels { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public EventCallback<string> OnLoadPlan { get; set; }
+    [Parameter] public Func<string> ShareLink { get; set; }
+
+    [Parameter] public bool ShowModeToggle { get; set; }
+    [Parameter] public EventCallback<bool> PlannerChanged { get; set; }
+
+    /// <summary>What a respec costs ("25,000 coins"); null hides it.</summary>
+    [Parameter] public string RespecLabel { get; set; }
+    [Parameter] public EventCallback OnRespec { get; set; }
+
+    [Parameter] public EventCallback<string> OnLearn { get; set; }
+    [Parameter] public EventCallback<string> OnLower { get; set; }
+    [Parameter] public EventCallback<(int Slot, string Id)> OnSlot { get; set; }
+    [Parameter] public EventCallback<(string Id, SkillUse Rule)> OnRule { get; set; }
+
+    [Parameter] public string Message { get; set; }
+    [Parameter] public string Note { get; set; }
+
+    /// <summary>A different character: the map is opened again.</summary>
+    [Parameter] public Guid Key { get; set; }
+
+    private ElementReference root, mapHost, popover;
+    private IJSObjectReference module, map;
+    private DotNetObjectReference<SkillTreeStage> self;
+    private Guid shownKey;
+    private SkillNode selected;
+    private int slotMenu = -1;
+    private bool confirmRespec, copied, showLevels, naming, hudOpen;
+    private string planName = "";
+    private int loadedPlan = -1;
+    private List<SavedPlan> plans = new List<SavedPlan>();
+
+    public sealed class SavedPlan
+    {
+        public string Name { get; set; }
+        public string Build { get; set; }
+        public string Levels { get; set; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", Environment.Versioned("js/rf-skill-tree.js"));
+            self ??= DotNetObjectReference.Create(this);
+            if (map == null || shownKey != Key)
+            {
+                if (map != null) { await map.InvokeVoidAsync("dispose"); await map.DisposeAsync(); }
+                map = await module.InvokeAsync<IJSObjectReference>("open", mapHost, MapData(), self, new { root, bottomInset = 96, fitBottom = 100, fitTop = 10, fitTopNarrow = 70, fitBottomNarrow = 90 });
+                await map.InvokeVoidAsync("setPopover", popover);
+                shownKey = Key;
+                selected = null;
+            }
+            else
+            {
+                var data = MapData();
+                var text = System.Text.Json.JsonSerializer.Serialize(data);
+                if (text != lastData) await map.InvokeVoidAsync("update", data, false);
+                lastData = text;
+            }
+            if (firstRender && Planner) await LoadPlans();
+        }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+    }
+
+    private string lastData;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Planner && module != null && plans.Count == 0) await LoadPlans();
+    }
+
+    [JSInvokable]
+    public Task OnNodeSelected(string id)
+    {
+        selected = RavenNest.Combat.SkillTrees.Get(id);
+        slotMenu = -1;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Deselect()
+    {
+        selected = null;
+        if (map != null) { try { await map.InvokeVoidAsync("select", null, false); } catch (JSDisconnectedException) { } }
+    }
+
+    private async Task Map(string method, params object[] args)
+    {
+        if (map == null) return;
+        try { await map.InvokeVoidAsync(method, args); } catch (JSDisconnectedException) { }
+    }
+
+    private object MapData()
+    {
+        var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Select(t => new
+        {
+            name = t.ToString(),
+            skill = RavenNest.Combat.SkillTrees.SkillOf(t).ToString(),
+            level = Levels(RavenNest.Combat.SkillTrees.SkillOf(t)),
+            color = TreeColors[(int)t],
+        }).ToList();
+        var nodes = RavenNest.Combat.SkillTrees.All.Select(n =>
+        {
+            var rank = Build.Rank(n.Id);
+            var level = Levels(RavenNest.Combat.SkillTrees.SkillOf(n.Tree));
+            var state = rank >= n.MaxRank ? "maxed" : rank > 0 ? "learned" : level < n.RequiredLevel ? "locked" : Build.CanRaise(n.Id, Levels, Earned) == null ? "available" : "open";
+            return new
+            {
+                id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
+                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand) ? "special" : "passive",
+                rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1,
+            };
+        }).ToList();
+        return new { trees, nodes };
+    }
+
+    private int SlotOf(string id) => Build.Loadout.FindIndex(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
+
+    private List<SkillNode> LearnedActives() => Build.Ranks.Where(r => r.Value > 0).Select(r => RavenNest.Combat.SkillTrees.Get(r.Key)).Where(n => n != null && n.IsActive).OrderBy(n => n.Name).ToList();
+
+    private async Task ToggleSlotMenu(int slot)
+    {
+        slotMenu = slotMenu == slot ? -1 : slot;
+        if (slotMenu >= 0 && selected != null) await Deselect();
+    }
+
+    private async Task PickForSlot(string id)
+    {
+        var slot = slotMenu;
+        await OnSlot.InvokeAsync((slot, id));
+    }
+
+    private Task SetRule(string id, string value) => Enum.TryParse<SkillUse>(value, out var rule) ? OnRule.InvokeAsync((id, rule)) : Task.CompletedTask;
+
+    private async Task DoRespec()
+    {
+        confirmRespec = false;
+        await OnRespec.InvokeAsync();
+    }
+
+    private async Task CopyLink()
+    {
+        if (ShareLink == null) return;
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", ShareLink()); copied = true; }
+        catch { }
+    }
+
+    private Task SetLevel(CombatSkill skill, string value)
+    {
+        if (LevelValues == null || !int.TryParse(value, out var v)) return Task.CompletedTask;
+        var next = (int[])LevelValues.Clone();
+        next[(int)skill] = Math.Clamp(v, 1, 999);
+        return OnLevels.InvokeAsync(next);
+    }
+
+    private Task SetAll(string value)
+    {
+        if (LevelValues == null || !int.TryParse(value, out var v)) return Task.CompletedTask;
+        return OnLevels.InvokeAsync(Enumerable.Repeat(Math.Clamp(v, 1, 999), LevelValues.Length).ToArray());
+    }
+
+    // saved plans live in this browser (js/rf-skill-tree.js loadPlans and savePlans)
+    private async Task LoadPlans()
+    {
+        try { plans = await module.InvokeAsync<List<SavedPlan>>("loadPlans") ?? new List<SavedPlan>(); }
+        catch (JSDisconnectedException) { }
+        StateHasChanged();
+    }
+
+    private string NextPlanName() => "Plan " + (plans.Count + 1);
+
+    private async Task SavePlan()
+    {
+        var name = string.IsNullOrWhiteSpace(planName) ? NextPlanName() : planName.Trim();
+        var plan = new SavedPlan { Name = name, Build = Build.ToString(), Levels = LevelValues != null ? string.Join(",", LevelValues) : "" };
+        var at = plans.FindIndex(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (at >= 0) plans[at] = plan; else plans.Add(plan);
+        loadedPlan = at >= 0 ? at : plans.Count - 1;
+        naming = false;
+        try { await module.InvokeAsync<bool>("savePlans", plans); } catch (JSDisconnectedException) { }
+    }
+
+    private async Task LoadPlan(string value)
+    {
+        if (!int.TryParse(value, out var i) || i < 0 || i >= plans.Count) return;
+        loadedPlan = i;
+        var plan = plans[i];
+        if (!string.IsNullOrEmpty(plan.Levels) && OnLevels.HasDelegate)
+        {
+            var parts = plan.Levels.Split(',');
+            var levels = Enumerable.Range(0, 8).Select(k => k < parts.Length && int.TryParse(parts[k], out var v) ? Math.Clamp(v, 1, 999) : 100).ToArray();
+            await OnLevels.InvokeAsync(levels);
+        }
+        await OnLoadPlan.InvokeAsync(plan.Build ?? "");
+    }
+
+    private async Task DeletePlan()
+    {
+        if (loadedPlan < 0 || loadedPlan >= plans.Count) return;
+        plans.RemoveAt(loadedPlan);
+        loadedPlan = -1;
+        try { await module.InvokeAsync<bool>("savePlans", plans); } catch (JSDisconnectedException) { }
+    }
+
+    public static string RuleText(SkillUse use)
+    {
+        switch (use)
+        {
+            case SkillUse.InFight: return "In any fight";
+            case SkillUse.EnemiesNear: return "Three or more enemies near";
+            case SkillUse.OnBoss: return "On bosses";
+            case SkillUse.AllyHurt: return "An ally below 60% health";
+            case SkillUse.SelfHurt: return "Me below half health";
+            case SkillUse.TargetLow: return "The target below 20% health";
+            case SkillUse.EnemyOnAlly: return "An enemy attacks someone else";
+            case SkillUse.AllyHarmed: return "An ally burns, bleeds or is poisoned";
+            default: return use.ToString();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (map != null) { await map.InvokeVoidAsync("dispose"); await map.DisposeAsync(); }
+            if (module != null) await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+        self?.Dispose();
+    }
+}

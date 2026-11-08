@@ -311,6 +311,43 @@ function drawRank(g, n, x, y, r, color) {
     g.stroke();
 }
 
+// ---- drawing: the icons, on top in both ways -----------------------------------------------------------------------
+
+const ICON_ALPHA = { learned: 1, maxed: 1, available: 0.9, open: 0.55, locked: 0.28 };
+
+/** The painted sigils (imgs/skills): inside actives and specials, and the trees' emblems on their discs by the medallion. */
+function drawIcons(g, view, icons) {
+    const { w, h, cam, map } = view;
+    for (const n of map.nodes) {
+        const img = icons.get(n.id);
+        if (!img) continue;
+        const [x, y] = cam.toScreen(n.x, n.y, w, h);
+        const r = n.r * cam.zoom;
+        if (r < 6 || x < -r * 2 || y < -r * 2 || x > w + r * 2 || y > h + r * 2) continue;
+        const size = r * (n.kind === 'active' ? 1.55 : 1.6);
+        g.globalAlpha = ICON_ALPHA[n.state] ?? 0.6;
+        g.drawImage(img, x - size / 2, y - size / 2, size, size);
+    }
+    // the painted medallion over the drawn one, at the centre
+    const medallion = icons.get('medallion');
+    if (medallion) {
+        const [x, y] = cam.toScreen(0, 0, w, h);
+        const size = MEDALLION_RADIUS * 2.35 * cam.zoom;
+        g.globalAlpha = 1;
+        g.drawImage(medallion, x - size / 2, y - size / 2, size, size);
+    }
+    map.hubs.forEach((hub, i) => {
+        const img = icons.get('tree:' + i);
+        if (!img) return;
+        const [x, y] = cam.toScreen(hub.x, hub.y, w, h);
+        const size = 54 * cam.zoom;
+        if (size < 8) return;
+        g.globalAlpha = 1;
+        g.drawImage(img, x - size / 2, y - size / 2, size, size);
+    });
+    g.globalAlpha = 1;
+}
+
 // ---- drawing: the names and numbers, on top in both ways ----------------------------------------------------------
 
 function drawLabels(g, view) {
@@ -789,8 +826,12 @@ class SkillTreeView {
         this.g = this.canvas.getContext('2d');
         element.dataset.mode = this.useGl ? 'webgl' : '2d';
 
+        this.icons = new Map();
+        this.loadIcons(data);
+        this.root = this.options.root || element;
         this.bindInput();
-        this.resizeObserver = new ResizeObserver(() => { this.dirty = true; });
+        // a new size keeps the whole map in view until the reader moves or zooms it themselves
+        this.resizeObserver = new ResizeObserver(() => { if (this.fitted) this.needsFit = true; this.dirty = true; });
         this.resizeObserver.observe(element);
         this.needsFit = true; // the element may not have its size yet: fit on the first frame that has one
         this.update(data, false);
@@ -800,8 +841,50 @@ class SkillTreeView {
 
     get mode() { return this.useGl ? 'webgl' : '2d'; }
 
+    /** Icons by node id (imgs/skills/<id>.webp) and the trees' emblems (tree-<name>.webp); missing ones are left out. */
+    loadIcons(data) {
+        const base = this.options.iconBase || '/imgs/skills/';
+        const want = data.nodes.filter(n => n.kind !== 'passive').map(n => [n.id, n.id]);
+        data.trees.forEach((t, i) => want.push(['tree:' + i, 'tree-' + t.name.toLowerCase()]));
+        want.push(['medallion', 'medallion']);
+        for (const [key, file] of want) {
+            if (this.icons.has(key)) continue;
+            const img = new Image();
+            img.onload = () => { this.icons.set(key, img); this.dirty = true; };
+            img.src = base + file + '.webp';
+        }
+    }
+
+    /**
+     * The page's panel for the picked skill, kept beside it as the map moves (to its right, or its left near the edge;
+     * on a narrow screen along the bottom). Hidden while nothing is picked.
+     */
+    setPopover(el) { this.popover = el; this.dirty = true; }
+
+    placePopover(w, h) {
+        const el = this.popover;
+        if (!el) return;
+        const n = this.selected ? this.map.nodes.find(x => x.id === this.selected) : null;
+        if (!n) { el.style.visibility = 'hidden'; return; }
+        const pw = el.offsetWidth, ph = el.offsetHeight;
+        const [x, y] = this.cam.toScreen(n.x, n.y, w, h);
+        const r = n.r * this.cam.zoom + 18;
+        let left, top;
+        if (w < 620) {
+            left = 8; top = h - ph - (this.options.bottomInset || 0) - 8;
+        } else {
+            left = x + r + pw + 12 < w ? x + r : x - r - pw;
+            top = y - ph / 2;
+        }
+        left = Math.max(8, Math.min(w - pw - 8, left));
+        top = Math.max(8, Math.min(h - ph - 8, top));
+        el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+        el.style.visibility = 'visible';
+    }
+
     update(data, fit) {
         this.data = data;
+        if (this.icons) this.loadIcons(data);
         this.map = layout(data);
         if (this.gl) this.gl.build(this.map);
         if (fit) this.fit();
@@ -810,15 +893,22 @@ class SkillTreeView {
 
     fit() {
         const r = this.element.getBoundingClientRect();
-        const size = Math.max(200, Math.min(r.width, r.height || r.width));
-        this.cam.x = 0;
-        this.cam.y = 0;
+        // room kept free for what lies over the map (the loadout along the bottom)
+        const narrow = r.width < 620;
+        const top = (narrow ? this.options.fitTopNarrow : this.options.fitTop) || 0;
+        const bottom = (narrow ? this.options.fitBottomNarrow : this.options.fitBottom) || 0;
+        const height = Math.max(200, (r.height || r.width) - top - bottom);
+        const size = Math.max(200, Math.min(r.width, height));
         // the trees' names stick out past the extent on the sides: room for them
         this.cam.zoom = Math.max(MIN_ZOOM, size / ((this.map.extent + 90) * 2));
+        this.cam.x = 0;
+        this.cam.y = (bottom - top) / 2 / this.cam.zoom;
+        this.fitted = true;
         this.dirty = true;
     }
 
     zoomBy(factor) {
+        this.fitted = false;
         const r = this.element.getBoundingClientRect();
         this.cam.zoomAt(factor, r.width / 2, r.height / 2, r.width, r.height);
         this.dirty = true;
@@ -867,11 +957,13 @@ class SkillTreeView {
             const now = local(e);
             this.pointers.set(e.pointerId, now);
             if (this.pointers.size === 1) {
+                this.fitted = false;
                 this.cam.x -= (now[0] - prev[0]) / this.cam.zoom;
                 this.cam.y -= (now[1] - prev[1]) / this.cam.zoom;
                 this.moved += Math.abs(now[0] - prev[0]) + Math.abs(now[1] - prev[1]);
                 this.dirty = true;
             } else if (this.pointers.size === 2) {
+                this.fitted = false;
                 const [a, b] = [...this.pointers.values()];
                 const dist = Math.hypot(a[0] - b[0], a[1] - b[1]);
                 const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
@@ -897,17 +989,27 @@ class SkillTreeView {
         };
         this.onWheel = e => {
             e.preventDefault();
+            this.fitted = false;
             const [x, y] = local(e);
             const r = el.getBoundingClientRect();
             this.cam.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y, r.width, r.height);
             this.dirty = true;
         };
         this.onDouble = e => {
+            this.fitted = false;
             const [x, y] = local(e);
             const r = el.getBoundingClientRect();
             this.cam.zoomAt(1.8, x, y, r.width, r.height);
             this.dirty = true;
         };
+        // a press outside the map and its panels, or Escape, puts the picked skill down
+        this.onOutside = e => {
+            if (!this.selected || this.root.contains(e.target)) return;
+            this.select(null, true);
+        };
+        this.onKey = e => { if (e.key === 'Escape' && this.selected) this.select(null, true); };
+        document.addEventListener('pointerdown', this.onOutside, true);
+        document.addEventListener('keydown', this.onKey);
         el.addEventListener('pointerdown', this.onDown);
         el.addEventListener('pointermove', this.onMove);
         el.addEventListener('pointerup', this.onUp);
@@ -920,6 +1022,8 @@ class SkillTreeView {
         this.frame = requestAnimationFrame(this.loop);
         if (document.hidden) return;
         const time = (now - this.start) / 1000;
+        const box = this.element.getBoundingClientRect();
+        if (box.width >= 2) this.placePopover(box.width, box.height);
         const breathing = this.map.nodes.some(n => n.state === 'available');
         if (!this.dirty && !breathing && !this.useGl) return;
         if (!this.dirty && !breathing && this.useGl && time - (this.lastGl || 0) < 0.1) return; // the motes drift slowly
@@ -943,6 +1047,7 @@ class SkillTreeView {
         } else {
             drawShapes2d(g, view);
         }
+        drawIcons(g, view, this.icons);
         drawLabels(g, view);
         this.dirty = false;
     }
@@ -957,6 +1062,8 @@ class SkillTreeView {
         el.removeEventListener('pointercancel', this.onUp);
         el.removeEventListener('wheel', this.onWheel);
         el.removeEventListener('dblclick', this.onDouble);
+        document.removeEventListener('pointerdown', this.onOutside, true);
+        document.removeEventListener('keydown', this.onKey);
         this.gl?.dispose();
         el.innerHTML = '';
     }
@@ -969,4 +1076,16 @@ class SkillTreeView {
  */
 export function open(element, data, dotnet, options) {
     return new SkillTreeView(element, data, dotnet, options);
+}
+
+// saved plans (the planner's "Save"), kept in this browser only; storage can be missing or refuse (private windows)
+const PLANS_KEY = 'rf-skill-plans';
+
+/** Every saved plan: [{ name, build, levels }]. */
+export function loadPlans() {
+    try { return JSON.parse(localStorage.getItem(PLANS_KEY) || '[]'); } catch { return []; }
+}
+
+export function savePlans(plans) {
+    try { localStorage.setItem(PLANS_KEY, JSON.stringify(plans || [])); return true; } catch { return false; }
 }

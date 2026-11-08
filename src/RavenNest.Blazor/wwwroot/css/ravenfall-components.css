@@ -5685,12 +5685,6 @@ a.rf-badge:hover {
 /* ---- Skill trees (combat v2, PlayerSkillTrees.razor) ------------------------------------------------- */
 
 .rf-trees { display: flex; flex-direction: column; gap: var(--rf-space-4); }
-.rf-trees__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--rf-space-4); }
-.rf-trees__message { border-color: var(--rf-line-gold); }
-.rf-trees__loadout { display: flex; flex-wrap: wrap; gap: var(--rf-space-3); }
-.rf-trees__slot { display: flex; align-items: center; gap: var(--rf-space-2); background: var(--rf-surface-2); border: 1px solid var(--rf-line); border-radius: var(--rf-radius); padding: var(--rf-space-2) var(--rf-space-3); }
-.rf-trees__slot select { background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
-.rf-trees__slot-number { color: var(--rf-gold); font-weight: 700; }
 .rf-trees__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--rf-space-4); }
 .rf-trees__tree { display: flex; flex-direction: column; gap: var(--rf-space-2); }
 .rf-trees__node { border: 1px solid var(--rf-line); border-radius: var(--rf-radius); padding: var(--rf-space-2) var(--rf-space-3); background: var(--rf-surface-2); display: flex; flex-direction: column; gap: var(--rf-space-1); }
@@ -5698,31 +5692,107 @@ a.rf-badge:hover {
 .rf-trees__node.is-locked { opacity: 0.55; }
 .rf-trees__node-head { display: flex; justify-content: space-between; align-items: center; gap: var(--rf-space-2); }
 .rf-trees__node .rf-btn { align-self: flex-start; }
-.rf-trees__rule { max-width: 15rem; }
 .rf-trees__views { display: flex; gap: var(--rf-space-2); }
-.rf-trees__mapwrap { position: relative; display: flex; flex-direction: column; gap: var(--rf-space-2); }
-.rf-trees__map { position: relative; width: 100%; height: min(72vh, 760px); min-height: 360px; border-radius: var(--rf-radius); overflow: hidden; background: #060a1c; box-shadow: inset 0 0 0 1px rgba(233,184,92,0.55), inset 0 0 0 4px rgba(14,12,30,0.9), inset 0 0 0 5px rgba(233,184,92,0.25); }
-.rf-trees__map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.rf-trees__mapcontrols { position: absolute; top: calc(var(--rf-space-4) + 4px); right: calc(var(--rf-space-4) + 4px); display: flex; gap: 4px; }
 .rf-trees__hint { margin: 0; }
-.rf-trees__picked { border: 1px solid rgba(233,184,92,0.55); border-radius: var(--rf-radius); padding: var(--rf-space-3) var(--rf-space-4); background: linear-gradient(180deg, #121836 0%, #0b1026 100%); box-shadow: 0 0 0 3px rgba(14,12,30,0.8), 0 0 0 4px rgba(233,184,92,0.2); display: flex; flex-direction: column; gap: var(--rf-space-2); }
-.rf-trees__picked strong { color: #fbe7b8; font-size: 1.15rem; }
-.rf-trees__picked.is-learned { border-color: #e9b85c; background: linear-gradient(180deg, #1c1a3a 0%, #0f1028 100%); }
-.rf-trees__picked--empty { color: var(--rf-ink-muted); justify-content: center; text-align: center; min-height: 6rem; }
-/* wide screens: the chosen skill beside the map, as in the star map mockup */
-@media (min-width: 1100px) {
-    .rf-trees__mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; column-gap: var(--rf-space-4); }
-    /* the planner: wider than the page column, the map is the page's centrepiece */
-    .rf-trees__mapwrap--wide { width: min(1500px, calc(100vw - 48px)); margin-left: calc(50% - min(750px, calc(50vw - 24px))); }
-    .rf-trees__mapwrap > .rf-trees__map { height: min(80vh, 880px); }
-    .rf-trees__mapwrap > .rf-trees__map { grid-column: 1; grid-row: 1; }
-    .rf-trees__mapwrap > .rf-trees__picked { grid-column: 2; grid-row: 1; position: sticky; top: var(--rf-space-4); }
-    .rf-trees__mapwrap > .rf-trees__hint { grid-column: 1 / -1; }
-    .rf-trees__mapcontrols { right: calc(22rem + var(--rf-space-4) * 2 + 4px); }
+/* a labelled number box (the combat guide's calculator) */
+.rf-trees__slot { display: flex; align-items: center; gap: var(--rf-space-2); background: var(--rf-surface-2); border: 1px solid var(--rf-line); border-radius: var(--rf-radius); padding: var(--rf-space-2) var(--rf-space-3); }
+.rf-trees__slot input, .rf-trees__slot select { width: 5rem; background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
+
+/* ---- the skill tree stage (SkillTreeStage.razor): the map with its HUD, picked skill panel and loadout ---------------- */
+.rf-trees__tree-icon { width: 1.6rem; height: 1.6rem; vertical-align: -0.4rem; margin-right: 0.2rem; }
+.rf-trees__wide { width: min(1500px, calc(100vw - 32px)); margin-left: calc(50% - min(750px, calc(50vw - 16px))); }
+.rf-stage { position: relative; width: 100%; height: clamp(520px, calc(100vh - 120px), 1600px); height: clamp(520px, calc(100dvh - 120px), 1600px); border-radius: var(--rf-radius); overflow: hidden; background: #060a1c;
+    box-shadow: inset 0 0 0 1px rgba(233,184,92,0.55), inset 0 0 0 4px rgba(14,12,30,0.9), inset 0 0 0 5px rgba(233,184,92,0.25); color: #ece4d6; }
+.rf-stage__map { position: absolute; inset: 0; }
+.rf-stage__map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rf-stage__hud, .rf-stage__pop, .rf-stage__loadout, .rf-stage__slotmenu, .rf-stage__modes, .rf-stage__note {
+    background: linear-gradient(180deg, rgba(20,26,58,0.94) 0%, rgba(10,14,36,0.94) 100%); border: 1px solid rgba(233,184,92,0.5); border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45), 0 0 0 3px rgba(10,12,30,0.55); backdrop-filter: blur(4px); }
+.rf-stage__hud { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; max-width: min(340px, calc(100% - 28px)); z-index: 3; }
+.rf-stage__points { display: flex; align-items: center; gap: 8px; cursor: help; }
+.rf-stage__points img { width: 34px; height: 34px; filter: drop-shadow(0 0 6px rgba(255,210,120,0.6)); }
+.rf-stage__points-left { font-size: 1.9rem; font-weight: 800; color: #fbe7b8; line-height: 1; text-shadow: 0 0 12px rgba(233,184,92,0.45); }
+.rf-stage__points-of { font-size: 0.85rem; color: rgba(236,228,214,0.75); line-height: 1.1; max-width: 7rem; }
+.rf-stage__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rf-stage__more { display: flex; flex-direction: column; gap: 8px; }
+.rf-stage__more-toggle { display: none; margin-left: auto; }
+.rf-stage__btn { background: rgba(12,16,40,0.9); color: #f3e6cc; border: 1px solid rgba(233,184,92,0.55); border-radius: 7px; padding: 0.3rem 0.7rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; line-height: 1.3; }
+.rf-stage__btn:hover:not(:disabled) { border-color: #e9b85c; background: rgba(40,36,70,0.95); }
+.rf-stage__btn:disabled { opacity: 0.45; cursor: default; }
+.rf-stage__btn--gold { background: linear-gradient(180deg, #f1c46c 0%, #c98d32 100%); color: #1a1206; border-color: #f6d590; }
+.rf-stage__btn--gold:hover:not(:disabled) { background: linear-gradient(180deg, #f8d384 0%, #d89a3c 100%); }
+.rf-stage__cost { color: #e9b85c; font-weight: 600; margin-left: 0.25rem; }
+.rf-stage__cost::before { content: "· "; color: rgba(236,228,214,0.5); }
+.rf-stage__confirm { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; }
+.rf-stage__select, .rf-stage__input { background: rgba(8,10,28,0.95); color: #f3e6cc; border: 1px solid rgba(233,184,92,0.45); border-radius: 7px; padding: 0.28rem 0.5rem; font-size: 0.85rem; max-width: 12rem; }
+.rf-stage__link { background: none; border: none; color: #e9b85c; padding: 0; font-size: 0.82rem; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
+.rf-stage__levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; font-size: 0.82rem; }
+.rf-stage__levels label { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.rf-stage__levels input { width: 4.2rem; background: rgba(8,10,28,0.95); color: #f3e6cc; border: 1px solid rgba(233,184,92,0.4); border-radius: 6px; padding: 0.15rem 0.35rem; }
+.rf-stage__tools { position: absolute; top: 14px; right: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 3; }
+.rf-stage__modes { display: flex; padding: 3px; gap: 3px; }
+.rf-stage__modes button { background: none; border: none; color: rgba(236,228,214,0.75); font-weight: 700; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 7px; cursor: pointer; }
+.rf-stage__modes button.is-active { background: linear-gradient(180deg, #f1c46c 0%, #c98d32 100%); color: #1a1206; }
+.rf-stage__zoom { display: flex; gap: 4px; }
+.rf-stage__note { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); padding: 0.35rem 0.9rem; font-size: 0.85rem; color: #fbe7b8; z-index: 2; white-space: nowrap; }
+.rf-stage__message { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(233,184,92,0.95); color: #1a1206; font-weight: 700; padding: 0.4rem 1rem; border-radius: 999px; z-index: 6; pointer-events: none;
+    animation: rf-stage-fade 4.5s ease forwards; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+@keyframes rf-stage-fade { 0% { opacity: 0; transform: translate(-50%, -6px); } 8% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.rf-stage__pop { position: absolute; top: 0; left: 0; width: 330px; max-width: calc(100% - 16px); padding: 12px 14px; visibility: hidden; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
+.rf-stage__pop:empty { padding: 0; border: none; }
+.rf-stage__pop-head { display: flex; align-items: center; gap: 10px; }
+.rf-stage__pop-head img { width: 48px; height: 48px; flex: none; filter: drop-shadow(0 0 6px rgba(255,220,150,0.35)); }
+.rf-stage__pop-head > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.rf-stage__pop-head strong { color: #fbe7b8; font-size: 1.15rem; line-height: 1.2; }
+.rf-stage__pop-kind { color: rgba(236,228,214,0.7); font-size: 0.8rem; }
+.rf-stage__close { background: none; border: none; color: rgba(236,228,214,0.7); font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0 2px; align-self: flex-start; }
+.rf-stage__close:hover { color: #fbe7b8; }
+.rf-stage__pop-text { margin: 0; color: #f3ead8; }
+.rf-stage__pop-meta { margin: 0; color: rgba(236,228,214,0.72); font-size: 0.84rem; }
+.rf-stage__pop-meta .is-short { color: #ff9a7a; }
+.rf-stage__pop-why { margin: 0; color: #ffb48f; font-size: 0.82rem; }
+.rf-stage__pop-loadout { display: flex; align-items: center; gap: 6px; font-size: 0.84rem; color: rgba(236,228,214,0.8); }
+.rf-stage__pop-loadout span { margin-right: 2px; }
+.rf-stage__slotbtn { width: 2rem; height: 2rem; border-radius: 7px; background: rgba(8,10,28,0.95); border: 1px solid rgba(233,184,92,0.45); color: #f3e6cc; font-weight: 800; cursor: pointer; }
+.rf-stage__slotbtn.is-on { background: linear-gradient(180deg, #f1c46c 0%, #c98d32 100%); color: #1a1206; border-color: #f6d590; }
+.rf-stage__pop-rule { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: rgba(236,228,214,0.8); }
+.rf-stage__pop-rule select { flex: 1; min-width: 0; background: rgba(8,10,28,0.95); color: #f3e6cc; border: 1px solid rgba(233,184,92,0.45); border-radius: 7px; padding: 0.25rem 0.4rem; }
+.rf-stage__loadout { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 12px; z-index: 4; max-width: calc(100% - 24px); }
+.rf-stage__loadout-title { font-weight: 800; color: #fbe7b8; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: help; white-space: nowrap; }
+.rf-stage__help { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border-radius: 50%; border: 1px solid rgba(233,184,92,0.6); font-size: 0.72rem; color: #e9b85c; margin-left: 2px; }
+.rf-stage__slots { display: flex; gap: 8px; }
+.rf-stage__slot { position: relative; width: 72px; height: 72px; border-radius: 10px; background: radial-gradient(circle at 50% 40%, rgba(60,56,110,0.9) 0%, rgba(10,12,32,0.95) 75%); border: 1px solid rgba(233,184,92,0.6);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 4px 2px 3px; color: #f3e6cc; }
+.rf-stage__slot:hover, .rf-stage__slot.is-open { border-color: #f6d590; box-shadow: 0 0 0 2px rgba(233,184,92,0.35), 0 0 14px rgba(233,184,92,0.3); }
+.rf-stage__slot img { width: 44px; height: 44px; }
+.rf-stage__slot-name { font-size: 0.66rem; font-weight: 700; line-height: 1.05; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-stage__slot-number { position: absolute; top: -7px; left: -7px; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #e8a33d; color: #10131a; font-weight: 800; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+.rf-stage__slot.is-empty { border-style: dashed; background: rgba(10,12,32,0.7); }
+.rf-stage__slot-plus { font-size: 1.6rem; color: rgba(233,184,92,0.65); line-height: 1; }
+.rf-stage__slotmenu { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: min(320px, calc(100vw - 32px)); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.rf-stage__slotmenu-head { display: flex; justify-content: space-between; align-items: center; color: #fbe7b8; }
+.rf-stage__slotmenu-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
+.rf-stage__slotmenu-list button { display: flex; align-items: center; gap: 8px; background: rgba(8,10,28,0.8); border: 1px solid transparent; color: #f3e6cc; border-radius: 7px; padding: 3px 8px; cursor: pointer; text-align: left; font-weight: 600; }
+.rf-stage__slotmenu-list button:hover { border-color: rgba(233,184,92,0.5); }
+.rf-stage__slotmenu-list button.is-on { border-color: #e9b85c; background: rgba(233,184,92,0.15); }
+.rf-stage__slotmenu-list img { width: 30px; height: 30px; }
+@media (max-width: 620px) {
+    .rf-stage { height: clamp(460px, calc(100dvh - 90px), 1200px); }
+    .rf-stage__hud { padding: 8px 10px; gap: 6px; max-width: calc(100% - 132px); top: 10px; left: 10px; }
+    .rf-stage__tools { top: 10px; right: 10px; }
+    .rf-stage__more { display: none; }
+    .rf-stage__more.is-open { display: flex; }
+    .rf-stage__more-toggle { display: inline-block; padding: 0.2rem 0.5rem; }
+    .rf-stage__points-of { font-size: 0.75rem; max-width: 4.5rem; }
+    .rf-stage__points img { width: 26px; height: 26px; }
+    .rf-stage__points-left { font-size: 1.4rem; }
+    .rf-stage__note { top: auto; bottom: 104px; white-space: normal; text-align: center; width: calc(100% - 28px); }
+    .rf-stage__loadout { left: 8px; right: 8px; transform: none; max-width: none; justify-content: center; gap: 8px; padding: 6px 8px; }
+    .rf-stage__loadout-title { display: none; }
+    .rf-stage__slot { width: 60px; height: 64px; }
+    .rf-stage__slot img { width: 36px; height: 36px; }
+    .rf-stage__pop { width: calc(100% - 16px); }
 }
-@media (max-width: 600px) { .rf-trees__map { height: 62vh; } }
-.rf-trees__levels { display: flex; flex-wrap: wrap; gap: var(--rf-space-2); }
-.rf-trees__levels input { width: 5rem; background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
 
 /* ---- Combat guide (/combat) ---------------------------------------------
    Cards for each step, element and attribute; the element cards carry their
