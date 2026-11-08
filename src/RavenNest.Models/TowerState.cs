@@ -9,6 +9,15 @@ namespace RavenNest.Models
     public class TowerKillReport
     {
         public TowerCharacterKills[] Kills { get; set; }
+        /// <summary>Characters knocked out during a boss attempt since the last report (a hidden achievement or two).</summary>
+        public TowerCharacterFall[] Falls { get; set; }
+    }
+
+    public class TowerCharacterFall
+    {
+        public System.Guid CharacterId { get; set; }
+        /// <summary>The floor whose boss attempt it was.</summary>
+        public int Floor { get; set; }
     }
 
     public class TowerCharacterKills

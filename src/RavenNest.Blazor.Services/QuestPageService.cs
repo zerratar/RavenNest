@@ -133,6 +133,9 @@ namespace RavenNest.Blazor.Services
                 RewardTitle = TitleText(ch.RewardTitle),
                 RewardDecor = piece?.Name,
                 RewardDecorKey = piece?.Key,
+                Town = string.IsNullOrEmpty(ch.Town) ? null : RavenNest.Combat.Tower.Town(ch.Town)?.Name ?? ch.Town,
+                RewardItem = ch.RewardItem,
+                RewardItemIcon = string.IsNullOrEmpty(ch.RewardItem) ? null : "/imgs/items/" + ch.RewardItem.Replace(" ", "-").Replace("'", "").ToLowerInvariant() + ".png",
                 Command = ch.State == 0 ? "!quest begin " + ch.Key : null,
                 Picture = Picture("chain-" + ch.Key.ToLowerInvariant()),
                 Banner = Picture("chain-" + ch.Key.ToLowerInvariant() + "-wide", "jpg"),
@@ -466,6 +469,10 @@ namespace RavenNest.Blazor.Services
         public string RewardTitle { get; set; }
         public string RewardDecor { get; set; }
         public string RewardDecorKey { get; set; }
+        /// <summary>The tower town the chain is begun in (its people give it), or null for one begun anywhere.</summary>
+        public string Town { get; set; }
+        public string RewardItem { get; set; }
+        public string RewardItemIcon { get; set; }
         public string Command { get; set; }
         public string Picture { get; set; }
         /// <summary>A wide picture for the chain's page.</summary>

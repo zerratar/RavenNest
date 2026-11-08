@@ -529,15 +529,22 @@ else
                 @if (ch.Command != null)
                 {
                     <div class="qp-objective">
-                        <div class="qp-label">Begin it in chat</div>
+                        <div class="qp-label">@(ch.Town != null ? "Begin it in chat while in " + ch.Town + " (!tower town)" : "Begin it in chat")</div>
                         @Command(ch.Command)
                     </div>
                 }
 
-                @if (ch.RewardTitle != null || ch.RewardDecor != null)
+                @if (ch.RewardTitle != null || ch.RewardDecor != null || ch.RewardItem != null)
                 {
                     <div class="qp-label qp-label--big">Story rewards</div>
                     <div class="qp-story-rewards">
+                        @if (ch.RewardItem != null)
+                        {
+                            <div class="qp-story-reward">
+                                <img class="qp-story-reward__decor" src="@ch.RewardItemIcon" alt="" loading="lazy" onerror="this.style.display='none'" />
+                                <span>Item: <strong>@ch.RewardItem</strong></span>
+                            </div>
+                        }
                         @if (ch.RewardDecor != null)
                         {
                             <div class="qp-story-reward">

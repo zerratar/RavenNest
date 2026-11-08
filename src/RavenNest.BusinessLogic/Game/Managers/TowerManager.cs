@@ -92,14 +92,23 @@ namespace RavenNest.BusinessLogic.Game
         public void AddCharacterKills(SessionToken token, TowerKillReport report)
         {
             var session = gameData.GetSession(token.SessionId);
-            if (session == null || report?.Kills == null) return;
+            if (session == null || report == null) return;
             var characters = gameData.GetActiveSessionCharacters(session);
-            foreach (var k in report.Kills.Take(1000))
+            foreach (var k in (report.Kills ?? Array.Empty<TowerCharacterKills>()).Take(1000))
             {
                 if (k == null || k.Count <= 0 || string.IsNullOrEmpty(k.Kind)) continue;
                 var character = characters.FirstOrDefault(c => c.Id == k.CharacterId);
                 if (character == null) continue;
                 QuestTracker.TowerKills(character, k.Kind, Math.Min(MaxKillsPerReport, k.Count));
+            }
+
+            // knocked out by a boss: only the stream's own floor counts (Nibbles is floor 1's, for the hidden "nibbled")
+            var floor = GetOrCreate(session.UserId).Floor;
+            foreach (var f in (report.Falls ?? Array.Empty<TowerCharacterFall>()).Take(200))
+            {
+                if (f == null || f.Floor != floor) continue;
+                var character = characters.FirstOrDefault(c => c.Id == f.CharacterId);
+                if (character != null) QuestTracker.TowerFell(character, f.Floor);
             }
         }
 
@@ -185,7 +194,7 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var id in ids)
             {
                 var character = sessionCharacters.FirstOrDefault(c => c.Id == id);
-                if (character != null) QuestTracker.TowerCleared(character);
+                if (character != null) QuestTracker.TowerCleared(character, floor);
             }
 
             var tier = Math.Min(4, (floor - 1) / 3);

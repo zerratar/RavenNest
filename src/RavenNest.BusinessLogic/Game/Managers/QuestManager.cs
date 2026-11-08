@@ -101,10 +101,17 @@ namespace RavenNest.BusinessLogic.Game
             if (count > 0) Listener?.Progress(character, QuestManager.TowerKill, -1, count, kind);
         }
 
-        /// <summary>A character took part in a won tower boss attempt.</summary>
-        public static void TowerCleared(Character character)
+        /// <summary>A character took part in a won tower boss attempt: its quests count it, the climber keeps the highest floor.</summary>
+        public static void TowerCleared(Character character, int floor)
         {
             Listener?.Progress(character, QuestManager.TowerClear, -1, 1);
+            Achievements?.Set(character, "climber", floor);
+        }
+
+        /// <summary>A character was knocked out during a boss attempt on this floor.</summary>
+        public static void TowerFell(Character character, int floor)
+        {
+            if (floor == 1) Achievements?.Add(character, "nibbled", 1); // by a bunny
         }
 
         public static void Kills(Character character, long count)

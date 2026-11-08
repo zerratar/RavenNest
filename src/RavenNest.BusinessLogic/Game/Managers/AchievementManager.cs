@@ -52,8 +52,12 @@ namespace RavenNest.BusinessLogic.Game
             new Definition { Key = "ferryman", Targets = new long[] { 50, 500 } },
             new Definition { Key = "allround", Targets = new long[] { 50, 200, 999 }, Mode = Mode.Highest },
             new Definition { Key = "storyteller", Targets = new long[] { 1, 3, 5 }, Mode = Mode.Highest },
+            // the highest tower floor whose boss fell with the character there (more tiers come with the next bands)
+            new Definition { Key = "climber", Targets = new long[] { 1, 5, 10 }, Mode = Mode.Highest },
             new Definition { Key = "wrong", Targets = new long[] { 5 }, Hidden = true },
             new Definition { Key = "quitter", Targets = new long[] { 10 }, Hidden = true },
+            // knocked out by Nibbles the Vicious, floor 1's bunny (run away!)
+            new Definition { Key = "nibbled", Targets = new long[] { 1 }, Hidden = true },
         };
 
         private static Definition Tiers(string key, long bronze, long silver, long gold) =>
