@@ -1,0 +1,98 @@
+@page "/pets"
+@using RavenNest.Combat
+
+@*
+    Battle pets (the game's docs/battle-pets-design.md): how they work, and every kind there is: the starters, the
+    creatures to tame and the pet items that wake to fight, each with its picture (rendered from the game's own models),
+    role, element, how it attacks, stages, skills with their numbers, and how to get one. Read from RavenNest.Combat's
+    species list, the same one the game and the server use.
+*@
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Battle pets</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section rf-petdex">
+        <p class="rf-lead">
+            A battle pet follows you, joins your fights on your target and uses its skills by itself. Tanks take blows
+            for you, healers keep you standing, damage pets hit hard and support pets make everyone around better; gatherer
+            pets help you find more while you gather instead. While a pet is out, it and your <b>Taming</b> skill share in
+            all the experience you earn, whatever you do, so both grow while you idle.
+        </p>
+        <div class="rf-petdex__how">
+            <div class="rf-card"><div><b>!pets starter fox</b>, <b>bear</b> or <b>fawn</b></div><span>A first pet, for an empty stable.</span></div>
+            <div class="rf-card"><b>!tame bunny</b><span>Each one you defeat while you fight is a try, and every try trains Taming. Carry a treat it loves for better odds.</span></div>
+            <div class="rf-card"><b>!pets wake diamond raven</b><span>Every pet item can fight: it keeps its look and grows a little at each stage.</span></div>
+            <div class="rf-card"><b>!pets</b><span>Your pet; then stable, use, away, rename, skills, slot, evolve, about.</span></div>
+        </div>
+        <p class="rf-petdex__rules">
+            A pet's level can never pass your Taming level. It evolves at level @BattlePets.EvolveLevels[0] (Taming @BattlePets.EvolveSkillLevels[0])
+            and @BattlePets.EvolveLevels[1] (Taming @BattlePets.EvolveSkillLevels[1]): a new look, stronger, and one more skill slot.
+            Your stable holds @BattlePets.StableSize(1) pets to begin with and up to @BattlePets.StableLevels.Length as Taming grows; one is out at a time.
+            Knocked out, a pet gets up again after @BattlePets.KnockoutSeconds seconds. Clans from level @Menagerie.RequiredClanLevel train
+            <b>@Menagerie.Name</b> from their members' pets, which makes them grow faster (up to @Pct(Menagerie.ExperienceBonus(999)) more)
+            and their stables bigger.
+        </p>
+
+        <h2 class="rf-petdex__group">Starter pets</h2>
+        <div class="rf-petdex__grid">
+            @foreach (var s in BattlePets.Starters) { @Card(s, "!pets starter " + s.NameAt(0).Split(' ')[0].ToLowerInvariant()) }
+        </div>
+
+        <h2 class="rf-petdex__group">Creatures to tame</h2>
+        <div class="rf-petdex__grid">
+            @foreach (var s in BattlePets.Tameable.OrderBy(x => x.TameLevel)) { @Card(s, "Taming " + s.TameLevel + (s.TameRarity < 1 ? ", very rare" : "") + "; loves " + string.Join(" or ", s.Treats)) }
+        </div>
+
+        <h2 class="rf-petdex__group">Pet items that wake</h2>
+        <div class="rf-petdex__grid">
+            @foreach (var s in BattlePets.Companions) { @Card(s, "!pets wake, with one of its pet items") }
+        </div>
+    </div>
+</div>
+
+@code {
+    private RenderFragment Card(PetSpecies s, string how) => __builder =>
+    {
+        <div class="rf-card rf-petdex__card">
+            <div class="rf-petdex__pics">
+                @for (var stage = 0; stage < (s.StageModels.Length > 1 ? s.StageModels.Length : 1); ++stage)
+                {
+                    <img src="@Picture(s, stage)" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
+                }
+            </div>
+            <div class="rf-petdex__body">
+                <div class="rf-petdex__name"><b>@s.NameAt(0)</b> <span class="rf-meta">@Role(s.Role), @Element(s.Element), @Strike(s.Strike)</span></div>
+                <div class="rf-meta">Grows into @s.NameAt(1), then @s.NameAt(2).</div>
+                @if (!string.IsNullOrEmpty(s.Blurb)) { <div>@s.Blurb</div> }
+                <ul class="rf-petdex__skills">
+                    @foreach (var skill in s.Skills.Select(BattlePets.GetSkill).Where(x => x != null))
+                    {
+                        <li><b>@skill.Name</b>@(skill.LearnLevel > 1 ? " (level " + skill.LearnLevel + ")" : ""): @SkillLine(skill)</li>
+                    }
+                </ul>
+                <div class="rf-petdex__how-one">@how</div>
+            </div>
+        </div>
+    };
+
+    /// <summary>The picture rendered from the game's model (tools/website/pet-renders.cs in the game repo); a stage of its own when the model changes.</summary>
+    public static string Picture(PetSpecies s, int stage) =>
+        s.StageModels.Length > 1 && stage > 0 ? "/imgs/pets/" + s.Id + "-" + Math.Min(stage, s.StageModels.Length - 1) + ".webp" : "/imgs/pets/" + s.Id + ".webp";
+
+    /// <summary>A skill's numbers; a pet's taunt is its guard (it takes the blows meant for its owner), so that one keeps its own words.</summary>
+    public static string SkillLine(PetSkill skill)
+    {
+        if (!skill.IsActive) return skill.Description;
+        if (skill.Active.Effects.Any(e => e.Kind == SkillEffectKind.Taunt)) return skill.Description + " Every " + skill.Active.Cooldown + " s.";
+        return SkillTexts.Active(skill.Active) + ", every " + skill.Active.Cooldown + " s";
+    }
+
+    public static string Strike(PetStrike s) => s == PetStrike.Bite ? "bites" : s == PetStrike.Pounce ? "pounces" : "fires bolts";
+    public static string Element(Element e) => e == RavenNest.Combat.Element.Physical ? "no element" : e.ToString().ToLowerInvariant();
+    public static string Role(PetRole r) => r.ToString().ToLowerInvariant();
+    private static string Pct(double v) => (v * 100).ToString("0") + "%";
+}

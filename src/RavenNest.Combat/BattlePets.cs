@@ -374,7 +374,7 @@ namespace RavenNest.Combat
         {
             // tank
             Add(new PetSkill { Id = "guard", Name = "Guard", Role = PetRole.Tank, LearnLevel = 1,
-                Description = "Taunts the enemies attacking its owner for 5 s.",
+                Description = "Guards its owner for 5 s: every blow meant for its owner lands on it instead.",
                 Active = Active(14, SkillTargeting.Around, SkillUse.EnemyOnAlly, E(SkillEffectKind.Taunt, 0, 5)) });
             Add(new PetSkill { Id = "harden", Name = "Harden", Role = PetRole.Tank, LearnLevel = 20,
                 Description = "Takes 40% less damage for 5 s.",
@@ -423,7 +423,7 @@ namespace RavenNest.Combat
 
             // the species' own skills (PetSpeciesList.cs)
             Add(new PetSkill { Id = "moo", Name = "Moo", Role = PetRole.Tank, LearnLevel = 1,
-                Description = "Moos at the enemies attacking its owner. They cannot help but look, for 5 s.",
+                Description = "Moos at the enemies attacking its owner. They cannot help but look, and for 5 s every blow lands on the cow.",
                 Active = Area(14, SkillTargeting.Around, SkillUse.EnemyOnAlly, 6, 6, E(SkillEffectKind.Taunt, 0, 5)) });
             Add(new PetSkill { Id = "binky", Name = "Binky", Role = PetRole.Support, LearnLevel = 1,
                 Description = "A happy little leap in the air. Its owner and allies near attack 20% faster for 6 s.",

@@ -187,9 +187,9 @@ namespace RavenNest.Combat
             {
                 case SkillTargeting.Self: return "(you)";
                 case SkillTargeting.LowestAlly: return "(the ally with the least health" + r + ")";
-                case SkillTargeting.Allies: return "(up to " + a.MaxTargets + " allies" + r + ")";
-                case SkillTargeting.Cone: return "(up to " + a.MaxTargets + " enemies in front)";
-                case SkillTargeting.Around: return "(up to " + a.MaxTargets + " enemies" + r + ")";
+                case SkillTargeting.Allies: return a.MaxTargets <= 1 ? "(an ally" + r + ")" : "(up to " + a.MaxTargets + " allies" + r + ")";
+                case SkillTargeting.Cone: return a.MaxTargets <= 1 ? "(an enemy in front)" : "(up to " + a.MaxTargets + " enemies in front)";
+                case SkillTargeting.Around: return a.MaxTargets <= 1 ? "(an enemy" + r + ")" : "(up to " + a.MaxTargets + " enemies" + r + ")";
                 case SkillTargeting.AroundTarget: return "(the target and up to " + Math.Max(0, a.MaxTargets - 1) + " enemies" + r + " of it)";
                 case SkillTargeting.Chain: return "(jumps to " + Math.Max(0, a.MaxTargets - 1) + " more enemies)";
                 case SkillTargeting.FarthestEnemy: return "(an enemy up to " + Num(a.Radius) + " m away)";

@@ -5755,6 +5755,21 @@ a.rf-badge:hover {
 .rf-pets { display: flex; flex-direction: column; gap: var(--rf-space-4); }
 .rf-pets__tame { display: flex; flex-direction: column; gap: var(--rf-space-2); }
 .rf-pets__tame .is-locked { opacity: 0.6; }
+.rf-pets__pic { width: 96px; height: 96px; object-fit: contain; align-self: center; }
+
+/* the battle pets page (/pets) */
+.rf-petdex__how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--rf-space-3); margin: var(--rf-space-4) 0; }
+.rf-petdex__how .rf-card { display: flex; flex-direction: column; gap: var(--rf-space-1); padding: var(--rf-space-3); }
+.rf-petdex__how .rf-card span { color: var(--rf-ink-muted); }
+.rf-petdex__rules { color: var(--rf-ink-muted); }
+.rf-petdex__group { margin-top: var(--rf-space-6); }
+.rf-petdex__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--rf-space-4); }
+.rf-petdex__card { display: flex; flex-direction: column; gap: var(--rf-space-2); padding: var(--rf-space-3); }
+.rf-petdex__pics { display: flex; justify-content: center; gap: var(--rf-space-2); min-height: 120px; background: radial-gradient(circle at 50% 60%, rgba(255,255,255,0.07), transparent 70%); border-radius: var(--rf-radius); }
+.rf-petdex__pics img { width: 120px; height: 120px; min-width: 0; flex: 0 1 120px; object-fit: contain; }
+.rf-petdex__body { display: flex; flex-direction: column; gap: var(--rf-space-1); }
+.rf-petdex__skills { margin: 0; padding-left: 1.1em; font-size: 0.92rem; }
+.rf-petdex__how-one { color: var(--rf-gold); font-weight: 700; font-size: 0.92rem; margin-top: auto; }
 .rf-stage__pop-meta { margin: 0; color: rgba(236,228,214,0.72); font-size: 0.84rem; }
 .rf-stage__pop-meta .is-short { color: #ff9a7a; }
 .rf-stage__pop-why { margin: 0; color: #ffb48f; font-size: 0.82rem; }

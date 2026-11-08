@@ -10,7 +10,7 @@
 <div class="rf-pets">
     <div class="rf-panel rf-pets__head">
         <h3 class="rf-panel__title">Battle pets <span class="rf-meta">Taming @taming, @stable.Length of @BattlePets.StableSize(taming) places</span></h3>
-        <p class="rf-meta">Pets fight beside you, learn skills and evolve. <strong>!pets starter fox</strong>, <strong>bear</strong> or <strong>fawn</strong> picks a first one; <strong>!tame (creature)</strong> while you fight tames one; <strong>!pets wake (pet item)</strong> wakes a pet item you have so it fights too. <strong>!pets</strong> does the rest in chat.</p>
+        <p class="rf-meta">Pets fight beside you, learn skills and evolve. <strong>!pets starter fox</strong>, <strong>bear</strong> or <strong>fawn</strong> picks a first one; <strong>!tame (creature)</strong> while you fight tames one; <strong>!pets wake (pet item)</strong> wakes a pet item you have so it fights too. <strong>!pets</strong> does the rest in chat. <a href="/pets">Every kind of pet</a>.</p>
     </div>
 
     @if (stable.Length == 0)
@@ -27,6 +27,7 @@
                 var slots = (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).ToList();
                 var sheet = species.Sheet(Math.Max(1, pet.Level), pet.Stage);
                 <div class="rf-panel rf-trees__node @(pet.Active ? "is-learned" : "")">
+                    <img class="rf-pets__pic" src="@RavenNest.Blazor.Pages.Front.PetsPage.Picture(species, pet.Stage)" alt="" loading="lazy" onerror="this.style.display='none'" />
                     <div class="rf-trees__node-head">
                         <strong>@pet.Name</strong>
                         <span class="rf-chip">@(pet.Active ? "Out" : "Resting")</span>
@@ -42,7 +43,7 @@
                         <div><strong>@skill.Name</strong> <span class="rf-meta">@skill.Description</span>
                             @if (skill.IsActive)
                             {
-                                <div class="rf-trees__node-effect">@SkillTexts.Active(skill.Active), every @skill.Active.Cooldown s</div>
+                                <div class="rf-trees__node-effect">@RavenNest.Blazor.Pages.Front.PetsPage.SkillLine(skill)</div>
                             }
                         </div>
                     }
