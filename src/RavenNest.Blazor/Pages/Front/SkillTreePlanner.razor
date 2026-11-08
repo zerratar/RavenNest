@@ -66,7 +66,7 @@
             </div>
         </div>
 
-        <div class="rf-panel rf-trees__mapwrap">
+        <div class="rf-panel rf-trees__mapwrap rf-trees__mapwrap--wide">
             <div class="rf-trees__map" @ref="mapHost"></div>
             <div class="rf-trees__mapcontrols">
                 <button type="button" class="rf-btn rf-btn--small" title="Show every tree" @onclick='() => Map("fit")'>Fit</button>
@@ -111,6 +111,10 @@
                         @if (reason != null && rank < node.MaxRank) { <span class="rf-meta">@reason</span> }
                     </div>
                 </div>
+            }
+            else
+            {
+                <div class="rf-trees__picked rf-trees__picked--empty">Tap a star to see its skill.</div>
             }
         </div>
 

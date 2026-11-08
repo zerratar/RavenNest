@@ -2,14 +2,19 @@
 // centre, their tiers as rings, every skill a node to tap. Drag (or one finger) pans, the wheel or a pinch zooms, a
 // tap picks a node and tells the page (PlayerSkillTrees.razor), which shows it with its Learn button.
 //
-// Two ways to draw the same map: WebGL (three.js: glowing nodes and links, a slow drifting field of motes behind
-// them, learnable skills breathing) where the browser has it, and a plain 2D canvas where it does not (a good share of
-// players have WebGL turned off). The names and numbers are always drawn on a 2D layer on top, so both read the same.
+// The look is a star map (from the mockup the user picked on 2026-11-08, docs/mockups/skilltree-constellation.png in
+// the game): a deep blue night sky with a soft nebula and twinkling stars, a gold raven medallion in the middle with
+// compass rays to each tree, the skills as stars (lit and gold rimmed when learned, dim stone when locked), starlight
+// links, and the trees' names on gold framed plates.
+//
+// Two ways to draw the same map: WebGL (three.js) where the browser has it, and a plain 2D canvas where it does not (a
+// good share of players have WebGL turned off). The names and numbers are always drawn on a 2D layer on top, so both
+// read the same.
 import * as THREE from './three.module.min.js';
 
 // ---- the map's shape ----------------------------------------------------------------------------------------------
 
-const HUB_RADIUS = 150;          // where each tree's name sits
+const HUB_RADIUS = 185;          // where each tree's name sits
 const FIRST_RING = 340;          // tier 0
 const RING_STEP = 190;           // between tiers
 const NODE_RADIUS = { active: 26, passive: 20, special: 30 };
@@ -19,6 +24,47 @@ const TITLE_RADIUS = FIRST_RING + 3 * RING_STEP + 95; // the trees' names, past 
 const MIN_ZOOM = 0.1, MAX_ZOOM = 3.2;
 
 const STATE_ALPHA = { learned: 1, maxed: 1, available: 0.95, open: 0.6, locked: 0.32 };
+
+// the star map's colours
+const SKY = 0x060a1c;
+const SKY_CSS = '#060a1c';
+const GOLD = '#e9b85c';
+const GOLD_DEEP = '#a8762c';
+const STONE = '#4a5170';
+const NODE_DARK = '#0c1230';
+const MEDALLION_RADIUS = 118;
+
+/** A low poly raven perched, facing right, in a box of -1..1 (y down): the medallion's emblem. */
+const RAVEN = [[-1.0, 0.12], [-0.6, 0.02], [-0.36, -0.2], [-0.02, -0.36], [0.24, -0.32], [0.38, -0.5], [0.56, -0.56],
+    [0.7, -0.48], [0.98, -0.4], [0.7, -0.32], [0.64, -0.16], [0.56, 0.04], [0.36, 0.26], [0.12, 0.38], [0.08, 0.66],
+    [0.02, 0.66], [-0.01, 0.44], [-0.14, 0.44], [-0.17, 0.66], [-0.23, 0.66], [-0.22, 0.42], [-0.46, 0.3], [-1.0, 0.24]];
+const RAVEN_WING = [[-0.62, 0.1], [-0.3, -0.12], [0.18, -0.16], [0.34, 0.02], [0.08, 0.2], [-0.3, 0.2]];
+
+/** The raven emblem on a canvas (gold on dark), for the WebGL medallion's texture and the 2D map. */
+function drawRaven(g, cx, cy, size) {
+    const trace = pts => { g.beginPath(); pts.forEach(([x, y], i) => { const px = cx + x * size, py = cy + y * size; if (i === 0) g.moveTo(px, py); else g.lineTo(px, py); }); g.closePath(); };
+    trace(RAVEN);
+    const fill = g.createLinearGradient(cx - size, cy - size, cx + size, cy + size);
+    fill.addColorStop(0, '#2a1d4a');
+    fill.addColorStop(1, '#120c24');
+    g.fillStyle = fill;
+    g.fill();
+    g.lineJoin = 'round';
+    g.lineWidth = Math.max(1.5, size * 0.05);
+    g.strokeStyle = GOLD;
+    g.stroke();
+    trace(RAVEN_WING);
+    g.fillStyle = 'rgba(160,120,230,0.35)';
+    g.fill();
+    g.lineWidth = Math.max(1, size * 0.03);
+    g.strokeStyle = 'rgba(233,184,92,0.7)';
+    g.stroke();
+    // the eye
+    g.fillStyle = '#ffe9a8';
+    g.beginPath();
+    g.arc(cx + 0.6 * size, cy - 0.42 * size, Math.max(1, size * 0.045), 0, Math.PI * 2);
+    g.fill();
+}
 
 function hexToRgb(hex) {
     const v = parseInt(hex.replace('#', ''), 16);
@@ -107,30 +153,60 @@ function drawShapes2d(g, view) {
     const { w, h, cam, map, selected, time } = view;
     g.clearRect(0, 0, w, h);
 
-    // the sky
+    // the sky: deep blue with a violet glow round the middle, and still stars
     const sky = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.75);
-    sky.addColorStop(0, '#1d2230');
-    sky.addColorStop(1, '#0d0f15');
+    sky.addColorStop(0, '#1a1d48');
+    sky.addColorStop(0.5, '#0c1230');
+    sky.addColorStop(1, SKY_CSS);
     g.fillStyle = sky;
     g.fillRect(0, 0, w, h);
+    view.stars = view.stars || Array.from({ length: 260 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 997) / 997, 0.4 + ((i * 31) % 10) / 10]);
+    for (const [sx, sy, b] of view.stars) {
+        g.fillStyle = `rgba(220,230,255,${0.25 + 0.5 * b * (0.7 + 0.3 * Math.sin(time * 2 + sx * 40))})`;
+        g.fillRect(sx * w, sy * h, b > 1 ? 2 : 1.2, b > 1 ? 2 : 1.2);
+    }
 
     // the rings and the wedge borders
     const [cx, cy] = cam.toScreen(0, 0, w, h);
     g.lineWidth = 1;
     for (let tier = 0; tier < 4; tier++) {
-        g.strokeStyle = 'rgba(236,228,214,0.07)';
+        g.strokeStyle = 'rgba(150,170,255,0.08)';
+        g.setLineDash([2, 6]);
         g.beginPath();
         g.arc(cx, cy, (FIRST_RING + tier * RING_STEP) * cam.zoom, 0, Math.PI * 2);
         g.stroke();
     }
-    const wedge = (Math.PI * 2) / map.hubs.length;
-    for (let i = 0; i < map.hubs.length; i++) {
-        const a = -Math.PI / 2 + (i + 0.5) * wedge;
-        g.strokeStyle = 'rgba(236,228,214,0.05)';
+    g.setLineDash([]);
+    // the compass rays: long gold ones to each tree, short ones between
+    for (let i = 0; i < map.hubs.length * 2; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / map.hubs.length;
+        const long = i % 2 === 0;
+        const reach = (long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40) * cam.zoom;
+        const side = (long ? 10 : 6) * cam.zoom;
+        const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
+        const base = MEDALLION_RADIUS * 0.8 * cam.zoom;
         g.beginPath();
-        g.moveTo(cx + Math.cos(a) * 60 * cam.zoom, cy + Math.sin(a) * 60 * cam.zoom);
-        g.lineTo(cx + Math.cos(a) * map.extent * cam.zoom, cy + Math.sin(a) * map.extent * cam.zoom);
-        g.stroke();
+        g.moveTo(cx + ox * base + px * side, cy + oy * base + py * side);
+        g.lineTo(cx + ox * reach, cy + oy * reach);
+        g.lineTo(cx + ox * base - px * side, cy + oy * base - py * side);
+        g.closePath();
+        g.fillStyle = long ? 'rgba(233,184,92,0.85)' : 'rgba(233,184,92,0.45)';
+        g.fill();
+    }
+    // the medallion
+    {
+        const r = MEDALLION_RADIUS * cam.zoom;
+        const glow = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
+        glow.addColorStop(0, 'rgba(233,184,92,0.35)');
+        glow.addColorStop(1, 'rgba(233,184,92,0)');
+        g.fillStyle = glow;
+        g.beginPath(); g.arc(cx, cy, r * 2.2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#100c26';
+        g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = GOLD; g.lineWidth = Math.max(2, 5 * cam.zoom); g.stroke();
+        g.strokeStyle = GOLD_DEEP; g.lineWidth = Math.max(1, 2 * cam.zoom);
+        g.beginPath(); g.arc(cx, cy, r * 0.84, 0, Math.PI * 2); g.stroke();
+        drawRaven(g, cx, cy + r * 0.02, r * 0.66);
     }
 
     // links
@@ -139,8 +215,8 @@ function drawShapes2d(g, view) {
         const on = (l.a.state === undefined || lit(l.a)) && lit(l.b);
         const [ax, ay] = cam.toScreen(l.a.x, l.a.y, w, h);
         const [bx, by] = cam.toScreen(l.b.x, l.b.y, w, h);
-        g.strokeStyle = on ? rgba(color, 0.9) : rgba(color, 0.18);
-        g.lineWidth = Math.max(1, (on ? 4 : 2) * cam.zoom);
+        g.strokeStyle = on ? rgba(color, 0.95) : 'rgba(170,185,255,0.16)';
+        g.lineWidth = Math.max(1, (on ? 3.5 : 1.6) * cam.zoom);
         g.beginPath();
         g.moveTo(ax, ay);
         g.lineTo(bx, by);
@@ -179,12 +255,19 @@ function drawShapes2d(g, view) {
 
         g.beginPath();
         nodePath(g, n.kind, x, y, r);
-        g.fillStyle = lit(n) ? rgba(color, 0.85) : 'rgba(18,20,27,0.95)';
+        g.fillStyle = lit(n) ? rgba(color, 0.9) : NODE_DARK;
         g.fill();
         const breathe = n.state === 'available' ? 0.65 + 0.35 * Math.sin(time * 3) : 1;
-        g.strokeStyle = rgba(color, alpha * breathe);
-        g.lineWidth = Math.max(1.5, (n.state === 'available' ? 5 : 4) * cam.zoom);
+        g.strokeStyle = n.state === 'locked' ? rgba(STONE, 0.9) : rgba(color, alpha * breathe);
+        g.lineWidth = Math.max(1.5, (n.state === 'available' ? 4 : 3) * cam.zoom);
         g.stroke();
+        if (lit(n)) {
+            g.beginPath();
+            nodePath(g, n.kind, x, y, r + 5 * cam.zoom);
+            g.strokeStyle = GOLD;
+            g.lineWidth = Math.max(1.5, 2.5 * cam.zoom);
+            g.stroke();
+        }
 
         drawRank(g, n, x, y, r, color);
 
@@ -241,14 +324,15 @@ function drawLabels(g, view) {
         const size = Math.max(14, Math.min(26, 34 * cam.zoom));
         g.font = `800 ${size}px "FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif`;
         // kept inside the view, so a phone shows the side trees' names whole
-        const titleWidth = g.measureText(hub.name).width;
+        const titleWidth = g.measureText(hub.name.toUpperCase()).width;
         g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
         const half = Math.max(titleWidth, g.measureText(`${hub.skill} ${hub.level}`).width) / 2 + 6;
         g.font = `800 ${size}px "FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif`;
         if (half * 2 < w && cam.zoom < LABEL_MIN_ZOOM) x = Math.min(w - half, Math.max(half, x)); // only in the overview: up close it would sit on the nodes
-        shadowText(g, hub.name, x, y - size * 0.35, hub.color);
+        drawPlate(g, x, y - size * 0.35, titleWidth + size * 1.6, size * 1.5);
+        shadowText(g, hub.name.toUpperCase(), x, y - size * 0.32, '#fbe7b8');
         g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
-        shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.55, 'rgba(236,228,214,0.8)');
+        shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.95, hub.color);
     }
 
     if (cam.zoom < LABEL_MIN_ZOOM) return;
@@ -275,6 +359,30 @@ function drawLabels(g, view) {
             g.fillText(String(n.slot), bx, by + 0.5);
         }
     }
+}
+
+/** A dark plate with a gold frame and pointed ends, behind a tree's name (as the mockup's banners). */
+function drawPlate(g, x, y, width, height) {
+    const hw = width / 2, hh = height / 2, tip = hh * 0.9;
+    g.beginPath();
+    g.moveTo(x - hw - tip, y);
+    g.lineTo(x - hw, y - hh);
+    g.lineTo(x + hw, y - hh);
+    g.lineTo(x + hw + tip, y);
+    g.lineTo(x + hw, y + hh);
+    g.lineTo(x - hw, y + hh);
+    g.closePath();
+    g.fillStyle = 'rgba(14,12,30,0.92)';
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = GOLD;
+    g.stroke();
+    g.beginPath();
+    g.moveTo(x - hw + 4, y - hh + 4);
+    g.lineTo(x + hw - 4, y - hh + 4);
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(233,184,92,0.35)';
+    g.stroke();
 }
 
 function shadowText(g, text, x, y, color, shadow = true) {
@@ -325,13 +433,83 @@ void main() {
 class GlScene {
     constructor(canvas) {
         this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-        this.renderer.setClearColor(0x0d0f15, 1);
+        this.renderer.setClearColor(SKY, 1);
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
         this.groups = new THREE.Group();
         this.scene.add(this.groups);
+        this.nebula = this.makeNebula();
+        this.scene.add(this.nebula);
+        this.stars = this.makeStars();
+        this.scene.add(this.stars);
+        this.constellations = this.makeConstellations();
+        this.scene.add(this.constellations);
         this.motes = this.makeMotes();
         this.scene.add(this.motes);
+    }
+
+    /** Big soft clouds of violet, blue and teal behind everything. */
+    makeNebula() {
+        const blobs = [[0, 0, 900, [0.35, 0.22, 0.75], 0.5], [-700, -500, 1100, [0.15, 0.25, 0.7], 0.45], [800, 400, 1000, [0.1, 0.45, 0.55], 0.35],
+            [600, -800, 800, [0.5, 0.2, 0.6], 0.3], [-900, 700, 900, [0.2, 0.3, 0.75], 0.35], [200, 1100, 700, [0.45, 0.25, 0.65], 0.25]];
+        const pos = new Float32Array(blobs.length * 3), col = new Float32Array(blobs.length * 3), size = new Float32Array(blobs.length), str = new Float32Array(blobs.length);
+        blobs.forEach(([x, y, s, c, a], i) => { pos.set([x, y, -2], i * 3); col.set(c, i * 3); size[i] = s; str[i] = a; });
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        geom.setAttribute('size', new THREE.BufferAttribute(size, 1));
+        geom.setAttribute('strength', new THREE.BufferAttribute(str, 1));
+        this.nebulaMaterial = this.glowMaterial(true);
+        return new THREE.Points(geom, this.nebulaMaterial);
+    }
+
+    /** Sharp little stars of a fixed size on screen, twinkling. */
+    makeStars() {
+        const count = 1600;
+        const pos = new Float32Array(count * 3), seed = new Float32Array(count), size = new Float32Array(count);
+        for (let i = 0; i < count; i++) {
+            const r = Math.sqrt(Math.random()) * 2600, a = Math.random() * Math.PI * 2;
+            pos.set([Math.cos(a) * r, Math.sin(a) * r, -1.5], i * 3);
+            seed[i] = Math.random() * 100;
+            size[i] = Math.random() < 0.06 ? 3.2 + Math.random() * 1.5 : 1.2 + Math.random() * 1.4;
+        }
+        this.starPositions = pos;
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geom.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+        geom.setAttribute('size', new THREE.BufferAttribute(size, 1));
+        this.starMaterial = new THREE.ShaderMaterial({
+            uniforms: { time: { value: 0 }, pixelRatio: { value: window.devicePixelRatio || 1 } },
+            vertexShader: `attribute float seed; attribute float size; varying float vTwinkle; uniform float time; uniform float pixelRatio;
+                void main() { vTwinkle = 0.55 + 0.45 * sin(time * (0.8 + fract(seed) * 2.2) + seed); gl_PointSize = size * pixelRatio * (0.8 + 0.4 * vTwinkle);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `varying float vTwinkle; void main() { vec2 p = gl_PointCoord * 2.0 - 1.0; float d = dot(p, p); if (d > 1.0) discard;
+                float a = (1.0 - d) * vTwinkle; gl_FragColor = vec4(vec3(0.85, 0.9, 1.0) * a, a); }`,
+            transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+        });
+        return new THREE.Points(geom, this.starMaterial);
+    }
+
+    /** Faint lines joining a few of the background stars, as on a star chart. */
+    makeConstellations() {
+        const pos = this.starPositions, pts = [];
+        for (let k = 0; k < 40; k++) {
+            let i = Math.floor(Math.random() * (pos.length / 3));
+            for (let step = 0; step < 4; step++) {
+                let best = -1, bestD = Infinity;
+                for (let tries = 0; tries < 60; tries++) {
+                    const j = Math.floor(Math.random() * (pos.length / 3));
+                    const d = Math.hypot(pos[j * 3] - pos[i * 3], pos[j * 3 + 1] - pos[i * 3 + 1]);
+                    if (d > 60 && d < 240 && d < bestD) { best = j; bestD = d; }
+                }
+                if (best < 0) break;
+                pts.push(pos[i * 3], pos[i * 3 + 1], -1.4, pos[best * 3], pos[best * 3 + 1], -1.4);
+                i = best;
+            }
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+        return new THREE.LineSegments(geom, new THREE.LineBasicMaterial({ color: 0x8fa2ff, transparent: true, opacity: 0.12 }));
     }
 
     makeMotes() {
@@ -342,10 +520,10 @@ class GlScene {
             pos[i * 3] = Math.cos(a) * r;
             pos[i * 3 + 1] = Math.sin(a) * r;
             pos[i * 3 + 2] = -1;
-            const warm = Math.random() < 0.5;
-            col.set(warm ? [0.95, 0.75, 0.45] : [0.55, 0.65, 0.95], i * 3);
-            size[i] = 6 + Math.random() * 14;
-            str[i] = 0.15 + Math.random() * 0.35;
+            const warm = Math.random() < 0.25;
+            col.set(warm ? [0.95, 0.78, 0.45] : [0.55, 0.65, 1.0], i * 3);
+            size[i] = 5 + Math.random() * 10;
+            str[i] = 0.08 + Math.random() * 0.2;
         }
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -356,7 +534,7 @@ class GlScene {
         return new THREE.Points(geom, this.moteMaterial);
     }
 
-    glowMaterial() {
+    glowMaterial(soft) {
         return new THREE.ShaderMaterial({
             uniforms: { zoom: { value: 1 }, pixelRatio: { value: window.devicePixelRatio || 1 } },
             vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG,
@@ -369,22 +547,56 @@ class GlScene {
         this.groups.clear();
         this.nodeMeshes = new Map();
 
-        // rings
+        // rings: faint orbits
         for (let tier = 0; tier < 4; tier++) {
             const ring = new THREE.RingGeometry(FIRST_RING + tier * RING_STEP - 0.8, FIRST_RING + tier * RING_STEP + 0.8, 160);
-            const mesh = new THREE.Mesh(ring, new THREE.MeshBasicMaterial({ color: 0xece4d6, transparent: true, opacity: 0.06 }));
+            const mesh = new THREE.Mesh(ring, new THREE.MeshBasicMaterial({ color: 0x96aaff, transparent: true, opacity: 0.07 }));
             mesh.position.z = -0.8;
             this.groups.add(mesh);
+        }
+
+        // the compass rays: long gold ones to each tree, short ones between
+        const gold = new THREE.Color(GOLD);
+        for (let i = 0; i < map.hubs.length * 2; i++) {
+            const a = -Math.PI / 2 + i * Math.PI / map.hubs.length;
+            const long = i % 2 === 0;
+            const reach = long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40, side = long ? 10 : 6, base = MEDALLION_RADIUS * 0.8;
+            const ox = Math.cos(a), oy = -Math.sin(a), px = -oy, py = ox;
+            const shape = new THREE.Shape();
+            shape.moveTo(ox * base + px * side, oy * base + py * side);
+            shape.lineTo(ox * reach, oy * reach);
+            shape.lineTo(ox * base - px * side, oy * base - py * side);
+            const ray = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: gold, transparent: true, opacity: long ? 0.85 : 0.45 }));
+            ray.position.z = -0.2;
+            this.groups.add(ray);
+        }
+
+        // the medallion: a dark disc in a double gold ring with the raven, glowing softly
+        {
+            const disc = new THREE.Mesh(new THREE.CircleGeometry(MEDALLION_RADIUS, 64), new THREE.MeshBasicMaterial({ color: 0x100c26 }));
+            disc.position.z = 0.05;
+            const outer = new THREE.Mesh(new THREE.RingGeometry(MEDALLION_RADIUS - 2, MEDALLION_RADIUS + 4, 64), new THREE.MeshBasicMaterial({ color: gold }));
+            outer.position.z = 0.1;
+            const inner = new THREE.Mesh(new THREE.RingGeometry(MEDALLION_RADIUS * 0.84 - 1, MEDALLION_RADIUS * 0.84 + 1, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(GOLD_DEEP) }));
+            inner.position.z = 0.1;
+            const c = document.createElement('canvas');
+            c.width = c.height = 256;
+            drawRaven(c.getContext('2d'), 128, 130, 84);
+            const texture = new THREE.CanvasTexture(c);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            const emblem = new THREE.Mesh(new THREE.PlaneGeometry(MEDALLION_RADIUS * 2, MEDALLION_RADIUS * 2), new THREE.MeshBasicMaterial({ map: texture, transparent: true }));
+            emblem.position.z = 0.15;
+            this.groups.add(disc, outer, inner, emblem);
         }
 
         // links
         for (const l of map.links) {
             const on = (l.a.state === undefined || lit(l.a)) && lit(l.b);
             const color = new THREE.Color(map.hubs[l.tree].color);
-            const width = on ? 4 : 2;
+            const width = on ? 3.5 : 1.6;
             const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y, len = Math.hypot(dx, dy);
             const geom = new THREE.PlaneGeometry(len, width);
-            const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: on ? 0.9 : 0.2 }));
+            const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: on ? color : new THREE.Color(0xaab9ff), transparent: true, opacity: on ? 0.95 : 0.16 }));
             mesh.position.set((l.a.x + l.b.x) / 2, -(l.a.y + l.b.y) / 2, -0.5);
             mesh.rotation.z = -Math.atan2(dy, dx);
             this.groups.add(mesh);
@@ -406,8 +618,8 @@ class GlScene {
             const c = new THREE.Color(hub.color);
             pos.set([hub.x, -hub.y, -0.3], i * 3);
             col.set([c.r, c.g, c.b], i * 3);
-            size[i] = 180;
-            str[i] = 0.35;
+            size[i] = 150;
+            str[i] = 0.28;
         });
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -424,14 +636,30 @@ class GlScene {
         for (const n of map.nodes) {
             const color = new THREE.Color(map.hubs[n.tree].color);
             const shape = shapeOf(n.kind, n.r);
-            const face = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), new THREE.MeshBasicMaterial({ color: lit(n) ? color.clone().multiplyScalar(0.85) : new THREE.Color(0x12141b) }));
+            const face = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), new THREE.MeshBasicMaterial({ color: lit(n) ? color.clone().multiplyScalar(0.9) : new THREE.Color(NODE_DARK) }));
             face.position.set(n.x, -n.y, 0);
-            const rimShape = shapeOf(n.kind, n.r + 4.5);
+            const rimShape = shapeOf(n.kind, n.r + 4);
             rimShape.holes.push(pathOf(n.kind, n.r));
-            const rim = new THREE.Mesh(new THREE.ShapeGeometry(rimShape, 24), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: STATE_ALPHA[n.state] ?? 0.5 }));
+            const locked = n.state === 'locked';
+            const rim = new THREE.Mesh(new THREE.ShapeGeometry(rimShape, 24), new THREE.MeshBasicMaterial({ color: locked ? new THREE.Color(STONE) : color, transparent: true, opacity: locked ? 0.85 : STATE_ALPHA[n.state] ?? 0.5 }));
             rim.position.set(n.x, -n.y, 0.1);
             this.groups.add(face);
             this.groups.add(rim);
+            if (lit(n)) {
+                // learned: a gold ring round the star, and a sparkle in its middle
+                const ringShape = shapeOf(n.kind, n.r + 8.5);
+                ringShape.holes.push(pathOf(n.kind, n.r + 6));
+                const ring = new THREE.Mesh(new THREE.ShapeGeometry(ringShape, 24), new THREE.MeshBasicMaterial({ color: gold }));
+                ring.position.set(n.x, -n.y, 0.12);
+                this.groups.add(ring);
+                const spark = new THREE.Shape();
+                const s = n.r * 0.55;
+                spark.moveTo(0, s); spark.lineTo(s * 0.22, s * 0.22); spark.lineTo(s, 0); spark.lineTo(s * 0.22, -s * 0.22);
+                spark.lineTo(0, -s); spark.lineTo(-s * 0.22, -s * 0.22); spark.lineTo(-s, 0); spark.lineTo(-s * 0.22, s * 0.22);
+                const sparkle = new THREE.Mesh(new THREE.ShapeGeometry(spark), new THREE.MeshBasicMaterial({ color: 0xfff6dc, transparent: true, opacity: 0.9 }));
+                sparkle.position.set(n.x, -n.y, 0.13);
+                this.groups.add(sparkle);
+            }
             this.nodeMeshes.set(n.id, { face, rim, node: n });
 
             if (n.max > 1 && n.rank > 0) {
@@ -445,9 +673,9 @@ class GlScene {
         // hubs
         for (const hub of map.hubs) {
             const color = new THREE.Color(hub.color);
-            const disc = new THREE.Mesh(new THREE.CircleGeometry(34, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16 }));
+            const disc = new THREE.Mesh(new THREE.CircleGeometry(30, 40), new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.35) }));
             disc.position.set(hub.x, -hub.y, -0.1);
-            const rim = new THREE.Mesh(new THREE.RingGeometry(33, 36, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 }));
+            const rim = new THREE.Mesh(new THREE.RingGeometry(30, 35, 40), new THREE.MeshBasicMaterial({ color: gold }));
             rim.position.set(hub.x, -hub.y, 0);
             this.groups.add(disc);
             this.groups.add(rim);
@@ -475,6 +703,9 @@ class GlScene {
 
         this.moteMaterial.uniforms.zoom.value = Math.max(0.4, cam.zoom);
         this.motes.rotation.z = time * 0.004;
+        this.starMaterial.uniforms.time.value = time;
+        this.nebulaMaterial.uniforms.zoom.value = cam.zoom;
+        this.nebula.rotation.z = time * 0.002;
         if (this.glows) {
             this.glowMat.uniforms.zoom.value = cam.zoom;
             const str = this.glows.geometry.attributes.strength;

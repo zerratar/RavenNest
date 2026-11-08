@@ -5701,12 +5701,25 @@ a.rf-badge:hover {
 .rf-trees__rule { max-width: 15rem; }
 .rf-trees__views { display: flex; gap: var(--rf-space-2); }
 .rf-trees__mapwrap { position: relative; display: flex; flex-direction: column; gap: var(--rf-space-2); }
-.rf-trees__map { position: relative; width: 100%; height: min(72vh, 760px); min-height: 360px; border-radius: var(--rf-radius); overflow: hidden; background: #0d0f15; }
+.rf-trees__map { position: relative; width: 100%; height: min(72vh, 760px); min-height: 360px; border-radius: var(--rf-radius); overflow: hidden; background: #060a1c; box-shadow: inset 0 0 0 1px rgba(233,184,92,0.55), inset 0 0 0 4px rgba(14,12,30,0.9), inset 0 0 0 5px rgba(233,184,92,0.25); }
 .rf-trees__map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .rf-trees__mapcontrols { position: absolute; top: calc(var(--rf-space-4) + 4px); right: calc(var(--rf-space-4) + 4px); display: flex; gap: 4px; }
 .rf-trees__hint { margin: 0; }
-.rf-trees__picked { border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius); padding: var(--rf-space-3); background: var(--rf-surface-2); display: flex; flex-direction: column; gap: var(--rf-space-2); }
-.rf-trees__picked.is-learned { border-color: var(--rf-line-gold); background: var(--rf-gold-wash); }
+.rf-trees__picked { border: 1px solid rgba(233,184,92,0.55); border-radius: var(--rf-radius); padding: var(--rf-space-3) var(--rf-space-4); background: linear-gradient(180deg, #121836 0%, #0b1026 100%); box-shadow: 0 0 0 3px rgba(14,12,30,0.8), 0 0 0 4px rgba(233,184,92,0.2); display: flex; flex-direction: column; gap: var(--rf-space-2); }
+.rf-trees__picked strong { color: #fbe7b8; font-size: 1.15rem; }
+.rf-trees__picked.is-learned { border-color: #e9b85c; background: linear-gradient(180deg, #1c1a3a 0%, #0f1028 100%); }
+.rf-trees__picked--empty { color: var(--rf-ink-muted); justify-content: center; text-align: center; min-height: 6rem; }
+/* wide screens: the chosen skill beside the map, as in the star map mockup */
+@media (min-width: 1100px) {
+    .rf-trees__mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; column-gap: var(--rf-space-4); }
+    /* the planner: wider than the page column, the map is the page's centrepiece */
+    .rf-trees__mapwrap--wide { width: min(1500px, calc(100vw - 48px)); margin-left: calc(50% - min(750px, calc(50vw - 24px))); }
+    .rf-trees__mapwrap > .rf-trees__map { height: min(80vh, 880px); }
+    .rf-trees__mapwrap > .rf-trees__map { grid-column: 1; grid-row: 1; }
+    .rf-trees__mapwrap > .rf-trees__picked { grid-column: 2; grid-row: 1; position: sticky; top: var(--rf-space-4); }
+    .rf-trees__mapwrap > .rf-trees__hint { grid-column: 1 / -1; }
+    .rf-trees__mapcontrols { right: calc(22rem + var(--rf-space-4) * 2 + 4px); }
+}
 @media (max-width: 600px) { .rf-trees__map { height: 62vh; } }
 .rf-trees__levels { display: flex; flex-wrap: wrap; gap: var(--rf-space-2); }
 .rf-trees__levels input { width: 5rem; background: var(--rf-surface-3); color: inherit; border: 1px solid var(--rf-line-strong); border-radius: var(--rf-radius-sm); padding: 0.2rem 0.4rem; }
