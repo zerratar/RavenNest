@@ -82,6 +82,65 @@ namespace RavenNest.Combat
             return null;
         }
 
+        /// <summary>
+        ///     Level sync (Zerratar 2026-11-08): on a floor nobody fights above the floor's level plus this share, so a
+        ///     fixed boss stays a climb for a stream of any size and level. Gear, skill trees and gems still count.
+        /// </summary>
+        public static double SyncMargin = 1.1;
+
+        /// <summary>The highest level a skill counts at on a floor.</summary>
+        public static int SyncLevel(int floor) => (int)Math.Ceiling(Level(floor) * SyncMargin);
+
+        // the best gear wearable at a level (the simulator's gearcaps, from the item list, 2026-11-08): level, melee
+        // power, melee accuracy, ranged power, ranged accuracy, magic power, magic accuracy, armour
+        private static readonly int[,] GearSteps =
+        {
+            { 1, 118, 113, 92, 77, 92, 77, 100 },
+            { 10, 118, 113, 100, 85, 100, 85, 134 },
+            { 20, 118, 113, 100, 91, 100, 91, 166 },
+            { 30, 118, 113, 109, 94, 109, 94, 179 },
+            { 40, 144, 139, 109, 94, 109, 94, 179 },
+            { 50, 144, 139, 122, 107, 122, 107, 239 },
+            { 60, 144, 139, 128, 123, 122, 107, 239 },
+            { 70, 150, 129, 148, 133, 148, 133, 328 },
+            { 80, 163, 158, 148, 133, 148, 133, 328 },
+            { 90, 163, 158, 162, 147, 162, 147, 392 },
+            { 120, 185, 180, 180, 165, 180, 165, 572 },
+            { 150, 211, 186, 206, 191, 206, 191, 653 },
+            { 200, 246, 216, 238, 223, 238, 223, 743 },
+            { 300, 289, 253, 278, 263, 278, 263, 843 },
+            { 500, 587, 479, 546, 531, 546, 531, 1600 },
+            { 999, 927, 750, 854, 839, 854, 839, 2631 },
+        };
+
+        /// <summary>
+        ///     Level sync for gear: on a floor, power, accuracy and armour count up to the best gear wearable at the floor's
+        ///     sync level, so gear above it gives nothing more there; gear below it counts as it is, and every other gear stat
+        ///     (crits, elements, attack speed, enchantments) counts in full.
+        /// </summary>
+        public static void CapGear(CombatSheet sheet, int level)
+        {
+            if (sheet == null || level <= 0) return;
+            var row = 0;
+            for (var i = 0; i < GearSteps.GetLength(0); ++i) if (GearSteps[i, 0] <= level) row = i;
+            sheet.Melee.Power = Math.Min(sheet.Melee.Power, GearSteps[row, 1]);
+            sheet.Melee.Accuracy = Math.Min(sheet.Melee.Accuracy, GearSteps[row, 2]);
+            sheet.Ranged.Power = Math.Min(sheet.Ranged.Power, GearSteps[row, 3]);
+            sheet.Ranged.Accuracy = Math.Min(sheet.Ranged.Accuracy, GearSteps[row, 4]);
+            sheet.Magic.Power = Math.Min(sheet.Magic.Power, GearSteps[row, 5]);
+            sheet.Magic.Accuracy = Math.Min(sheet.Magic.Accuracy, GearSteps[row, 6]);
+            sheet.Healing.Power = Math.Min(sheet.Healing.Power, GearSteps[row, 5]);
+            sheet.Armor = Math.Min(sheet.Armor, GearSteps[row, 7]);
+        }
+
+        /// <summary>Level sync on a floor: skill levels, the health pool and gear capped at the floor's sync level.</summary>
+        public static void Sync(CombatSheet sheet, int floor, int gearHealth = 0)
+        {
+            var level = SyncLevel(floor);
+            sheet.CapLevels(level, gearHealth);
+            CapGear(sheet, level);
+        }
+
         /// <summary>The combat level a floor is made for: ten per floor, so floor 100 is made for level 1,000.</summary>
         public static int Level(int floor) => Math.Max(1, floor * 10);
 

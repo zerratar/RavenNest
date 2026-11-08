@@ -1,3 +1,4 @@
+using System;
 namespace RavenNest.Combat
 {
     public enum AttackStyle
@@ -134,6 +135,23 @@ namespace RavenNest.Combat
                 case AttackStyle.Healing: return Healing;
                 default: return Melee;
             }
+        }
+
+        /// <summary>
+        ///     Level sync (the tower, docs/tower-design.md section 12): no skill level counts above <paramref name="cap"/>;
+        ///     gear, skill trees and gems stay as they are. The health pool shrinks to the cap's, keeping what gear adds.
+        /// </summary>
+        public void CapLevels(int cap, int gearHealth = 0)
+        {
+            if (cap <= 0) return;
+            CombatLevel = Math.Min(CombatLevel, cap);
+            DefenseLevel = Math.Min(DefenseLevel, cap);
+            foreach (var s in new[] { Melee, Ranged, Magic, Healing })
+            {
+                s.AimLevel = Math.Min(s.AimLevel, cap);
+                s.DamageLevel = Math.Min(s.DamageLevel, cap);
+            }
+            MaxHealth = Math.Min(MaxHealth, CombatMath.MaxHealth(cap) + Math.Max(0, gearHealth));
         }
 
         public CombatSheet Copy()

@@ -19,10 +19,10 @@ namespace RavenNest.CombatSimulator
         public static void Run(GearPicker gear, int fights)
         {
             Console.WriteLine($"Tower bosses; {fights} attempts per cell. Each cell: attempts won / minutes per win.");
-            foreach (var levelShare in new[] { 1.0, 1.5 })
+            foreach (var (levelShare, sync) in new[] { (1.0, false), (1.5, false), (3.0, false), (3.0, true), (10.0, true) })
             {
                 Console.WriteLine();
-                Console.WriteLine($"Players at {levelShare:P0} of the floor's level:");
+                Console.WriteLine($"Players at {levelShare:P0} of the floor's level" + (sync ? $", level synced to {Tower.SyncMargin:P0} of it (gear of their own level):" : ":"));
                 Console.WriteLine($"{"Floor",5} {"Lvl",5} {"Boss HP",9} | " + string.Join(" | ", Groups.Select(g => $"{g + " players",13}")));
                 Console.WriteLine(new string('-', 24 + Groups.Length * 16));
                 var random = new SeededCombatRandom(7);
@@ -34,7 +34,7 @@ namespace RavenNest.CombatSimulator
                     var kit = gear.Melee(level);
                     var cells = Groups.Select(players =>
                     {
-                        var results = Enumerable.Range(0, fights).Select(_ => Fight(level, kit, players, floor, floor.Boss, sheet, boss.AttackInterval, random)).ToList();
+                        var results = Enumerable.Range(0, fights).Select(_ => Fight(level, kit, players, floor, floor.Boss, sheet, boss.AttackInterval, random, sync ? Tower.SyncLevel(floor.Number) : 0)).ToList();
                         var won = results.Count(r => r.Won) / (double)results.Count;
                         var wins = results.Where(r => r.Won).ToList();
                         var minutes = wins.Count > 0 ? wins.Average(r => r.Time) / 60 : 0;
@@ -69,9 +69,10 @@ namespace RavenNest.CombatSimulator
             public double Time;
         }
 
-        private static Result Fight(int level, Loadout kit, int players, TowerFloorDefinition floor, TowerBoss def, CombatSheet boss, double bossSwing, ICombatRandom random)
+        private static Result Fight(int level, Loadout kit, int players, TowerFloorDefinition floor, TowerBoss def, CombatSheet boss, double bossSwing, ICombatRandom random, int syncLevel = 0)
         {
             var player = Player(level, kit);
+            if (syncLevel > 0) Tower.Sync(player, floor.Number);
             var health = Enumerable.Repeat((double)player.MaxHealth, players).ToArray();
             var nextSwing = Enumerable.Range(0, players).Select(i => PlayerSwing * i / players).ToArray();
             var bossHealth = (double)boss.MaxHealth;

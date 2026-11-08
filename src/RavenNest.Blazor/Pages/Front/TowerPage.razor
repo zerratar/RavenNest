@@ -26,6 +26,9 @@
             the next one opens, and everyone who fought gets coins and a chest.
         </p>
         <p class="rf-tower__rules">
+            <b>Level sync:</b> on a floor everyone fights as if at most a tenth above the floor's level: skill levels, health
+            and gear count only up to that, while skill trees, gems, crits and elements count in full. A stream of veterans
+            climbs the same tower as a new one.
             A boss attempt lasts at most @(Tower.BossTimeLimitSeconds / 60) minutes. Whoever falls is out of the attempt;
             if everyone falls, the stream regroups for @(Tower.BossRetrySeconds / 60) minutes before the next try.
             Floors come out a band of ten at a time. A floor stays a mystery until some stream reaches it.
@@ -75,7 +78,7 @@
                             <h3 class="rf-card__title">@floor.Name</h3>
                             <p class="rf-tower__text">@floor.Description</p>
                             <div class="rf-tower__facts">
-                                <span><b>Made for</b> combat level @floor.Level, @floor.GroupSize players</span>
+                                <span><b>Made for</b> combat level @floor.Level, @floor.GroupSize players (synced to level @Tower.SyncLevel(floor.Number))</span>
                                 <span><b>Quests</b> @string.Join(", ", floor.Quests.Select(q => q.Text))</span>
                                 <span><b>Boss</b> @floor.Boss.Name</span>
                             </div>
