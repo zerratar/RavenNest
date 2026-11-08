@@ -4371,7 +4371,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Pet GetActivePet(Guid characterId) => pets[nameof(Character), characterId].FirstOrDefault(x => x.Active);
+        public Pet GetActivePet(Guid characterId) => pets[nameof(Character), characterId].FirstOrDefault(x => x.Active && !string.IsNullOrEmpty(x.Species)); // a battle pet (old rows have no species)
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Pet> GetPets(Guid characterId) => pets[nameof(Character), characterId];

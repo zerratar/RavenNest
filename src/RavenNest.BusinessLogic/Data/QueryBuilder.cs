@@ -166,7 +166,9 @@ namespace RavenNest.BusinessLogic.Data
 
         private static SqlParameter DeclareParameter(string name, Type type)
         {
-            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return new SqlParameter(name, SqlDbType.NVarChar, -1);
+            if (type == typeof(string) || type == typeof(char)) return new SqlParameter(name, SqlDbType.NVarChar, -1);
+            // as ticks, like EF reads it back (Pet.PlayTime is a bigint column; text failed every save of a pet)
+            if (type == typeof(TimeSpan)) return new SqlParameter(name, SqlDbType.BigInt);
             if (type == typeof(DateTime)) return new SqlParameter(name, SqlDbType.DateTime2);
             if (type == typeof(Guid)) return new SqlParameter(name, SqlDbType.UniqueIdentifier);
             if (type.IsEnum) return new SqlParameter(name, SqlDbType.Int);
@@ -181,7 +183,8 @@ namespace RavenNest.BusinessLogic.Data
 
         private static object ParameterValue(Type type, object value)
         {
-            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return value.ToString();
+            if (type == typeof(string) || type == typeof(char)) return value.ToString();
+            if (type == typeof(TimeSpan)) return ((TimeSpan)value).Ticks;
             if (type == typeof(DateTime) || type == typeof(Guid) || type == typeof(bool)) return value;
             if (type.IsEnum) return Convert.ToInt32(value);
             if (type == typeof(double))
@@ -298,9 +301,10 @@ namespace RavenNest.BusinessLogic.Data
         {
 
             if (value == null) return "NULL";
+            if (value is TimeSpan ticks) return ticks.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture); // a bigint column, as EF reads it
             if (type == typeof(string) || type == typeof(char)
-                || type == typeof(DateTime) || type == typeof(TimeSpan)
-                || type == typeof(DateTime?) || type == typeof(TimeSpan?)
+                || type == typeof(DateTime)
+                || type == typeof(DateTime?)
                 || type == typeof(Guid?) || type == typeof(Guid))
             {
                 return $"'{Sanitize(value?.ToString())}'";

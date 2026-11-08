@@ -298,7 +298,7 @@ namespace RavenNest.Combat
             var needSkill = EvolveSkillLevels[stage];
             var parts = new List<string>();
             if (petLevel < needLevel) parts.Add("pet level " + needLevel);
-            if (petSkillLevel < needSkill) parts.Add("pet skill level " + needSkill);
+            if (petSkillLevel < needSkill) parts.Add("Taming " + needSkill);
             if (parts.Count == 0) return true;
             missing = string.Join(" and ", parts);
             return false;

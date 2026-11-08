@@ -225,7 +225,7 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>Experience the pet earned while out: levels up to the owner's Taming level, new skills fill empty slots.</summary>
         public PetResult AddExperience(SessionToken token, Guid characterId, Guid petId, double experience)
         {
-            var character = GetCharacter(token, characterId);
+            var character = GetCharacter(token, characterId) ?? JustLeft(token, characterId);
             if (character == null) return PetResult.Fail(PetResultStatus.Error);
             if (double.IsNaN(experience) || experience <= 0) return PetResult.Fail(PetResultStatus.Error);
             lock (mutex)
@@ -251,8 +251,8 @@ namespace RavenNest.BusinessLogic.Game
                     pet.Level++;
                     gained++;
                 }
-                // at the cap, it keeps what it has towards the next level, no more
-                if (pet.Level >= cap) exp = Math.Min(exp, (long)GameMath.ExperienceForLevel(pet.Level + 1) - 1);
+                // at the cap, the experience is kept and spent once Taming is higher: the game saves Taming's level a
+                // little after it reports the pet's experience, so a pet at the cap would otherwise lose some every time
                 pet.Experience = Math.Max(0, exp);
                 if (gained > 0) FillSlots(pet, BattlePets.GetSpecies(pet.Species), TamingLevel(character));
                 return new PetResult { Status = PetResultStatus.Ok, Pet = Map(pet), LevelsGained = gained, StableSize = StableSize(character) };
@@ -332,7 +332,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Id = Guid.NewGuid(),
                 CharacterId = character.Id,
-                Name = source == PetSource.Companion && item != null ? item.Name : species.NameAt(0),
+                Name = species.NameAt(0), // its kind's name (not "... Pet"), so evolving renames it too
                 DateOfBirth = DateTime.UtcNow,
                 Level = 1,
                 Experience = 0,
@@ -417,6 +417,18 @@ namespace RavenNest.BusinessLogic.Game
             ItemId = p.ItemId,
             Active = p.Active,
         };
+
+        /// <summary>
+        ///     A character that has just left this session: a leaving player's last pet experience is sent as they go,
+        ///     and the remove can be handled first (each command runs on its own), so it would be lost otherwise.
+        /// </summary>
+        private Character JustLeft(SessionToken token, Guid characterId)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null) return null;
+            var character = gameData.GetCharacter(characterId);
+            return character != null && character.UserIdLock == null && character.PrevUserIdLock == session.UserId ? character : null;
+        }
 
         private Character GetCharacter(SessionToken token, Guid characterId)
         {
