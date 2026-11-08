@@ -12,6 +12,7 @@ namespace RavenNest.BusinessLogic.Game
         public Guid? TransmogrificationId { get; }
         public string Name { get; }
         public string Enchantment { get; }
+        public string Sockets { get; }
         public int Flags { get; }
         public long Amount { get; }
         public bool Equipped { get; }
@@ -25,6 +26,7 @@ namespace RavenNest.BusinessLogic.Game
             Guid? transmogrificationId,
             string name,
             string enchantment,
+            string sockets,
             long amount,
             bool equipped,
             string tag,
@@ -39,6 +41,7 @@ namespace RavenNest.BusinessLogic.Game
             Name = name;
             Flags = flags;
             Enchantment = enchantment;
+            Sockets = sockets;
             Amount = amount;
             Equipped = equipped;
             Item = item;
@@ -58,6 +61,7 @@ namespace RavenNest.BusinessLogic.Game
                 item.TransmogrificationId,
                 item.Name,
                 item.Enchantment,
+                item.Sockets,
                 item.Amount ?? 1,
                 item.Equipped,
                 item.Tag,
@@ -105,6 +109,7 @@ namespace RavenNest.BusinessLogic.Game
                 TransmogrificationId = TransmogrificationId,
                 Name = Name,
                 Enchantment = Enchantment,
+                Sockets = Sockets,
                 Amount = Amount,
                 Equipped = Equipped,
                 Tag = Tag,

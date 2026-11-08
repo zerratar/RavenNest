@@ -312,6 +312,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 ItemId = items.ItemId,
                 Tag = items.Tag,
                 Enchantment = items.Enchantment,
+                Sockets = items.Sockets,
                 Flags = items.Flags ?? 0,
                 Name = items.Name,
                 Soulbound = items.Soulbound,

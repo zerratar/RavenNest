@@ -55,6 +55,7 @@ namespace RavenNest.BusinessLogic.Net.V2
                     Soulbound = item.Soulbound,
                     Name = item.Name,
                     Enchantment = item.Enchantment,
+                    Sockets = item.Sockets,
                     Tag = item.Tag,
                     TransmogrificationId = item.TransmogrificationId,
                     Flags = item.Flags
@@ -75,7 +76,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly Dictionary<string, Handler> handlers = new Dictionary<string, Handler>(StringComparer.Ordinal);
         private readonly PlayerInventoryProvider inventories;
 
-        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed)
+        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed, Game.GemManager gems)
         {
             this.inventories = inventories;
             var p = players;
@@ -113,6 +114,12 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.Disenchant, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.DisenchantItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.EnchantmentCooldown, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return p.GetEnchantmentCooldown(c.SessionToken, ch); });
             Add(Commands.ClearEnchantmentCooldown, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ClearEnchantmentCooldown(c.SessionToken, ch); });
+
+            // gems
+            Add(Commands.GemEnchant, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int kind, out int amount); c.Watch(ch); return gems.Enchant(c.SessionToken, ch, kind, amount); });
+            Add(Commands.GemCombine, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int kind, out int tier, out int times); c.Watch(ch); return gems.Combine(c.SessionToken, ch, kind, tier, times); });
+            Add(Commands.GemSocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int kind, out int tier, out int socket); c.Watch(ch); return gems.Socket(c.SessionToken, ch, inv, kind, tier, socket); });
+            Add(Commands.GemUnsocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int socket); c.Watch(ch); return gems.Unsocket(c.SessionToken, ch, inv, socket); });
 
             // raids and dungeons
             Add(Commands.AutoJoinRaid, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinRaid(c.SessionToken, ids ?? Array.Empty<Guid>()); });
@@ -240,7 +247,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private static bool Same(InventoryStack a, InventoryStack b)
         {
             return a.ItemId == b.ItemId && a.Amount == b.Amount && a.Equipped == b.Equipped && a.Soulbound == b.Soulbound
-                && a.Name == b.Name && a.Enchantment == b.Enchantment && a.Tag == b.Tag
+                && a.Name == b.Name && a.Enchantment == b.Enchantment && a.Sockets == b.Sockets && a.Tag == b.Tag
                 && a.TransmogrificationId == b.TransmogrificationId && a.Flags == b.Flags;
         }
     }

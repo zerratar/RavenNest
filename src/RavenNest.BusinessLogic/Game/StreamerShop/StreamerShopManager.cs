@@ -495,6 +495,7 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
             if (item == null) reason = "This item no longer exists.";
             else if (amount <= 0) reason = "None left.";
             else if (item.Soulbound || instanceSoulbound) reason = "Soulbound items cannot be sold.";
+            else if (stack.Sockets != null) reason = "Items with gems in them cannot be put on a shelf.";
             else if (stack.TransmogrificationId != null) reason = "Transmogrified items cannot be sold.";
             else if (item.Category == (int)DataModels.ItemCategory.StreamerToken || item.Type == (int)DataModels.ItemType.StreamerToken) reason = "Tokens cannot be sold.";
 

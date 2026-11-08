@@ -263,6 +263,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = item.Id,
                 Amount = item.Amount,
                 Enchantment = item.Enchantment,
+                Sockets = item.Sockets,
                 Equipped = item.Equipped,
                 Flags = item.Flags,
                 ItemId = item.ItemId,

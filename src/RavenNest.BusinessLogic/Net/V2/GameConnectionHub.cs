@@ -41,6 +41,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             SessionManager sessionManager,
             PlayerInventoryProvider inventories,
             Game.StreamerShop.StreamerShopManager shop,
+            Game.GemManager gems,
             IGameProcessorManager gameProcessors,
             GameConnectionTokens tokens,
             GameEventRouter eventRouter,
@@ -52,7 +53,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             Players = playerManager;
             GameProcessors = gameProcessors;
             Inventory = new InventoryFeed(gameData, userId => sessionsByUser.TryGetValue(userId, out var s) ? s : null, logger);
-            Commands = new CommandDispatcher(playerManager, inventories, shop, Inventory);
+            Commands = new CommandDispatcher(playerManager, inventories, shop, Inventory, gems);
             this.inventories = inventories;
             this.tokens = tokens;
             this.sessionManager = sessionManager;

@@ -45,6 +45,8 @@ namespace RavenNest.BusinessLogic.Game
         public readonly Guid? TransmogrificationId;
         public readonly string Name;
         public readonly int Flags;
+        /// <summary>Gems in the sockets: socketed gear is one of a kind, like enchanted gear.</summary>
+        public readonly string Sockets;
 
         public StackKey(
             Guid itemId,
@@ -52,7 +54,8 @@ namespace RavenNest.BusinessLogic.Game
             string enchantment,
             Guid? transmogrificationId,
             string name = null,
-            int? flags = null)
+            int? flags = null,
+            string sockets = null)
         {
             ItemId = itemId;
 
@@ -75,6 +78,8 @@ namespace RavenNest.BusinessLogic.Game
             // Same for flags, which is int on one representation and int? on another. Absent and
             // zero are the same absence.
             Flags = flags.GetValueOrDefault();
+
+            Sockets = string.IsNullOrEmpty(sockets) ? null : sockets;
         }
 
         /// <summary>
@@ -83,7 +88,7 @@ namespace RavenNest.BusinessLogic.Game
         ///     An enchantment or a transmogrification belongs to one specific item, so two of them
         ///     can never be the same thing however identical the rest of the key is.
         /// </summary>
-        public bool IsStackable => TransmogrificationId == null && Enchantment == null;
+        public bool IsStackable => TransmogrificationId == null && Enchantment == null && Sockets == null;
 
         /// <summary>
         ///     Whether two stacks can merge. Both have to be stackable at all, and then they have
@@ -101,12 +106,13 @@ namespace RavenNest.BusinessLogic.Game
                 && TransmogrificationId == other.TransmogrificationId
                 && string.Equals(Tag, other.Tag, StringComparison.Ordinal)
                 && string.Equals(Enchantment, other.Enchantment, StringComparison.Ordinal)
-                && string.Equals(Name, other.Name, StringComparison.Ordinal);
+                && string.Equals(Name, other.Name, StringComparison.Ordinal)
+                && string.Equals(Sockets, other.Sockets, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj) => obj is StackKey other && Equals(other);
 
-        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId, Name, Flags);
+        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId, Name, Flags, Sockets);
 
         public static bool operator ==(StackKey a, StackKey b) => a.Equals(b);
 
@@ -120,6 +126,7 @@ namespace RavenNest.BusinessLogic.Game
             if (TransmogrificationId != null) text += " skin:" + TransmogrificationId;
             if (Name != null) text += " name:" + Name;
             if (Flags != 0) text += " flags:" + Flags;
+            if (Sockets != null) text += " gems:" + Sockets;
             return text;
         }
     }
@@ -132,17 +139,17 @@ namespace RavenNest.BusinessLogic.Game
     {
         public static StackKey Key(this DataModels.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
         }
 
         public static StackKey Key(this DataModels.UserBankItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
         }
 
         public static StackKey Key(this DataModels.ClanBankItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
         }
 
         public static StackKey Key(this DataModels.StreamerShopListing item)
@@ -152,12 +159,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public static StackKey Key(this RavenNest.Models.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
         }
 
         public static StackKey Key(this ReadOnlyInventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
         }
 
         /// <summary>

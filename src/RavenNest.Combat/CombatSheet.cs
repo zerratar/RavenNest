@@ -111,6 +111,12 @@ namespace RavenNest.Combat
         public double LootLuck;
         public double CrowdControlDuration;
         public double UndeadDamage;
+        /// <summary>A share off the crit chance of blows against this fighter (gems).</summary>
+        public double CritResistance;
+        public double PoisonBonus;
+        public double LightningJumpBonus;
+        /// <summary>A share off combat skill cooldowns (capped at <see cref="CombatMath.MaxCooldownReduction"/>).</summary>
+        public double CooldownReduction;
 
         /// <summary>Health left as a share of the pool (1 is full): for execute damage and low health passives.</summary>
         public double CurrentHealthShare = 1;

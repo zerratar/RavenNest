@@ -674,6 +674,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureItemNamesWithoutApostrophes();
                 EnsureThemedGearStats();
+                EnsureGems();
 
                 FixVillageHouses();
 
@@ -968,6 +969,7 @@ namespace RavenNest.BusinessLogic.Data
                 Id = Guid.NewGuid(),
                 CharacterId = i.SellerCharacterId,
                 Enchantment = i.Enchantment,
+                Sockets = i.Sockets,
                 Flags = i.Flags,
                 ItemId = i.ItemId,
                 Name = i.Name,
@@ -984,6 +986,7 @@ namespace RavenNest.BusinessLogic.Data
                 Id = Guid.NewGuid(),
                 Amount = amount,
                 Enchantment = item.Enchantment,
+                Sockets = item.Sockets,
                 Flags = item.Flags ?? 0,
                 ItemId = item.ItemId,
                 Name = item.Name,

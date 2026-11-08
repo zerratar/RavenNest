@@ -15,6 +15,8 @@ namespace RavenNest.Models
         public string Tag { get; set; }
         public bool Soulbound { get; set; }
         public string Enchantment { get; set; }
+        /// <summary>Gems in the sockets (RavenNest.Combat.Gems.ParseSockets); null without gems.</summary>
+        public string Sockets { get; set; }
         public string Name { get; set; }
         public Guid? TransmogrificationId { get; set; }
         public int Flags { get; set; }
@@ -35,6 +37,8 @@ namespace RavenNest.Models
         public long Amount { get; set; }
         public string Name { get; set; }
         public string Enchantment { get; set; }
+        /// <summary>Gems in the sockets (RavenNest.Combat.Gems.ParseSockets); null without gems.</summary>
+        public string Sockets { get; set; }
         public string Tag { get; set; }
         public bool Soulbound { get; set; }
         public Guid? TransmogrificationId { get; set; }

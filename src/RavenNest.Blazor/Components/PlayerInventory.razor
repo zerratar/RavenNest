@@ -367,6 +367,13 @@
                             }
                         }
 
+                        @* gems in the sockets (!socket in the game) *@
+                        @foreach (var (label, value) in GemManager.SocketLines(item, itemDetailsDialogItem.Sockets))
+                        {
+                            <dt>@label</dt>
+                            <dd>@if (value == "empty") { <span class="rf-meta">empty</span> } else { <span class="rf-itemview__bonus">@value</span> }</dd>
+                        }
+
                         @if (item != null && item.RequiredAttackLevel > 0)
                         {
                             <dt>Requires attack</dt>

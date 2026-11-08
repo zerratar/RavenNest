@@ -91,6 +91,16 @@ namespace RavenNest.Combat
         CrowdControlDuration,
         /// <summary>A share more damage to the undead.</summary>
         UndeadDamage,
+
+        // gems (2026-11-08)
+        /// <summary>A share taken off the crit chance of blows against you (a Diamond in armour).</summary>
+        CritResistance,
+        /// <summary>Poison you cause hurts this share more (an Emerald in a ring or amulet).</summary>
+        PoisonBonus,
+        /// <summary>Your lightning's jumps hurt this share more (a Topaz in a ring or amulet).</summary>
+        LightningJumpBonus,
+        /// <summary>A share off your combat skills' cooldowns (an Amethyst in a ring or amulet; caps at 30%).</summary>
+        CooldownReduction,
     }
 
     /// <summary>
@@ -102,7 +112,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.UndeadDamage + 1;
+        public const int Count = (int)GearStat.CooldownReduction + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
@@ -415,6 +425,10 @@ namespace RavenNest.Combat
             sheet.LootLuck += this[GearStat.LootLuck];
             sheet.CrowdControlDuration += this[GearStat.CrowdControlDuration];
             sheet.UndeadDamage += this[GearStat.UndeadDamage];
+            sheet.CritResistance += this[GearStat.CritResistance];
+            sheet.PoisonBonus += this[GearStat.PoisonBonus];
+            sheet.LightningJumpBonus += this[GearStat.LightningJumpBonus];
+            sheet.CooldownReduction = Math.Min(CombatMath.MaxCooldownReduction, sheet.CooldownReduction + this[GearStat.CooldownReduction]);
             // health: the share is of the pool the sheet already holds (the game adds it to the Health pool itself)
             if (this[GearStat.MaxHealthBonus] != 0) sheet.MaxHealth = (int)(sheet.MaxHealth * (1 + this[GearStat.MaxHealthBonus]));
 

@@ -14,6 +14,7 @@ namespace RavenNest.Models
         public DateTime? Expires { get; set; }
         public DateTime? Created { get; set; }
         public string Enchantment { get; set; }
+        public string Sockets { get; set; }
         public string Name { get; set; }
         public Guid? TransmogrificationId { get; set; }
         public int Flags { get; set; }

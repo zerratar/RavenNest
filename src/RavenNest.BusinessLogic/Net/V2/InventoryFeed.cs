@@ -266,6 +266,7 @@ namespace RavenNest.BusinessLogic.Net.V2
                 Soulbound = item.Soulbound,
                 Name = item.Name,
                 Enchantment = item.Enchantment,
+                Sockets = item.Sockets,
                 Tag = item.Tag,
                 TransmogrificationId = item.TransmogrificationId,
                 Flags = item.Flags ?? 0

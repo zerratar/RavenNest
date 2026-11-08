@@ -1921,7 +1921,7 @@ namespace RavenNest.BusinessLogic.Game
             // back: a failed return therefore lost the goods and threw on the way out.
             if (!inventory.TryAddItem(itemId, amount, out var inventoryItems, tag: item.Tag,
                     enchantment: item.Enchantment, name: item.Name,
-                    transmogrificationId: item.TransmogrificationId, flags: item.Flags)
+                    transmogrificationId: item.TransmogrificationId, flags: item.Flags, sockets: item.Sockets)
                 || inventoryItems.Count == 0)
             {
                 logger.LogError($"Marketplace return aborted for listing '{item.Id}': unable to give {amount}x '{itemId}' back to character '{characterId}'. The listing is untouched.");

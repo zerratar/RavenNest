@@ -76,6 +76,8 @@ namespace RavenNest.Combat
         public const double DamageScale = 10;
 
         public const double BaseCritChance = 0.05;
+        /// <summary>The most combat skill cooldowns can be shortened (gems).</summary>
+        public const double MaxCooldownReduction = 0.3;
         public const double BaseCritDamage = 1.5;
         public const double MinHitChance = 0.05;
         public const double MaxHitChance = 0.95;
@@ -185,7 +187,7 @@ namespace RavenNest.Combat
             if (defender.IsBoss) raw *= 1 + attacker.BossDamage;
             if (defender.CurrentHealthShare < ExecuteThreshold) raw *= 1 + attacker.ExecuteDamage;
             if (defender.Family == EnemyFamily.Undead) raw *= 1 + attacker.UndeadDamage;
-            if (random.Next() < attacker.CritChance)
+            if (random.Next() < attacker.CritChance - defender.CritResistance)
             {
                 result.Critical = true;
                 raw *= Math.Max(1, attacker.CritDamage);

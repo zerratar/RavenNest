@@ -874,6 +874,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 CharacterId = this.characterId,
                 Enchantment = itemToCopy.Enchantment,
+                Sockets = itemToCopy.Sockets,
                 Flags = itemToCopy.Flags,
                 ItemId = itemToCopy.ItemId,
                 Name = itemToCopy.Name,
@@ -891,6 +892,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 CharacterId = this.characterId,
                 Enchantment = itemToCopy.Enchantment,
+                Sockets = itemToCopy.Sockets,
                 Flags = itemToCopy.Flags,
                 ItemId = itemToCopy.ItemId,
                 Name = itemToCopy.Name,
@@ -908,6 +910,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 CharacterId = this.characterId,
                 Enchantment = itemToCopy.Enchantment,
+                Sockets = itemToCopy.Sockets,
                 Flags = itemToCopy.Flags,
                 ItemId = itemToCopy.ItemId,
                 Name = itemToCopy.Name,
@@ -924,6 +927,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 CharacterId = this.characterId,
                 Enchantment = itemToCopy.Enchantment,
+                Sockets = itemToCopy.Sockets,
                 Flags = itemToCopy.Flags,
                 ItemId = itemToCopy.ItemId,
                 Name = itemToCopy.Name,
@@ -1052,9 +1056,10 @@ namespace RavenNest.BusinessLogic.Game
             string enchantment = null,
             string name = null,
             Guid? transmogrificationId = null,
-            int? flags = null)
+            int? flags = null,
+            string sockets = null)
         {
-            TryAddItem(itemId, amount, out var output, equipped, tag, soulbound, enchantment, name, transmogrificationId, flags);
+            TryAddItem(itemId, amount, out var output, equipped, tag, soulbound, enchantment, name, transmogrificationId, flags, sockets);
             return output;
         }
 
@@ -1084,7 +1089,8 @@ namespace RavenNest.BusinessLogic.Game
             string enchantment = null,
             string name = null,
             Guid? transmogrificationId = null,
-            int? flags = null)
+            int? flags = null,
+            string sockets = null)
         {
             var output = new List<InventoryItem>();
             added = output;
@@ -1105,7 +1111,7 @@ namespace RavenNest.BusinessLogic.Game
                         UnequipItem(Get(equippedItem));
                     }
 
-                    var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound, enchantment, name, transmogrificationId, flags);
+                    var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound, enchantment, name, transmogrificationId, flags, sockets);
                     output.Add(invItem);
                     items.Add(invItem);
                     return VerifyLastAdd(invItem);
@@ -1126,7 +1132,7 @@ namespace RavenNest.BusinessLogic.Game
                 // It now looks for a stack that matches the one it is about to create. Nothing
                 // matching means a new stack, which is the correct outcome and was always the
                 // intent: the commented out call next to it was reaching for exactly this.
-                var key = new StackKey(itemId, tag, enchantment, transmogrificationId, name, flags);
+                var key = new StackKey(itemId, tag, enchantment, transmogrificationId, name, flags, sockets);
                 var stack = GetUnequipped(key);
                 if (stack != null)
                 {
@@ -1141,7 +1147,7 @@ namespace RavenNest.BusinessLogic.Game
                     return true;
                 }
 
-                var newStack = CreateInventoryItem(itemId, amount, false, tag, soulbound, enchantment, name, transmogrificationId, flags);
+                var newStack = CreateInventoryItem(itemId, amount, false, tag, soulbound, enchantment, name, transmogrificationId, flags, sockets);
                 output.Add(newStack);
                 items.Add(newStack);
                 return VerifyLastAdd(newStack);
@@ -1309,7 +1315,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private InventoryItem CreateInventoryItem(ReadOnlyInventoryItem invItem, long amount, bool eq, bool soulbound)
         {
-            return CreateInventoryItem(invItem.ItemId, amount, eq, invItem.Tag, soulbound, invItem.Enchantment, invItem.Name, invItem.TransmogrificationId, invItem.Flags);
+            return CreateInventoryItem(invItem.ItemId, amount, eq, invItem.Tag, soulbound, invItem.Enchantment, invItem.Name, invItem.TransmogrificationId, invItem.Flags, invItem.Sockets);
         }
 
         public bool RemoveItem(ReadOnlyInventoryItem item, long amount, out long remainder)
@@ -1674,7 +1680,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private InventoryItem CreateInventoryItem(Guid itemId, long amount, bool equipped, string tag, bool soulbound, string enchantment, string name, Guid? transmogrificationId, int? flags)
+        private InventoryItem CreateInventoryItem(Guid itemId, long amount, bool equipped, string tag, bool soulbound, string enchantment, string name, Guid? transmogrificationId, int? flags, string sockets = null)
         {
             return new InventoryItem
             {
@@ -1685,6 +1691,7 @@ namespace RavenNest.BusinessLogic.Game
                 Equipped = equipped,
                 Tag = tag,
                 Enchantment = enchantment,
+                Sockets = sockets,
                 Name = name,
                 TransmogrificationId = transmogrificationId,
                 Flags = flags,

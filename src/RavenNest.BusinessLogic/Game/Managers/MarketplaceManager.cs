@@ -239,6 +239,7 @@ namespace RavenNest.BusinessLogic.Game
                 Tag = itemToSell.Tag,
                 Flags = itemToSell.Flags,
                 Enchantment = itemToSell.Enchantment,
+                Sockets = itemToSell.Sockets,
                 Name = itemToSell.Name,
                 TransmogrificationId = itemToSell.TransmogrificationId,
                 Expires = DateTime.UtcNow.Add(ListingLifetime),
@@ -476,7 +477,7 @@ namespace RavenNest.BusinessLogic.Game
             if (!inventory.TryAddItem(itemId, buyAmount, out _, tag: marketItem.Tag, equipped: false,
                     enchantment: marketItem.Enchantment, name: marketItem.Name,
                     transmogrificationId: marketItem.TransmogrificationId,
-                    flags: marketItem.Flags))
+                    flags: marketItem.Flags, sockets: marketItem.Sockets))
             {
                 logger.LogError($"Marketplace purchase aborted for character '{character.Id}': unable to deliver {buyAmount}x item '{itemId}'. No coins were taken and the listing is untouched.");
                 return 0;

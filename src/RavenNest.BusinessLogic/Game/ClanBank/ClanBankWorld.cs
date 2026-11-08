@@ -109,7 +109,8 @@ namespace RavenNest.BusinessLogic.Game.ClanBank
                 enchantment: stack.Enchantment,
                 name: stack.Name,
                 transmogrificationId: stack.TransmogrificationId,
-                flags: stack.Flags);
+                flags: stack.Flags,
+                sockets: stack.Sockets);
         }
 
         public bool TakeCoins(Guid holder, long amount) => false;
@@ -150,6 +151,7 @@ namespace RavenNest.BusinessLogic.Game.ClanBank
                 Amount = amount,
                 Tag = stack.Tag,
                 Enchantment = stack.Enchantment,
+                Sockets = stack.Sockets,
                 Name = stack.Name,
                 TransmogrificationId = stack.TransmogrificationId,
                 Flags = stack.Flags,
