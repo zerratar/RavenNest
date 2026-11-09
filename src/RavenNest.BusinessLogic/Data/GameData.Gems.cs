@@ -100,5 +100,47 @@ namespace RavenNest.BusinessLogic.Data
 
             if (created > 0) logger.LogInformation("Gems: {Count} enchanted gem item(s) created.", created);
         }
+
+        /// <summary>
+        ///     The pet eggs (RavenNest.Combat.PetEggs): one item per hatched species with the fixed id the library gives it,
+        ///     so the game and the website know an egg from its id. Tradeable resources; `!pets hatch` uses them.
+        /// </summary>
+        private void EnsurePetEggs()
+        {
+            var created = 0;
+            foreach (var species in PetEggs.Species)
+            {
+                var id = PetEggs.ItemId(species.Id);
+                var name = species.EggName;
+                var description = "Warm to the touch. Hatches into a " + species.NameAt(0) + " (" + species.Role.ToString().ToLowerInvariant()
+                    + ") after " + (int)species.HatchMinutes + " minutes of play: !pets hatch " + species.NameAt(0).ToLowerInvariant()
+                    + ". Needs Taming " + species.TameLevel + ".";
+                var price = 500 + species.TameLevel * 100;
+                var item = GetItem(id);
+                if (item == null)
+                {
+                    Add(new Item
+                    {
+                        Id = id,
+                        Name = name,
+                        Description = description,
+                        Category = (int)ItemCategory.Resource,
+                        Type = (int)ItemType.None,
+                        RequiredCraftingLevel = 1000,
+                        RequiredCookingLevel = 1000,
+                        Craftable = false,
+                        Level = 1,
+                        ShopSellPrice = price,
+                        Modified = DateTime.UtcNow,
+                    });
+                    created++;
+                    continue;
+                }
+                if (item.Name != name) item.Name = name;
+                if (item.Description != description) item.Description = description;
+                if (item.ShopSellPrice != price) item.ShopSellPrice = price;
+            }
+            if (created > 0) logger.LogInformation("Pet eggs: {Count} egg item(s) created.", created);
+        }
     }
 }

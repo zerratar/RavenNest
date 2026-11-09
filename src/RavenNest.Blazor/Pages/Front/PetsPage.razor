@@ -3,7 +3,7 @@
 
 @*
     Battle pets (the game's docs/battle-pets-design.md): how they work, and every kind there is: the starters, the
-    creatures to tame and the pet items that wake to fight, each with its picture (rendered from the game's own models),
+    creatures to tame, the pets that hatch from eggs and the pet items that wake to fight, each with its picture (rendered from the game's own models),
     role, element, how it attacks, stages, skills with their numbers, and how to get one. Read from RavenNest.Combat's
     species list, the same one the game and the server use.
 *@
@@ -26,16 +26,21 @@
             <div class="rf-card"><div><b>!pets starter fox</b>, <b>bear</b> or <b>fawn</b></div><span>A first pet, for an empty stable.</span></div>
             <div class="rf-card"><b>!tame bunny</b><span>Each one you defeat while you fight is a try, and every try trains Taming. Carry a treat it loves for better odds.</span></div>
             <div class="rf-card"><b>!pets wake diamond raven</b><span>Every pet item can fight: it keeps its look and grows a little at each stage.</span></div>
+            <div class="rf-card"><b>!pets hatch wolf pup egg</b><span>Eggs turn up in dungeon, raid and tower rewards now and then. In your stable an egg takes a place and hatches after some minutes of play.</span></div>
             <div class="rf-card"><b>!pets</b><span>Your pet; then stable, use, away, rename, skills, slot, evolve, about.</span></div>
         </div>
         <p class="rf-petdex__rules">
             A pet's level can never pass your Taming level. It evolves at level @BattlePets.EvolveLevels[0] (Taming @BattlePets.EvolveSkillLevels[0])
             and @BattlePets.EvolveLevels[1] (Taming @BattlePets.EvolveSkillLevels[1]): a new look, stronger, and one more skill slot.
+            Evolving also takes raw gems of the pet's kind, @PetEvolution.GemsPerStage[0] for the first and @PetEvolution.GemsPerStage[1] for the second:
+            Ruby for fire pets, Sapphire for ice, Topaz for lightning, Emerald for poison, and for the others their role's gem
+            (Diamond for damage, Onyx for tanks and gatherers, Amethyst for healers and support).
             Your stable holds @BattlePets.StableSize(1) pets to begin with and up to @BattlePets.StableLevels.Length as Taming grows; one is out at a time.
             Knocked out, a pet gets up again after @BattlePets.KnockoutSeconds seconds. Clans from level @Rookery.RequiredClanLevel train
             <b>@Rookery.Name</b> while their members have pets out. It is slow, since nobody has to do anything for it: each
             level takes longer than the last, and many members out at once count for a little more than a few. It makes the
-            members' pets grow faster (up to @Pct(Rookery.ExperienceBonus(999)) more) and their stables bigger.
+            members' pets grow faster (up to @Pct(Rookery.ExperienceBonus(999)) more), their stables bigger, their evolutions
+            cheaper (up to @Pct(Rookery.EvolutionDiscount(999)) fewer gems) and their eggs quicker to hatch (up to @Pct(Rookery.HatchSpeedup(999))).
         </p>
 
         <h2 class="rf-petdex__group">Starter pets</h2>
@@ -46,6 +51,11 @@
         <h2 class="rf-petdex__group">Creatures to tame</h2>
         <div class="rf-petdex__grid">
             @foreach (var s in BattlePets.Tameable.OrderBy(x => x.TameLevel)) { @Card(s, "Taming " + s.TameLevel + (s.TameRarity < 1 ? ", very rare" : "") + "; loves " + string.Join(" or ", s.Treats)) }
+        </div>
+
+        <h2 class="rf-petdex__group">Hatched from eggs</h2>
+        <div class="rf-petdex__grid">
+            @foreach (var s in PetEggs.Species.OrderBy(x => x.TameLevel)) { @Card(s, s.EggName + ": " + s.EggFrom.ToLowerInvariant() + ". Hatches after " + (int)s.HatchMinutes + " minutes of play, at Taming " + s.TameLevel + ".") }
         </div>
 
         <h2 class="rf-petdex__group">Pet items that wake</h2>

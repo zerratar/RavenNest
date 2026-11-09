@@ -138,6 +138,26 @@ namespace RavenNest.Combat
                 more?.Invoke(s);
             });
 
+        /// <summary>
+        ///     A pet that hatches from an egg found in dungeons, raids and the tower: the cute series, three models per
+        ///     chain ("pet:Pets/Cute/Wolf Pup", then Wolf, then Werewolf). The Taming level is the one hatching needs.
+        /// </summary>
+        private static PetSpecies Hatched(string id, PetRole role, PetStrike strike, Element element, string[] names, string egg, int taming, double hatchMinutes, double[] heights, EnemyFamily family, string from, string blurb, Action<PetSpecies> more = null) =>
+            Make(id, role, strike, element, names, s =>
+            {
+                s.Source = PetSource.Egg;
+                s.TameLevel = taming;
+                s.EggName = egg;
+                s.HatchMinutes = hatchMinutes;
+                s.StageModels = names.Select(n => "pet:Pets/Cute/" + n).ToArray();
+                s.StageHeights = heights;
+                s.Family = family;
+                s.EggFrom = from;
+                s.Blurb = blurb;
+                s.Origin = "Hatched from a " + egg;
+                more?.Invoke(s);
+            });
+
         private static string[] N(params string[] names) => names;
         private static double[] H(params double[] heights) => heights;
 
@@ -204,6 +224,35 @@ namespace RavenNest.Combat
                     s.Source = PetSource.Egg; s.StageModels = new[] { "pet:Pets/Deer_HD" }; s.StageHeights = H(0.6, 0.8, 1.0); s.Origin = "Starter";
                     s.Blurb = "A starter pet: gentle, and it keeps you on your feet.";
                 }),
+
+                // ---------------------------------------------------------------- hatched from eggs (PetEggs): dungeons, raids, the tower
+                Hatched("wolf-pup", PetRole.Damage, PetStrike.Bite, Element.Physical, N("Wolf Pup", "Wolf", "Werewolf"), "Wolf Pup Egg", 1, 60,
+                    H(0.5, 0.8, 1.3), EnemyFamily.Beast, "Dungeons and raids",
+                    "Chews everything, including enemies. Grows up to be a very good, very large boy.",
+                    s => s.Skills = new[] { "pounce", "howl", "frenzy" }),
+                Hatched("bud", PetRole.Healer, PetStrike.Bolt, Element.Poison, N("Bud", "Bloom", "Blossom"), "Bud Seed", 1, 60,
+                    H(0.45, 0.75, 1.0), EnemyFamily.Spirit, "Dungeons and raids",
+                    "Sprouts from a seed rather than an egg. Nobody minds. Heals with sunshine and spits seeds at the rest."),
+                Hatched("sun-blossom", PetRole.Support, PetStrike.Bolt, Element.Fire, N("Sun Blossom", "Sunflower Fairy", "Sunflora Pixie"), "Sun Blossom Seed", 10, 90,
+                    H(0.4, 0.7, 0.95), EnemyFamily.Spirit, "Dungeons and tower floors",
+                    "Follows the sun, and you, in that order."),
+                Hatched("practice-dummy", PetRole.Tank, PetStrike.Bite, Element.Physical, N("Practice Dummy", "Target Dummy", "Training Dummy"), "Practice Dummy Egg", 1, 45,
+                    H(0.6, 0.85, 1.2), EnemyFamily.Construct, "Tower floors",
+                    "Built to be hit. Finally a job it is good at. Nobody knows what lays these eggs.",
+                    s => s.Skills = new[] { "guard", "harden", "bodyslam" }),
+                Hatched("shell", PetRole.Tank, PetStrike.Bite, Element.Ice, N("Shell", "Spike", "Hermit King"), "Shell Egg", 20, 120,
+                    H(0.45, 0.75, 1.2), EnemyFamily.Beast, "Uncommon and harder dungeons, and raids",
+                    "Hides in its shell when things get scary, then rolls into them."),
+                Hatched("snakelet", PetRole.Damage, PetStrike.Bite, Element.Poison, N("Snakelet", "Snake", "Snake Naga"), "Snakelet Egg", 40, 150,
+                    H(0.5, 0.8, 1.4), EnemyFamily.Beast, "Rare and harder dungeons, and raids",
+                    "Hisses politely before it bites."),
+                Hatched("bomb", PetRole.Damage, PetStrike.Bolt, Element.Fire, N("Bomb", "Snow Bomb", "Poison Bomb"), "Bomb Egg", 60, 180,
+                    H(0.45, 0.6, 0.75), EnemyFamily.Construct, "Raids and the higher tower floors",
+                    "Gets a new filling every time it evolves. Please do not drop the egg.",
+                    s => s.Skills = new[] { "barrage", "frenzy", "fire-breath" }),
+                Hatched("dragon-spark", PetRole.Damage, PetStrike.Bite, Element.Fire, N("Dragon Spark", "Dragon Fire", "Dragon Inferno"), "Dragon Spark Egg", 100, 240,
+                    H(0.6, 1.0, 1.5), EnemyFamily.Dragon, "Raids and epic or legendary dungeons, rarely",
+                    "Small, warm and sneezes sparks. Give it time."),
 
                 // ---------------------------------------------------------------- companions: every pet item can fight
                 Companion("companion-raven", PetRole.Support, PetStrike.Bolt, Element.Lightning, N("Raven", "Storm Raven", "Thunder Raven"),
@@ -327,6 +376,12 @@ namespace RavenNest.Combat
 
         /// <summary>More pet experience for members: 0.05% a level (49.95% at level 999), so every level up to the top counts.</summary>
         public static double ExperienceBonus(int level) => Math.Min(0.5, Math.Max(0, level) * 0.0005);
+
+        /// <summary>Cheaper evolutions: 40% fewer gems at 999, in steps of each level.</summary>
+        public static double EvolutionDiscount(int level) => Math.Min(0.4, Math.Max(0, level) * 0.4 / 999);
+
+        /// <summary>Faster hatching: a quarter faster at 999, in steps of each level.</summary>
+        public static double HatchSpeedup(int level) => Math.Min(0.25, Math.Max(0, level) * 0.25 / 999);
 
         /// <summary>Stable places on top of Taming's: one at level 100, two at 300.</summary>
         public static int ExtraStablePlaces(int level) => level >= 300 ? 2 : level >= 100 ? 1 : 0;

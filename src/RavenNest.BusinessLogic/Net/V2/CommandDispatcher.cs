@@ -129,9 +129,12 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.PetUse, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Use(c.SessionToken, ch, pet); });
             Add(Commands.PetRename, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out string name); return pets.Rename(c.SessionToken, ch, pet, name); });
             Add(Commands.PetSlot, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out int slot, out string skill); return pets.Slot(c.SessionToken, ch, pet, slot, skill); });
-            Add(Commands.PetEvolve, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Evolve(c.SessionToken, ch, pet); });
-            Add(Commands.PetRelease, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); return pets.Release(c.SessionToken, ch, pet); });
+            Add(Commands.PetEvolve, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); c.Watch(ch); return pets.Evolve(c.SessionToken, ch, pet); });
+            Add(Commands.PetRelease, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet); c.Watch(ch); return pets.Release(c.SessionToken, ch, pet); });
             Add(Commands.PetExperience, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid pet, out double exp); return pets.AddExperience(c.SessionToken, ch, pet, exp); });
+            // eggs: one from the inventory into the stable, and the minutes they warm while their owner plays
+            Add(Commands.PetHatch, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); c.Watch(ch); return pets.Hatch(c.SessionToken, ch, item); });
+            Add(Commands.PetIncubate, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return pets.Incubate(c.SessionToken, ch); });
 
             // raids and dungeons
             Add(Commands.AutoJoinRaid, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinRaid(c.SessionToken, ids ?? Array.Empty<Guid>()); });

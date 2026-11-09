@@ -10,7 +10,7 @@
 <div class="rf-pets">
     <div class="rf-panel rf-pets__head">
         <h3 class="rf-panel__title">Battle pets <span class="rf-meta">Taming @taming, @stable.Length of @BattlePets.StableSize(taming) places</span></h3>
-        <p class="rf-meta">Pets fight beside you, learn skills and evolve. <strong>!pets starter fox</strong>, <strong>bear</strong> or <strong>fawn</strong> picks a first one; <strong>!tame (creature)</strong> while you fight tames one; <strong>!pets wake (pet item)</strong> wakes a pet item you have so it fights too. <strong>!pets</strong> does the rest in chat. <a href="/pets">Every kind of pet</a>.</p>
+        <p class="rf-meta">Pets fight beside you, learn skills and evolve. <strong>!pets starter fox</strong>, <strong>bear</strong> or <strong>fawn</strong> picks a first one; <strong>!tame (creature)</strong> while you fight tames one; <strong>!pets wake (pet item)</strong> wakes a pet item you have so it fights too; <strong>!pets hatch (egg)</strong> hatches an egg. <strong>!pets</strong> does the rest in chat. <a href="/pets">Every kind of pet</a>.</p>
     </div>
 
     @if (stable.Length == 0)
@@ -24,6 +24,20 @@
             {
                 var species = BattlePets.GetSpecies(pet.Species);
                 if (species == null) continue;
+                if (PetEggs.IsUnhatched(pet.Level))
+                {
+                    var left = Math.Max(1, (int)Math.Ceiling(PetEggs.HatchMinutes(species, 0) - pet.PlayTime.TotalMinutes));
+                    <div class="rf-panel rf-trees__node">
+                        <img class="rf-pets__pic" src="/imgs/items/@(species.EggName.Replace(" ", "-").ToLowerInvariant()).png" alt="" loading="lazy" onerror="this.style.display='none'" />
+                        <div class="rf-trees__node-head">
+                            <strong>@pet.Name</strong>
+                            <span class="rf-chip">Warming</span>
+                        </div>
+                        <div>Hatches into a @species.NameAt(0) <span class="rf-meta">(@Role(species.Role), @Element(species.Element), @Strike(species.Strike))</span></div>
+                        <div class="rf-meta">About @left more minutes of play.</div>
+                    </div>
+                    continue;
+                }
                 var slots = (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).ToList();
                 var sheet = species.Sheet(Math.Max(1, pet.Level), pet.Stage);
                 <div class="rf-panel rf-trees__node @(pet.Active ? "is-learned" : "")">
@@ -54,7 +68,7 @@
                         }
                         else
                         {
-                            <span>Evolves into @species.NameAt(pet.Stage + 1) at level @BattlePets.EvolveLevels[pet.Stage] (Taming @BattlePets.EvolveSkillLevels[pet.Stage]).</span>
+                            <span>Evolves into @species.NameAt(pet.Stage + 1) at level @BattlePets.EvolveLevels[pet.Stage] (Taming @BattlePets.EvolveSkillLevels[pet.Stage]) for @PetEvolution.Describe(species, pet.Stage, 0).</span>
                         }
                     </div>
                 </div>

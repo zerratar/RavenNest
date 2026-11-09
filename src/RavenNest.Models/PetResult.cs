@@ -19,6 +19,10 @@ namespace RavenNest.Models
         NoSuchSlot,
         BadName,
         ItemMissing,
+        /// <summary>The pet is still an egg: it cannot go out, earn or evolve yet.</summary>
+        NotHatched,
+        /// <summary>The item is not an egg, or the character has no such egg.</summary>
+        NoEgg,
     }
 
     public class PetResult

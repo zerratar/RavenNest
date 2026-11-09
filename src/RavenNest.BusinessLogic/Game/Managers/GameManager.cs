@@ -382,6 +382,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
+                    RollEgg(RavenNest.Combat.EggSource.Dungeon, tier, character, rewards, rng);
 
                     var value = rng.NextDouble();
                     var dropChance = value >= 0.5 ? 1f : 0.80f;
@@ -508,6 +509,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
                 if (character == null) continue;
+                RollEgg(RavenNest.Combat.EggSource.Tower, Math.Clamp(tier, 0, 4), character, rewards, rng);
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
                 if (dl.Count == 0) continue;
@@ -520,6 +522,28 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
             return rewards.ToArray();
+        }
+
+        /// <summary>
+        ///     A pet egg now and then (RavenNest.Combat.PetEggs): the source's chance per character, then an egg from its
+        ///     table at the tier. Added to the inventory and to the rewards the game shows.
+        /// </summary>
+        private void RollEgg(RavenNest.Combat.EggSource source, int tier, DataModels.Character character, List<EventItemReward> rewards, Random rng)
+        {
+            try
+            {
+                if (rng.NextDouble() >= RavenNest.Combat.PetEggs.Chance(source, tier)) return;
+                var species = RavenNest.Combat.PetEggs.Pick(source, tier, rng.NextDouble());
+                if (species == null) return;
+                var itemId = RavenNest.Combat.PetEggs.ItemId(species.Id);
+                if (gameData.GetItem(itemId) == null) return;
+                var stack = inventoryProvider.Get(character.Id).AddItem(itemId, 1).FirstOrDefault();
+                rewards.Add(new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = itemId, InventoryItemId = stack.Id });
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not give a pet egg: " + exc);
+            }
         }
 
         public EventItemReward[] GetRaidRewardsAsync(SessionToken session, Guid[] characters)
@@ -554,6 +578,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
+                    RollEgg(RavenNest.Combat.EggSource.Raid, 0, character, rewards, rng);
 
                     var skills = gameData.GetCharacterSkills(character.SkillsId);
 

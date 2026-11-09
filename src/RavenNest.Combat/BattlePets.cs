@@ -175,6 +175,17 @@ namespace RavenNest.Combat
         /// <summary>One line about it, for the website and !pet.</summary>
         public string Blurb = "";
 
+        /// <summary>Hatched pets: the egg's item name ("Wolf Pup Egg", "Bud Seed"); empty for the others.</summary>
+        public string EggName = "";
+
+        /// <summary>Hatched pets: minutes of play an egg needs to hatch (before the clan's Rookery).</summary>
+        public double HatchMinutes;
+
+        /// <summary>Hatched pets: one line about where its eggs are found, for the website and !pets about.</summary>
+        public string EggFrom = "";
+
+        public bool Hatches => !string.IsNullOrEmpty(EggName);
+
         public string ModelAt(int stage) =>
             StageModels == null || StageModels.Length == 0 ? "" : StageModels[Math.Max(0, Math.Min(StageModels.Length - 1, stage))];
 

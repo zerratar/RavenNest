@@ -46,6 +46,9 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>When each clan's members last reported pet experience: the members out at once, and the minutes each report covers.</summary>
         private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> rookeryReports = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
 
+        /// <summary>When each character last reported their eggs' minutes.</summary>
+        private readonly Dictionary<Guid, DateTime> incubateReports = new Dictionary<Guid, DateTime>();
+
         public BattlePetManager(GameData gameData, PlayerInventoryProvider inventories, ILogger<BattlePetManager> logger)
         {
             this.gameData = gameData;
@@ -135,6 +138,7 @@ namespace RavenNest.BusinessLogic.Game
                     chosen = Find(characterId, petId);
                     if (chosen == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
                     if (chosen.ItemId != null && !Has(character, chosen.ItemId.Value)) return new PetResult { Status = PetResultStatus.ItemMissing, Pet = Map(chosen) };
+                    if (PetEggs.IsUnhatched(chosen.Level)) return new PetResult { Status = PetResultStatus.NotHatched, Pet = Map(chosen) };
                 }
 
                 foreach (var p in gameData.GetPets(characterId))
@@ -197,16 +201,116 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var pet = Find(characterId, petId);
                 if (pet == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
+                if (PetEggs.IsUnhatched(pet.Level)) return new PetResult { Status = PetResultStatus.NotHatched, Pet = Map(pet) };
                 if (!BattlePets.CanEvolve(pet.Stage, pet.Level, TamingLevel(character), out var missing))
                     return new PetResult { Status = PetResultStatus.CannotEvolve, Pet = Map(pet), Missing = missing };
 
+                // the raw gems of the pet's kind (RavenNest.Combat.PetEvolution), fewer with the clan's Rookery
                 var species = BattlePets.GetSpecies(pet.Species);
+                var gemName = Gems.RawName(PetEvolution.GemFor(species));
+                var gem = gameData.GetItems().FirstOrDefault(x => x.Name == gemName && x.Category == (int)ItemCategory.Resource);
+                var need = PetEvolution.GemsFor(pet.Stage, RookeryOf(character)?.Level ?? 0);
+                if (need > 0)
+                {
+                    if (gem == null) return new PetResult { Status = PetResultStatus.CannotEvolve, Pet = Map(pet), Missing = need + " " + gemName };
+                    var inventory = inventories.Get(character.Id);
+                    var stacks = inventory.GetAllItems().Where(x => x.ItemId == gem.Id && !x.Equipped && x.Amount > 0).ToList();
+                    var have = stacks.Sum(x => x.Amount);
+                    if (have < need)
+                        return new PetResult { Status = PetResultStatus.CannotEvolve, Pet = Map(pet), Missing = need + " " + gem.Name + " (you have " + have + ")" };
+                    var left = (long)need;
+                    foreach (var stack in stacks)
+                    {
+                        if (left <= 0) break;
+                        var take = Math.Min(left, stack.Amount);
+                        inventory.RemoveItem(stack, take);
+                        left -= take;
+                    }
+                }
+
                 var oldName = species?.NameAt(pet.Stage);
                 pet.Stage++;
                 // a pet still called by its kind's name takes the new one
                 if (species != null && string.Equals(pet.Name, oldName, StringComparison.OrdinalIgnoreCase)) pet.Name = species.NameAt(pet.Stage);
                 FillSlots(pet, species, TamingLevel(character));
                 return Ok(character, pet);
+            }
+        }
+
+        /// <summary>
+        ///     An egg from the inventory into the stable (RavenNest.Combat.PetEggs): it takes a place and warms while its
+        ///     owner plays (Incubate), then hatches. Hatching a kind needs its Taming level.
+        /// </summary>
+        public PetResult Hatch(SessionToken token, Guid characterId, Guid itemId)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return PetResult.Fail(PetResultStatus.Error);
+            var species = PetEggs.SpeciesForEgg(itemId);
+            if (species == null) return PetResult.Fail(PetResultStatus.NoEgg);
+            if (TamingLevel(character) < species.TameLevel) return PetResult.Fail(PetResultStatus.TamingTooLow, species.TameLevel.ToString());
+            lock (mutex)
+            {
+                var inventory = inventories.Get(character.Id);
+                var stack = inventory.GetAllItems().FirstOrDefault(x => x.ItemId == itemId && !x.Equipped && x.Amount > 0);
+                if (stack.IsNull()) return PetResult.Fail(PetResultStatus.NoEgg);
+                if (Count(characterId) >= StableSize(character)) return PetResult.Fail(PetResultStatus.StableFull, StableSize(character).ToString());
+                inventory.RemoveItem(stack, 1);
+                var egg = new Pet
+                {
+                    Id = Guid.NewGuid(),
+                    CharacterId = character.Id,
+                    Name = species.EggName,
+                    DateOfBirth = DateTime.UtcNow,
+                    Level = 0, // an egg until it has had its minutes
+                    Experience = 0,
+                    Health = 1,
+                    Happiness = 1,
+                    PlayTime = TimeSpan.Zero,
+                    Prefab = species.ModelAt(0),
+                    Species = species.Id,
+                    Stage = 0,
+                    Source = (int)PetSource.Egg,
+                    Slots = "",
+                    Active = false,
+                };
+                gameData.Add(egg);
+                return Ok(character, egg);
+            }
+        }
+
+        /// <summary>
+        ///     The game reports once a minute while a character with eggs plays: every egg in the stable gets the minutes
+        ///     since the last report (a minute for the first, at most PetEggs.MaxMinutesPerReport), and hatches once it has
+        ///     its species' minutes. A hatched pet goes straight out when none is. The hatched pet is the answer's Pet.
+        /// </summary>
+        public PetResult Incubate(SessionToken token, Guid characterId)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return PetResult.Fail(PetResultStatus.Error);
+            lock (mutex)
+            {
+                var eggs = gameData.GetPets(characterId).Where(p => IsBattlePet(p) && PetEggs.IsUnhatched(p.Level)).ToList();
+                var now = DateTime.UtcNow;
+                if (eggs.Count == 0) { incubateReports.Remove(characterId); return Ok(character, null); }
+                var minutes = incubateReports.TryGetValue(characterId, out var last) ? Math.Clamp((now - last).TotalMinutes, 0, PetEggs.MaxMinutesPerReport) : 1d;
+                incubateReports[characterId] = now;
+                var rookery = RookeryOf(character)?.Level ?? 0;
+                Pet hatched = null;
+                foreach (var egg in eggs)
+                {
+                    var species = BattlePets.GetSpecies(egg.Species);
+                    if (species == null) continue;
+                    egg.PlayTime += TimeSpan.FromMinutes(minutes);
+                    if (egg.PlayTime.TotalMinutes < PetEggs.HatchMinutes(species, rookery)) continue;
+                    egg.Level = 1;
+                    egg.PlayTime = TimeSpan.Zero;
+                    egg.Name = species.NameAt(0);
+                    egg.DateOfBirth = now;
+                    egg.Active = !gameData.GetPets(characterId).Any(p => IsBattlePet(p) && p.Active);
+                    FillSlots(egg, species, TamingLevel(character));
+                    hatched ??= egg;
+                }
+                return Ok(character, hatched);
             }
         }
 
@@ -220,6 +324,9 @@ namespace RavenNest.BusinessLogic.Game
                 if (pet == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
                 var mapped = Map(pet);
                 gameData.Remove(pet);
+                // an egg that never hatched goes back in the bag, so nothing is lost
+                if (PetEggs.IsUnhatched(pet.Level) && BattlePets.GetSpecies(pet.Species)?.Hatches == true)
+                    inventories.Get(character.Id).AddItem(PetEggs.ItemId(pet.Species), 1);
                 var result = Ok(character, null);
                 result.Pet = mapped;
                 return result;
@@ -236,6 +343,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var pet = Find(characterId, petId);
                 if (pet == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
+                if (PetEggs.IsUnhatched(pet.Level)) return PetResult.Fail(PetResultStatus.NotHatched);
                 var cap = BattlePets.LevelCap(TamingLevel(character));
                 var gained = 0;
                 experience = Math.Min(experience, MaxExperiencePerReport);
@@ -436,6 +544,7 @@ namespace RavenNest.BusinessLogic.Game
             Source = p.Source,
             ItemId = p.ItemId,
             Active = p.Active,
+            PlayTime = p.PlayTime,
         };
 
         /// <summary>

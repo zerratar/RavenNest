@@ -84,7 +84,7 @@ namespace RavenNest.Combat
         }
 
         // a fixed id from a name (MD5, version 3 style), so every reader agrees without a table to keep in step
-        private static Guid NameGuid(string name)
+        internal static Guid NameGuid(string name)
         {
             byte[] hash;
             using (var md5 = MD5.Create()) hash = md5.ComputeHash(Encoding.UTF8.GetBytes(name));

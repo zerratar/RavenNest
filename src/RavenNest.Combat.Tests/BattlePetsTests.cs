@@ -115,6 +115,55 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void Eggs_hatch_every_cute_chain()
+        {
+            var eggs = PetEggs.Species.ToList();
+            Assert.Equal(8, eggs.Count);
+            // all 24 cute series models, each used once, in three stages per chain
+            var models = eggs.SelectMany(s => s.StageModels).ToList();
+            Assert.Equal(24, models.Distinct().Count());
+            Assert.All(eggs, s => Assert.Equal(3, s.StageModels.Length));
+            Assert.Equal("pet:Pets/Cute/Werewolf", BattlePets.GetSpecies("wolf-pup").ModelAt(2));
+            // egg items: fixed, distinct, and found again from the id or a name
+            var ids = eggs.Select(s => PetEggs.ItemId(s.Id)).ToList();
+            Assert.Equal(ids.Count, ids.Distinct().Count());
+            Assert.All(eggs, s => Assert.Same(s, PetEggs.SpeciesForEgg(PetEggs.ItemId(s.Id))));
+            Assert.Null(PetEggs.SpeciesForEgg(System.Guid.NewGuid()));
+            Assert.Equal("wolf-pup", PetEggs.FindEgg("wolf pup egg").Id);
+            Assert.Equal("dragon-spark", PetEggs.FindEgg("dragon").Id);
+            Assert.Equal("bud", PetEggs.FindEgg("Bud Seed").Id);
+            // every egg can be found somewhere, and every source has eggs from the first tier
+            foreach (var s in eggs) Assert.Contains(System.Enum.GetValues(typeof(EggSource)).Cast<EggSource>(), src => PetEggs.Table(src, 4).Any(t => t.Species == s));
+            foreach (EggSource src in System.Enum.GetValues(typeof(EggSource))) Assert.NotEmpty(PetEggs.Table(src, 0));
+            // the dragon is rare, and only in the hardest dungeons
+            Assert.DoesNotContain(PetEggs.Table(EggSource.Dungeon, 2), t => t.Species.Id == "dragon-spark");
+            var raid = PetEggs.Table(EggSource.Raid, 0).ToList();
+            Assert.True(raid.First(t => t.Species.Id == "dragon-spark").Weight / raid.Sum(t => t.Weight) < 0.05);
+            // a roll covers the whole table
+            Assert.NotNull(PetEggs.Pick(EggSource.Tower, 0, 0));
+            Assert.NotNull(PetEggs.Pick(EggSource.Tower, 0, 1));
+        }
+
+        [Fact]
+        public void Evolving_costs_the_pets_own_gems()
+        {
+            Assert.Equal(GemKind.Ruby, PetEvolution.GemFor(BattlePets.GetSpecies("dragon-spark")));
+            Assert.Equal(GemKind.Sapphire, PetEvolution.GemFor(BattlePets.GetSpecies("shell")));
+            Assert.Equal(GemKind.Emerald, PetEvolution.GemFor(BattlePets.GetSpecies("snakelet")));
+            Assert.Equal(GemKind.Diamond, PetEvolution.GemFor(BattlePets.GetSpecies("wolf-pup")));
+            Assert.Equal(GemKind.Onyx, PetEvolution.GemFor(BattlePets.GetSpecies("practice-dummy")));
+            Assert.Equal(10, PetEvolution.GemsFor(0, 0));
+            Assert.Equal(30, PetEvolution.GemsFor(1, 0));
+            Assert.Equal(18, PetEvolution.GemsFor(1, 999)); // the Rookery: 40% fewer at the top
+            Assert.Equal(0, PetEvolution.GemsFor(2, 0)); // fully evolved
+            Assert.Equal("10 Ruby", PetEvolution.Describe(BattlePets.GetSpecies("dragon-spark"), 0, 0));
+            // hatching: the species' minutes, a quarter faster with the Rookery at the top
+            var wolf = BattlePets.GetSpecies("wolf-pup");
+            Assert.Equal(60, PetEggs.HatchMinutes(wolf, 0), 6);
+            Assert.Equal(45, PetEggs.HatchMinutes(wolf, 999), 6);
+        }
+
+        [Fact]
         public void Strikes_fit_the_models()
         {
             // a bolt pet keeps its distance and fights with magic; a pounce or bite pet fights up close
