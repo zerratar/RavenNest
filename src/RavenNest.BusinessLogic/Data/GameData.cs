@@ -1385,15 +1385,22 @@ namespace RavenNest.BusinessLogic.Data
 
         private void MergeInventoryItems()
         {
+            // Socketed gear is one of a kind (StackKey.IsStackable): merging it into a plain stack
+            // of the same item lost its gems.
             bool CanMergeInvItem(InventoryItem i)
             {
-                return !i.Equipped && string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null;
+                return !i.Equipped && string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null && string.IsNullOrEmpty(i.Sockets);
             }
 
             bool CanMergeStashItem(UserBankItem i)
             {
-                return string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null;
+                return string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null && string.IsNullOrEmpty(i.Sockets);
             }
+
+            // Merged by item and soulbound, never across them: a bound stack and a tradeable one of
+            // the same item stay apart (StackKey). Each stack is first marked soulbound when its
+            // item's definition is, so those stacks are all bound and still merge. Stacks merged
+            // before soulbound was part of the key are left as they are.
 
             foreach (var ubi in this.userBankItems.Entities)
             {
@@ -1409,7 +1416,7 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var u in this.users.Entities)
             {
                 var items = GetUserBankItems(u.Id);
-                var mergable = new Dictionary<Guid, DataModels.UserBankItem>();
+                var mergable = new Dictionary<(Guid, bool), DataModels.UserBankItem>();
                 foreach (var item in items)
                 {
                     if (!CanMergeStashItem(item))
@@ -1417,7 +1424,7 @@ namespace RavenNest.BusinessLogic.Data
                         continue;
                     }
 
-                    if (mergable.TryGetValue(item.ItemId, out var other))
+                    if (mergable.TryGetValue((item.ItemId, item.Soulbound), out var other))
                     {
                         other.Amount += item.Amount;
                         item.Amount = 0;
@@ -1425,7 +1432,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                     else
                     {
-                        mergable[item.ItemId] = item;
+                        mergable[(item.ItemId, item.Soulbound)] = item;
                     }
                 }
             }
@@ -1433,7 +1440,7 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var c in this.characters.Entities)
             {
                 var items = GetInventoryItems(c.Id);
-                var mergable = new Dictionary<Guid, DataModels.InventoryItem>();
+                var mergable = new Dictionary<(Guid, bool), DataModels.InventoryItem>();
 
                 // merge by name, this is when we renamed some items and they got a new ID
 
@@ -1453,7 +1460,7 @@ namespace RavenNest.BusinessLogic.Data
                         continue;
                     }
 
-                    if (mergable.TryGetValue(item.ItemId, out var other))
+                    if (mergable.TryGetValue((item.ItemId, item.Soulbound), out var other))
                     {
                         other.Amount += item.Amount;
                         item.Amount = 0;
@@ -1461,7 +1468,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                     else
                     {
-                        mergable[item.ItemId] = item;
+                        mergable[(item.ItemId, item.Soulbound)] = item;
                     }
                 }
             }

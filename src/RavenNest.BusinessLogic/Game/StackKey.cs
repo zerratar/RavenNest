@@ -30,6 +30,15 @@ namespace RavenNest.BusinessLogic.Game
     ///     </para>
     ///
     ///     <para>
+    ///     <c>Soulbound</c> is in the key because a bound stack and a tradeable one are different
+    ///     things to own. Without it, a soulbound quest reward added beside a tradeable stack of
+    ///     the same item merged into it and became tradeable, and a tradeable item added beside a
+    ///     soulbound stack became bound. The flag is per stack: an item whose definition is
+    ///     soulbound has every stack marked at startup (GameData.MergeInventoryItems) and on add
+    ///     (PlayerInventory.TryAddItem), so those still make one stack.
+    ///     </para>
+    ///
+    ///     <para>
     ///     <c>Flags</c> is carried through every copy path and is not yet read to decide anything,
     ///     so today it never differs between two stacks of the same item and including it changes
     ///     nothing. It is in the key because the moment it does start meaning something, two
@@ -47,6 +56,8 @@ namespace RavenNest.BusinessLogic.Game
         public readonly int Flags;
         /// <summary>Gems in the sockets: socketed gear is one of a kind, like enchanted gear.</summary>
         public readonly string Sockets;
+        /// <summary>Bound to its holder: never merges with a tradeable stack of the same item.</summary>
+        public readonly bool Soulbound;
 
         public StackKey(
             Guid itemId,
@@ -55,7 +66,8 @@ namespace RavenNest.BusinessLogic.Game
             Guid? transmogrificationId,
             string name = null,
             int? flags = null,
-            string sockets = null)
+            string sockets = null,
+            bool soulbound = false)
         {
             ItemId = itemId;
 
@@ -80,6 +92,8 @@ namespace RavenNest.BusinessLogic.Game
             Flags = flags.GetValueOrDefault();
 
             Sockets = string.IsNullOrEmpty(sockets) ? null : sockets;
+
+            Soulbound = soulbound;
         }
 
         /// <summary>
@@ -103,6 +117,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return ItemId == other.ItemId
                 && Flags == other.Flags
+                && Soulbound == other.Soulbound
                 && TransmogrificationId == other.TransmogrificationId
                 && string.Equals(Tag, other.Tag, StringComparison.Ordinal)
                 && string.Equals(Enchantment, other.Enchantment, StringComparison.Ordinal)
@@ -112,7 +127,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public override bool Equals(object obj) => obj is StackKey other && Equals(other);
 
-        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId, Name, Flags, Sockets);
+        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId, Name, Flags, Sockets, Soulbound);
 
         public static bool operator ==(StackKey a, StackKey b) => a.Equals(b);
 
@@ -127,6 +142,7 @@ namespace RavenNest.BusinessLogic.Game
             if (Name != null) text += " name:" + Name;
             if (Flags != 0) text += " flags:" + Flags;
             if (Sockets != null) text += " gems:" + Sockets;
+            if (Soulbound) text += " soulbound";
             return text;
         }
     }
@@ -139,19 +155,20 @@ namespace RavenNest.BusinessLogic.Game
     {
         public static StackKey Key(this DataModels.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets, item.Soulbound);
         }
 
         public static StackKey Key(this DataModels.UserBankItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets, item.Soulbound);
         }
 
         public static StackKey Key(this DataModels.ClanBankItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets, item.Soulbound);
         }
 
+        /// <summary>Soulbound items are never put on a shelf, so a listing is always tradeable.</summary>
         public static StackKey Key(this DataModels.StreamerShopListing item)
         {
             return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
@@ -159,19 +176,21 @@ namespace RavenNest.BusinessLogic.Game
 
         public static StackKey Key(this RavenNest.Models.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets, item.Soulbound);
         }
 
         public static StackKey Key(this ReadOnlyInventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags, item.Sockets, item.Soulbound);
         }
 
         /// <summary>
         ///     An add request carries an item id and nothing else: no tag, no enchantment, no
         ///     transmogrification. So its key is always stackable and always tagless, which is why
         ///     the pairwise rule for it never tested either of those. That is a property of the
-        ///     type rather than an oversight.
+        ///     type rather than an oversight. It has no soulbound flag either: the stack it makes
+        ///     takes the item definition's, which PlayerInventory.GetUnequipped(AddItemRequest)
+        ///     compares against, so this key says tradeable.
         /// </summary>
         public static StackKey Key(this RavenNest.Models.AddItemRequest item)
         {

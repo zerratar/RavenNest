@@ -1099,6 +1099,14 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var item = gameData.GetItem(itemId);
 
+                // An item whose definition is soulbound is bound on every stack (startup marks the
+                // old ones, see GameData.MergeInventoryItems), so a caller that did not say so still
+                // gets the bound stack rather than a second, unbound one beside it.
+                if (item != null && item.Soulbound)
+                {
+                    soulbound = true;
+                }
+
                 // if the added item is to be equipped, then unequip existing item of same slot
                 // then add the new item as equipped.
 
@@ -1132,7 +1140,11 @@ namespace RavenNest.BusinessLogic.Game
                 // It now looks for a stack that matches the one it is about to create. Nothing
                 // matching means a new stack, which is the correct outcome and was always the
                 // intent: the commented out call next to it was reaching for exactly this.
-                var key = new StackKey(itemId, tag, enchantment, transmogrificationId, name, flags, sockets);
+                //
+                // Soulbound is part of the match: a bound reward (the speckled egg chain's Dragon
+                // Spark Egg, a patron's scrolls) added beside a tradeable stack of the same item
+                // used to merge into it and become tradeable, and the other way round.
+                var key = new StackKey(itemId, tag, enchantment, transmogrificationId, name, flags, sockets, soulbound);
                 var stack = GetUnequipped(key);
                 if (stack != null)
                 {
@@ -1490,7 +1502,10 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private InventoryItem GetUnequipped(RavenNest.Models.AddItemRequest i)
         {
-            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+            // The request has no soulbound flag. The stack it would make takes the item
+            // definition's (Copy(AddItemRequest)), so that is the stack it may merge into.
+            var soulbound = gameData.GetItem(i.ItemId)?.Soulbound ?? false;
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped && x.Soulbound == soulbound);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private InventoryItem GetUnequipped(RavenNest.Models.InventoryItem i)
