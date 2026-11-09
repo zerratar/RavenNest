@@ -147,7 +147,7 @@ namespace RavenNest.Blazor.Services
                 .ToList();
 
             var skills = new List<PublicClanSkill>();
-            // a clan skill its level opens shows at once (Menagerie arrived after the clans), not only once a member plays
+            // a clan skill its level opens shows at once (Rookery arrived after the clans), not only once a member plays
             var owned = gameData.GetClanSkills(clan.Id) ?? Array.Empty<DataModels.ClanSkill>();
             if (owned.Count < RavenNest.BusinessLogic.Game.Processors.Tasks.ClanProcessor.EligibleClanSkillCount(gameData, clan))
                 RavenNest.BusinessLogic.Game.Processors.Tasks.ClanProcessor.EnsureClanSkills(gameData, clan, owned);

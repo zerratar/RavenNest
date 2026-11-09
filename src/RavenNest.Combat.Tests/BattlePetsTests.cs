@@ -78,36 +78,38 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void Menagerie_is_modest()
+        public void Rookery_is_modest()
         {
-            Assert.Equal(0, Menagerie.ExperienceBonus(0));
-            Assert.Equal(0.1, Menagerie.ExperienceBonus(100), 6);
-            Assert.Equal(0.5, Menagerie.ExperienceBonus(999), 6);
-            Assert.Equal(0, Menagerie.ExtraStablePlaces(99));
-            Assert.Equal(1, Menagerie.ExtraStablePlaces(100));
-            Assert.Equal(2, Menagerie.ExtraStablePlaces(999));
+            Assert.Equal(0, Rookery.ExperienceBonus(0));
+            Assert.Equal(0.05, Rookery.ExperienceBonus(100), 6);
+            Assert.Equal(0.5, Rookery.ExperienceBonus(999), 2); // 49.95%
+            Assert.Equal(0, Rookery.ExtraStablePlaces(99));
+            Assert.Equal(1, Rookery.ExtraStablePlaces(100));
+            Assert.Equal(2, Rookery.ExtraStablePlaces(999));
         }
 
-        /// <summary>Days of play (minutes a day with at least one member's pet out, members out at once) to reach a Menagerie level.</summary>
+        /// <summary>Days of play (minutes a day with at least one member's pet out, members out at once) to reach a Rookery level.</summary>
         private static double DaysTo(int target, double minutesADay, int membersOut)
         {
             var minutes = 0d;
             for (var level = 1; level < target; ++level)
-                minutes += 1 / (Menagerie.ShareOfLevel(level, membersOut, 1) * membersOut); // the clan's minutes for this level
+                minutes += 1 / (Rookery.ShareOfLevel(level, membersOut, 1) * membersOut); // the clan's minutes for this level
             return minutes / minutesADay;
         }
 
         [Fact]
-        public void Menagerie_grows_slower_than_enchanting()
+        public void Rookery_takes_a_big_clan_a_year_and_a_half()
         {
-            // a big clan: 20 members with a pet out at once, 16 hours a day; Enchanting's best after five years is 412
-            var big = DaysTo(250, 16 * 60, 20);
-            Assert.InRange(big, 300, 450);
-            Assert.True(DaysTo(412, 16 * 60, 20) > 2 * 365);
+            // a really big clan: 100 members with a pet out at once, around the clock, reaches the top in about 1.5 years
+            Assert.InRange(DaysTo(999, 24 * 60, 100), 480, 600);
+            // a big one: 20 members out 16 hours a day
+            var big = DaysTo(500, 16 * 60, 20);
+            Assert.InRange(big, 250, 350);
+            Assert.True(DaysTo(999, 16 * 60, 20) > 3 * 365);
             // a small clan: 3 members, 4 hours a day
-            Assert.InRange(DaysTo(90, 4 * 60, 3), 300, 450);
+            Assert.InRange(DaysTo(100, 4 * 60, 3), 60, 130);
             // hundreds of members out at once barely beat dozens
-            Assert.True(DaysTo(250, 16 * 60, 300) > 0.5 * big);
+            Assert.True(DaysTo(500, 16 * 60, 300) > 0.5 * big);
             // the first levels come in an evening
             Assert.True(DaysTo(5, 4 * 60, 3) < 1);
         }

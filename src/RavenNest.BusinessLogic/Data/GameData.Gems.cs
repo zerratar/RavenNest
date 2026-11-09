@@ -21,19 +21,28 @@ namespace RavenNest.BusinessLogic.Data
         ///     and the website know a gem from its id alone. Prices follow the raw gem, three times per tier, so
         ///     combining never pays at the vendor.
         /// </summary>
-        /// <summary>Menagerie, the clan skill that goes with Taming (RavenNest.Combat.Menagerie), made once like Enchanting's row.</summary>
-        private void EnsureMenagerie()
+        /// <summary>Rookery, the clan skill that goes with Taming (RavenNest.Combat.Rookery), made once like Enchanting's row.</summary>
+        private void EnsureRookery()
         {
             var all = System.Linq.Enumerable.ToList(skills.Entities);
-            if (all.Exists(x => x.Name == RavenNest.Combat.Menagerie.Name)) return;
+            // a fixed id: the clans' Rookery rows point at it, so it must be the same after every start. The skill set is
+            // not saved, so this row is made in memory at each start (the id spells its first name, Menagerie; a row
+            // ever saved under that name would be renamed rather than made again)
+            var id = new Guid("6d656e61-6765-7269-6500-000000000001");
+            var made = all.Find(x => x.Id == id);
+            if (made != null)
+            {
+                if (made.Name != RavenNest.Combat.Rookery.Name) made.Name = RavenNest.Combat.Rookery.Name;
+                return;
+            }
+            if (all.Exists(x => x.Name == RavenNest.Combat.Rookery.Name)) return;
             var enchanting = all.Find(x => x.Name == "Enchanting");
             skills.Add(new Skill
             {
-                // a fixed id: the clans' Menagerie rows point at it, so it must be the same after every start
-                Id = new Guid("6d656e61-6765-7269-6500-000000000001"),
-                Name = RavenNest.Combat.Menagerie.Name,
+                Id = id,
+                Name = RavenNest.Combat.Rookery.Name,
                 MaxLevel = enchanting?.MaxLevel ?? GameMath.MaxLevel,
-                RequiredClanLevel = RavenNest.Combat.Menagerie.RequiredClanLevel,
+                RequiredClanLevel = RavenNest.Combat.Rookery.RequiredClanLevel,
                 Type = enchanting?.Type ?? 0,
             });
         }

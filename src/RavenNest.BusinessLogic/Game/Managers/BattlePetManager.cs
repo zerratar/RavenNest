@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly object mutex = new object();
 
         /// <summary>When each clan's members last reported pet experience: the members out at once, and the minutes each report covers.</summary>
-        private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> menagerieReports = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
+        private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> rookeryReports = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
 
         public BattlePetManager(GameData gameData, PlayerInventoryProvider inventories, ILogger<BattlePetManager> logger)
         {
@@ -239,12 +239,12 @@ namespace RavenNest.BusinessLogic.Game
                 var cap = BattlePets.LevelCap(TamingLevel(character));
                 var gained = 0;
                 experience = Math.Min(experience, MaxExperiencePerReport);
-                // the clan's Menagerie: more for the pet, and the clan's skill grows from the time the pet was out
-                var menagerie = MenagerieOf(character);
-                if (menagerie != null)
+                // the clan's Rookery: more for the pet, and the clan's skill grows from the time the pet was out
+                var rookery = RookeryOf(character);
+                if (rookery != null)
                 {
-                    experience *= 1 + Menagerie.ExperienceBonus(menagerie.Level);
-                    GrowMenagerie(menagerie, characterId);
+                    experience *= 1 + Rookery.ExperienceBonus(rookery.Level);
+                    GrowRookery(rookery, characterId);
                 }
                 var exp = pet.Experience + (long)experience;
                 while (pet.Level < cap && pet.Level < GameMath.MaxLevel)
@@ -263,32 +263,32 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        // ---------------------------------------------------------------- Menagerie, the clan skill
+        // ---------------------------------------------------------------- Rookery, the clan skill
 
-        /// <summary>The character's clan's Menagerie, or null (no clan, or the clan is below its level).</summary>
-        private ClanSkill MenagerieOf(Character character)
+        /// <summary>The character's clan's Rookery, or null (no clan, or the clan is below its level).</summary>
+        private ClanSkill RookeryOf(Character character)
         {
             var membership = gameData.GetClanMembership(character.Id);
             if (membership == null) return null;
-            var skill = gameData.GetSkills().FirstOrDefault(x => x.Name == Menagerie.Name);
+            var skill = gameData.GetSkills().FirstOrDefault(x => x.Name == Rookery.Name);
             if (skill == null) return null;
             return gameData.GetClanSkills(membership.ClanId)?.FirstOrDefault(x => x.SkillId == skill.Id);
         }
 
         /// <summary>
         ///     A member's pet report: the minutes since this member's last one (a minute for the first, at most
-        ///     Menagerie.MaxMinutesPerReport), shared with the members out at once (RavenNest.Combat.Menagerie: from time,
+        ///     Rookery.MaxMinutesPerReport), shared with the members out at once (RavenNest.Combat.Rookery: from time,
         ///     not experience, so it grows slower than Enchanting however many members a clan has). Called inside the lock.
         /// </summary>
-        private void GrowMenagerie(ClanSkill skill, Guid characterId)
+        private void GrowRookery(ClanSkill skill, Guid characterId)
         {
             if (skill.Level >= GameMath.MaxLevel) return;
             var now = DateTime.UtcNow;
-            if (!menagerieReports.TryGetValue(skill.ClanId, out var members)) menagerieReports[skill.ClanId] = members = new Dictionary<Guid, DateTime>();
-            var minutes = members.TryGetValue(characterId, out var last) ? Math.Clamp((now - last).TotalMinutes, 0, Menagerie.MaxMinutesPerReport) : 1d;
+            if (!rookeryReports.TryGetValue(skill.ClanId, out var members)) rookeryReports[skill.ClanId] = members = new Dictionary<Guid, DateTime>();
+            var minutes = members.TryGetValue(characterId, out var last) ? Math.Clamp((now - last).TotalMinutes, 0, Rookery.MaxMinutesPerReport) : 1d;
             members[characterId] = now;
             foreach (var gone in members.Where(x => (now - x.Value).TotalMinutes > 2).Select(x => x.Key).ToList()) members.Remove(gone);
-            var experience = Menagerie.ShareOfLevel(skill.Level, members.Count, minutes) * GameMath.ExperienceForLevel(skill.Level + 1);
+            var experience = Rookery.ShareOfLevel(skill.Level, members.Count, minutes) * GameMath.ExperienceForLevel(skill.Level + 1);
             if (experience <= 0) return;
             skill.Experience += experience;
             var next = GameMath.ExperienceForLevel(skill.Level + 1);
@@ -300,9 +300,9 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        /// <summary>The stable's places: Taming's, and the clan's Menagerie's.</summary>
+        /// <summary>The stable's places: Taming's, and the clan's Rookery's.</summary>
         public int StableSize(Character character) =>
-            BattlePets.StableSize(TamingLevel(character)) + Menagerie.ExtraStablePlaces(MenagerieOf(character)?.Level ?? 0);
+            BattlePets.StableSize(TamingLevel(character)) + Rookery.ExtraStablePlaces(RookeryOf(character)?.Level ?? 0);
 
         /// <summary>The treat that helped is eaten: one of it, if it is one the species loves and the character has it.</summary>
         private void EatTreat(Character character, PetSpecies species, Guid itemId)

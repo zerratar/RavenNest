@@ -295,25 +295,25 @@ namespace RavenNest.Combat
     }
 
     /// <summary>
-    ///     Menagerie, the clan skill that goes with Taming (docs/battle-pets-design.md, section 6): it grows while the
+    ///     Rookery, the clan skill that goes with Taming (docs/battle-pets-design.md, section 6): it grows while the
     ///     clan's members have pets out, and it makes their pets grow faster and their stables bigger. Modest, so nobody
     ///     without a clan is locked out of anything, and slow, since nobody has to do anything for it.
     /// </summary>
-    public static class Menagerie
+    public static class Rookery
     {
-        public const string Name = "Menagerie";
+        public const string Name = "Rookery";
         public const int RequiredClanLevel = 20;
 
         // ---- How it grows: from time, not from experience ------------------------------------------------------
-        // Enchanting, the other clan skill, only grows when members use a command on a cooldown: after five years the
-        // best clan (655 members) is level 412 and the average 54. Menagerie is idle, so it must be slower. It grows from
-        // the minutes members have a pet out, not from what the pets earn (that grows with levels and would max it in
-        // days), and many members at once count for less each: n members out together count as 1 + log2(n) of one.
-        // Each level takes longer than the last (MinutesPerLevel). With that, a big clan (some 20 members with a pet out
-        // for 16 hours a day) reaches about level 250 in a year, a small one (3 members, 4 hours a day) about 90.
+        // It grows from the minutes members have a pet out, not from what the pets earn (that grows with levels and
+        // would max it in days), and many members at once count for less each: n members out together count as
+        // 1 + log2(n) of one. Each level takes longer than the last (MinutesPerLevel). A really big clan (100 members
+        // with a pet out at once, around the clock) reaches 999 in about a year and a half; 20 members out 16 hours a
+        // day reach 500 in about ten months; a small clan (3 members, 4 hours a day) reaches 100 in about three months.
+        // (Enchanting, the other clan skill, grows from a command on a cooldown: the best clan is 412 after five years.)
 
-        /// <summary>Minutes of one member's pet out that a level takes (one hour for level 2, 100 hours for level 101).</summary>
-        public static double MinutesPerLevel(int level) => 60d * Math.Max(1, level);
+        /// <summary>Minutes of one member's pet out that a level takes (12 minutes for level 2, 20 hours for level 101).</summary>
+        public static double MinutesPerLevel(int level) => 12d * Math.Max(1, level);
 
         /// <summary>What n members with a pet out at once count as, in members: 1 + log2(n).</summary>
         public static double Pace(int membersOut) => 1 + Math.Log(Math.Max(1, membersOut), 2);
@@ -325,8 +325,8 @@ namespace RavenNest.Combat
         /// <summary>A member's report counts for this long at most (reports come every minute while a pet earns).</summary>
         public const double MaxMinutesPerReport = 1.5;
 
-        /// <summary>More pet experience for members: 0.1% a level, 50% at most (level 500).</summary>
-        public static double ExperienceBonus(int level) => Math.Min(0.5, Math.Max(0, level) * 0.001);
+        /// <summary>More pet experience for members: 0.05% a level (49.95% at level 999), so every level up to the top counts.</summary>
+        public static double ExperienceBonus(int level) => Math.Min(0.5, Math.Max(0, level) * 0.0005);
 
         /// <summary>Stable places on top of Taming's: one at level 100, two at 300.</summary>
         public static int ExtraStablePlaces(int level) => level >= 300 ? 2 : level >= 100 ? 1 : 0;
