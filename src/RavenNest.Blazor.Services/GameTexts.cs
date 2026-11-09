@@ -358,7 +358,7 @@ namespace RavenNest.Blazor.Services
             ["UI_SKILL_ATTACK"] = "Attack",
             ["UI_SKILL_DEFENSE"] = "Defense",
             ["UI_SKILL_STRENGTH"] = "Strength",
-            ["UI_SKILL_HEALTH"] = "Health",
+            ["UI_SKILL_HEALTH"] = "Vitality",
             ["UI_SKILL_WOODCUTTING"] = "Woodcutting",
             ["UI_SKILL_FISHING"] = "Fishing",
             ["UI_SKILL_MINING"] = "Mining",

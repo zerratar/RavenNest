@@ -11,7 +11,7 @@ namespace RavenNest.Blazor.Services
     /// <param name="SkillName">
     ///     The skill <see cref="TownService.GetSkillByHouseType"/> actually reads. It is the same
     ///     word as the type for every house but one: a Melee house is driven by the assignee's
-    ///     Health level, which is not something the game says anywhere.
+    ///     Vitality level (stored as Health), which is not something the game says anywhere.
     /// </param>
     public sealed record TownHouseTypeOption(TownHouseSlotType Type, string Label, string Icon, string SkillName);
 
@@ -29,7 +29,7 @@ namespace RavenNest.Blazor.Services
             new TownHouseTypeOption(TownHouseSlotType.Woodcutting, "Woodcutting", "fa-solid fa-tree", "Woodcutting"),
             new TownHouseTypeOption(TownHouseSlotType.Magic, "Magic", "fa-sharp fa-solid fa-staff", "Magic"),
             new TownHouseTypeOption(TownHouseSlotType.Ranged, "Ranged", "fa-sharp fa-solid fa-bow-arrow", "Ranged"),
-            new TownHouseTypeOption(TownHouseSlotType.Melee, "Melee", "fa-sharp fa-solid fa-sword", "Health"),
+            new TownHouseTypeOption(TownHouseSlotType.Melee, "Melee", "fa-sharp fa-solid fa-sword", "Vitality"),
             new TownHouseTypeOption(TownHouseSlotType.Cooking, "Cooking", "fa-sharp fa-solid fa-user-chef", "Cooking"),
             new TownHouseTypeOption(TownHouseSlotType.Crafting, "Crafting", "fa-sharp fa-solid fa-hammer", "Crafting"),
             new TownHouseTypeOption(TownHouseSlotType.Farming, "Farming", "fa-solid fa-wheat", "Farming"),

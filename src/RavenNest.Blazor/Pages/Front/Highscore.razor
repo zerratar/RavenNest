@@ -27,7 +27,7 @@
             Highscore Top @Top characters
             @if (activeSkill != null)
             {
-                <text>- @activeSkill.Name</text>
+                <text>- @RavenNest.Blazor.Services.SkillNames.Display(activeSkill.Name)</text>
             }
         </h1>
     </div>
@@ -58,7 +58,7 @@
                     <button type="button"
                             class="rf-filter @(skill.Active ? "is-active" : "")"
                             aria-pressed="@skill.Active"
-                            @onclick="(() => SelectSkill(skill))">@skill.Name</button>
+                            @onclick="(() => SelectSkill(skill))">@RavenNest.Blazor.Services.SkillNames.Display(skill.Name)</button>
                 }
             </div>
 

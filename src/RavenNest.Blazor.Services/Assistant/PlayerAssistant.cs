@@ -768,7 +768,8 @@ the page back to them unless it matters to the answer.
             foreach (var option in TownHouseTypes.All)
             {
                 if (option.Label.Equals(wanted, StringComparison.OrdinalIgnoreCase) ||
-                    option.SkillName.Equals(wanted, StringComparison.OrdinalIgnoreCase))
+                    option.SkillName.Equals(wanted, StringComparison.OrdinalIgnoreCase) ||
+                    SkillNames.Display(wanted).Equals(option.SkillName, StringComparison.OrdinalIgnoreCase)) // "health", the old name
                 {
                     return option.Type;
                 }

@@ -40,6 +40,19 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(1, CombatMath.MaxHealth(0));
         }
 
+        [Fact]
+        public void Players_take_eight_a_vitality_level_and_the_rest_from_armour()
+        {
+            Assert.Equal(7992, CombatMath.PlayerMaxHealth(999));
+            Assert.Equal(80, CombatMath.PlayerMaxHealth(10));
+            // a full Elder Atlarus set: helmet 473, chest 517, gloves 373, boots 331, leggings 450, shield 450
+            var armour = CombatMath.ArmorHealth(473) + CombatMath.ArmorHealth(517) + CombatMath.ArmorHealth(373)
+                + CombatMath.ArmorHealth(331) + CombatMath.ArmorHealth(450) + CombatMath.ArmorHealth(450);
+            Assert.InRange(armour, 2000, 2150);
+            Assert.InRange(CombatMath.PlayerMaxHealth(999, armour), 9900, 10200);
+            Assert.Equal(0, CombatMath.ArmorHealth(0));
+        }
+
         [Theory]
         [InlineData(100, 100, 0.5)]
         [InlineData(200, 100, 0.75)]

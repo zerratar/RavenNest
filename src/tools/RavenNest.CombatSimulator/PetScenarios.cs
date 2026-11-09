@@ -76,7 +76,7 @@ namespace RavenNest.CombatSimulator
         private static Result Fight(GearPicker gear, int level, PetSpecies species, int stage, double armourShare, double offenceShare, ICombatRandom random)
         {
             var kit = gear.Melee(level);
-            var owner = new CombatSheet { CombatLevel = level, MaxHealth = CombatMath.MaxHealth(level), DefenseLevel = level, Armor = kit.ArmorPower, IsPlayer = true };
+            var owner = new CombatSheet { CombatLevel = level, MaxHealth = CombatMath.PlayerMaxHealth(level, kit.ArmorHealth), DefenseLevel = level, Armor = kit.ArmorPower, IsPlayer = true };
             owner.Melee.DamageLevel = level;
             owner.Melee.AimLevel = level;
             owner.Melee.Power = kit.WeaponPower;

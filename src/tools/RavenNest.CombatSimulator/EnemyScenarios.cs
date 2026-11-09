@@ -127,7 +127,7 @@ namespace RavenNest.CombatSimulator
             var player = new CombatSheet
             {
                 CombatLevel = level,
-                MaxHealth = CombatMath.MaxHealth(HealthLevel(level)),
+                MaxHealth = CombatMath.PlayerMaxHealth(HealthLevel(level), kit.ArmorHealth),
                 DefenseLevel = level,
                 Armor = kit.ArmorPower,
                 IsPlayer = true,

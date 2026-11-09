@@ -70,7 +70,7 @@ namespace RavenNest.CombatSimulator
             var sheet = new CombatSheet
             {
                 CombatLevel = level,
-                MaxHealth = CombatMath.MaxHealth(EnemyScenarios.HealthLevel(level)),
+                MaxHealth = CombatMath.PlayerMaxHealth(EnemyScenarios.HealthLevel(level), kit.ArmorHealth),
                 DefenseLevel = level,
                 Armor = kit.ArmorPower,
                 IsPlayer = true,

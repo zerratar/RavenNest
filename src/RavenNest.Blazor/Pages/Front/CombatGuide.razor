@@ -74,12 +74,28 @@
                     <div class="rf-combat__result">@MaxHit.ToString("N0") max hit</div>
                 </div>
                 <div class="rf-combat__calcgroup">
+                    <h4>Health</h4>
+                    <label class="rf-trees__slot"><span>Your Vitality level</span><input type="number" min="1" max="999" @bind="vitalityLevel" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Armour on your armour pieces</span><input type="number" min="0" max="5000" @bind="armorPieces" @bind:event="oninput" /></label>
+                    <div class="rf-combat__result">@MaxHealth.ToString("N0") health</div>
+                    <div class="rf-meta">@CombatMath.ArmorHealth(Math.Max(0, armorPieces)).ToString("N0") of it from armour</div>
+                </div>
+                <div class="rf-combat__calcgroup">
                     <h4>Armour</h4>
                     <label class="rf-trees__slot"><span>Their armour</span><input type="number" min="0" max="20000" @bind="armor" @bind:event="oninput" /></label>
                     <div class="rf-combat__result">@P(ArmorCut) off physical</div>
                     <div class="rf-meta">@P(ArmorCut * CombatMath.ElementArmorShare) off element damage</div>
                 </div>
             </div>
+        </div>
+
+        <h2 class="rf-combat__heading">Health</h2>
+        <div class="rf-panel">
+            <ul class="rf-combat__list">
+                <li><b>Vitality</b> (the skill once called Health) gives @CombatMath.PlayerHealthPerLevel health a level: @CombatMath.PlayerMaxHealth(999).ToString("N0") at level 999.</li>
+                <li><b>Armour</b> gives the rest: every point of armour on your helmet, chest, gloves, boots, leggings, shield and shoulders adds @CombatMath.HealthPerArmor.ToString("0.#") health. A full set of the best armour adds about two thousand.</li>
+                <li>Health from gear and gems, and the skill trees' "more health" passives, come on top. Your combat level adds nothing.</li>
+            </ul>
         </div>
 
         <h2 class="rf-combat__heading">Elements</h2>
@@ -151,7 +167,7 @@
         <h2 class="rf-combat__heading">Skill trees</h2>
         <div class="rf-panel rf-panel--accent">
             <ul class="rf-combat__list">
-                <li>Eight trees, one per combat skill: Bulwark (Defense), Restoration (Healing), Might (Strength), Precision (Attack), Marksman (Ranged), Elements (Magic), Vitality (Health) and Hunter (Slayer).</li>
+                <li>Eight trees, one per combat skill: Bulwark (Defense), Restoration (Healing), Might (Strength), Precision (Attack), Marksman (Ranged), Elements (Magic), Hunter (Slayer) and Vitality, named after its skill.</li>
                 <li>Points come from your eight combat levels added up: one per ten levels up to 1,000, then one per forty. Every combat skill at 999 gives @SkillTrees.EarnedPoints(999 * 8) points, far fewer than the trees cost, so every build is a choice.</li>
                 <li>Each tree starts with a few skills and opens more at its skill's level @SkillTrees.TierLevels[1], @SkillTrees.TierLevels[2] and @SkillTrees.TierLevels[3].</li>
                 <li><b>Passives</b> work all the time. <b>Actives</b> go in your loadout (@SkillTrees.BaseLoadoutSlots slots, one more with Battle Rhythm) and your character uses them by itself on their cooldowns, one every @SkillTrees.SharedPause.ToString("0.#") seconds at most, when their rule says so: a heal when someone is hurt, Cleave when three enemies are near.</li>
@@ -167,6 +183,8 @@
 
 @code {
     private int aimLevel = 100, gearAccuracy = 120, defenseLevel = 100, gearEvasion = 0, damageLevel = 100, power = 150, armor = 400;
+    private int vitalityLevel = 100, armorPieces = 450;
+    private int MaxHealth => CombatMath.PlayerMaxHealth(Clamp(vitalityLevel, 1, 999), CombatMath.ArmorHealth(Math.Max(0, armorPieces)));
 
     private double HitChance => CombatMath.HitChance(CombatMath.AccuracyRating(Clamp(aimLevel, 1, 999), Math.Max(0, gearAccuracy)), CombatMath.EvasionRating(Clamp(defenseLevel, 1, 999), Math.Max(0, gearEvasion)));
     private double MaxHit => CombatMath.MaxHit(Clamp(damageLevel, 1, 999), Math.Max(0, power));

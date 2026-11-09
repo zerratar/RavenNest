@@ -64,7 +64,7 @@ namespace RavenNest.CombatSimulator
         private static double Damage(GearPicker gear, int level, AttackStyle style, SkillBuild build, bool boss, ICombatRandom random)
         {
             var kit = Kit(gear, level, style);
-            var player = new CombatSheet { CombatLevel = level, MaxHealth = CombatMath.MaxHealth(level), DefenseLevel = level, Armor = kit.ArmorPower, IsPlayer = true };
+            var player = new CombatSheet { CombatLevel = level, MaxHealth = CombatMath.PlayerMaxHealth(level, kit.ArmorHealth), DefenseLevel = level, Armor = kit.ArmorPower, IsPlayer = true };
             var s = player.Style(style);
             s.DamageLevel = level;
             s.AimLevel = level;

@@ -71,8 +71,19 @@ namespace RavenNest.Combat
     /// </summary>
     public static class CombatMath
     {
-        /// <summary>Health is ten times larger than the Health level was, so blows are ten times larger too.</summary>
+        /// <summary>Health is ten times larger than the Health level was, so blows are ten times larger too (enemies and pets).</summary>
         public const int HealthPerLevel = 10;
+
+        /// <summary>
+        ///     A player's health per Vitality level (the skill stored as Health). Players take the rest from their armour
+        ///     (<see cref="HealthPerArmor"/>): a level 999 in a full Elder Atlarus set with a shield has 7,992 + 2,075,
+        ///     close to the 9,990 of ten a level, so fights keep their length while gear becomes a real source of
+        ///     health (user, 2026-11-09). Combat level adds nothing: health would grow far too big.
+        /// </summary>
+        public const int PlayerHealthPerLevel = 8;
+
+        /// <summary>Health per point of base armour on armour pieces (helmet, chest, gloves, boots, leggings, shield, shoulders).</summary>
+        public const double HealthPerArmor = 0.8;
         public const double DamageScale = 10;
 
         public const double BaseCritChance = 0.05;
@@ -117,6 +128,15 @@ namespace RavenNest.Combat
         public const double ExecuteThreshold = 0.3;
 
         public static int MaxHealth(int healthLevel, int bonus = 0) => Math.Max(1, healthLevel * HealthPerLevel + bonus);
+
+        /// <summary>A player's pool: Vitality's share plus what gear gives (armour health and flat health stats).</summary>
+        public static int PlayerMaxHealth(int vitalityLevel, int gearHealth = 0) => Math.Max(1, vitalityLevel * PlayerHealthPerLevel + gearHealth);
+
+        /// <summary>The health a piece's base armour gives (enchantments and bonuses to armour do not count).</summary>
+        public static int ArmorHealth(int armor) => armor <= 0 ? 0 : (int)Math.Round(armor * HealthPerArmor);
+
+        /// <summary>Whether an item type (RavenNest.Models.ItemType) is an armour piece whose armour gives health: Helmet (8) to RightShoulder (15).</summary>
+        public static bool IsArmorPiece(int itemType) => itemType >= 8 && itemType <= 15;
 
         /// <summary>
         ///     The biggest normal hit: today's MaxHit (Core/GameMath.cs) times ten, without its rounding, so progress

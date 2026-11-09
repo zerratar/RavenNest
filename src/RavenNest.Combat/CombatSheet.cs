@@ -157,7 +157,8 @@ namespace RavenNest.Combat
                 s.AimLevel = Math.Min(s.AimLevel, cap);
                 s.DamageLevel = Math.Min(s.DamageLevel, cap);
             }
-            MaxHealth = Math.Min(MaxHealth, CombatMath.MaxHealth(cap) + Math.Max(0, gearHealth));
+            var pool = IsPlayer ? CombatMath.PlayerMaxHealth(cap) : CombatMath.MaxHealth(cap);
+            MaxHealth = Math.Min(MaxHealth, pool + Math.Max(0, gearHealth));
         }
 
         public CombatSheet Copy()

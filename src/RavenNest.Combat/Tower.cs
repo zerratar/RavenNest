@@ -133,6 +133,21 @@ namespace RavenNest.Combat
             sheet.Armor = Math.Min(sheet.Armor, GearSteps[row, 7]);
         }
 
+        /// <summary>The most armour gear counts for at a sync level (the best-gear table).</summary>
+        public static int MaxArmor(int level)
+        {
+            var row = 0;
+            for (var i = 0; i < GearSteps.GetLength(0); ++i) if (GearSteps[i, 0] <= level) row = i;
+            return GearSteps[row, 7];
+        }
+
+        /// <summary>
+        ///     The health gear gives on a synced floor: armour's share is capped with the armour (a level 999 set's
+        ///     two thousand would dwarf a level 20 pool); flat health from gear and gems stays.
+        /// </summary>
+        public static int SyncGearHealth(int gearHealth, int armorHealth, int level) =>
+            Math.Max(0, gearHealth - armorHealth + Math.Min(armorHealth, CombatMath.ArmorHealth(MaxArmor(level))));
+
         /// <summary>Level sync on a floor: skill levels, the health pool and gear capped at the floor's sync level.</summary>
         public static void Sync(CombatSheet sheet, int floor, int gearHealth = 0)
         {

@@ -69,7 +69,7 @@
                     var isActive = IsTrainingSkill(skill);
                     <li class="rf-skill @(CanModify ? "rf-skill--editable" : "") @(isActive ? "is-training" : "")">
                         <span class="rf-skill__name">
-                            @skill.Name
+                            @RavenNest.Blazor.Services.SkillNames.Display(skill.Name)
                             @if (isActive)
                             {
                                 @* The wording says what the highlight says, so the row still reads
@@ -97,16 +97,9 @@
                             }
                         </span>
 
-                        @if (skill.Name == "Health")
-                        {
-                            <span class="rf-skill__level" title="Current health out of maximum">
-                                @currentHealth<span class="rf-skill__level-max"> / @skill.Level</span>
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="rf-skill__level">@skill.Level</span>
-                        }
+                        @* Vitality (stored as Health) shows its level like every skill: health is its own pool
+                           now (8 a Vitality level plus armour), which the game shows in its health bar. *@
+                        <span class="rf-skill__level">@skill.Level</span>
 
                         @if (CanModify)
                         {
@@ -156,7 +149,6 @@
     public bool CanManage { get; set; }
 
     private TrainingSkill trainingSkill;
-    private int currentHealth;
 
     private RavenNest.Models.SessionInfo session;
 
@@ -224,11 +216,6 @@
         {
             trainingSkill = PlayerService.GetTrainingSkill(Player.State);
             isSailing = trainingSkill == null && string.IsNullOrEmpty(Player.State.Island);
-            currentHealth = Player.State.Health;
-        }
-        else
-        {
-            currentHealth = Player.Skills?.HealthLevel ?? 0;
         }
 
         skills = Player.Skills?.AsList();

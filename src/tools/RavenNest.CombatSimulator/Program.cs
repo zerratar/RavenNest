@@ -137,9 +137,10 @@ namespace RavenNest.CombatSimulator
             var sheet = new CombatSheet
             {
                 CombatLevel = level,
-                MaxHealth = CombatMath.MaxHealth(level),
+                MaxHealth = CombatMath.PlayerMaxHealth(level, kit.ArmorHealth),
                 DefenseLevel = level,
                 Armor = kit.ArmorPower,
+                IsPlayer = true,
                 CritChance = 0, // players have no crit chance today; kept out so the comparison is fair
             };
             sheet.Melee.DamageLevel = level;

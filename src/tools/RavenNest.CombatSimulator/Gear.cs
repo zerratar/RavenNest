@@ -45,6 +45,9 @@ namespace RavenNest.CombatSimulator
         public int RangedPower => Items.Sum(x => x.RangedPower);
         public int ArmorPower => Items.Sum(x => x.ArmorPower);
 
+        /// <summary>The health the armour pieces give a player (CombatMath.HealthPerArmor).</summary>
+        public int ArmorHealth => Items.Where(x => CombatMath.IsArmorPiece(x.Type)).Sum(x => CombatMath.ArmorHealth(x.ArmorPower));
+
         /// <summary>
         ///     Combat v2's stats beyond power, accuracy and armour (element damage, resistances, evasion, health,
         ///     crits) on a sheet that already has those, the way the game does it: a weapon's element converts its own
