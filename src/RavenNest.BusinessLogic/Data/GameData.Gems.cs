@@ -67,7 +67,7 @@ namespace RavenNest.BusinessLogic.Data
                     var id = Gems.ItemId(kind, tier);
                     var name = Gems.Name(kind, tier);
                     var description = "An enchanted " + kind.ToString().ToLowerInvariant() + ", ready for a socket. In a weapon: "
-                        + Gems.Describe(kind, tier, GemSlot.Weapon) + ". In armour: " + Gems.Describe(kind, tier, GemSlot.Armor)
+                        + Gems.Describe(kind, tier, GemSlot.Weapon) + ". In armor: " + Gems.Describe(kind, tier, GemSlot.Armor)
                         + ". In a ring or amulet: " + Gems.Describe(kind, tier, GemSlot.Jewellery) + ".";
                     var price = basePrice * (long)Math.Pow(3, (int)tier);
                     var item = GetItem(id);

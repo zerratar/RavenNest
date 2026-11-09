@@ -152,7 +152,7 @@ else
 
     <section class="rf-clanlook__card">
         <h4 class="rf-clanlook__title">Boat flag and sails</h4>
-        <p class="rf-meta">Members who pick the clan flag or the clan sails for their boat wear your logo on these colours. Players see them with the newest game version.</p>
+        <p class="rf-meta">Members who pick the clan flag or the clan sails for their boat wear your logo on these colors. Players see them with the newest game version.</p>
         <div class="cle-boats">
             <div class="cle-boats__pickers">
                 @ColorRow("Flag", state.FlagColor, FlagColors, FlagDefault, v => SaveColors(v, state.SailColor))
@@ -192,9 +192,9 @@ else
                     var color = c;
                     <button type="button" class="cle-swatch @(now == color ? "is-on" : "")" style="--c:@color" title="@color" aria-pressed="@(now == color)" @onclick="() => pick(color)"></button>
                 }
-                <label class="cle-swatch cle-swatch--custom @(now != null && !palette.Contains(now) ? "is-on" : "")" style="--c:@(now ?? plain)" title="Any colour">
+                <label class="cle-swatch cle-swatch--custom @(now != null && !palette.Contains(now) ? "is-on" : "")" style="--c:@(now ?? plain)" title="Any color">
                     <i class="fa-solid fa-eye-dropper" aria-hidden="true"></i>
-                    <input type="color" value="@(now ?? plain)" @onchange="e => pick(e.Value?.ToString()?.ToUpperInvariant())" aria-label="@title: any colour" />
+                    <input type="color" value="@(now ?? plain)" @onchange="e => pick(e.Value?.ToString()?.ToUpperInvariant())" aria-label="@title: any color" />
                 </label>
             </div>
         </div>
@@ -206,12 +206,12 @@ else
         {
             Preview.FlagColor = flag;
             Preview.SailColor = sail;
-            Say("Boat colours saved.", false);
+            Say("Boat colors saved.", false);
             return;
         }
         var result = ClanImages.SetBoatColors(flag, sail);
         state = ClanImages.GetState();
-        if (result.Ok) Say("Boat colours saved.", false);
+        if (result.Ok) Say("Boat colors saved.", false);
         else Say(result.Error, true);
     }
 

@@ -27,7 +27,7 @@
     @if (state == State.Gone)
     {
         <h1 class="rf-auth__title">This sign in has ended</h1>
-        <p class="rf-auth__lead">It was used, cancelled, or waited longer than ten minutes.</p>
+        <p class="rf-auth__lead">It was used, canceled, or waited longer than ten minutes.</p>
         <div class="rf-auth__card">
             <p class="rf-meta">Choose <b>Sign in with Twitch</b> in the game again to get a new code.</p>
         </div>
@@ -42,7 +42,7 @@
     }
     else if (state == State.Denied)
     {
-        <h1 class="rf-auth__title">Sign in cancelled</h1>
+        <h1 class="rf-auth__title">Sign in canceled</h1>
         <p class="rf-auth__lead">Nothing was signed in.</p>
         <div class="rf-auth__card">
             <p class="rf-meta">If someone sent you this link, they wanted their game signed in to your account. Do not approve links you did not start yourself.</p>

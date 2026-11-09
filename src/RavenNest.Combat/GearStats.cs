@@ -209,7 +209,7 @@ namespace RavenNest.Combat
                 case Element.Ice: return GearStat.IceResistance;
                 case Element.Lightning: return GearStat.LightningResistance;
                 case Element.Poison: return GearStat.PoisonResistance;
-                default: throw new ArgumentException("Physical damage is reduced by armour, not a resistance stat.", nameof(element));
+                default: throw new ArgumentException("Physical damage is reduced by armor, not a resistance stat.", nameof(element));
             }
         }
 

@@ -523,7 +523,7 @@ namespace RavenNest.BusinessLogic.Data
                     MantaRay = GetOrCreateItem(i, "Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
                     Kraken = GetOrCreateItem(i, "Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
                     Mackerel = GetOrCreateItem(i, "Mackerel", "Oily, smoky and very good for you.", ItemCategory.Food, ItemType.Food),
-                    Tuna = GetOrCreateItem(i, "Tuna", "Seared on the outside, pink in the middle. A sailor's favourite.", ItemCategory.Food, ItemType.Food),
+                    Tuna = GetOrCreateItem(i, "Tuna", "Seared on the outside, pink in the middle. A sailor's favorite.", ItemCategory.Food, ItemType.Food),
                     Marlin = GetOrCreateItem(i, "Marlin", "Grilled steaks from a fish that did not give up easily.", ItemCategory.Food, ItemType.Food),
                     Anglerfish = GetOrCreateItem(i, "Anglerfish", "Ugly to look at, wonderful to eat.", ItemCategory.Food, ItemType.Food),
                     GiantSquid = GetOrCreateItem(i, "Giant Squid", "Rings of tender squid, enough for the whole crew.", ItemCategory.Food, ItemType.Food),

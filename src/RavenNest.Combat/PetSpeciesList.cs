@@ -181,7 +181,7 @@ namespace RavenNest.Combat
                 Tamed("metalon", PetRole.Damage, PetStrike.Bite, Element.Poison, N("Red Metalon", "Purple Metalon", "Green Metalon"), 30,
                     new[] { "Red Metalon", "Purple Metalon", "Green Metalon", "home-metalon" },
                     new[] { "enemy:Red Metalon", "enemy:Purple Metalon", "enemy:Green Metalon" }, H(0.7, 0.85, 1.0), EnemyFamily.Insect,
-                    "Changes colour as it grows: red, then purple, then green, the most venomous of all.",
+                    "Changes color as it grows: red, then purple, then green, the most venomous of all.",
                     s => s.Skills = new[] { "venom-sting", "frenzy", "venom-breath" }),
                 Tamed("red-dragon", PetRole.Damage, PetStrike.Bite, Element.Fire, N("Red Whelp", "Red Drake", "Red Dragon"), 100,
                     new[] { "ironhill-dragon-red", "Red Dragon" }, new[] { "enemy:Red Dragon" }, H(0.5, 0.8, 1.2), EnemyFamily.Dragon,

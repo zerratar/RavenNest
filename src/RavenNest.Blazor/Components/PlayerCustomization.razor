@@ -81,18 +81,18 @@ else
                         @(Colors("Eyes", "eyes", look.EyeColor, EyeColors, v => { look.EyeColor = v; }))
                         @(Grid("Eyebrows", "eyebrows", look.Eyebrows, Female ? CharacterLookService.FemaleEyebrows : CharacterLookService.MaleEyebrows, true, v => look.Eyebrows = v))
                         @(Colors("War paint", "warPaint", look.WarPaintColor, PaintColors, v => { look.WarPaintColor = v; }, "Shows on the faces that have paint."))
-                        @(Colors("Scars", "scar", look.ScarColor, ScarColors, v => { look.ScarColor = v; }, "Shows on the faces drawn with scars. The first colour is your skin, which hides them.", withSkin: true))
+                        @(Colors("Scars", "scar", look.ScarColor, ScarColors, v => { look.ScarColor = v; }, "Shows on the faces drawn with scars. The first color is your skin, which hides them.", withSkin: true))
                         break;
 
                     case "hair":
-                        @(Colors("Hair colour", "hair", look.BeardColor, HairColors, v => { look.BeardColor = v; look.HairColor = v; }, "The game colours the hair, the eyebrows and the beard alike."))
+                        @(Colors("Hair color", "hair", look.BeardColor, HairColors, v => { look.BeardColor = v; look.HairColor = v; }, "The game colors the hair, the eyebrows and the beard alike."))
                         @(Grid("Hairstyle", "hairs", look.Hair, CharacterLookService.Hairs, true, v => look.Hair = v))
                         break;
 
                     case "beard":
                         @(Grid("Beard", "beards", look.FacialHair, CharacterLookService.MaleBeards, true, v => look.FacialHair = v))
-                        <p class="rf-meta">The beard takes the hair colour (Hair tab).</p>
-                        @(Colors("Stubble", "stubble", look.StubbleColor, StubbleColors, v => { look.StubbleColor = v; }, "The shadow of a shave along the jaw, and on some faces over the lip. A beard covers most of it. The first colour is your skin, which hides it.", withSkin: true))
+                        <p class="rf-meta">The beard takes the hair color (Hair tab).</p>
+                        @(Colors("Stubble", "stubble", look.StubbleColor, StubbleColors, v => { look.StubbleColor = v; }, "The shadow of a shave along the jaw, and on some faces over the lip. A beard covers most of it. The first color is your skin, which hides it.", withSkin: true))
                         break;
                 }
             </div>
@@ -159,9 +159,9 @@ else
                     var color = c;
                     <button type="button" class="cz-swatch @(now == color ? "is-on" : "")" style="--c:@color" aria-pressed="@(now == color)" title="@(color == skin ? "Same as the skin" : color)" @onclick="() => PickColor(pick, color)"></button>
                 }
-                <label class="cz-swatch cz-swatch--custom @(palette.Contains(now) ? "" : "is-on")" title="Any colour" style="--c:@now">
+                <label class="cz-swatch cz-swatch--custom @(palette.Contains(now) ? "" : "is-on")" title="Any color" style="--c:@now">
                     <i class="fas fa-eye-dropper" aria-hidden="true"></i>
-                    <input type="color" value="@now" data-rf-color="@channel" @onchange="e => PickColor(pick, e.Value?.ToString())" aria-label="@title: any colour" />
+                    <input type="color" value="@now" data-rf-color="@channel" @onchange="e => PickColor(pick, e.Value?.ToString())" aria-label="@title: any color" />
                 </label>
             </div>
             @if (note != null)

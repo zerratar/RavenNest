@@ -68,9 +68,9 @@ else
             @* the colour is one small control, so it sits beside the banner on a wide screen *@
             <div class="rf-pageedit__looks">
                 <div class="rf-field">
-                    <span class="rf-label">Accent colour</span>
+                    <span class="rf-label">Accent color</span>
                     <span class="rf-pageedit__color">
-                        <input type="color" value="@(string.IsNullOrEmpty(accent) ? "#E8B04B" : accent)" @onchange="e => SaveAccent(e.Value?.ToString())" aria-label="Accent colour" />
+                        <input type="color" value="@(string.IsNullOrEmpty(accent) ? "#E8B04B" : accent)" @onchange="e => SaveAccent(e.Value?.ToString())" aria-label="Accent color" />
                         <span class="rf-meta">@(string.IsNullOrEmpty(accent) ? "Gold, the default" : accent)</span>
                         @if (!string.IsNullOrEmpty(accent))
                         {
@@ -206,7 +206,7 @@ else
     {
         var ok = ClanService.SavePageAccent(ClanId, color);
         if (ok) accent = string.IsNullOrEmpty(color) ? "" : color.ToUpperInvariant();
-        Show(ok ? "The accent colour is saved." : "That is not a colour the page can use.", !ok, "looks");
+        Show(ok ? "The accent color is saved." : "That is not a color the page can use.", !ok, "looks");
         if (ok) Changed.InvokeAsync();
     }
 

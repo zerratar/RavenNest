@@ -154,8 +154,8 @@ namespace RavenNest.BusinessLogic.Game.ClanImages
         public ClanImageResult SetBoatColors(Guid userId, string flagColor, string sailColor)
         {
             var clan = gameData.GetClanByOwner(userId);
-            if (clan == null) return Fail("Only a clan owner can change the clan's colours.");
-            if (!ValidColor(flagColor) || !ValidColor(sailColor)) return Fail("Pick a colour from the list or the colour picker.");
+            if (clan == null) return Fail("Only a clan owner can change the clan's colors.");
+            if (!ValidColor(flagColor) || !ValidColor(sailColor)) return Fail("Pick a color from the list or the color picker.");
             clan.FlagColor = string.IsNullOrEmpty(flagColor) ? null : flagColor.ToUpperInvariant();
             clan.SailColor = string.IsNullOrEmpty(sailColor) ? null : sailColor.ToUpperInvariant();
             SendLookChanged(clan);

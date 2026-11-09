@@ -83,7 +83,7 @@ namespace RavenNest.Combat
         // a stat in plain words: {0} is the amount; "less" ones turn round when negative
         private static readonly Dictionary<GearStat, (string More, string Less)> Phrases = new Dictionary<GearStat, (string, string)>
         {
-            [GearStat.ArmorBonus] = ("{0} more armour", "{0} less armour"),
+            [GearStat.ArmorBonus] = ("{0} more armor", "{0} less armor"),
             [GearStat.Threat] = ("{0} more threat", "{0} less threat"),
             [GearStat.BlockChance] = ("{0} chance to block half a blow", null),
             [GearStat.DamageReduction] = ("{0} less damage taken", null),
@@ -103,7 +103,7 @@ namespace RavenNest.Combat
             [GearStat.CritChance] = ("{0} crit chance", null),
             [GearStat.CritDamage] = ("{0} crit damage", null),
             [GearStat.AttackSpeed] = ("{0} faster attacks", null),
-            [GearStat.ArmorPenetration] = ("{0} of the target's armour ignored", null),
+            [GearStat.ArmorPenetration] = ("{0} of the target's armor ignored", null),
             [GearStat.BurnBonus] = ("{0} stronger burns", null),
             [GearStat.ResistanceShred] = ("{0} of the target's resistances ignored", null),
             [GearStat.CombatRegen] = ("{0} of your health back each second in fights", null),
@@ -161,7 +161,7 @@ namespace RavenNest.Combat
                     var hit = e.Hits > 1 ? e.Hits + " hits of " + Pct(e.Amount) + " of a hit" : Pct(e.Amount) + " of a hit as" + (element.Length > 0 ? element : "") + " damage";
                     if (e.Hits > 1 && element.Length > 0) hit += " (" + element.Trim() + ")";
                     if (e.Hits <= 1 && element.Length == 0) hit = Pct(e.Amount) + " of a hit";
-                    return e.ArmorIgnored > 0 ? hit + ", ignoring " + Pct(e.ArmorIgnored) + " of armour" : hit;
+                    return e.ArmorIgnored > 0 ? hit + ", ignoring " + Pct(e.ArmorIgnored) + " of armor" : hit;
                 case SkillEffectKind.DamageOverTime: return Pct(e.Amount) + " of a hit" + (element.Length > 0 ? " as" + element + " damage" : "") + " over " + Num(e.Seconds) + " s";
                 case SkillEffectKind.Heal: return "a heal of " + Pct(e.Amount) + " of a normal heal";
                 case SkillEffectKind.HealOverTime: return Pct(e.Amount) + " of a normal heal over " + Num(e.Seconds) + " s";
@@ -386,7 +386,7 @@ namespace RavenNest.Combat
             const SkillTree R = SkillTree.Marksman, M = SkillTree.Elements, V = SkillTree.Vitality, L = SkillTree.Hunter;
 
             // Defense: Bulwark, the tank
-            Passive(D, 0, "thick-skin", "Thick Skin", "More armour.", "ARMOR_BONUS:4%");
+            Passive(D, 0, "thick-skin", "Thick Skin", "More armor.", "ARMOR_BONUS:4%");
             Passive(D, 0, "watchful", "Watchful", "Enemies pay you more attention.", "THREAT:8%");
             Active(D, 0, "taunt", "Taunt", "Enemies near you attack you for 4 seconds.",
                 new ActiveSkill { Cooldown = 12, Targeting = SkillTargeting.Around, Radius = 6, MaxTargets = 8, Use = SkillUse.EnemyOnAlly, Effects = new[] { E(SkillEffectKind.Taunt, 0, 4) } });
@@ -396,7 +396,7 @@ namespace RavenNest.Combat
             Passive(D, 1, "steadfast", "Steadfast", "Less damage from everything.", "DAMAGE_REDUCTION:1%");
             Active(D, 2, "shield-bash", "Shield Bash", "Stuns the target for 1.5 seconds. Needs a shield.",
                 new ActiveSkill { Cooldown = 15, Targeting = SkillTargeting.Target, Use = SkillUse.InFight, Needs = SkillGear.Shield, Effects = new[] { E(SkillEffectKind.Damage, 0.5), E(SkillEffectKind.Stun, 0, 1.5) } });
-            Passive(D, 2, "spiked-armour", "Spiked Armour", "Melee attackers hurt themselves on you.", "THORNS:3%");
+            Passive(D, 2, "spiked-armour", "Spiked Armor", "Melee attackers hurt themselves on you.", "THORNS:3%");
             Passive(D, 2, "hold-the-line", "Hold the Line", "Less damage while below half health.", "LOW_HEALTH_REDUCTION:5%");
             Active(D, 3, "rally", "Rally", "Allies near you take 15% less damage for 8 seconds.",
                 new ActiveSkill { Cooldown = 40, Targeting = SkillTargeting.Allies, Radius = 10, MaxTargets = 10, Use = SkillUse.OnBoss, Effects = new[] { E(SkillEffectKind.DamageTaken, -0.15, 8) } });
@@ -444,13 +444,13 @@ namespace RavenNest.Combat
             Passive(A, 2, "swift", "Swift", "Faster attacks.", "ATTACK_SPEED:2%");
             Active(A, 3, "disarm", "Disarm", "The target hits 30% softer for 5 seconds.",
                 new ActiveSkill { Cooldown = 25, Targeting = SkillTargeting.Target, Use = SkillUse.OnBoss, Effects = new[] { E(SkillEffectKind.DamageDealt, -0.3, 5) } });
-            Passive(A, 3, "precision-strikes", "Precision Strikes", "Your blows ignore part of the target's armour.", "ARMOR_PENETRATION:15%", ranks: 1, cost: 10);
+            Passive(A, 3, "precision-strikes", "Precision Strikes", "Your blows ignore part of the target's armor.", "ARMOR_PENETRATION:15%", ranks: 1, cost: 10);
 
             // Ranged: Marksman
             Passive(R, 0, "steady-aim", "Steady Aim", "More ranged power.", "RANGED_POWER_BONUS:4%");
             Active(R, 0, "multishot", "Multishot", "Shoots up to three enemies.",
                 new ActiveSkill { Cooldown = 10, Targeting = SkillTargeting.AroundTarget, Radius = 8, MaxTargets = 3, Use = SkillUse.InFight, Needs = SkillGear.Bow, Style = AttackStyle.Ranged, Effects = new[] { E(SkillEffectKind.Damage, 0.7) } });
-            Active(R, 1, "piercing-shot", "Piercing Shot", "A shot that ignores half the target's armour.",
+            Active(R, 1, "piercing-shot", "Piercing Shot", "A shot that ignores half the target's armor.",
                 new ActiveSkill { Cooldown = 12, Targeting = SkillTargeting.Target, Use = SkillUse.InFight, Needs = SkillGear.Bow, Style = AttackStyle.Ranged, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 1.5) { ArmorIgnored = 0.5 } } });
             Passive(R, 1, "eagle-eye", "Eagle Eye", "More critical hits.", "CRIT_CHANCE:1%");
             Active(R, 2, "arrow-rain", "Arrow Rain", "Arrows fall on the enemies around the target for 4 seconds.",

@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Data
             ("CRIT_CHANCE", "Raises the chance of a critical hit", "1%", "5%"),
             ("CRIT_DAMAGE", "Makes critical hits hit harder", "2%", "25%"),
             ("ATTACK_SPEED", "Attacks more often", "1%", "8%"),
-            ("ARMOR_PENETRATION", "Blows ignore part of the target's armour", "2%", "15%"),
+            ("ARMOR_PENETRATION", "Blows ignore part of the target's armor", "2%", "15%"),
             ("LIFE_STEAL", "Heals you by part of the damage you deal", "1%", "5%"),
             ("THORNS", "Hurts melee attackers by part of the damage they deal you", "2%", "15%"),
             ("THREAT", "Enemies pay you more attention (for tanks)", "5%", "30%"),
@@ -70,6 +70,10 @@ namespace RavenNest.BusinessLogic.Data
             // aim is accuracy in combat v2; the stored name stays AIM for 0.9.6 games
             var aim = attributes.FirstOrDefault(x => x.Name == "AIM");
             if (aim != null && aim.Description != null && aim.Description.Contains("Aim")) aim.Description = aim.Description.Replace("Aim", "Accuracy");
+
+            // American spelling (2026-11-09): descriptions stored with "armour" follow
+            foreach (var a in attributes)
+                if (a.Description != null && a.Description.Contains("armour")) a.Description = a.Description.Replace("armour", "armor");
         }
     }
 }

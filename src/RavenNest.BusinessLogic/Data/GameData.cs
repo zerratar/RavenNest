@@ -677,6 +677,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureGems();
                 EnsureRookery();
                 EnsurePetEggs();
+                EnsureAmericanSpelling();
 
                 FixVillageHouses();
 

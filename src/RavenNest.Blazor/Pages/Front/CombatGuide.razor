@@ -39,9 +39,9 @@
                 </div>
             </div>
             <div class="rf-card">
-                <h3 class="rf-card__title">3. Armour and resistance</h3>
+                <h3 class="rf-card__title">3. Armor and resistance</h3>
                 <div class="rf-card__body">
-                    <b>Armour</b> takes a share off physical damage that grows with it but never reaches all of it, and
+                    <b>Armor</b> takes a share off physical damage that grows with it but never reaches all of it, and
                     @P(CombatMath.ElementArmorShare) of that share off element damage. Each element is also cut by its
                     <b>resistance</b>.
                 </div>
@@ -76,13 +76,13 @@
                 <div class="rf-combat__calcgroup">
                     <h4>Health</h4>
                     <label class="rf-trees__slot"><span>Your Vitality level</span><input type="number" min="1" max="999" @bind="vitalityLevel" @bind:event="oninput" /></label>
-                    <label class="rf-trees__slot"><span>Armour on your armour pieces</span><input type="number" min="0" max="5000" @bind="armorPieces" @bind:event="oninput" /></label>
+                    <label class="rf-trees__slot"><span>Armor on your armor pieces</span><input type="number" min="0" max="5000" @bind="armorPieces" @bind:event="oninput" /></label>
                     <div class="rf-combat__result">@MaxHealth.ToString("N0") health</div>
-                    <div class="rf-meta">@CombatMath.ArmorHealth(Math.Max(0, armorPieces)).ToString("N0") of it from armour</div>
+                    <div class="rf-meta">@CombatMath.ArmorHealth(Math.Max(0, armorPieces)).ToString("N0") of it from armor</div>
                 </div>
                 <div class="rf-combat__calcgroup">
-                    <h4>Armour</h4>
-                    <label class="rf-trees__slot"><span>Their armour</span><input type="number" min="0" max="20000" @bind="armor" @bind:event="oninput" /></label>
+                    <h4>Armor</h4>
+                    <label class="rf-trees__slot"><span>Their armor</span><input type="number" min="0" max="20000" @bind="armor" @bind:event="oninput" /></label>
                     <div class="rf-combat__result">@P(ArmorCut) off physical</div>
                     <div class="rf-meta">@P(ArmorCut * CombatMath.ElementArmorShare) off element damage</div>
                 </div>
@@ -93,7 +93,7 @@
         <div class="rf-panel">
             <ul class="rf-combat__list">
                 <li><b>Vitality</b> (the skill once called Health) gives @CombatMath.PlayerHealthPerLevel health a level: @CombatMath.PlayerMaxHealth(999).ToString("N0") at level 999.</li>
-                <li><b>Armour</b> gives the rest: every point of armour on your helmet, chest, gloves, boots, leggings, shield and shoulders adds @CombatMath.HealthPerArmor.ToString("0.#") health. A full set of the best armour adds about two thousand.</li>
+                <li><b>Armor</b> gives the rest: every point of armor on your helmet, chest, gloves, boots, leggings, shield and shoulders adds @CombatMath.HealthPerArmor.ToString("0.#") health. A full set of the best armor adds about two thousand.</li>
                 <li>Health from gear and gems, and the skill trees' "more health" passives, come on top. Your combat level adds nothing.</li>
             </ul>
         </div>
@@ -119,7 +119,7 @@
                 <li>A resistance takes its share off that element: 30% fire resistance takes 30% off fire damage.</li>
                 <li>Players cap at @P(CombatMath.PlayerResistanceCap), so nobody is immune. Enemies can be: a fire spirit shrugs off fire.</li>
                 <li>A negative resistance is a weakness and takes extra. Many enemies are weak to one element; bring it.</li>
-                <li>Physical resistance is rare (stone golems). Armour is the answer to physical damage.</li>
+                <li>Physical resistance is rare (stone golems). Armor is the answer to physical damage.</li>
             </ul>
         </div>
 
@@ -202,11 +202,11 @@
 
     private static readonly ElementCard[] ElementCards =
     {
-        new("Physical", "#c9c3b6", "What every weapon deals unless it says otherwise. Armour cuts it."),
+        new("Physical", "#c9c3b6", "What every weapon deals unless it says otherwise. Armor cuts it."),
         new("Fire", "#ff7a59", $"Burns: the target takes {P(ElementRules.BurnShare)} of the fire damage again over {ElementRules.BurnSeconds:0} seconds. A new burn refreshes it."),
         new("Ice", "#6ec6ff", $"Chills: each stack slows the target's attacks by {P(ElementRules.ChillSlowPerStack)} for {ElementRules.ChillSeconds:0} seconds. At {ElementRules.ChillStacksToFreeze} stacks it freezes solid for {ElementRules.FreezeSeconds:0.#} seconds."),
         new("Lightning", "#ffd166", $"Jumps to one more enemy nearby with {P(ElementRules.ShockChainShare)} of the blow, and stuns for {ElementRules.ShockStunSeconds:0.#} seconds {P(ElementRules.ShockStunChance)} of the time."),
-        new("Poison", "#8fdc5a", $"Stacks up to {ElementRules.PoisonMaxStacks} times; each stack deals {P(ElementRules.PoisonSharePerSecond)} of the poison damage every second for {ElementRules.PoisonSeconds:0} seconds, and armour does not stop it."),
+        new("Poison", "#8fdc5a", $"Stacks up to {ElementRules.PoisonMaxStacks} times; each stack deals {P(ElementRules.PoisonSharePerSecond)} of the poison damage every second for {ElementRules.PoisonSeconds:0} seconds, and armor does not stop it."),
     };
 
     private sealed record Attribute(GearStat Stat, string Text, string Cap = null);
@@ -214,12 +214,12 @@
 
     private static readonly AttributeGroup[] AttributeGroups =
     {
-        new("Offence", new[]
+        new("Offense", new[]
         {
             new Attribute(GearStat.CritChance, "Points added to the chance of a critical hit."),
             new Attribute(GearStat.CritDamage, $"Makes critical hits bigger: +25% turns {P(CombatMath.BaseCritDamage)} into {P(CombatMath.BaseCritDamage + 0.25)}."),
             new Attribute(GearStat.AttackSpeed, "Attacks more often: 10% faster swings every 1.36 seconds instead of 1.5.", P(CombatMath.MaxAttackSpeed - 1) + " faster"),
-            new Attribute(GearStat.ArmorPenetration, "Your blows ignore this share of the target's armour.", P(CombatMath.MaxArmorPenetration)),
+            new Attribute(GearStat.ArmorPenetration, "Your blows ignore this share of the target's armor.", P(CombatMath.MaxArmorPenetration)),
             new Attribute(GearStat.MeleePowerBonus, "A share more of your gear's power; Ranged, Magic and Healing Power Bonus work the same for their style."),
             new Attribute(GearStat.AccuracyBonus, "A share more of your gear's accuracy, every style."),
             new Attribute(GearStat.BossDamage, "More damage to raid, dungeon and island bosses."),
@@ -230,12 +230,12 @@
             new Attribute(GearStat.ResistanceShred, "Your blows treat the target's element resistances as this much lower."),
             new Attribute(GearStat.CrowdControlDuration, "Your stuns, freezes and roots last longer."),
         }),
-        new("Defence", new[]
+        new("Defense", new[]
         {
             new Attribute(GearStat.DamageReduction, "A share taken off all damage you take.", P(CombatMath.MaxDamageReduction)),
             new Attribute(GearStat.Thorns, "A share of every melee blow you take hurts the attacker back.", P(CombatMath.MaxThorns)),
             new Attribute(GearStat.BlockChance, "The chance to block a blow and take half of it. Needs a shield.", P(CombatMath.MaxBlockChance)),
-            new Attribute(GearStat.ArmorBonus, "A share more armour from your gear."),
+            new Attribute(GearStat.ArmorBonus, "A share more armor from your gear."),
             new Attribute(GearStat.MaxHealthBonus, "A share more maximum health."),
             new Attribute(GearStat.LowHealthReduction, "Less damage taken while below half health.", P(CombatMath.MaxDamageReduction)),
             new Attribute(GearStat.Evasion, "Added to the evasion your Defense level gives, so fewer blows land."),

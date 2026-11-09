@@ -58,7 +58,7 @@ namespace RavenNest.Combat
             new TowerTownDefinition
             {
                 Key = "mossgate", Name = "Mossgate", Band = 1, Layout = "Tower_Mossgate",
-                Description = "A mossy hamlet at the tower's foot, where climbers rest, trade rumours and lose their bunnies.",
+                Description = "A mossy hamlet at the tower's foot, where climbers rest, trade rumors and lose their bunnies.",
                 People = new[]
                 {
                     new TowerNpc { Key = "elm", Name = "Warden Elm", Role = "Keeper of the tower gate", Chain = "warden" },

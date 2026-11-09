@@ -74,7 +74,7 @@ namespace RavenNest.Blazor.Services.Assistant
             new SitePage("/shop", "Vendor",
                 "the vendor: buying back what other players have sold, and what it pays for things"),
 
-            new SitePage("/items", "Item catalogue",
+            new SitePage("/items", "Item catalog",
                 "every item in the game with its stats and requirements"),
 
             new SitePage("/highscore", "Highscore",

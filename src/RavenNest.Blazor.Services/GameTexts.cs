@@ -142,7 +142,7 @@ namespace RavenNest.Blazor.Services
             ["UI_CHAIN_BRAMBLE_THANKS"] = "Still alive? Then the charm works. Wonderful.",
             ["UI_CHAIN_NIBBLES"] = "Where is Nibbles?",
             ["UI_CHAIN_NIBBLES_1"] = "A small boy sniffs by the well. 'My bunny Nibbles ran up the tower! He is tiny and soft and would never hurt anyone. Can you look for him among the bunnies up there?'",
-            ["UI_CHAIN_NIBBLES_2"] = "An old man guards the stairs. 'Answer me this, or go back down: what is the airspeed of an unladen swallow? 1) About 11 metres a second 2) African or European? 3) Blue. No, yellow!'",
+            ["UI_CHAIN_NIBBLES_2"] = "An old man guards the stairs. 'Answer me this, or go back down: what is the airspeed of an unladen swallow? 1) About 11 meters a second 2) African or European? 3) Blue. No, yellow!'",
             ["UI_CHAIN_NIBBLES_3"] = "Pip says Nibbles loves cabbage. Bring some, and maybe he will come home by himself.",
             ["UI_CHAIN_NIBBLES_4"] = "People say a giant bunny guards the first floor. Surely not Nibbles. Be there when a floor's boss falls, just to make sure.",
             ["UI_CHAIN_NIBBLES_5"] = "Go and tell Pip what you found. Gently. (!tower talk pip in Mossgate)",

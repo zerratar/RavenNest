@@ -121,7 +121,7 @@ class Editor {
             button('Flip', '', () => { this.tx.flip = !this.tx.flip; this.changed(); }, 'Mirror left to right'),
             button('Fit', '', () => this.place('fit'), 'The whole image inside the frame'),
             button('Fill', '', () => this.place('fill'), 'The frame covered, edges cut off'),
-            button('Centre', '', () => { this.tx.x = 0; this.tx.y = 0; this.changed(); }));
+            button('Center', '', () => { this.tx.x = 0; this.tx.y = 0; this.changed(); }));
         controls.appendChild(tools);
 
         const colour = el('label', 'rf-imged__colour');
