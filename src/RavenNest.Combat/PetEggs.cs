@@ -33,42 +33,44 @@ namespace RavenNest.Combat
         /// <summary>The share of a member's minutes that counts: one report a minute, at most this long.</summary>
         public const double MaxMinutesPerReport = 1.5;
 
-        /// <summary>The chance per character of an egg from a dungeon: 3%, and 1% more per tier.</summary>
-        public static double DungeonChance(int tier) => 0.03 + 0.01 * Math.Max(0, Math.Min(4, tier));
+        // Lowered 2026-11-09 (user: "a bit lower"): eggs should feel like a find, not a regular reward.
+
+        /// <summary>The chance per character of an egg from a dungeon: 2%, and half a percent more per tier.</summary>
+        public static double DungeonChance(int tier) => 0.02 + 0.005 * Math.Max(0, Math.Min(4, tier));
 
         /// <summary>The chance per character of an egg from a raid.</summary>
-        public const double RaidChance = 0.03;
+        public const double RaidChance = 0.02;
 
         /// <summary>The chance per character of an egg in a tower floor's chest.</summary>
-        public const double TowerChance = 0.04;
+        public const double TowerChance = 0.025;
 
         public static double Chance(EggSource source, int tier) =>
             source == EggSource.Dungeon ? DungeonChance(tier) : source == EggSource.Raid ? RaidChance : TowerChance;
 
         // ---- quests and events (2026-11-09) -------------------------------------------------------------------
 
-        /// <summary>A finished weekly quest: a quarter of them give an egg.</summary>
-        public const double WeeklyChance = 0.25;
+        /// <summary>A finished weekly quest: about one in seven gives an egg.</summary>
+        public const double WeeklyChance = 0.15;
 
         /// <summary>A finished seasonal quest (Halloween, Christmas).</summary>
-        public const double SeasonalChance = 0.10;
+        public const double SeasonalChance = 0.06;
 
         /// <summary>Every this many days of a daily quest streak gives an egg for sure.</summary>
         public const int StreakDays = 7;
 
         /// <summary>A finished stream quest: its top helper, by what they added.</summary>
-        public const double StreamTopHelperChance = 0.25;
+        public const double StreamTopHelperChance = 0.15;
 
         /// <summary>The pirates' raid held: each defender, the one who held longest three times as likely.</summary>
-        public const double PirateDefenderChance = 0.05;
-        public const double PirateFirstDefenderChance = 0.15;
+        public const double PirateDefenderChance = 0.03;
+        public const double PirateFirstDefenderChance = 0.09;
 
         /// <summary>The regatta (a real race of two or more): the winner, and the rest of the podium.</summary>
-        public const double RegattaWinnerChance = 0.15;
-        public const double RegattaPodiumChance = 0.06;
+        public const double RegattaWinnerChance = 0.10;
+        public const double RegattaPodiumChance = 0.04;
 
         /// <summary>A Ravebridge story quest, paid once each.</summary>
-        public const double RavebridgeStoryChance = 0.15;
+        public const double RavebridgeStoryChance = 0.10;
 
         /// <summary>The quest chain that ends with an egg: the barkeep's speckled egg, which is a dragon's.</summary>
         public const string SpeckledChainEgg = "dragon-spark";
