@@ -55,8 +55,12 @@ namespace RavenNest.Combat
         /// <summary>A finished seasonal quest (Halloween, Christmas).</summary>
         public const double SeasonalChance = 0.06;
 
-        /// <summary>Every this many days of a daily quest streak gives an egg for sure.</summary>
-        public const int StreakDays = 7;
+        /// <summary>
+        ///     Days played in a row (a character in a running session on each day, joined that day or still there from
+        ///     the day before): the first egg on this day, then one every <see cref="StreakEggEvery"/> days after.
+        /// </summary>
+        public const int FirstStreakEggDay = 7;
+        public const int StreakEggEvery = 14;
 
         /// <summary>A finished stream quest: its top helper, by what they added.</summary>
         public const double StreamTopHelperChance = 0.15;
@@ -75,8 +79,9 @@ namespace RavenNest.Combat
         /// <summary>The quest chain that ends with an egg: the barkeep's speckled egg, which is a dragon's.</summary>
         public const string SpeckledChainEgg = "dragon-spark";
 
-        /// <summary>Whether a daily streak of <paramref name="days"/> has just reached an egg (7, 14, 21, ...).</summary>
-        public static bool StreakGivesEgg(int days) => days > 0 && days % StreakDays == 0;
+        /// <summary>Whether <paramref name="days"/> played in a row has just reached an egg: day 7, 21, 35, ...</summary>
+        public static bool StreakGivesEgg(int days) =>
+            days == FirstStreakEggDay || (days > FirstStreakEggDay && (days - FirstStreakEggDay) % StreakEggEvery == 0);
 
         // where each egg is found: the source, the lowest tier, and how common it is there
         private static readonly (string Species, EggSource Source, int MinTier, double Weight)[] drops =

@@ -111,5 +111,8 @@
 
         /// <summary>A character's skill trees changed (the website, or chat in another game): the build (SkillBuildInfo).</summary>
         SkillBuildChanged = 58,
+
+        /// <summary>A character's days played in a row reached a pet egg (PlayStreakEgg).</summary>
+        PlayStreakEgg = 59,
     }
 }

@@ -17,5 +17,14 @@ namespace RavenNest.DataModels
         [PersistentData] private long weekliesCompleted;
         /// <summary>The title shown on the name tag ("woodcutter_2", "cat"), or empty.</summary>
         [PersistentData] private string title;
+
+        /// <summary>
+        ///     Days in a row the character played: in a running session at some point of each day (a long stream counts
+        ///     every day it runs through, no rejoining needed). Pet eggs on day 7, then every 14 days.
+        /// </summary>
+        [PersistentData] private int playStreak;
+
+        /// <summary>The last day the character played, "2026-11-09" (UTC).</summary>
+        [PersistentData] private string lastPlayDay;
     }
 }

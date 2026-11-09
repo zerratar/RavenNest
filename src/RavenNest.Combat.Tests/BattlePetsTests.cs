@@ -126,10 +126,13 @@ namespace RavenNest.Combat.Tests
             // quests can give any egg, the dragon least often
             Assert.Equal(PetEggs.Species.Count(), PetEggs.Table(EggSource.Quest, 0).Count());
             Assert.Equal("dragon-spark", PetEggs.Table(EggSource.Quest, 0).OrderBy(t => t.Weight).First().Species.Id);
-            // a daily streak gives one every seventh day
+            // days played in a row: the first egg on day 7, then every 14 days
             Assert.False(PetEggs.StreakGivesEgg(6));
             Assert.True(PetEggs.StreakGivesEgg(7));
-            Assert.True(PetEggs.StreakGivesEgg(14));
+            Assert.False(PetEggs.StreakGivesEgg(14));
+            Assert.True(PetEggs.StreakGivesEgg(21));
+            Assert.False(PetEggs.StreakGivesEgg(28));
+            Assert.True(PetEggs.StreakGivesEgg(35));
             Assert.False(PetEggs.StreakGivesEgg(0));
             Assert.NotNull(BattlePets.GetSpecies(PetEggs.SpeckledChainEgg));
         }

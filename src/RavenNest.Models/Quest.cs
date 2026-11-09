@@ -165,6 +165,14 @@ namespace RavenNest.Models
     }
 
     /// <summary>The QuestCompleted event's data: the quest, its rewards (coins already given; the game adds the experience) and the streak.</summary>
+    /// <summary>A character played <see cref="Days"/> days in a row and found a pet egg (in the inventory already).</summary>
+    public class PlayStreakEgg
+    {
+        public Guid CharacterId { get; set; }
+        public int Days { get; set; }
+        public string Egg { get; set; }
+    }
+
     public class QuestCompleted
     {
         public Guid CharacterId { get; set; }

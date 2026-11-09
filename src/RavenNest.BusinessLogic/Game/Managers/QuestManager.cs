@@ -660,14 +660,12 @@ namespace RavenNest.BusinessLogic.Game
         {
             var stats = StatsOf(character);
             var today = DayOf(DateTime.UtcNow);
-            var streakGrew = false;
             if (quest.Kind == Daily)
             {
                 if (stats.LastDailyDay != today)
                 {
                     stats.DailyStreak = stats.LastDailyDay == DayOf(DateTime.UtcNow.AddDays(-1)) ? stats.DailyStreak + 1 : 1;
                     stats.LastDailyDay = today;
-                    streakGrew = true;
                 }
                 stats.DailiesCompleted++;
                 QuestTracker.Achievements?.Add(character, "quester", 1);
@@ -687,8 +685,8 @@ namespace RavenNest.BusinessLogic.Game
                 if (tome != null) inventoryProvider.Get(character.Id)?.AddItem(tome.Id, amount: 1);
             }
 
-            // eggs (docs/battle-pets-design.md in the game): a quarter of the weeklies, a tenth of the seasonal quests,
-            // and every seventh day of a daily streak for sure
+            // eggs (docs/battle-pets-design.md in the game): now and then a weekly or a seasonal quest; days played in a
+            // row give theirs in QuestProcessor
             string egg = null;
             try
             {
@@ -696,11 +694,6 @@ namespace RavenNest.BusinessLogic.Game
                 RavenNest.Combat.PetSpecies found = null;
                 if (quest.Kind == Weekly) found = PetEggRewards.Roll(gameData, inventoryProvider, character.Id, RavenNest.Combat.EggSource.Quest, RavenNest.Combat.PetEggs.WeeklyChance, rng);
                 else if (quest.Kind == Seasonal) found = PetEggRewards.Roll(gameData, inventoryProvider, character.Id, RavenNest.Combat.EggSource.Quest, RavenNest.Combat.PetEggs.SeasonalChance, rng);
-                else if (quest.Kind == Daily && streakGrew && RavenNest.Combat.PetEggs.StreakGivesEgg(stats.DailyStreak))
-                {
-                    var species = RavenNest.Combat.PetEggs.Pick(RavenNest.Combat.EggSource.Quest, 0, rng.NextDouble());
-                    if (PetEggRewards.Give(gameData, inventoryProvider, character.Id, species) != Guid.Empty) found = species;
-                }
                 egg = found?.EggName;
             }
             catch (Exception exc)
