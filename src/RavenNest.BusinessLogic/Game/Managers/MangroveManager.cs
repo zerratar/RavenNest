@@ -92,6 +92,11 @@ namespace RavenNest.BusinessLogic.Game
                     var stack = inventoryProvider.Get(character.Id).AddItem(item.Id, amount).FirstOrDefault();
                     given.Add(new EventItemReward { CharacterId = character.Id, ItemId = item.Id, InventoryItemId = stack?.Id ?? Guid.Empty, Amount = amount });
                 }
+
+                // the pirates left their powder kegs behind, and some of them are not kegs (a pet egg; the one who held
+                // longest three times as likely)
+                if (pirates) Egg(character.Id, RavenNest.Combat.EggSource.PirateRaid,
+                    rewards.Count == 0 ? RavenNest.Combat.PetEggs.PirateFirstDefenderChance : RavenNest.Combat.PetEggs.PirateDefenderChance, rng, given);
                 reward.Items = given.ToArray();
 
                 // boat looks: the pirates' own colours for holding their raid; a flag or figurehead found digging
@@ -113,6 +118,23 @@ namespace RavenNest.BusinessLogic.Game
             if (pirates && rewards.Count > 0) rewards[0].Decor = decorManager.UnlockForQuest(session.SessionId, "pirates");
             gameData.Touch();
             return rewards.ToArray();
+        }
+
+        /// <summary>A pet egg with the chance given, into the inventory and the reward's items.</summary>
+        private void Egg(Guid characterId, RavenNest.Combat.EggSource source, double chance, Random rng, List<EventItemReward> items)
+        {
+            try
+            {
+                var species = PetEggRewards.Roll(gameData, inventoryProvider, characterId, source, chance, rng);
+                if (species == null) return;
+                var itemId = RavenNest.Combat.PetEggs.ItemId(species.Id);
+                var stack = inventoryProvider.Get(characterId)?.GetAllItems().FirstOrDefault(i => i.ItemId == itemId);
+                items.Add(new EventItemReward { CharacterId = characterId, ItemId = itemId, InventoryItemId = stack?.Id ?? Guid.Empty, Amount = 1 });
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not give a banana island egg: " + exc);
+            }
         }
 
         // the island's treasure table: mostly bananas, sometimes something the monkeys and pirates both want
@@ -162,7 +184,11 @@ namespace RavenNest.BusinessLogic.Game
                 // the regatta's sails: the winner one not yet owned, the rest of the podium often, the others now and then
                 var chance = place <= 3 ? RegattaPodiumSailChance : RegattaSailChance;
                 var sail = race && (place == 1 || rng.NextDouble() < chance) ? boats.GrantNew(character.UserId, "sails", BoatLooks.RegattaSails, "regatta", rng) : null;
-                rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = new EventItemReward[0], Looks = sail != null ? new[] { sail } : new string[0] });
+                // something washes up for the podium of a real race: now and then a pet egg
+                var items = new List<EventItemReward>();
+                if (race && place <= 3) Egg(character.Id, RavenNest.Combat.EggSource.Regatta,
+                    place == 1 ? RavenNest.Combat.PetEggs.RegattaWinnerChance : RavenNest.Combat.PetEggs.RegattaPodiumChance, rng, items);
+                rewards.Add(new MangroveReward { CharacterId = character.Id, Coins = coins, Items = items.ToArray(), Looks = sail != null ? new[] { sail } : new string[0] });
             }
             // a real race (two or more) gives the hosting village its trophy
             if (race && rewards.Count > 0) rewards[0].Decor = decorManager.UnlockForQuest(session.SessionId, "regatta");

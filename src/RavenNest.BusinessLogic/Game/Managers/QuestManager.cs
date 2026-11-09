@@ -529,8 +529,18 @@ namespace RavenNest.BusinessLogic.Game
                 });
                 var resources = gameData.GetResources(character);
                 if (resources != null && coins > 0) resources.Coins += coins;
+                // a story quest, paid once, now and then comes with an egg: the island's training dummies have been busy
+                RavenNest.Combat.PetSpecies egg = null;
+                try
+                {
+                    if (!quest.Bounty) egg = PetEggRewards.Roll(gameData, inventoryProvider, character.Id, RavenNest.Combat.EggSource.Ravebridge, RavenNest.Combat.PetEggs.RavebridgeStoryChance, Random.Shared);
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Could not give a Ravebridge egg to " + character.Name + ": " + exc);
+                }
                 gameData.Touch();
-                return new RavebridgeQuestReward { Ok = true, Coins = coins, Exp = exp };
+                return new RavebridgeQuestReward { Ok = true, Coins = coins, Exp = exp, Egg = egg?.EggName };
             }
         }
 
@@ -592,8 +602,9 @@ namespace RavenNest.BusinessLogic.Game
             var decor = session != null ? decorManager.UnlockForQuest(session.Id, quest.Key) : null;
             // the shipwright's chain ends with the character's own boat (docs/own-boats.md in the game)
             if (quest.Key == "shipwright") GiveBoat(character);
-            // a tower town's chain ends with an item found nowhere else
-            if (definition?.RewardItem != null) GiveOnce(character, definition.RewardItem);
+            // a tower town's chain ends with an item found nowhere else; a pet egg (the speckled egg) is given whatever
+            // eggs the character has already, soulbound like the other chain rewards
+            if (definition?.RewardItem != null && !GiveEgg(character, definition.RewardItem)) GiveOnce(character, definition.RewardItem);
             Reward(character, quest, done, decor);
             QuestTracker.Achievements?.Set(character, "storyteller",
                 gameData.GetCharacterQuests(character.Id).Count(q => q.Kind == Chain && q.State == Done));
@@ -610,6 +621,17 @@ namespace RavenNest.BusinessLogic.Game
             if (rowboat == null || inventory == null) return;
             if (inventory.GetAllItems().Any(i => i.ItemId == rowboat.Id)) return;
             inventory.AddItem(rowboat.Id, 1, equipped: false, soulbound: true);
+        }
+
+        /// <summary>A pet egg by its name, soulbound, always; false when the name is not an egg's.</summary>
+        private bool GiveEgg(Character character, string itemName)
+        {
+            var species = RavenNest.Combat.PetEggs.FindEgg(itemName);
+            if (species == null || !string.Equals(species.EggName, itemName, StringComparison.OrdinalIgnoreCase)) return false;
+            var itemId = RavenNest.Combat.PetEggs.ItemId(species.Id);
+            if (gameData.GetItem(itemId) == null) return false;
+            inventoryProvider.Get(character.Id)?.AddItem(itemId, 1, equipped: false, soulbound: true);
+            return true;
         }
 
         /// <summary>An item by its name, soulbound, unless the character has one already.</summary>
@@ -638,12 +660,14 @@ namespace RavenNest.BusinessLogic.Game
         {
             var stats = StatsOf(character);
             var today = DayOf(DateTime.UtcNow);
+            var streakGrew = false;
             if (quest.Kind == Daily)
             {
                 if (stats.LastDailyDay != today)
                 {
                     stats.DailyStreak = stats.LastDailyDay == DayOf(DateTime.UtcNow.AddDays(-1)) ? stats.DailyStreak + 1 : 1;
                     stats.LastDailyDay = today;
+                    streakGrew = true;
                 }
                 stats.DailiesCompleted++;
                 QuestTracker.Achievements?.Add(character, "quester", 1);
@@ -663,20 +687,45 @@ namespace RavenNest.BusinessLogic.Game
                 if (tome != null) inventoryProvider.Get(character.Id)?.AddItem(tome.Id, amount: 1);
             }
 
+            // eggs (docs/battle-pets-design.md in the game): a quarter of the weeklies, a tenth of the seasonal quests,
+            // and every seventh day of a daily streak for sure
+            string egg = null;
+            try
+            {
+                var rng = Random.Shared;
+                RavenNest.Combat.PetSpecies found = null;
+                if (quest.Kind == Weekly) found = PetEggRewards.Roll(gameData, inventoryProvider, character.Id, RavenNest.Combat.EggSource.Quest, RavenNest.Combat.PetEggs.WeeklyChance, rng);
+                else if (quest.Kind == Seasonal) found = PetEggRewards.Roll(gameData, inventoryProvider, character.Id, RavenNest.Combat.EggSource.Quest, RavenNest.Combat.PetEggs.SeasonalChance, rng);
+                else if (quest.Kind == Daily && streakGrew && RavenNest.Combat.PetEggs.StreakGivesEgg(stats.DailyStreak))
+                {
+                    var species = RavenNest.Combat.PetEggs.Pick(RavenNest.Combat.EggSource.Quest, 0, rng.NextDouble());
+                    if (PetEggRewards.Give(gameData, inventoryProvider, character.Id, species) != Guid.Empty) found = species;
+                }
+                egg = found?.EggName;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not give a quest egg to " + character.Name + ": " + exc);
+            }
+
             gameData.Touch();
-            Tell(character, quest, stepDone, decor);
+            Tell(character, quest, stepDone, decor, egg);
         }
 
         /// <summary>Weeklies and finished chains give a Tome of Forgetting (a free skill tree respec).</summary>
         private static bool GivesTome(CharacterQuest quest) => quest.Kind == Weekly || quest.Kind == Chain;
 
-        private void Tell(Character character, CharacterQuest quest, int stepDone, string decor)
+        /// <param name="egg">An egg found with the reward (its name), said with the reward's item.</param>
+        private void Tell(Character character, CharacterQuest quest, int stepDone, string decor, string egg = null)
         {
             var session = gameData.GetSessionByCharacterId(character.Id);
             if (session == null) return;
             var stats = gameData.GetCharacterQuestStats(character.Id);
+            var info = Info(quest);
+            // the game says " and a {item}": a second one joins the first the same way
+            if (!string.IsNullOrEmpty(egg)) info.RewardItem = string.IsNullOrEmpty(info.RewardItem) ? egg : info.RewardItem + " and a " + egg;
             gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.QuestCompleted, session,
-                new QuestCompleted { CharacterId = character.Id, Quest = Info(quest), Streak = stats?.DailyStreak ?? 0, StepDone = stepDone, DecorUnlocked = decor }));
+                new QuestCompleted { CharacterId = character.Id, Quest = info, Streak = stats?.DailyStreak ?? 0, StepDone = stepDone, DecorUnlocked = decor }));
         }
 
         // ---- Offers ----------------------------------------------------------------------------------------

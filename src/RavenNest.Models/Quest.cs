@@ -136,6 +136,9 @@ namespace RavenNest.Models
 
         /// <summary>The coins it got, once the quest is done.</summary>
         public long Coins { get; set; }
+
+        /// <summary>An egg it found with the reward (the top helper, now and then), by name; null for none.</summary>
+        public string Egg { get; set; }
     }
 
     /// <summary>The stream's quest now, if one runs, and today's offers for the streamer to start.</summary>

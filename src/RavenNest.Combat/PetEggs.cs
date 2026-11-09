@@ -12,6 +12,14 @@ namespace RavenNest.Combat
         Raid = 1,
         /// <summary>A tower floor's chest, by the floor's tier (0 to 4).</summary>
         Tower = 2,
+        /// <summary>Quests: a weekly, a seasonal quest, a daily streak, a stream quest's top helper.</summary>
+        Quest = 3,
+        /// <summary>Holding the banana island against the pirates: their powder kegs hatch.</summary>
+        PirateRaid = 4,
+        /// <summary>The banana island's regatta podium: things wash up from the sea.</summary>
+        Regatta = 5,
+        /// <summary>Ravebridge's story quests: its training dummies have been busy.</summary>
+        Ravebridge = 6,
     }
 
     /// <summary>
@@ -37,6 +45,37 @@ namespace RavenNest.Combat
         public static double Chance(EggSource source, int tier) =>
             source == EggSource.Dungeon ? DungeonChance(tier) : source == EggSource.Raid ? RaidChance : TowerChance;
 
+        // ---- quests and events (2026-11-09) -------------------------------------------------------------------
+
+        /// <summary>A finished weekly quest: a quarter of them give an egg.</summary>
+        public const double WeeklyChance = 0.25;
+
+        /// <summary>A finished seasonal quest (Halloween, Christmas).</summary>
+        public const double SeasonalChance = 0.10;
+
+        /// <summary>Every this many days of a daily quest streak gives an egg for sure.</summary>
+        public const int StreakDays = 7;
+
+        /// <summary>A finished stream quest: its top helper, by what they added.</summary>
+        public const double StreamTopHelperChance = 0.25;
+
+        /// <summary>The pirates' raid held: each defender, the one who held longest three times as likely.</summary>
+        public const double PirateDefenderChance = 0.05;
+        public const double PirateFirstDefenderChance = 0.15;
+
+        /// <summary>The regatta (a real race of two or more): the winner, and the rest of the podium.</summary>
+        public const double RegattaWinnerChance = 0.15;
+        public const double RegattaPodiumChance = 0.06;
+
+        /// <summary>A Ravebridge story quest, paid once each.</summary>
+        public const double RavebridgeStoryChance = 0.15;
+
+        /// <summary>The quest chain that ends with an egg: the barkeep's speckled egg, which is a dragon's.</summary>
+        public const string SpeckledChainEgg = "dragon-spark";
+
+        /// <summary>Whether a daily streak of <paramref name="days"/> has just reached an egg (7, 14, 21, ...).</summary>
+        public static bool StreakGivesEgg(int days) => days > 0 && days % StreakDays == 0;
+
         // where each egg is found: the source, the lowest tier, and how common it is there
         private static readonly (string Species, EggSource Source, int MinTier, double Weight)[] drops =
         {
@@ -48,6 +87,15 @@ namespace RavenNest.Combat
             ("snakelet", EggSource.Dungeon, 2, 5), ("snakelet", EggSource.Raid, 0, 5),
             ("bomb", EggSource.Raid, 0, 4), ("bomb", EggSource.Tower, 1, 4),
             ("dragon-spark", EggSource.Raid, 0, 1), ("dragon-spark", EggSource.Dungeon, 3, 1),
+
+            // quests: any egg, the rare ones rarely
+            ("wolf-pup", EggSource.Quest, 0, 10), ("bud", EggSource.Quest, 0, 10), ("sun-blossom", EggSource.Quest, 0, 8),
+            ("practice-dummy", EggSource.Quest, 0, 6), ("shell", EggSource.Quest, 0, 6), ("snakelet", EggSource.Quest, 0, 4),
+            ("bomb", EggSource.Quest, 0, 3), ("dragon-spark", EggSource.Quest, 0, 1),
+            // the events give eggs that belong there
+            ("bomb", EggSource.PirateRaid, 0, 6), ("shell", EggSource.PirateRaid, 0, 3), ("snakelet", EggSource.PirateRaid, 0, 1),
+            ("shell", EggSource.Regatta, 0, 8), ("sun-blossom", EggSource.Regatta, 0, 2),
+            ("practice-dummy", EggSource.Ravebridge, 0, 10), ("wolf-pup", EggSource.Ravebridge, 0, 3),
         };
 
         /// <summary>The eggs a source can give at a tier, with their weights.</summary>

@@ -115,6 +115,26 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void Quests_and_events_give_eggs_that_fit()
+        {
+            // every new source has eggs, and the events' eggs belong there
+            foreach (var source in new[] { EggSource.Quest, EggSource.PirateRaid, EggSource.Regatta, EggSource.Ravebridge })
+                Assert.NotEmpty(PetEggs.Table(source, 0));
+            Assert.All(PetEggs.Table(EggSource.Regatta, 0), t => Assert.Contains(t.Species.Id, new[] { "shell", "sun-blossom" }));
+            Assert.Equal("bomb", PetEggs.Table(EggSource.PirateRaid, 0).OrderByDescending(t => t.Weight).First().Species.Id);
+            Assert.Equal("practice-dummy", PetEggs.Table(EggSource.Ravebridge, 0).OrderByDescending(t => t.Weight).First().Species.Id);
+            // quests can give any egg, the dragon least often
+            Assert.Equal(PetEggs.Species.Count(), PetEggs.Table(EggSource.Quest, 0).Count());
+            Assert.Equal("dragon-spark", PetEggs.Table(EggSource.Quest, 0).OrderBy(t => t.Weight).First().Species.Id);
+            // a daily streak gives one every seventh day
+            Assert.False(PetEggs.StreakGivesEgg(6));
+            Assert.True(PetEggs.StreakGivesEgg(7));
+            Assert.True(PetEggs.StreakGivesEgg(14));
+            Assert.False(PetEggs.StreakGivesEgg(0));
+            Assert.NotNull(BattlePets.GetSpecies(PetEggs.SpeckledChainEgg));
+        }
+
+        [Fact]
         public void Eggs_hatch_every_cute_chain()
         {
             var eggs = PetEggs.Species.ToList();

@@ -157,6 +157,20 @@ namespace RavenNest.BusinessLogic.Game
                 },
             },
 
+            // The barkeep found a speckled egg in the pantry, warm as fresh bread. It is not a hen's. (2026-11-09)
+            new Chain
+            {
+                Key = "speckled", RewardSkill = Skill.Taming, RewardItem = "Dragon Spark Egg",
+                Steps = new[]
+                {
+                    Deliver("Eggs", 12),
+                    Gather(Skill.Farming, 50),
+                    Kill(40),
+                    Answer(3, 0),
+                    Deliver("Wheat", 30),
+                    Visit("Ironhill"),
+                },
+            },
             // Halloween: something stirs in the pumpkin patch.
             new Chain
             {

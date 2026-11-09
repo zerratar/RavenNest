@@ -89,8 +89,14 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger<StreamQuestManager> logger;
         private readonly Timer timer;
 
-        public StreamQuestManager(GameData gameData, ILogger<StreamQuestManager> logger)
+        private readonly PlayerInventoryProvider inventoryProvider;
+
+        // the top helper's egg, by character, until the end's event has said so
+        private readonly ConcurrentDictionary<Guid, string> eggs = new ConcurrentDictionary<Guid, string>();
+
+        public StreamQuestManager(GameData gameData, PlayerInventoryProvider inventoryProvider, ILogger<StreamQuestManager> logger)
         {
+            this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
             this.logger = logger;
 
@@ -293,6 +299,7 @@ namespace RavenNest.BusinessLogic.Game
             if (session != null)
             {
                 var helpers = run.Helpers.Values.OrderByDescending(h => h.Amount).Select(Helper).ToArray();
+                foreach (var h in helpers) if (eggs.TryRemove(h.CharacterId, out var egg)) h.Egg = egg;
                 gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.StreamQuestEnded, session,
                     new StreamQuestEnded { Quest = Info(run), Helpers = helpers }));
             }
@@ -336,6 +343,21 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 loyalty.Points += HelperLoyaltyPoints;
                 QuestTracker.StreamQuestHelped(character);
+            }
+
+            // the one who added the most may find an egg (docs/battle-pets-design.md in the game)
+            try
+            {
+                var top = run.Helpers.Values.Where(h => h.Amount > 0).OrderByDescending(h => h.Amount).FirstOrDefault();
+                if (top != null && gameData.GetCharacter(top.CharacterId) != null)
+                {
+                    var egg = PetEggRewards.Roll(gameData, inventoryProvider, top.CharacterId, RavenNest.Combat.EggSource.Quest, RavenNest.Combat.PetEggs.StreamTopHelperChance, Random.Shared);
+                    if (egg != null) eggs[top.CharacterId] = egg.EggName;
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not give a stream quest egg: " + exc);
             }
         }
 

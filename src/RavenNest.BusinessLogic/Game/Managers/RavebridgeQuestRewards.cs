@@ -90,5 +90,7 @@ namespace RavenNest.BusinessLogic.Game
         public long Coins { get; set; }
         /// <summary>Experience per skill index.</summary>
         public Dictionary<int, double> Exp { get; set; } = new Dictionary<int, double>();
+        /// <summary>An egg that came with it (its name; in the inventory already), or null.</summary>
+        public string Egg { get; set; }
     }
 }
