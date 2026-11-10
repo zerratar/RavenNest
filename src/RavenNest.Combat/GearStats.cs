@@ -101,6 +101,10 @@ namespace RavenNest.Combat
         LightningJumpBonus,
         /// <summary>A share off your combat skills' cooldowns (an Amethyst in a ring or amulet; caps at 30%).</summary>
         CooldownReduction,
+
+        // skill trees (2026-11-10)
+        /// <summary>A share more chance to keep a gem taken out of its socket (Gem Salvager; the server rolls it).</summary>
+        GemKeepChance,
     }
 
     /// <summary>
@@ -112,7 +116,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.CooldownReduction + 1;
+        public const int Count = (int)GearStat.GemKeepChance + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);

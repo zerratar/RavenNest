@@ -111,6 +111,7 @@ namespace RavenNest.Combat
             [GearStat.HealingReceived] = ("{0} more healing received", null),
             [GearStat.BossDamage] = ("{0} more damage to bosses", null),
             [GearStat.LootLuck] = ("{0} more loot in raids and dungeons", null),
+            [GearStat.GemKeepChance] = ("{0} better chance to keep a gem you take out", null),
             [GearStat.CrowdControlDuration] = ("{0} longer stuns, freezes and roots", null),
         };
 
@@ -495,6 +496,7 @@ namespace RavenNest.Combat
             Active(L, 1, "execute", "Execute", "A huge hit on an enemy below 20% health.",
                 new ActiveSkill { Cooldown = 15, Targeting = SkillTargeting.Target, Use = SkillUse.TargetLow, Effects = new[] { E(SkillEffectKind.Damage, 3.0) } });
             Passive(L, 1, "treasure-hunter", "Treasure Hunter", "More loot in raids and dungeons.", "LOOT_LUCK:2%");
+            Passive(L, 2, "gem-salvager", "Gem Salvager", "A better chance to keep a gem you take out of its socket.", "GEM_KEEP_CHANCE:5%", ranks: 3);
             Passive(L, 2, "pressure-points", "Pressure Points", "Your stuns, freezes and roots last longer.", "CROWD_CONTROL_DURATION:10%");
             Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:8%", ranks: 1, cost: 10);
 
@@ -548,6 +550,7 @@ namespace RavenNest.Combat
             Path("execute", "mark-prey");
             Path("treasure-hunter", "big-game");
             Path("pressure-points", "execute", "treasure-hunter");
+            Path("gem-salvager", "treasure-hunter");
             Path("apex-predator", "pressure-points");
         }
 

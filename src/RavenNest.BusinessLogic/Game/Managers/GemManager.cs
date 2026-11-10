@@ -196,8 +196,13 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        /// <summary>The chance this character has to keep a gem taken out (the clan's Enchanting).</summary>
-        public double KeepChance(Character character) => Gems.KeepChance(ClanEnchantingLevel(character));
+        /// <summary>The chance this character has to keep a gem taken out: the clan's Enchanting and the Gem Salvager node.</summary>
+        public double KeepChance(Character character)
+        {
+            var build = character != null ? gameData.GetCharacterSkillBuild(character.Id) : null;
+            var salvager = build != null ? RavenNest.Combat.SkillBuild.Parse(build.Build).Rank("gem-salvager") : 0;
+            return Gems.KeepChance(ClanEnchantingLevel(character), salvager);
+        }
 
         private void Remove(Character character, PlayerInventory inventory, Guid gemId, GemResult result)
         {
