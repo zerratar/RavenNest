@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -270,6 +270,17 @@ namespace RavenNest.Combat
     {
         /// <summary>The pet skill gains this share of the experience of the skill being trained while a pet is out; so does the pet.</summary>
         public const double ExperienceShare = 0.25;
+
+        /// <summary>
+        ///     Taming's share once it has caught up: when Taming is at or above the level of the skill being trained, it
+        ///     gains this share instead of <see cref="ExperienceShare"/> (the pet itself keeps the full share). Below it,
+        ///     the full share is the catch-up for high level players whose Taming starts at 1.
+        /// </summary>
+        public const double CaughtUpTamingShare = 0.10;
+
+        /// <summary>The share of experience in a skill of <paramref name="trainedLevel"/> that Taming at <paramref name="tamingLevel"/> gains.</summary>
+        public static double TamingShare(int tamingLevel, int trainedLevel) =>
+            tamingLevel < trainedLevel ? ExperienceShare : CaughtUpTamingShare;
 
         /// <summary>A pet at 0 health lies down and gets back up after this many seconds, with no penalty.</summary>
         public const double KnockoutSeconds = 30;

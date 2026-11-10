@@ -200,5 +200,14 @@ namespace RavenNest.Combat.Tests
             Assert.Equal("enemy:Purple Metalon", BattlePets.GetSpecies("metalon").ModelAt(1));
             Assert.Equal("enemy:Red Dragon", BattlePets.GetSpecies("red-dragon").ModelAt(2));
         }
+
+        [Fact]
+        public void Taming_catches_up_then_slows()
+        {
+            Assert.Equal(0.25, BattlePets.TamingShare(1, 600), 6);
+            Assert.Equal(0.25, BattlePets.TamingShare(599, 600), 6);
+            Assert.Equal(0.10, BattlePets.TamingShare(600, 600), 6);
+            Assert.Equal(0.10, BattlePets.TamingShare(700, 50), 6);
+        }
     }
 }
