@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -464,18 +464,18 @@ namespace RavenNest.Combat
             // Magic: Elements, the caster
             Passive(M, 0, "arcane-power", "Arcane Power", "More magic power.", "MAGIC_POWER_BONUS:4%");
             Active(M, 0, "fireball", "Fireball", "Fire on the target and the enemies around it.",
-                new ActiveSkill { Cooldown = 8, Targeting = SkillTargeting.AroundTarget, Radius = 3, MaxTargets = 5, Use = SkillUse.InFight, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 1.2) { Element = Combat.Element.Fire } } });
+                new ActiveSkill { Cooldown = 8, Targeting = SkillTargeting.AroundTarget, Radius = 3, MaxTargets = 5, Use = SkillUse.InFight, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 1.0) { Element = Combat.Element.Fire } } });
             Active(M, 1, "frost-nova", "Frost Nova", "Freezes the enemies around you for 2 seconds.",
                 new ActiveSkill { Cooldown = 20, Targeting = SkillTargeting.Around, Radius = 5, MaxTargets = 10, Use = SkillUse.EnemiesNear, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 0.5) { Element = Combat.Element.Ice }, E(SkillEffectKind.Freeze, 0, 2) } });
             Passive(M, 1, "quickened-casting", "Quickened Casting", "Faster spells and heals.", "CAST_SPEED:3%");
             Passive(M, 1, "searing", "Searing", "Your burns hurt more.", "BURN_BONUS:10%");
             Active(M, 2, "chain-lightning", "Chain Lightning", "Lightning that jumps to four enemies.",
-                new ActiveSkill { Cooldown = 14, Targeting = SkillTargeting.Chain, Radius = 8, MaxTargets = 5, Use = SkillUse.InFight, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 1.0) { Element = Combat.Element.Lightning } } });
+                new ActiveSkill { Cooldown = 14, Targeting = SkillTargeting.Chain, Radius = 8, MaxTargets = 5, Use = SkillUse.InFight, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 0.8) { Element = Combat.Element.Lightning } } });
             Active(M, 2, "toxic-cloud", "Toxic Cloud", "Poison on the enemies around the target for 6 seconds.",
                 new ActiveSkill { Cooldown = 20, Targeting = SkillTargeting.AroundTarget, Radius = 4, MaxTargets = 10, Use = SkillUse.EnemiesNear, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.DamageOverTime, 2.0, 6) { Element = Combat.Element.Poison } } });
             Passive(M, 2, "unravel", "Unravel", "The enemies you hit resist elements less.", "RESISTANCE_SHRED:3%");
             Active(M, 3, "meteor", "Meteor", "A huge fireball on the target and everything around it.",
-                new ActiveSkill { Cooldown = 60, Targeting = SkillTargeting.AroundTarget, Radius = 5, MaxTargets = 12, Use = SkillUse.OnBoss, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 4.0) { Element = Combat.Element.Fire } } });
+                new ActiveSkill { Cooldown = 60, Targeting = SkillTargeting.AroundTarget, Radius = 5, MaxTargets = 12, Use = SkillUse.OnBoss, Needs = SkillGear.Staff, Style = AttackStyle.Magic, Effects = new[] { new SkillEffect(SkillEffectKind.Damage, 2.8) { Element = Combat.Element.Fire } } });
 
             // Health: Vitality, staying alive, for everyone
             Passive(V, 0, "hardy", "Hardy", "More health.", "MAX_HEALTH_BONUS:3%");
@@ -489,14 +489,14 @@ namespace RavenNest.Combat
                 new ActiveSkill { Cooldown = 40, Targeting = SkillTargeting.Self, Use = SkillUse.OnBoss, Effects = new[] { E(SkillEffectKind.CrowdControlImmunity, 0, 4) } });
 
             // Slayer: Hunter, bosses and big enemies
-            Passive(L, 0, "big-game", "Big Game", "More damage to bosses.", "BOSS_DAMAGE:4%");
+            Passive(L, 0, "big-game", "Big Game", "More damage to bosses.", "BOSS_DAMAGE:3%");
             Active(L, 0, "mark-prey", "Mark Prey", "The target takes 20% more damage from your group for 8 seconds.",
                 new ActiveSkill { Cooldown = 30, Targeting = SkillTargeting.Target, Use = SkillUse.OnBoss, Effects = new[] { E(SkillEffectKind.DamageTaken, 0.2, 8) } });
             Active(L, 1, "execute", "Execute", "A huge hit on an enemy below 20% health.",
-                new ActiveSkill { Cooldown = 15, Targeting = SkillTargeting.Target, Use = SkillUse.TargetLow, Effects = new[] { E(SkillEffectKind.Damage, 4.0) } });
+                new ActiveSkill { Cooldown = 15, Targeting = SkillTargeting.Target, Use = SkillUse.TargetLow, Effects = new[] { E(SkillEffectKind.Damage, 3.0) } });
             Passive(L, 1, "treasure-hunter", "Treasure Hunter", "More loot in raids and dungeons.", "LOOT_LUCK:2%");
             Passive(L, 2, "pressure-points", "Pressure Points", "Your stuns, freezes and roots last longer.", "CROWD_CONTROL_DURATION:10%");
-            Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:10%", ranks: 1, cost: 10);
+            Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:8%", ranks: 1, cost: 10);
 
             // the paths (2026-11-08): a node needs one of the nodes linked to it in the tier below; the first tier is open
             Path("shield-wall", "taunt", "thick-skin");
