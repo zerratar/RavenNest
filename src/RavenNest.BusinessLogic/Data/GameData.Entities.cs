@@ -311,6 +311,13 @@ namespace RavenNest.BusinessLogic.Data
                         .SetStats(armor: 14, magicAim: 10, magicPower: 10),
                     HolyHandGrenade = GetOrCreateItem(i, "Holy Hand Grenade", "Pip's thank you. Count to three, no more, no less. Five is right out.", ItemCategory.QuestItem, ItemType.None),
 
+                    // Rimeholt, the tower's second town (the Frozen Vault): one item from each of its people's chains
+                    EmbersmithBand = GetOrCreateItem(i, "Embersmith Band", "A ring Hilda Embersmith quenched in the snow of Rimeholt. It stays warm when nothing else does.", ItemCategory.Ring, ItemType.Ring)
+                        .SetStats(armor: 18, weaponAim: 22, weaponPower: 22, rangedAim: 10, rangedPower: 10),
+                    FrostbeardAmulet = GetOrCreateItem(i, "Frostbeard Amulet", "An icicle from Old Tove's beard on a string. It keeps the cold out. Do not lick it.", ItemCategory.Amulet, ItemType.Amulet)
+                        .SetStats(armor: 22, magicAim: 18, magicPower: 18),
+                    RubberDuck = GetOrCreateItem(i, "Rubber Duck", "Ylva's spare duck, for luck. It squeaks. It is braver than it looks.", ItemCategory.QuestItem, ItemType.None),
+
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // accessories

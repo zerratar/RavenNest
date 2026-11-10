@@ -157,6 +157,48 @@ namespace RavenNest.BusinessLogic.Game
                 },
             },
 
+            // Rimeholt (the tower's second town, 2026-11-10): Hilda's forge keeps the whole town alive.
+            new Chain
+            {
+                Key = "embers", Town = "rimeholt", RewardSkill = Skill.Crafting, RewardItem = "Embersmith Band",
+                Steps = new[]
+                {
+                    TowerKill(null, 80),
+                    TowerKill("frost-raider", 40),
+                    Deliver("Coal", 50),
+                    TowerClear(1),
+                    Talk("hilda"),
+                },
+            },
+
+            // Old Tove has fished the same hole for sixty winters, and nothing bites any more.
+            new Chain
+            {
+                Key = "tove", Town = "rimeholt", RewardSkill = Skill.Fishing, RewardItem = "Frostbeard Amulet",
+                Steps = new[]
+                {
+                    Gather(Skill.Fishing, 60),
+                    Answer(3, 2),
+                    TowerKill("snow-hare", 30),
+                    Deliver("Raw Salmon", 25),
+                    Talk("tove"),
+                },
+            },
+
+            // Ylva's duck flew up the tower. Everybody knows where it really is. Nobody tells her.
+            new Chain
+            {
+                Key = "duck", Town = "rimeholt", RewardSkill = Skill.Ranged, RewardItem = "Rubber Duck",
+                Steps = new[]
+                {
+                    TowerKill("quackling", 30),
+                    Answer(3, 1),
+                    Deliver("Bread", 20),
+                    TowerClear(1),
+                    Talk("ylva"),
+                },
+            },
+
             // The barkeep found a speckled egg in the pantry, warm as fresh bread. It is not a hen's. (2026-11-09)
             new Chain
             {

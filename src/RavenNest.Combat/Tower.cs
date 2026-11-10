@@ -8,7 +8,7 @@ namespace RavenNest.Combat
     ///     a few stream quests (defeat its monsters) and a boss; the boss opens when the quests are done and can be
     ///     tried as often as the stream likes. Floors come in bands of ten, each band its own biome, element and town.
     ///     Shared by the server (progress, rewards), the game (the floor's enemies and boss, the quest text) and the
-    ///     simulator (tuning the bosses). Floors 1 to 10 (the first band) for now; more bands with later updates.
+    ///     simulator (tuning the bosses). Floors 1 to 20 (two bands) so far; more bands keep coming.
     /// </summary>
     public static class Tower
     {
@@ -65,6 +65,18 @@ namespace RavenNest.Combat
                     new TowerNpc { Key = "bramble", Name = "Bramble", Role = "Herbalist", Chain = "bramble" },
                     new TowerNpc { Key = "pip", Name = "Pip", Role = "A boy who lost his bunny", Chain = "nibbles" },
                     new TowerNpc { Key = "mossbeard", Name = "Old Mossbeard", Role = "Innkeeper of the Sleepy Stump" },
+                },
+            },
+            new TowerTownDefinition
+            {
+                Key = "rimeholt", Name = "Rimeholt", Band = 2, Layout = "Tower_Rimeholt",
+                Description = "A snowed-in hamlet on a ledge of the tower, kept alive by one forge, one mead hall and a lot of stubbornness.",
+                People = new[]
+                {
+                    new TowerNpc { Key = "hilda", Name = "Hilda Embersmith", Role = "The smith who keeps the forge lit", Chain = "embers" },
+                    new TowerNpc { Key = "tove", Name = "Old Tove", Role = "An ice fisher with a frozen beard", Chain = "tove" },
+                    new TowerNpc { Key = "ylva", Name = "Ylva", Role = "A girl whose duck flew up the tower", Chain = "duck" },
+                    new TowerNpc { Key = "gunnhild", Name = "Big Gunnhild", Role = "Keeper of the Thawing Mead hall" },
                 },
             },
         };
@@ -239,6 +251,16 @@ namespace RavenNest.Combat
                 Resistance = new ElementValues { Poison = 0.5, Fire = -0.25 },
                 Town = "Mossgate",
             },
+            new TowerBand
+            {
+                Number = 2, FirstFloor = 11, LastFloor = 20,
+                Name = "The Frozen Vault",
+                Biome = "ice",
+                Description = "Above the halls the stone turns to ice. Raiders, wraiths and worse sleep in the cold, and every blow bites with frost.",
+                Element = Element.Ice, ElementShare = 0.3,
+                Resistance = new ElementValues { Ice = 0.5, Fire = -0.25, Lightning = -0.1 },
+                Town = "Rimeholt",
+            },
         };
 
         private static readonly List<TowerFloorDefinition> floors = BuildFloors();
@@ -287,6 +309,51 @@ namespace RavenNest.Combat
                     new[] { redMetalon, purpleMetalon }, Defeat(redMetalon, 50), Defeat(purpleMetalon, 50),
                     new TowerBoss { Name = "Viridia, the Verdant Wyrm", Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
             };
+
+            // the second band, the Frozen Vault (2026-11-10): ice, weak to fire
+            var raider = new TowerEnemy { Id = "frost-raider", Name = "Frost Raider", Model = "iceheim-viking", Family = EnemyFamily.Humanoid };
+            var hare = new TowerEnemy { Id = "snow-hare", Name = "Snow Hare", Model = "home-bunny", Family = EnemyFamily.Beast, LevelOffset = -2, AttackInterval = 1.1 };
+            var frozenSkeleton = new TowerEnemy { Id = "frozen-skeleton", Name = "Frozen Skeleton", Model = "ravebridge-skeleton", Family = EnemyFamily.Undead };
+            var wraith = new TowerEnemy { Id = "frost-wraith", Name = "Frost Wraith", Model = "ravebridge-tormented-soul", Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, LevelOffset = 1, AttackInterval = 1.4 };
+            var quackling = new TowerEnemy { Id = "quackling", Name = "Quackling", Model = "ironhill-lord-quackers", Family = EnemyFamily.Beast, LevelOffset = -1, AttackInterval = 1.2, Scale = 0.4f };
+            var thane = new TowerEnemy { Id = "raider-thane", Name = "Raider Thane", Model = "iceheim-viking-chief", Family = EnemyFamily.Humanoid, LevelOffset = 3, AttackInterval = 1.2 };
+            var drake = new TowerEnemy { Id = "frost-drake", Name = "Frost Drake", Model = "ironhill-dragon-white", Family = EnemyFamily.Dragon, LevelOffset = 3, AttackInterval = 1.3 };
+            var ronin = new TowerEnemy { Id = "frozen-ronin", Name = "Frozen Ronin", Model = "kyojin-samurai", Family = EnemyFamily.Humanoid, LevelOffset = 2 };
+            var frostCow = new TowerEnemy { Id = "frostbitten-cow", Name = "Frostbitten Cow", Model = "home-cow", Family = EnemyFamily.Beast, LevelOffset = -1, AttackInterval = 1.5 };
+
+            list.AddRange(new[]
+            {
+                Floor(11, "The Frostgate", "The stairs come out into the cold. Somebody has built a gate here, and somebody else is raiding it.",
+                    new[] { raider, hare }, Defeat(raider, 35), Defeat(hare, 30),
+                    new TowerBoss { Name = "Jarl Rimebeard", Model = "iceheim-viking-chief", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "Shut the door! You are letting the warm in." }),
+                Floor(12, "Hare Hollow", "Burrows in the snow, and the hares have heard what happened on the first floor.",
+                    new[] { hare, raider }, Defeat(hare, 45), Defeat(raider, 25),
+                    new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." }),
+                Floor(13, "The Bone Glacier", "The ice is full of bones. Some of them are still moving.",
+                    new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 40), Defeat(wraith, 30),
+                    new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 }),
+                Floor(14, "Hall of Whispers", "Every sound comes back colder than it left.",
+                    new[] { wraith, frozenSkeleton }, Defeat(wraith, 45), Defeat(frozenSkeleton, 35),
+                    new TowerBoss { Name = "The Wailing Matron", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, AddsAt = new[] { 0.66, 0.33 }, Line = "Shhhhh." }),
+                Floor(15, "The Frozen Pond", "A pond frozen solid, and on it a lot of very small ducks with very sharp beaks.",
+                    new[] { quackling, hare }, Defeat(quackling, 40), Defeat(hare, 40),
+                    new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." }),
+                Floor(16, "Raiders' Mead Hall", "The raiders' long hall. The mead is warm, the welcome is not.",
+                    new[] { raider, thane }, Defeat(raider, 50), Defeat(thane, 30),
+                    new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "Mead first. Then I break you." }),
+                Floor(17, "The Drake Roost", "Nests of ice on every ledge. The drakes do not share.",
+                    new[] { drake, quackling }, Defeat(drake, 40), Defeat(quackling, 35),
+                    new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 }),
+                Floor(18, "The Shiver Mines", "Old mines cut into the ice, and something frozen in the deepest shaft is waking up.",
+                    new[] { ronin, frozenSkeleton }, Defeat(ronin, 40), Defeat(frozenSkeleton, 45),
+                    new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.25, Line = "A thousand winters I waited for a worthy duel. You will have to do." }),
+                Floor(19, "Cold Storage", "Somebody keeps their cows up here. To keep them fresh. They did not stay fresh.",
+                    new[] { frostCow, drake }, Defeat(frostCow, 45), Defeat(drake, 40),
+                    new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Element = Element.Ice, ElementShare = 0.6, SpitEvery = 4, Line = "Mooooo. Brrrr." }),
+                Floor(20, "The Rime Throne", "At the top of the vault, on a throne of ice, the cold itself has a name.",
+                    new[] { drake, thane }, Defeat(drake, 50), Defeat(thane, 45),
+                    new TowerBoss { Name = "Glacius, the Winter Wyrm", Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
+            });
             return list;
         }
 
@@ -298,12 +365,18 @@ namespace RavenNest.Combat
         public const string Marsh = "Tower_Marsh";
         public const string Crypt = "Tower_Crypt";
 
+        /// <summary>The second band's layouts: a glacier valley under the open sky and the ice vault inside the tower.</summary>
+        public const string Glacier = "Tower_Glacier";
+        public const string FrostVault = "Tower_FrostVault";
+
         private static string LayoutOf(int number)
         {
             switch (number)
             {
                 case 3: case 8: return Marsh;
                 case 4: case 7: case 9: case 10: return Crypt;
+                case 11: case 12: case 15: case 16: case 19: return Glacier;
+                case 13: case 14: case 17: case 18: case 20: return FrostVault;
                 default: return Overgrown;
             }
         }
@@ -336,7 +409,7 @@ namespace RavenNest.Combat
         private static string Plural(string name)
         {
             if (name.EndsWith("y") && !name.EndsWith("ey")) return name.Substring(0, name.Length - 1) + "ies";
-            if (name.EndsWith("s")) return name;
+            if (name.EndsWith("s") || name.EndsWith("Ronin")) return name;
             return name + "s";
         }
 
@@ -433,6 +506,8 @@ namespace RavenNest.Combat
         /// <summary>Levels above (or below) the floor's level.</summary>
         public int LevelOffset;
         public double AttackInterval = 1;
+        /// <summary>Its size as a share of the look's (quacklings are a small Lord Quackers).</summary>
+        public float Scale = 1f;
     }
 
     /// <summary>A floor quest for the whole stream: defeat a number of one kind of the floor's monsters.</summary>

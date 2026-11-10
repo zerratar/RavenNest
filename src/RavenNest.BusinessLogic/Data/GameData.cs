@@ -5724,6 +5724,10 @@ namespace RavenNest.BusinessLogic.Data
         public Item WardensThornband;
         public Item BrambleCharm;
         public Item HolyHandGrenade;
+        // the tower's second town, Rimeholt (band 2, the Frozen Vault)
+        public Item EmbersmithBand;
+        public Item FrostbeardAmulet;
+        public Item RubberDuck;
         public Item FishingBoat;
         public Item Sloop;
         public Item Brigantine;

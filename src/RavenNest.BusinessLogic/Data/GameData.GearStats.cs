@@ -35,6 +35,9 @@ namespace RavenNest.BusinessLogic.Data
             ["Ring Of The Celestial"] = "LIGHTNING_RESISTANCE:15%;CRIT_CHANCE:2%",
             ["Windcallers Amulet"] = "LIGHTNING_DAMAGE:5%;EVASION:20",
             ["Owls Eye Ring"] = "CRIT_CHANCE:5%",
+            // Rimeholt's chain rewards: for the Frozen Vault
+            ["Embersmith Band"] = "FIRE_DAMAGE:3%;ICE_RESISTANCE:8%",
+            ["Frostbeard Amulet"] = "ICE_RESISTANCE:12%",
             ["Archmages Pendant"] = "CRIT_DAMAGE:15%",
             ["Knights Emblem"] = "MAX_HEALTH:150",
             ["Warriors Might Ring"] = "CRIT_DAMAGE:10%",
