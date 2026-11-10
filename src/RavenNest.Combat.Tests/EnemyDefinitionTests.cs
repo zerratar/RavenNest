@@ -83,5 +83,20 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(1, copy.Resistance.Poison, 6);
             Assert.Equal("poison-bite", copy.Skills[0]);
         }
+
+        [Fact]
+        public void Bosses_roll_an_element_or_stay_physical()
+        {
+            Assert.Equal(Element.Physical, EnemyDefinition.BossElement(0));
+            Assert.Equal(Element.Physical, EnemyDefinition.BossElement(0.39));
+            Assert.Equal(Element.Fire, EnemyDefinition.BossElement(0.41));
+            Assert.Equal(Element.Poison, EnemyDefinition.BossElement(0.9999));
+            var fire = Gladiator().WithElement(Element.Fire, 0.4);
+            Assert.Equal(0.4, fire.ElementShare, 6);
+            Assert.Equal(0.5, fire.Resistance.Fire, 6);
+            Assert.Equal(-0.25, fire.Resistance.Ice, 6);
+            Assert.Equal(0.4, fire.Sheet().Melee.Conversion.Fire, 6);
+            Assert.Equal(0, Gladiator().WithElement(Element.Physical, 0.4).ElementShare, 6);
+        }
     }
 }

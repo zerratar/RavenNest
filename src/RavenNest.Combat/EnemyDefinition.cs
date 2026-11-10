@@ -132,5 +132,54 @@ namespace RavenNest.Combat
             copy.Skills = (string[])(Skills ?? Array.Empty<string>()).Clone();
             return copy;
         }
+
+        /// <summary>
+        ///     The element a creature of <paramref name="element"/> is weak to, the way the island enemies are set up:
+        ///     fire and ice against each other, lightning and poison against each other.
+        /// </summary>
+        public static Element Weakness(Element element)
+        {
+            switch (element)
+            {
+                case Element.Fire: return Element.Ice;
+                case Element.Ice: return Element.Fire;
+                case Element.Lightning: return Element.Poison;
+                case Element.Poison: return Element.Lightning;
+                default: return Element.Physical;
+            }
+        }
+
+        /// <summary>Raid and dungeon bosses roll this share of their hits as an element (the rest of a roll stays physical).</summary>
+        public const double BossElementShare = 0.4;
+
+        /// <summary>Of raid and dungeon bosses, this many fight with plain physical blows; the rest pick an element.</summary>
+        public const double BossPhysicalChance = 0.4;
+
+        /// <summary>
+        ///     A copy fighting with <paramref name="element"/>: that share of every hit, half its resistance to it and a
+        ///     quarter weakness to the opposite element (as the island enemies of that element have). Physical: a plain copy.
+        /// </summary>
+        public EnemyDefinition WithElement(Element element, double share)
+        {
+            var copy = Copy();
+            copy.Element = element;
+            copy.ElementShare = element == Element.Physical ? 0 : share;
+            if (element != Element.Physical)
+                copy.Resistance = ElementValues.Of(element, 0.5) + ElementValues.Of(Weakness(element), -0.25);
+            return copy;
+        }
+
+        /// <summary>
+        ///     A raid or dungeon boss's element for one fight from a roll in [0, 1): plain physical below
+        ///     <see cref="BossPhysicalChance"/>, then fire, ice, lightning and poison in equal parts.
+        /// </summary>
+        public static Element BossElement(double roll)
+        {
+            if (roll < BossPhysicalChance) return Element.Physical;
+            var rest = (roll - BossPhysicalChance) / (1 - BossPhysicalChance);
+            var index = (int)(rest * 4);
+            if (index > 3) index = 3;
+            return Elements.All[1 + index];
+        }
     }
 }

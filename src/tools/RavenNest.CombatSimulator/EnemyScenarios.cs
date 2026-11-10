@@ -138,9 +138,68 @@ namespace RavenNest.CombatSimulator
             player.Melee.Accuracy = kit.WeaponAim;
             kit.ApplyExtras(player);
             var enemy = d.Sheet();
-            return Fight(player.MaxHealth, enemy.MaxHealth, Interval(d),
-                () => CombatMath.Attack(player, AttackStyle.Melee, enemy, random).Total,
-                () => CombatMath.Attack(enemy, d.Style, player, random).Total);
+            return FightWithEffects(player, enemy, Interval(d), d.Style, random);
+        }
+
+        /// <summary>
+        ///     The new rules' fight with status effects, as the game plays them (CombatEffects): element blows burn, poison,
+        ///     chill, freeze and stun both ways, damage over time once a second (burn by fire resistance, poison by poison
+        ///     resistance, bleed by armour), chilled fighters swing slower, frozen and stunned ones not at all. One enemy,
+        ///     so lightning's jumps go nowhere.
+        /// </summary>
+        internal static Outcome FightWithEffects(CombatSheet player, CombatSheet enemy, double enemyInterval, AttackStyle enemyStyle, ICombatRandom random)
+        {
+            const double step = 0.05;
+            var playerEffects = new StatusEffectSet();
+            var enemyEffects = new StatusEffectSet { IsBoss = enemy.IsBoss };
+            double playerHealth = player.MaxHealth, enemyHealth = enemy.MaxHealth;
+            double playerTimer = 0, enemyTimer = enemyInterval, tick = 0, time = 0;
+            var swings = 0;
+            Outcome Won() => new Outcome { Won = true, Time = time, Swings = swings, HealthLeft = Math.Max(0, playerHealth) / player.MaxHealth };
+            Outcome Lost() => new Outcome { Won = false, Time = time, Swings = swings };
+            while (time < TimeLimit)
+            {
+                time += step;
+                if (!playerEffects.CannotAct) playerTimer -= step * playerEffects.AttackSpeedFactor;
+                if (!enemyEffects.CannotAct) enemyTimer -= step * enemyEffects.AttackSpeedFactor;
+                if (playerTimer <= 0)
+                {
+                    playerTimer += PlayerSwing;
+                    swings++;
+                    var blow = CombatMath.Attack(player, AttackStyle.Melee, enemy, random);
+                    enemyHealth -= blow.Total;
+                    if (blow.Procs != null && blow.Procs.Count > 0) enemyEffects.ApplyProcs(blow.Procs, random);
+                    if (enemyHealth <= 0) return Won();
+                }
+                if (enemyTimer <= 0)
+                {
+                    enemyTimer += enemyInterval;
+                    var blow = CombatMath.Attack(enemy, enemyStyle, player, random);
+                    playerHealth -= blow.Total;
+                    if (blow.Procs != null && blow.Procs.Count > 0) playerEffects.ApplyProcs(blow.Procs, random);
+                    if (playerHealth <= 0) return Lost();
+                }
+                tick += step;
+                if (tick >= 1)
+                {
+                    tick -= 1;
+                    playerHealth -= OverTime(playerEffects.Tick(1), player);
+                    if (playerHealth <= 0) return Lost();
+                    enemyHealth -= OverTime(enemyEffects.Tick(1), enemy);
+                    if (enemyHealth <= 0) return Won();
+                }
+            }
+            return Lost();
+        }
+
+        // damage over time as the game takes it (CombatEffects.Update)
+        internal static double OverTime(ElementValues dot, CombatSheet sheet)
+        {
+            if (dot.Total <= 0) return 0;
+            var damage = dot.Physical * (1 - CombatMath.ArmorReduction(sheet.Armor))
+                + dot.Fire * CombatMath.ResistanceMultiplier(sheet.Resistance.Fire, sheet.IsPlayer)
+                + dot.Poison * CombatMath.ResistanceMultiplier(sheet.Resistance.Poison, sheet.IsPlayer);
+            return Math.Round(damage * sheet.DamageTakenMultiplier);
         }
 
         /// <summary>Characters start with Health 10.</summary>
