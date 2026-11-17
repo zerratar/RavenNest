@@ -492,6 +492,16 @@ namespace RavenNest.Blazor
             // Start the report aggregators
             app.ApplicationServices.GetService<MarketplaceReportAggregator>();
             app.ApplicationServices.GetService<EconomyReportAggregator>();
+
+            // the news that ships with this server goes on the site once its game version is out (ReleaseNews)
+            try
+            {
+                app.ApplicationServices.GetService<RavenNest.Blazor.Services.Announcements.AnnouncementService>()?.SeedReleaseNews();
+            }
+            catch (Exception exc)
+            {
+                System.Console.WriteLine("Could not put the release news on the site: " + exc.Message);
+            }
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)

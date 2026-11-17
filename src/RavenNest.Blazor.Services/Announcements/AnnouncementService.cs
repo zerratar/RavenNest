@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Game;
 
 namespace RavenNest.Blazor.Services.Announcements
 {
@@ -42,19 +43,80 @@ namespace RavenNest.Blazor.Services.Announcements
         private static readonly string FilePath =
             Path.Combine(FolderPaths.GeneratedDataPath, "announcements.json");
 
+        /// <summary>The release news (<see cref="ReleaseNews"/>) that has gone in once, so a deleted post stays deleted.</summary>
+        private static readonly string SeededPath =
+            Path.Combine(FolderPaths.GeneratedDataPath, "announcements-seeded.json");
+
         private readonly ILogger<AnnouncementService> logger;
+        private readonly GameData gameData;
         private readonly object mutex = new object();
 
         private List<Announcement> announcements;
+        private HashSet<Guid> seeded;
+        private DateTime nextSeedCheck;
 
-        public AnnouncementService(ILogger<AnnouncementService> logger)
+        public AnnouncementService(ILogger<AnnouncementService> logger, GameData gameData)
         {
             this.logger = logger;
+            this.gameData = gameData;
+        }
+
+        /// <summary>
+        ///     Puts the release news that ships with the server on the site (<see cref="ReleaseNews"/>): each post once,
+        ///     published and pinned as written, as soon as the game version it announces (or a newer one) is the one
+        ///     the server expects. Called at startup and, at most once a minute, whenever the posts are read, so a post
+        ///     appears within a minute of the release watcher seeing the new version. Returns how many went in.
+        /// </summary>
+        public int SeedReleaseNews()
+        {
+            lock (mutex)
+            {
+                Load();
+                nextSeedCheck = DateTime.UtcNow.AddMinutes(1);
+                if (loadFailed) return 0;
+                var current = gameData?.Client != null ? gameData.GetClientVersion() : new Version();
+                var added = 0;
+                foreach (var release in ReleaseNews.Posts)
+                {
+                    if (seeded.Contains(release.Id) || current < release.Version) continue;
+                    seeded.Add(release.Id);
+                    if (announcements.Any(x => x.Id == release.Id)) continue;
+                    var now = DateTime.UtcNow;
+                    var source = release.Post;
+                    var post = new Announcement
+                    {
+                        Id = release.Id,
+                        Title = source.Title,
+                        Summary = source.Summary,
+                        Body = (source.Body ?? "").Replace("{top}", RavenNest.Combat.Tower.TopFloor.ToString()),
+                        Author = source.Author,
+                        Kind = source.Kind,
+                        Pinned = release.Pinned,
+                        CreatedUtc = now,
+                        PublishedUtc = now,
+                    };
+                    post.Slug = UniqueSlug(post);
+                    announcements.Add(post);
+                    added++;
+                    logger.LogInformation("Release news for " + release.Version + " is on the site: " + post.Title);
+                }
+                if (added > 0) Persist();
+                PersistSeeded();
+                return added;
+            }
+        }
+
+        private void SeedWhenDue()
+        {
+            if (DateTime.UtcNow < nextSeedCheck) return;
+            try { SeedReleaseNews(); }
+            catch (Exception exc) { logger.LogError("Could not put the release news on the site: " + exc); }
         }
 
         /// <summary>Everything, newest first, drafts included. For the admin panel.</summary>
         public IReadOnlyList<Announcement> GetAll()
         {
+            SeedWhenDue();
             lock (mutex)
             {
                 Load();
@@ -65,6 +127,7 @@ namespace RavenNest.Blazor.Services.Announcements
         /// <summary>What the public should see, newest first, pinned posts before the rest.</summary>
         public IReadOnlyList<Announcement> GetPublished(int take = int.MaxValue)
         {
+            SeedWhenDue();
             lock (mutex)
             {
                 Load();
@@ -223,6 +286,7 @@ namespace RavenNest.Blazor.Services.Announcements
             if (announcements != null) return;
 
             announcements = new List<Announcement>();
+            LoadSeeded();
 
             try
             {
@@ -238,6 +302,40 @@ namespace RavenNest.Blazor.Services.Announcements
                 // state, which is wrong but harmless, and nothing overwrites the file until
                 // somebody saves.
                 logger.LogError("Could not read announcements from '" + FilePath + "': " + exc);
+                loadFailed = true;
+            }
+        }
+
+        // true when the posts file could not be read: nothing writes it then (the release news waits too)
+        private bool loadFailed;
+
+        private void LoadSeeded()
+        {
+            seeded = new HashSet<Guid>();
+            try
+            {
+                if (!File.Exists(SeededPath)) return;
+                var loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Guid>>(File.ReadAllText(SeededPath));
+                if (loaded != null) seeded = new HashSet<Guid>(loaded);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not read '" + SeededPath + "': " + exc);
+                loadFailed = true;
+            }
+        }
+
+        private void PersistSeeded()
+        {
+            try
+            {
+                var temp = SeededPath + ".tmp";
+                File.WriteAllText(temp, Newtonsoft.Json.JsonConvert.SerializeObject(seeded.ToList()));
+                File.Move(temp, SeededPath, overwrite: true);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not write '" + SeededPath + "': " + exc);
             }
         }
 
