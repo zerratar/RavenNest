@@ -5728,6 +5728,11 @@ namespace RavenNest.BusinessLogic.Data
         public Item EmbersmithBand;
         public Item FrostbeardAmulet;
         public Item RubberDuck;
+
+        // the tower's third town, Galewharf (band 3, the Storm Spire)
+        public Item WindlassBand;
+        public Item BottledLightning;
+        public Item WoollysBell;
         public Item FishingBoat;
         public Item Sloop;
         public Item Brigantine;

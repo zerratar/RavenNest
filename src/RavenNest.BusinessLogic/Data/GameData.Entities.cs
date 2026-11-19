@@ -318,6 +318,13 @@ namespace RavenNest.BusinessLogic.Data
                         .SetStats(armor: 22, magicAim: 18, magicPower: 18),
                     RubberDuck = GetOrCreateItem(i, "Rubber Duck", "Ylva's spare duck, for luck. It squeaks. It is braver than it looks.", ItemCategory.QuestItem, ItemType.None),
 
+                    // Galewharf, the tower's third town (the Storm Spire): one item from each of its people's chains
+                    WindlassBand = GetOrCreateItem(i, "Windlass Band", "A ring of braided sail rope and brass from Captain Brisa's own windlass. It hums when a storm is near.", ItemCategory.Ring, ItemType.Ring)
+                        .SetStats(armor: 26, weaponAim: 30, weaponPower: 30, rangedAim: 14, rangedPower: 14),
+                    BottledLightning = GetOrCreateItem(i, "Bottled Lightning", "A little storm in a glass jar on a chain, sealed by Tinker Volt. Do not shake it.", ItemCategory.Amulet, ItemType.Amulet)
+                        .SetStats(armor: 30, magicAim: 26, magicPower: 26),
+                    WoollysBell = GetOrCreateItem(i, "Woolly's Bell", "The little brass bell from Woolly's collar. Ring it and somewhere above the clouds a sheep goes baa.", ItemCategory.QuestItem, ItemType.None),
+
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // accessories

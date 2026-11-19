@@ -37,6 +37,9 @@ namespace RavenNest.BusinessLogic.Data
             ["Owls Eye Ring"] = "CRIT_CHANCE:5%",
             // Rimeholt's chain rewards: for the Frozen Vault
             ["Embersmith Band"] = "FIRE_DAMAGE:3%;ICE_RESISTANCE:8%",
+            // Galewharf's chain rewards: for the Storm Spire (lightning, weak to poison)
+            ["Windlass Band"] = "POISON_DAMAGE:3%;LIGHTNING_RESISTANCE:8%",
+            ["Bottled Lightning"] = "LIGHTNING_RESISTANCE:12%",
             ["Frostbeard Amulet"] = "ICE_RESISTANCE:12%",
             ["Archmages Pendant"] = "CRIT_DAMAGE:15%",
             ["Knights Emblem"] = "MAX_HEALTH:150",

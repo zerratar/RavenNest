@@ -8,7 +8,7 @@ namespace RavenNest.Combat
     ///     a few stream quests (defeat its monsters) and a boss; the boss opens when the quests are done and can be
     ///     tried as often as the stream likes. Floors come in bands of ten, each band its own biome, element and town.
     ///     Shared by the server (progress, rewards), the game (the floor's enemies and boss, the quest text) and the
-    ///     simulator (tuning the bosses). Floors 1 to 20 (two bands) so far; more bands keep coming.
+    ///     simulator (tuning the bosses). Floors 1 to 30 (three bands) so far; more bands keep coming.
     /// </summary>
     public static class Tower
     {
@@ -77,6 +77,18 @@ namespace RavenNest.Combat
                     new TowerNpc { Key = "tove", Name = "Old Tove", Role = "An ice fisher with a frozen beard", Chain = "tove" },
                     new TowerNpc { Key = "ylva", Name = "Ylva", Role = "A girl whose duck flew up the tower", Chain = "duck" },
                     new TowerNpc { Key = "gunnhild", Name = "Big Gunnhild", Role = "Keeper of the Thawing Mead hall" },
+                },
+            },
+            new TowerTownDefinition
+            {
+                Key = "galewharf", Name = "Galewharf", Band = 3, Layout = "Tower_Galewharf",
+                Description = "A harbour on the clouds where sky sailors moor their ships, mend their sails and swear at the weather.",
+                People = new[]
+                {
+                    new TowerNpc { Key = "brisa", Name = "Captain Brisa Windlass", Role = "Harbourmaster of the cloud docks", Chain = "windlass" },
+                    new TowerNpc { Key = "volt", Name = "Tinker Volt", Role = "An inventor who bottles lightning", Chain = "bottled" },
+                    new TowerNpc { Key = "tessa", Name = "Tessa", Role = "A shepherd girl whose sheep floated away", Chain = "woolly" },
+                    new TowerNpc { Key = "hob", Name = "Skipper Hob", Role = "Keeper of the Crow's Nest inn" },
                 },
             },
         };
@@ -261,6 +273,16 @@ namespace RavenNest.Combat
                 Resistance = new ElementValues { Ice = 0.5, Fire = -0.25, Lightning = -0.1 },
                 Town = "Rimeholt",
             },
+            new TowerBand
+            {
+                Number = 3, FirstFloor = 21, LastFloor = 30,
+                Name = "The Storm Spire",
+                Biome = "storm",
+                Description = "Above the ice the tower breaks through the clouds. Sky pirates moor on the wind, drakes ride the storm, and every blow crackles with lightning.",
+                Element = Element.Lightning, ElementShare = 0.3,
+                Resistance = new ElementValues { Lightning = 0.5, Poison = -0.25, Ice = -0.1 },
+                Town = "Galewharf",
+            },
         };
 
         private static readonly List<TowerFloorDefinition> floors = BuildFloors();
@@ -354,6 +376,53 @@ namespace RavenNest.Combat
                     new[] { drake, thane }, Defeat(drake, 50), Defeat(thane, 45),
                     new TowerBoss { Name = "Glacius, the Winter Wyrm", Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
             });
+
+            // the third band, the Storm Spire (2026-11-19): lightning, weak to poison; sky pirates, storm ninjas, the arena
+            // of winds and the drakes that ride the storm
+            var skyPirate = new TowerEnemy { Id = "sky-pirate", Name = "Sky Pirate", Model = "away-pirate", Family = EnemyFamily.Humanoid };
+            var staticHare = new TowerEnemy { Id = "static-hare", Name = "Static Hare", Model = "home-bunny", Family = EnemyFamily.Beast, LevelOffset = -2, AttackInterval = 1.1 };
+            var stormNinja = new TowerEnemy { Id = "storm-ninja", Name = "Storm Ninja", Model = "kyojin-ninja", Family = EnemyFamily.Humanoid, LevelOffset = 1, AttackInterval = 0.9 };
+            var wisp = new TowerEnemy { Id = "storm-wisp", Name = "Storm Wisp", Model = "ravebridge-tormented-soul", Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, LevelOffset = 1, AttackInterval = 1.4 };
+            var duckling = new TowerEnemy { Id = "squall-duckling", Name = "Squall Duckling", Model = "ironhill-lord-quackers", Family = EnemyFamily.Beast, LevelOffset = -1, AttackInterval = 1.2, Scale = 0.4f };
+            var corsair = new TowerEnemy { Id = "storm-corsair", Name = "Storm Corsair", Model = "mangrove-pirate-captain", Family = EnemyFamily.Humanoid, LevelOffset = 3, AttackInterval = 1.2 };
+            var gladiator = new TowerEnemy { Id = "thunder-gladiator", Name = "Thunder Gladiator", Model = "atria-gladiator", Family = EnemyFamily.Humanoid, LevelOffset = 2, AttackInterval = 1.2 };
+            var sentinel = new TowerEnemy { Id = "gale-sentinel", Name = "Gale Sentinel", Model = "eldara-elven-soldier", Family = EnemyFamily.Humanoid, LevelOffset = 2 };
+            var stormDrake = new TowerEnemy { Id = "storm-drake", Name = "Storm Drake", Model = "ironhill-dragon-blue", Family = EnemyFamily.Dragon, LevelOffset = 3, AttackInterval = 1.3 };
+            var chargedCow = new TowerEnemy { Id = "charged-cow", Name = "Charged Cow", Model = "home-cow", Family = EnemyFamily.Beast, LevelOffset = -1, AttackInterval = 1.5 };
+
+            list.AddRange(new[]
+            {
+                Floor(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbour of planks and rope. The ships moored here are not friendly.",
+                    new[] { skyPirate, staticHare }, Defeat(skyPirate, 35), Defeat(staticHare, 30),
+                    new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
+                Floor(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",
+                    new[] { staticHare, skyPirate }, Defeat(staticHare, 45), Defeat(skyPirate, 25),
+                    new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." }),
+                Floor(23, "The Wind Bridges", "Stone bridges between drifting rocks, and on every one of them someone who wants you off it.",
+                    new[] { stormNinja, skyPirate }, Defeat(stormNinja, 40), Defeat(skyPirate, 30),
+                    new TowerBoss { Name = "Master Kaze", Model = "kyojin-ninja", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.15, AttackInterval = 2, Line = "You cannot hit the wind." }),
+                Floor(24, "The Wisp Gallery", "A long hall inside the spire where the lightning lives. It hums. It hums back.",
+                    new[] { wisp, stormNinja }, Defeat(wisp, 45), Defeat(stormNinja, 35),
+                    new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." }),
+                Floor(25, "The Duck Deck", "A ship's deck moored on a cloud, crewed entirely by ducks. They have a captain.",
+                    new[] { duckling, corsair }, Defeat(duckling, 40), Defeat(corsair, 30),
+                    new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "Arr. QUACK." }),
+                Floor(26, "The Arena of Winds", "A ring of stone open to the storm, and a crowd that came to see you lose.",
+                    new[] { gladiator, sentinel }, Defeat(gladiator, 45), Defeat(sentinel, 30),
+                    new TowerBoss { Name = "Champion Voltus", Model = "atria-gladiator", Scale = 2.4f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "The crowd wants a show. Try not to disappoint them." }),
+                Floor(27, "The Drake Eyrie", "Nests on the floating rocks, and drakes that dive out of the thunderclouds.",
+                    new[] { stormDrake, duckling }, Defeat(stormDrake, 40), Defeat(duckling, 35),
+                    new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 }),
+                Floor(28, "The Sentinel Spire", "The last stair inside the spire, held by elves who swore the storm an oath.",
+                    new[] { sentinel, gladiator }, Defeat(sentinel, 45), Defeat(gladiator, 40),
+                    new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." }),
+                Floor(29, "The Lightning Pasture", "Somebody grazes cows on a cloud. The lightning found them first.",
+                    new[] { chargedCow, stormDrake }, Defeat(chargedCow, 45), Defeat(stormDrake, 40),
+                    new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." }),
+                Floor(30, "The Eye of the Storm", "At the very top of the spire the storm turns around one point, and something lives in it.",
+                    new[] { stormDrake, gladiator }, Defeat(stormDrake, 50), Defeat(gladiator, 45),
+                    new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
+            });
             return list;
         }
 
@@ -369,6 +438,10 @@ namespace RavenNest.Combat
         public const string Glacier = "Tower_Glacier";
         public const string FrostVault = "Tower_FrostVault";
 
+        /// <summary>The third band's layouts: the cloud docks on a rock above the clouds, and the storm hall inside the spire.</summary>
+        public const string SkyDocks = "Tower_SkyDocks";
+        public const string StormSpire = "Tower_StormSpire";
+
         private static string LayoutOf(int number)
         {
             switch (number)
@@ -377,6 +450,8 @@ namespace RavenNest.Combat
                 case 4: case 7: case 9: case 10: return Crypt;
                 case 11: case 12: case 15: case 16: case 19: return Glacier;
                 case 13: case 14: case 17: case 18: case 20: return FrostVault;
+                case 21: case 22: case 23: case 25: case 27: case 29: return SkyDocks;
+                case 24: case 26: case 28: case 30: return StormSpire;
                 default: return Overgrown;
             }
         }

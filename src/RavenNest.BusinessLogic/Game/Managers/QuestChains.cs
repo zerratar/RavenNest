@@ -199,6 +199,48 @@ namespace RavenNest.BusinessLogic.Game
                 },
             },
 
+            // Galewharf (the tower's third town, 2026-11-19): Captain Brisa's ship lost its sails to the sky pirates.
+            new Chain
+            {
+                Key = "windlass", Town = "galewharf", RewardSkill = Skill.Sailing, RewardItem = "Windlass Band",
+                Steps = new[]
+                {
+                    TowerKill(null, 100),
+                    TowerKill("sky-pirate", 45),
+                    Deliver("Sailcloth", 30),
+                    TowerClear(1),
+                    Talk("brisa"),
+                },
+            },
+
+            // Tinker Volt wants to bottle a storm. He needs copper, a sharp mind and a lot of nerve. Mostly yours.
+            new Chain
+            {
+                Key = "bottled", Town = "galewharf", RewardSkill = Skill.Crafting, RewardItem = "Bottled Lightning",
+                Steps = new[]
+                {
+                    Gather(Skill.Mining, 60),
+                    Answer(3, 2),
+                    TowerKill("storm-wisp", 35),
+                    Deliver("Bronze Bar", 25),
+                    Talk("volt"),
+                },
+            },
+
+            // Tessa's sheep floated off on a cloud. She can still hear him. Everyone can still hear him.
+            new Chain
+            {
+                Key = "woolly", Town = "galewharf", RewardSkill = Skill.Farming, RewardItem = "Woolly's Bell",
+                Steps = new[]
+                {
+                    TowerKill("squall-duckling", 30),
+                    Answer(3, 3),
+                    Deliver("Wheat", 30),
+                    TowerClear(1),
+                    Talk("tessa"),
+                },
+            },
+
             // The barkeep found a speckled egg in the pantry, warm as fresh bread. It is not a hen's. (2026-11-09)
             new Chain
             {
