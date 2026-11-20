@@ -21,7 +21,7 @@
             A climb the whole stream makes together. Type <b>!tower</b> to go up to your stream's floor and fight its
             monsters; the players who stay behind keep training as usual. Every floor has quests for everyone in the
             stream. When they are done, its <b>boss</b> can be challenged with <b>!tower boss</b>: the streamer or a
-            moderator starts it, or three players in the tower vote for it, and everyone has a minute to join. A boss
+            moderator starts it, or the players in the tower vote for it (a quarter of them, at least three), and everyone has a minute to join. A boss
             has fixed numbers for its floor and can be tried again and again. Beat it and the floor is cleared for good,
             the next one opens, and everyone who fought gets coins and a chest.
         </p>
@@ -39,8 +39,11 @@
             <h2 class="rf-tower__band">The town of @town.Name</h2>
             <div class="rf-card rf-tower__town">
                 <p class="rf-tower__text">@town.Description Type <b>!tower town</b> to go there, and <b>!tower talk</b> to
-                    hear what its people have to say. Each of them has a quest chain of their own for every player, with a
-                    reward found nowhere else.</p>
+                    hear what its people have to say. Most of them have a quest chain of their own for every player, with a
+                    reward found nowhere else. After every cleared floor everyone goes down to the town to rest and train;
+                    <b>!tower climb</b> takes everyone up to the next floor, <b>!tower leave</b> takes only you out of the
+                    tower, and <b>!tower close</b> ends the climb for now. A town further down needs its name:
+                    <b>!tower town mossgate</b>.</p>
                 <ul class="rf-tower__people">
                     @foreach (var npc in town.People)
                     {

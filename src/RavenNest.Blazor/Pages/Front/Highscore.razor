@@ -108,7 +108,7 @@
                                 {
                                     @if (item.OrderAchieved == 1)
                                     {
-                                        <i class="fa-solid fa-medal first" title="@("Awarded to " + item.PlayerName + " for reaching max level first in the skill " + item.Skill)"></i>
+                                        <i class="fa-solid fa-medal first" title="@("Awarded to " + item.PlayerName + " for reaching max level first in the skill " + RavenNest.Blazor.Services.SkillNames.Display(item.Skill))"></i>
                                         <div class="skill-max-container" title="@("This character reached max level first on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max gold" data-content="999">999</p>
                                         </div>

@@ -64,7 +64,7 @@
                     @foreach (CombatSkill skill in Enum.GetValues(typeof(CombatSkill)))
                     {
                         var s = skill;
-                        <label><span>@s</span><input type="number" min="1" max="999" value="@LevelValues[(int)s]" @onchange="e => SetLevel(s, e.Value?.ToString())" /></label>
+                        <label><span>@RavenNest.Combat.SkillTrees.SkillName(s)</span><input type="number" min="1" max="999" value="@LevelValues[(int)s]" @onchange="e => SetLevel(s, e.Value?.ToString())" /></label>
                     }
                     <label><span>All</span><input type="number" min="1" max="999" placeholder="all" @onchange="e => SetAll(e.Value?.ToString())" /></label>
                 </div>
@@ -147,7 +147,7 @@
                     <span class="@(onPath || rank > 0 ? "" : "is-short")">After @string.Join(" or ", node.Requires.Select(r => RavenNest.Combat.SkillTrees.Get(r)?.Name ?? r)). </span>
                 }
                 @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
-                <span class="@(Levels(skill) >= node.RequiredLevel ? "" : "is-short")">Needs @skill @node.RequiredLevel (@(Planner ? "set to" : "you have") @Levels(skill)).</span>
+                <span class="@(Levels(skill) >= node.RequiredLevel ? "" : "is-short")">Needs @RavenNest.Combat.SkillTrees.SkillName(skill) @node.RequiredLevel (@(Planner ? "set to" : "you have") @Levels(skill)).</span>
                 <span>@node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
             </p>
             @if (CanEdit)
@@ -378,7 +378,7 @@
         var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Select(t => new
         {
             name = t.ToString(),
-            skill = RavenNest.Combat.SkillTrees.SkillOf(t).ToString(),
+            skill = RavenNest.Combat.SkillTrees.SkillName(RavenNest.Combat.SkillTrees.SkillOf(t)),
             level = Levels(RavenNest.Combat.SkillTrees.SkillOf(t)),
             color = TreeColors[(int)t],
         }).ToList();

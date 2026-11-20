@@ -50,7 +50,7 @@ else
                     var skill = RavenNest.Combat.SkillTrees.SkillOf(tree);
                     var level = levels(skill);
                     <div class="rf-panel rf-trees__tree">
-                        <h3 class="rf-panel__title"><img class="rf-trees__tree-icon" src="/imgs/skills/tree-@(tree.ToString().ToLowerInvariant()).webp" alt="" /> @tree <span class="rf-meta">@skill @level</span></h3>
+                        <h3 class="rf-panel__title"><img class="rf-trees__tree-icon" src="/imgs/skills/tree-@(tree.ToString().ToLowerInvariant()).webp" alt="" /> @tree <span class="rf-meta">@RavenNest.Combat.SkillTrees.SkillName(skill) @level</span></h3>
                         @foreach (var node in RavenNest.Combat.SkillTrees.Of(tree).OrderBy(n => n.Tier))
                         {
                             var rank = build.Rank(node.Id);
