@@ -349,6 +349,11 @@ else
                                 @q.Exp.ToString("N0") @q.ExpSkill XP
                             </li>
                         }
+                        @if (!string.IsNullOrEmpty(q.Item))
+                        {
+                            @* a Tome of Forgetting, or experience books in place of XP for a skill at level 999 *@
+                            <li><i class="fa-solid fa-book" aria-hidden="true"></i> @q.Item</li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -472,6 +477,7 @@ else
             case 1: <span class="qp-state qp-state--now"><i class="fa-regular fa-circle" aria-hidden="true"></i> In progress &middot; Step @(ch.Step + 1) of @ch.Steps</span> break;
             case 2: <span class="qp-state qp-state--done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Completed</span> break;
             case 5: <span class="qp-state">@ch.Steps steps &middot; <span class="qp-chip">@(ch.Event == "halloween" ? "Halloween only" : ch.Event == "christmas" ? "Christmas only" : "Not now")</span></span> break;
+            case 6: <span class="qp-state">@ch.Steps steps &middot; <span class="qp-chip">Locked</span></span> break;
             default: <span class="qp-state">@ch.Steps steps &middot; <span class="qp-chip qp-chip--good">Available</span></span> break;
         }
     };

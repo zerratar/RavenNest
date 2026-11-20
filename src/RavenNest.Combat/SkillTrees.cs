@@ -241,8 +241,11 @@ namespace RavenNest.Combat
         public string Description;
         public SkillTree Tree;
 
-        /// <summary>0 to 3: opens at the tree's skill level 1, 100, 300 and 600.</summary>
+        /// <summary>0 to 4: opens at the tree's skill level 1, 100, 300, 600 and 999 (the capstone).</summary>
         public int Tier;
+
+        /// <summary>The tree's last node, for a maxed skill (level 999): one rank, a big passive.</summary>
+        public bool Capstone;
         public int MaxRank = 1;
 
         /// <summary>Points per rank.</summary>
@@ -297,7 +300,10 @@ namespace RavenNest.Combat
     /// </summary>
     public static class SkillTrees
     {
-        public static readonly int[] TierLevels = { 1, 100, 300, 600 };
+        public static readonly int[] TierLevels = { 1, 100, 300, 600, 999 };
+
+        /// <summary>What a capstone costs: more than anything else in a tree.</summary>
+        public const int CapstoneCost = 15;
 
         /// <summary>
         ///     Raised whenever a balance update changes the trees (a node's numbers, its cost, one removed): everyone who
@@ -423,8 +429,17 @@ namespace RavenNest.Combat
         // ---- the trees ---------------------------------------------------------------------------------------
 
         /// <summary>Points per rank of a passive by tier (deeper is dearer), and an active's price by tier.</summary>
-        private static readonly int[] PassiveCost = { 1, 2, 3, 4 };
-        private static readonly int[] ActiveCost = { 3, 5, 8, 10 };
+        private static readonly int[] PassiveCost = { 1, 2, 3, 4, 5 };
+        private static readonly int[] ActiveCost = { 3, 5, 8, 10, 12 };
+
+        // A tree's capstone (2026-11-20): nothing opened at level 999, so maxing a skill gave its tree nothing. One
+        // rank, for a maxed skill, from stats the trees already use.
+        private static SkillNode Capstone(SkillTree tree, string id, string name, string description, string stats, params string[] requires)
+        {
+            var node = Add(new SkillNode { Tree = tree, Tier = 4, Id = id, Name = name, Description = description, Passive = stats, MaxRank = 1, Cost = CapstoneCost, Capstone = true });
+            node.Requires = requires;
+            return node;
+        }
 
         private static SkillNode Passive(SkillTree tree, int tier, string id, string name, string description, string perRank, int ranks = 5, int cost = 0) =>
             Add(new SkillNode { Tree = tree, Tier = tier, Id = id, Name = name, Description = description, Passive = perRank, MaxRank = ranks, Cost = cost > 0 ? cost : PassiveCost[tier] });
@@ -612,9 +627,23 @@ namespace RavenNest.Combat
             Path("pressure-points", "execute", "treasure-hunter");
             Path("gem-salvager", "treasure-hunter");
             Path("apex-predator", "pressure-points");
+
+            Capstones();
         }
 
         private static void Path(string id, params string[] requires) => byId[id].Requires = requires;
+
+        private static void Capstones()
+        {
+            Capstone(SkillTree.Bulwark, "unbreakable", "Unbreakable", "Nothing gets through, and no enemy looks away.", "DAMAGE_REDUCTION:6%;THREAT:25%", "rally", "last-stand");
+            Capstone(SkillTree.Restoration, "miracle-worker", "Miracle Worker", "Your heals do what should not be possible.", "HEALING_POWER_BONUS:15%;HEAL_SHIELD:10%", "sanctuary", "smite");
+            Capstone(SkillTree.Might, "colossus", "Colossus", "Every blow lands like a falling tree.", "MELEE_POWER_BONUS:12%;EXECUTE_DAMAGE:10%", "leap", "titan");
+            Capstone(SkillTree.Precision, "perfect-form", "Perfect Form", "No wasted movement: more critical hits, and they hit much harder.", "CRIT_CHANCE:4%;CRIT_DAMAGE:20%", "disarm", "precision-strikes");
+            Capstone(SkillTree.Marksman, "deadeye", "Deadeye", "You do not miss, and armor does not help them.", "RANGED_POWER_BONUS:12%;ARMOR_PENETRATION:15%", "snare", "rapid-fire");
+            Capstone(SkillTree.Elements, "archmage", "Archmage", "The elements answer faster and harder.", "MAGIC_POWER_BONUS:12%;CAST_SPEED:8%", "meteor");
+            Capstone(SkillTree.Vitality, "undying", "Undying", "Much more health, and it keeps coming back.", "MAX_HEALTH_BONUS:10%;COMBAT_REGEN:0.6%", "iron-skin");
+            Capstone(SkillTree.Hunter, "legend-of-the-hunt", "Legend of the Hunt", "Bosses fear you, and their hoards know it.", "BOSS_DAMAGE:10%;LOOT_LUCK:5%", "apex-predator");
+        }
 
         /// <summary>The nodes whose path goes through this one (the tier above).</summary>
         public static IEnumerable<SkillNode> Dependents(string id) => all.Where(n => n.Requires.Any(r => string.Equals(r, id, StringComparison.OrdinalIgnoreCase)));

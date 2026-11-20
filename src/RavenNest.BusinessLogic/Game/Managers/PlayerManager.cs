@@ -896,6 +896,13 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
+            // an experience book (quests give them for a skill at the highest level): read for the skill the game names
+            var book = ExperienceBooks.Find(item.Item?.Name);
+            if (book != null)
+            {
+                return UseExperienceBook(character, inventory, item, inventoryItemId, book, arg);
+            }
+
             var knownItems = gameData.GetKnownItems();
             if (item.ItemId == knownItems.TomeOfTeleportation.Id)
             {
@@ -957,6 +964,51 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return null;
+        }
+
+        /// <summary>
+        ///     Reads experience books (!use gathering book fishing 3): the argument names a skill of the book's category
+        ///     and how many to read ("Fishing-3", ExperienceBooks.TryParseUse). The books are taken here; the game adds
+        ///     the experience, a share of the skill's next level for each book, as it does for a quest's reward (its
+        ///     skills are what get saved). The answer's one effect carries the share of a level per book (Amount) and
+        ///     how many were read (Duration). Null when the skill is not one of the book's, or is at the highest level.
+        /// </summary>
+        private ItemUseResult UseExperienceBook(
+            DataModels.Character character, PlayerInventory inventory, ReadOnlyInventoryItem item, Guid inventoryItemId, ExperienceBooks.Book book, string arg)
+        {
+            if (!ExperienceBooks.TryParseUse(arg, out var skill, out var count) || !book.Category.Skills.Contains(skill))
+            {
+                return null;
+            }
+
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (skills == null || (skills.GetSkill((int)skill)?.Level ?? GameMath.MaxLevel) >= GameMath.MaxLevel)
+            {
+                return null;
+            }
+
+            count = (int)Math.Min(Math.Min(count, ExperienceBooks.MaxPerUse), item.Amount);
+            if (count <= 0 || !inventory.RemoveItem(item, count))
+            {
+                return null;
+            }
+
+            return new ItemUseResult
+            {
+                InventoryItemId = inventoryItemId,
+                NewStackAmount = (int)inventory.Get(inventoryItemId).Amount, // 0 when the stack is gone
+                Effects = new List<RavenNest.Models.CharacterStatusEffect>
+                {
+                    new RavenNest.Models.CharacterStatusEffect
+                    {
+                        Type = RavenNest.Models.StatusEffectType.None,
+                        Amount = (float)book.Share,
+                        Duration = count,
+                        LastUpdateUtc = DateTime.UtcNow,
+                    }
+                },
+                EffectIsland = RavenNest.Models.Island.None,
+            };
         }
 
         private RavenNest.Models.CharacterStatusEffect CreateCharacterEffect(Guid characterId, Skills skills, ItemStatusEffect fx)

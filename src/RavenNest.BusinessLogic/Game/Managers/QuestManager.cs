@@ -119,6 +119,9 @@ namespace RavenNest.BusinessLogic.Game
             if (count > 0) Report(character, QuestManager.Kill, -1, count);
         }
 
+        /// <summary>A creature tamed (!tame): a battle pet in the stable. The character's own quests count it.</summary>
+        public static void Tamed(Character character) => Listener?.Progress(character, QuestManager.Tame, -1, 1);
+
         /// <summary>
         /// An item gathering dropped for a character: true when the stream's story wants it delivered and took it
         /// (it goes to the village instead of the inventory).
@@ -164,14 +167,25 @@ namespace RavenNest.BusinessLogic.Game
         public const string TowerClear = "tower_clear";
         /// <summary>Talking to someone in a tower town (!tower talk elm), named by the step.</summary>
         public const string Talk = "talk";
+        /// <summary>Creatures tamed into battle pets (!tame), reported by BattlePetManager.</summary>
+        public const string Tame = "tame";
 
         /// <summary>Ravebridge: a row kept for each Ravebridge quest paid (ClaimRavebridge), never shown as a quest.</summary>
         public const int Daily = 0, Weekly = 1, Seasonal = 2, Chain = 3, Ravebridge = 4;
-        public const int Offered = 0, Active = 1, Done = 2, Expired = 3, Abandoned = 4, NotNow = 5;
+        /// <summary>Locked: a chain (never a row) whose first chain is not finished yet (QuestChains.Chain.Requires).</summary>
+        public const int Offered = 0, Active = 1, Done = 2, Expired = 3, Abandoned = 4, NotNow = 5, Locked = 6;
         public const int MaxActiveDaily = 3;
         public const int DailyOffers = 3;
         private const double StreakBonusPerDay = 0.1;
         private const int StreakBonusDays = 5;
+
+        // The experience a quest pays, as a share of the reward skill's next level. A weekly quest pays six dailies, a
+        // seasonal one one and a half; a grand chain twice a chain. ExperienceBooks' sizes are set to these.
+        private const double DailyShare = 0.15;
+        private const double ChainShare = 0.5;
+        private const double WeeklyFactor = 6.0;
+        private const double SeasonalFactor = 1.5;
+        private const double GrandFactor = 2.0;
 
         /// <summary>Chains do not run out: far in the future, and still a date SQL Server takes.</summary>
         private static readonly DateTime Never = new DateTime(9999, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -187,6 +201,9 @@ namespace RavenNest.BusinessLogic.Game
 
             /// <summary>For a seasonal quest, the event it belongs to.</summary>
             public string Event;
+
+            /// <summary>A tower quest: only for a character who has been there when a floor's boss fell (the climber achievement).</summary>
+            public bool Tower;
             public Func<Skills, Random, bool> Fits = (s, r) => true;
             public Func<Skills, Random, (int skill, long amount, int rewardSkill)> Make;
         }
@@ -196,16 +213,28 @@ namespace RavenNest.BusinessLogic.Game
         private static readonly Template[] Catalog =
         {
             Gathering("gather", Daily, 90, 150),
-            new Template { Key = "exp", Kind = Daily, Objective = Exp, Make = (s, r) => ExpQuest(s, r, 0.25) },
+            new Template { Key = "exp", Kind = Daily, Objective = Exp, Fits = (s, r) => Trainable(s).Any(), Make = (s, r) => ExpQuest(s, r, 0.25) },
             new Template { Key = "craft", Kind = Daily, Objective = Craft, Fits = (s, r) => s.CraftingLevel >= 10, Make = (s, r) => ((int)Skill.Crafting, r.Next(3, 9), (int)Skill.Crafting) },
             new Template { Key = "cook", Kind = Daily, Objective = Cook, Make = (s, r) => ((int)Skill.Cooking, r.Next(10, 31), (int)Skill.Cooking) },
             new Template { Key = "brew", Kind = Daily, Objective = Brew, Fits = (s, r) => s.AlchemyLevel >= 10, Make = (s, r) => ((int)Skill.Alchemy, r.Next(5, 16), (int)Skill.Alchemy) },
             new Template { Key = "kill", Kind = Daily, Objective = Kill, Make = (s, r) => (-1, r.Next(4, 13) * 10, (int)Skill.Slayer) },
             new Template { Key = "raid", Kind = Daily, Objective = Raid, Make = (s, r) => (-1, 1, (int)Skill.Slayer) },
             new Template { Key = "dungeon", Kind = Daily, Objective = Dungeon, Make = (s, r) => (-1, 1, (int)Skill.Slayer) },
+            // more dailies (v0.9.7, 2026-11-20), all from objectives counted already: a weak skill to catch up, the
+            // tower for those who climb it, and Taming for those who have begun it
+            new Template { Key = "exp_weak", Kind = Daily, Objective = Exp, Fits = (s, r) => Trainable(s).Any(), Make = (s, r) => WeakQuest(s, r, 0.4) },
+            new Template { Key = "exp_taming", Kind = Daily, Objective = Exp, Fits = (s, r) => s.TamingLevel > 1 && s.TamingLevel < GameMath.MaxLevel, Make = (s, r) => SkillQuest(s, Skill.Taming, 0.25) },
+            new Template { Key = "tower_kill", Kind = Daily, Objective = TowerKill, Tower = true, Make = (s, r) => (-1, r.Next(3, 7) * 10, (int)Skill.Slayer) },
+            new Template { Key = "tower_clear", Kind = Daily, Objective = TowerClear, Tower = true, Make = (s, r) => (-1, 1, (int)Skill.Slayer) },
 
             Gathering("weekly_gather", Weekly, 1200, 1800),
-            new Template { Key = "weekly_exp", Kind = Weekly, Objective = Exp, Make = (s, r) => ExpQuest(s, r, 1.5) },
+            new Template { Key = "weekly_exp", Kind = Weekly, Objective = Exp, Fits = (s, r) => Trainable(s).Any(), Make = (s, r) => ExpQuest(s, r, 1.5) },
+            new Template { Key = "weekly_exp_weak", Kind = Weekly, Objective = Exp, Fits = (s, r) => Trainable(s).Any(), Make = (s, r) => WeakQuest(s, r, 3.0) },
+            new Template { Key = "weekly_craft", Kind = Weekly, Objective = Craft, Fits = (s, r) => s.CraftingLevel >= 10, Make = (s, r) => ((int)Skill.Crafting, r.Next(5, 9) * 5, (int)Skill.Crafting) },
+            new Template { Key = "weekly_cook", Kind = Weekly, Objective = Cook, Make = (s, r) => ((int)Skill.Cooking, r.Next(10, 19) * 10, (int)Skill.Cooking) },
+            new Template { Key = "weekly_brew", Kind = Weekly, Objective = Brew, Fits = (s, r) => s.AlchemyLevel >= 10, Make = (s, r) => ((int)Skill.Alchemy, r.Next(8, 17) * 5, (int)Skill.Alchemy) },
+            new Template { Key = "weekly_tower_kill", Kind = Weekly, Objective = TowerKill, Tower = true, Make = (s, r) => (-1, r.Next(3, 6) * 100, (int)Skill.Slayer) },
+            new Template { Key = "weekly_tower_clear", Kind = Weekly, Objective = TowerClear, Tower = true, Make = (s, r) => (-1, 3, (int)Skill.Slayer) },
             new Template { Key = "weekly_kill", Kind = Weekly, Objective = Kill, Make = (s, r) => (-1, r.Next(8, 13) * 100, (int)Skill.Slayer) },
             new Template { Key = "weekly_raid", Kind = Weekly, Objective = Raid, Make = (s, r) => (-1, 5, (int)Skill.Slayer) },
             new Template { Key = "weekly_dungeon", Kind = Weekly, Objective = Dungeon, Make = (s, r) => (-1, 3, (int)Skill.Slayer) },
@@ -224,13 +253,33 @@ namespace RavenNest.BusinessLogic.Game
         };
 
         /// <summary>Experience in one of the character's best five skills: a share of what their next level takes.</summary>
+        /// <remarks>
+        /// Of the skills that can still gain any: a skill at the highest level gains none, so "gain Attack exp" could not
+        /// be finished by a character with Attack at 999 (asked of everyone with maxed skills until 2026-11-20).
+        /// </remarks>
         private static (int skill, long amount, int rewardSkill) ExpQuest(Skills s, Random r, double shareOfLevel)
         {
-            var best = s.GetSkills().Where(x => x.Index != (int)Skill.Sailing).OrderByDescending(x => x.Level).Take(5).ToList();
-            var pick = best[r.Next(best.Count)];
-            var amount = Math.Max(100, (long)(GameMath.ExperienceForLevel(Math.Min(pick.Level + 1, GameMath.MaxLevel)) * shareOfLevel));
-            return (pick.Index, amount, pick.Index);
+            var best = Trainable(s).OrderByDescending(x => x.Level).Take(5).ToList();
+            return SkillQuest(s, (Skill)best[r.Next(best.Count)].Index, shareOfLevel);
         }
+
+        /// <summary>Experience in one of the character's five lowest skills, to catch up: quick at a low level.</summary>
+        private static (int skill, long amount, int rewardSkill) WeakQuest(Skills s, Random r, double shareOfLevel)
+        {
+            var weakest = Trainable(s).OrderBy(x => x.Level).Take(5).ToList();
+            return SkillQuest(s, (Skill)weakest[r.Next(weakest.Count)].Index, shareOfLevel);
+        }
+
+        private static (int skill, long amount, int rewardSkill) SkillQuest(Skills s, Skill skill, double shareOfLevel)
+        {
+            var level = s.GetSkill((int)skill)?.Level ?? 1;
+            var amount = Math.Max(100, (long)(GameMath.ExperienceForLevel(Math.Min(level + 1, GameMath.MaxLevel)) * shareOfLevel));
+            return ((int)skill, amount, (int)skill);
+        }
+
+        /// <summary>The skills an experience quest can ask for: not Sailing (only gained aboard), and none at the highest level.</summary>
+        private static IEnumerable<StatsUpdater> Trainable(Skills s) =>
+            s.GetSkills().Where(x => x.Index != (int)Skill.Sailing && x.Level < GameMath.MaxLevel);
 
         private readonly GameData gameData;
         private readonly PlayerInventoryProvider inventoryProvider;
@@ -349,11 +398,14 @@ namespace RavenNest.BusinessLogic.Game
                 if (current != null) return new QuestActionResult { Error = current.Key == key ? "taken" : "busy", Quest = Info(current) };
                 if (quests.Any(q => q.Kind == Chain && q.Key == key && q.State == Done)) return new QuestActionResult { Error = "done" };
                 if (definition.Event != null && !VillageDecorManager.IsRunning(definition.Event, DateTime.UtcNow)) return new QuestActionResult { Error = "notnow" };
+                // a sequel: the game says which chain comes first, from the key
+                if (IsLocked(definition, quests)) return new QuestActionResult { Error = "locked", Quest = new QuestInfo { Key = definition.Requires, Kind = Chain } };
 
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 if (skills == null) return new QuestActionResult { Error = "unknown" };
                 var average = skills.GetSkills().Average(x => x.Level);
                 var rewardLevel = skills.GetSkill((int)definition.RewardSkill)?.Level ?? 1;
+                var grand = definition.Grand ? GrandFactor : 1.0;
                 var now = DateTime.UtcNow;
                 var quest = new CharacterQuest
                 {
@@ -363,15 +415,15 @@ namespace RavenNest.BusinessLogic.Game
                     Kind = Chain,
                     Period = "chain",
                     State = Active,
-                    // a chain pays about ten dailies, and half a level of its skill
-                    RewardCoins = (long)Math.Round((300 + average * 15) * 10 / 10) * 10,
-                    RewardExp = Math.Round(GameMath.ExperienceForLevel(Math.Min(rewardLevel + 1, GameMath.MaxLevel)) * 0.5),
+                    // a chain pays about ten dailies, and half a level of its skill; a grand one twice that
+                    RewardCoins = (long)Math.Round((300 + average * 15) * 10 * grand / 10) * 10,
+                    RewardExp = Math.Round(GameMath.ExperienceForLevel(Math.Min(rewardLevel + 1, GameMath.MaxLevel)) * ChainShare * grand),
                     RewardSkill = (int)definition.RewardSkill,
                     Offered = now,
                     Accepted = now,
                     Expires = Never,
                 };
-                SetStep(quest, definition, 0);
+                SetStep(quest, definition, 0, skills);
                 gameData.Add(quest);
                 return new QuestActionResult { Ok = true, Quest = Info(quest) };
             }
@@ -503,6 +555,10 @@ namespace RavenNest.BusinessLogic.Game
                 if (quest.Bounty && paid.Any(q => q.Expires > now)) return new RavebridgeQuestReward { Error = "cooldown" };
 
                 var exp = RavebridgeQuestRewards.Exp(quest, skills);
+                // skills at the highest level gain nothing: their shares come as experience books, given below
+                var maxed = RavebridgeQuestRewards.Shares(quest)
+                    .Where(s => ExperienceBooks.CategoryOf(s.Skill) != null && (skills.GetSkill(s.Skill)?.Level ?? 0) >= GameMath.MaxLevel).ToList();
+                foreach (var s in maxed) exp.Remove(s.Skill);
                 var coins = RavebridgeQuestRewards.Coins(quest, skills);
                 var main = exp.Count > 0 ? exp.OrderByDescending(e => e.Value).First().Key : -1;
                 gameData.Add(new CharacterQuest
@@ -539,9 +595,44 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     logger.LogError("Could not give a Ravebridge egg to " + character.Name + ": " + exc);
                 }
+                string books = null;
+                try
+                {
+                    books = GiveRavebridgeBooks(character, maxed);
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Could not give " + character.Name + " the experience books of a Ravebridge quest: " + exc);
+                }
                 gameData.Touch();
-                return new RavebridgeQuestReward { Ok = true, Coins = coins, Exp = exp, Egg = egg?.EggName };
+                return new RavebridgeQuestReward { Ok = true, Coins = coins, Exp = exp, Egg = egg?.EggName, Books = books };
             }
+        }
+
+        /// <summary>
+        /// Books for the shares of a Ravebridge quest that went to skills at the highest level, per category. A share
+        /// too small for a book (a bounty's hundredth of a level) is the chance of a small one, so it adds up the same.
+        /// </summary>
+        /// <returns>The books as the game says them, or null for none.</returns>
+        private string GiveRavebridgeBooks(Character character, List<(int Skill, double Share)> maxed)
+        {
+            if (maxed == null || maxed.Count == 0) return null;
+            var parts = new List<string>();
+            foreach (var group in maxed.GroupBy(s => ExperienceBooks.CategoryOf(s.Skill)))
+            {
+                int large = 0, small = 0;
+                foreach (var (_, share) in group)
+                {
+                    var (l, s) = ExperienceBooks.For(share);
+                    if (l == 0 && s == 0 && Random.Shared.NextDouble() < share / ExperienceBooks.SmallShare) s = 1;
+                    large += l;
+                    small += s;
+                }
+                if (large == 0 && small == 0) continue;
+                GiveBooks(character, group.Key, large, small);
+                parts.Add(ExperienceBooks.Describe(group.Key, large, small));
+            }
+            return parts.Count > 0 ? string.Join(" and a ", parts) : null;
         }
 
         // ---- Progress -------------------------------------------------------------------------------------
@@ -591,7 +682,7 @@ namespace RavenNest.BusinessLogic.Game
             var done = quest.Step;
             if (definition != null && quest.Step + 1 < definition.Steps.Length)
             {
-                SetStep(quest, definition, quest.Step + 1);
+                SetStep(quest, definition, quest.Step + 1, gameData.GetCharacterSkills(character.SkillsId));
                 Tell(character, quest, done, null);
                 return;
             }
@@ -644,16 +735,37 @@ namespace RavenNest.BusinessLogic.Game
             inventory.AddItem(item.Id, 1, equipped: false, soulbound: true);
         }
 
-        private static void SetStep(CharacterQuest quest, QuestChains.Chain definition, int index)
+        private static void SetStep(CharacterQuest quest, QuestChains.Chain definition, int index, Skills skills)
         {
             var step = definition.Steps[index];
+            var amount = step.Amount;
+            if (step.Share > 0)
+            {
+                // experience as a share of the skill's next level, from the level now; a skill at the highest level
+                // gains none, so the step asks for something else
+                var level = skills?.GetSkill(step.Skill)?.Level ?? 1;
+                if (level >= GameMath.MaxLevel && step.Else != null)
+                {
+                    step = step.Else;
+                    amount = step.Amount;
+                }
+                else
+                {
+                    amount = Math.Max(100, (long)(GameMath.ExperienceForLevel(Math.Min(level + 1, GameMath.MaxLevel)) * step.Share));
+                }
+            }
+
             quest.Step = index;
             quest.Objective = step.Objective;
             quest.Skill = step.Skill;
-            quest.Amount = step.Amount;
+            quest.Amount = amount;
             quest.Target = step.Target;
             quest.Progress = 0;
         }
+
+        /// <summary>A sequel whose first chain the character has not finished.</summary>
+        private static bool IsLocked(QuestChains.Chain definition, IReadOnlyList<CharacterQuest> quests) =>
+            definition.Requires != null && !quests.Any(q => q.Kind == Chain && q.Key == definition.Requires && q.State == Done);
 
         /// <summary>Pays the coins, counts the streak and tells the game, which adds the experience and says so.</summary>
         private void Reward(Character character, CharacterQuest quest, int stepDone, string decor)
@@ -677,6 +789,19 @@ namespace RavenNest.BusinessLogic.Game
 
             var resources = gameData.GetResources(character);
             if (resources != null) resources.Coins += quest.RewardCoins;
+
+            // a reward skill at the highest level gains nothing more: its experience comes as books of the skill's
+            // category (ExperienceBooks), read for another skill of it. Info names them and leaves the experience out,
+            // so the game adds none.
+            try
+            {
+                var books = BooksFor(character, quest);
+                if (books.Category != null) GiveBooks(character, books.Category, books.Large, books.Small);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not give " + character.Name + " the experience books of a quest: " + exc);
+            }
 
             // the skill trees' free respec (combat v2): every weekly and every finished chain gives a Tome of Forgetting
             if (GivesTome(quest))
@@ -707,6 +832,58 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>Weeklies and finished chains give a Tome of Forgetting (a free skill tree respec).</summary>
         private static bool GivesTome(CharacterQuest quest) => quest.Kind == Weekly || quest.Kind == Chain;
+
+        // ---- Experience books --------------------------------------------------------------------------------
+
+        /// <summary>The share of the reward skill's next level a quest's experience is.</summary>
+        private static double ShareOf(CharacterQuest quest)
+        {
+            switch (quest.Kind)
+            {
+                case Chain: return ChainShare * (QuestChains.Get(quest.Key)?.Grand == true ? GrandFactor : 1.0);
+                case Weekly: return DailyShare * WeeklyFactor;
+                case Seasonal: return DailyShare * SeasonalFactor;
+                default: return DailyShare;
+            }
+        }
+
+        /// <summary>
+        /// The books a quest pays in place of its experience, when the character's reward skill is at the highest level
+        /// now: the same share of a level, in books of the skill's category. No category when it pays experience.
+        /// </summary>
+        private (ExperienceBooks.Category Category, int Large, int Small) BooksFor(Character character, CharacterQuest quest)
+        {
+            if (character == null || quest.RewardExp <= 0 || quest.RewardSkill < 0 || quest.Kind == Ravebridge) return default;
+            var category = ExperienceBooks.CategoryOf(quest.RewardSkill);
+            if (category == null || !IsMaxed(character, quest.RewardSkill)) return default;
+            var (large, small) = ExperienceBooks.For(ShareOf(quest));
+            return (category, large, small);
+        }
+
+        private bool IsMaxed(Character character, int skillIndex)
+        {
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            return skills != null && (skills.GetSkill(skillIndex)?.Level ?? 0) >= GameMath.MaxLevel;
+        }
+
+        /// <summary>Books into the inventory (bound by their item); the inventory feed tells the game.</summary>
+        private void GiveBooks(Character character, ExperienceBooks.Category category, int large, int small)
+        {
+            var inventory = inventoryProvider.Get(character.Id);
+            if (inventory == null) return;
+            foreach (var (isLarge, count) in new[] { (true, large), (false, small) })
+            {
+                if (count <= 0) continue;
+                var name = ExperienceBooks.Get(category, isLarge).Name;
+                var item = gameData.GetItems().FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (item == null)
+                {
+                    logger.LogError("The item " + name + " is missing: " + character.Name + " got no book for a quest.");
+                    continue;
+                }
+                inventory.AddItem(item.Id, amount: count);
+            }
+        }
 
         /// <param name="egg">An egg found with the reward (its name), said with the reward's item.</param>
         private void Tell(Character character, CharacterQuest quest, int stepDone, string decor, string egg = null)
@@ -752,11 +929,14 @@ namespace RavenNest.BusinessLogic.Game
             var skills = gameData.GetCharacterSkills(character.SkillsId);
             if (skills == null) return quests;
 
+            // tower quests are for characters who have climbed: a stream that never opens the tower is not asked for it
+            var climbs = gameData.GetCharacterAchievements(character.Id).Any(a => a.Key == "climber" && a.Progress > 0);
+
             if (!hasToday)
             {
                 var random = new Random(Seed(character.Id, day));
                 var expires = now.Date.AddDays(1);
-                var picked = Catalog.Where(t => t.Kind == Daily && t.Fits(skills, random)).OrderBy(t => random.Next()).Take(DailyOffers).ToList();
+                var picked = Catalog.Where(t => t.Kind == Daily && (climbs || !t.Tower) && t.Fits(skills, random)).OrderBy(t => random.Next()).Take(DailyOffers).ToList();
                 for (var i = 0; i < picked.Count; ++i)
                 {
                     gameData.Add(Make(character, skills, picked[i], random, day, i, expires));
@@ -768,7 +948,7 @@ namespace RavenNest.BusinessLogic.Game
                 var random = new Random(Seed(character.Id, week));
                 var daysToMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
                 var expires = now.Date.AddDays(daysToMonday == 0 ? 7 : daysToMonday);
-                var weekly = Catalog.Where(t => t.Kind == Weekly && t.Fits(skills, random)).OrderBy(t => random.Next()).First();
+                var weekly = Catalog.Where(t => t.Kind == Weekly && (climbs || !t.Tower) && t.Fits(skills, random)).OrderBy(t => random.Next()).First();
                 gameData.Add(Make(character, skills, weekly, random, week, 0, expires));
             }
 
@@ -789,7 +969,7 @@ namespace RavenNest.BusinessLogic.Game
             // coins and experience grow with the character: the average level, and a share of the reward skill's
             // next level; a weekly quest pays about six dailies, a seasonal one one and a half
             var average = skills.GetSkills().Average(x => x.Level);
-            var factor = template.Kind == Weekly ? 6.0 : template.Kind == Seasonal ? 1.5 : 1.0;
+            var factor = template.Kind == Weekly ? WeeklyFactor : template.Kind == Seasonal ? SeasonalFactor : 1.0;
             var rewardLevel = skills.GetSkill(rewardSkill)?.Level ?? 1;
             return new CharacterQuest
             {
@@ -804,7 +984,7 @@ namespace RavenNest.BusinessLogic.Game
                 Amount = amount,
                 State = Offered,
                 RewardCoins = (long)Math.Round((300 + average * 15) * factor / 10) * 10,
-                RewardExp = Math.Round(GameMath.ExperienceForLevel(Math.Min(rewardLevel + 1, GameMath.MaxLevel)) * 0.15 * factor),
+                RewardExp = Math.Round(GameMath.ExperienceForLevel(Math.Min(rewardLevel + 1, GameMath.MaxLevel)) * DailyShare * factor),
                 RewardSkill = rewardSkill,
                 Offered = DateTime.UtcNow,
                 Expires = expires,
@@ -819,7 +999,8 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var done = quests.Any(q => q.Kind == Chain && q.Key == c.Key && q.State == Done);
                 var active = quests.FirstOrDefault(q => q.Kind == Chain && q.Key == c.Key && q.State == Active);
-                var state = done ? Done : active != null ? Active : c.Event != null && !VillageDecorManager.IsRunning(c.Event, now) ? NotNow : Offered;
+                var state = done ? Done : active != null ? Active : c.Event != null && !VillageDecorManager.IsRunning(c.Event, now) ? NotNow
+                    : IsLocked(c, quests) ? Locked : Offered;
                 return new QuestChainInfo
                 {
                     Key = c.Key, State = state, Step = active?.Step ?? (done ? c.Steps.Length : 0), Steps = c.Steps.Length,
@@ -868,6 +1049,16 @@ namespace RavenNest.BusinessLogic.Game
                 info.RewardTitle = q.Key;
                 info.RewardDecor = DecorOf(q.Key);
                 if (definition?.RewardItem != null) info.RewardItem = definition.RewardItem;
+            }
+
+            // the reward skill is at the highest level: books in place of the experience (Reward gives them). The game
+            // says " and a {item}", so the books join whatever else the quest gives the same way.
+            var books = BooksFor(gameData.GetCharacter(q.CharacterId), q);
+            if (books.Category != null)
+            {
+                info.RewardExp = 0;
+                var text = ExperienceBooks.Describe(books.Category, books.Large, books.Small);
+                if (text.Length > 0) info.RewardItem = string.IsNullOrEmpty(info.RewardItem) ? text : info.RewardItem + " and a " + text;
             }
             return info;
         }

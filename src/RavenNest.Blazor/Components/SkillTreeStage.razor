@@ -390,7 +390,7 @@
             return new
             {
                 id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
-                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand) ? "special" : "passive",
+                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone) ? "special" : "passive", capstone = n.Capstone,
                 rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = n.Requires,
             };
         }).ToList();

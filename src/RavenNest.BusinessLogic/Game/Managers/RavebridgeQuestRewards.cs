@@ -57,18 +57,25 @@ namespace RavenNest.BusinessLogic.Game
 
         public static Quest Get(string key) => key != null && quests.TryGetValue(key, out var q) ? q : null;
 
+        /// <summary>Each skill (its index) with the share of its next level the quest pays.</summary>
+        public static IEnumerable<(int Skill, double Share)> Shares(Quest quest)
+        {
+            if (quest?.Exp == null || quest.Exp.Length == 0) yield break;
+            var biggest = quest.Exp.Max(e => e.Weight);
+            var share = quest.Bounty ? BountyShare * quest.CooldownMinutes / 10.0 : StoryShare;
+            foreach (var (skill, weight) in quest.Exp) yield return ((int)skill, share * weight / biggest);
+        }
+
         /// <summary>The experience for each skill (its index), from the character's levels now.</summary>
         public static Dictionary<int, double> Exp(Quest quest, Skills skills)
         {
             var result = new Dictionary<int, double>();
-            if (quest?.Exp == null || quest.Exp.Length == 0 || skills == null) return result;
-            var biggest = quest.Exp.Max(e => e.Weight);
-            var share = quest.Bounty ? BountyShare * quest.CooldownMinutes / 10.0 : StoryShare;
-            foreach (var (skill, weight) in quest.Exp)
+            if (skills == null) return result;
+            foreach (var (skill, share) in Shares(quest))
             {
-                var level = skills.GetSkill((int)skill)?.Level ?? 1;
-                var exp = Math.Round(GameMath.ExperienceForLevel(Math.Min(level + 1, GameMath.MaxLevel)) * share * weight / biggest);
-                if (exp > 0) result[(int)skill] = exp;
+                var level = skills.GetSkill(skill)?.Level ?? 1;
+                var exp = Math.Round(GameMath.ExperienceForLevel(Math.Min(level + 1, GameMath.MaxLevel)) * share);
+                if (exp > 0) result[skill] = exp;
             }
             return result;
         }
@@ -92,5 +99,10 @@ namespace RavenNest.BusinessLogic.Game
         public Dictionary<int, double> Exp { get; set; } = new Dictionary<int, double>();
         /// <summary>An egg that came with it (its name; in the inventory already), or null.</summary>
         public string Egg { get; set; }
+        /// <summary>
+        /// Experience books given in place of the experience of skills at the highest level (in the inventory already), as
+        /// the game says them after "a": "Small Combat Book", "stack of 3 Small Combat Books"; null for none.
+        /// </summary>
+        public string Books { get; set; }
     }
 }

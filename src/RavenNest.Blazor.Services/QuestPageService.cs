@@ -105,11 +105,22 @@ namespace RavenNest.Blazor.Services
             Progress = q.Progress,
             Amount = q.Amount,
             State = q.State,
-            Reward = string.Format(CultureInfo.InvariantCulture, GameTexts.Get("UI_QUEST_REWARD", "{0} coins and {1} {2} exp"),
-                Number(q.RewardCoins), Number((long)q.RewardExp), SkillName(q.RewardSkill)),
+            // no experience when the reward skill is at the highest level: experience books come in its place (Item)
+            Reward = q.RewardExp > 0
+                ? string.Format(CultureInfo.InvariantCulture, GameTexts.Get("UI_QUEST_REWARD", "{0} coins and {1} {2} exp"),
+                    Number(q.RewardCoins), Number((long)q.RewardExp), SkillName(q.RewardSkill))
+                : string.Format(CultureInfo.InvariantCulture, GameTexts.Get("UI_QUEST_REWARD_COINS", "{0} coins"), Number(q.RewardCoins)),
+            Item = q.RewardItem,
             Expires = q.Expires,
             Command = command,
         };
+
+        /// <summary>A locked sequel: the chain that opens it, as the game says it (MSG_QUEST_CHAIN_LOCKED).</summary>
+        private static string LockedText(string key)
+        {
+            var first = QuestChains.Get(key)?.Requires;
+            return first == null ? null : GameTexts.Get("UI_CHAIN_" + key, key) + " opens once you have finished " + GameTexts.Get("UI_CHAIN_" + first, first) + ".";
+        }
 
         private QuestPageChain Chain(QuestChainInfo ch, QuestInfo active)
         {
@@ -125,7 +136,8 @@ namespace RavenNest.Blazor.Services
                 Event = ch.Event,
                 // under way: this step's words; not begun yet: the first step's, as a taste of the story
                 Story = under ? GameTexts.Get("UI_CHAIN_" + ch.Key + "_" + (ch.Step + 1), null)
-                    : ch.State == 0 || ch.State == 5 ? GameTexts.Get("UI_CHAIN_" + ch.Key + "_1", null) : null,
+                    : ch.State == 0 || ch.State == 5 ? GameTexts.Get("UI_CHAIN_" + ch.Key + "_1", null)
+                    : ch.State == 6 ? LockedText(ch.Key) : null,
                 Task = under ? QuestText(active) : null,
                 Progress = under ? active.Progress : 0,
                 Amount = under ? active.Amount : 0,
@@ -340,8 +352,29 @@ namespace RavenNest.Blazor.Services
                 case "deliver": return Format(GameTexts.Get("UI_QUEST_DELIVER", "Bring {0} {1}"), amount, q.Target);
                 case "visit": return Format(GameTexts.Get("UI_QUEST_VISIT", "Sail to {0} and say !quest there"), q.Target);
                 case "answer": return Format(GameTexts.Get("UI_QUEST_ANSWER", "Answer with !quest answer 1 to {0}"), q.Options);
+                case "tower_kill":
+                    return string.IsNullOrEmpty(q.Target)
+                        ? Format(GameTexts.Get("UI_QUEST_TOWER_KILL", "Defeat {0} monsters in the tower"), amount)
+                        : Format(GameTexts.Get("UI_QUEST_TOWER_KILL_KIND", "Defeat {0} {1} in the tower"), amount, TowerMonsterName(q.Target, q.Amount));
+                case "tower_clear": return Format(GameTexts.Get(q.Amount == 1 ? "UI_QUEST_TOWER_CLEAR_ONE" : "UI_QUEST_TOWER_CLEAR", "Help beat {0} tower floor bosses"), amount);
+                case "tame": return Format(GameTexts.Get(q.Amount == 1 ? "UI_QUEST_TAME_ONE" : "UI_QUEST_TAME", "Tame {0} creatures"), amount);
+                case "talk":
+                    {
+                        var town = RavenNest.Combat.Tower.Towns.FirstOrDefault(t => t.People.Any(p => string.Equals(p.Key, q.Target, StringComparison.OrdinalIgnoreCase)));
+                        var person = town?.People.First(p => string.Equals(p.Key, q.Target, StringComparison.OrdinalIgnoreCase));
+                        return Format(GameTexts.Get("UI_QUEST_TALK", "Talk to {0} in {1} (!tower talk {2})"), person?.Name ?? q.Target, town?.Name ?? "", q.Target);
+                    }
                 default: return q.Key;
             }
+        }
+
+        /// <summary>"Moss Goblins": a tower monster's name by its kind, plural when more than one (the game's QuestChat.TowerMonsterName).</summary>
+        private static string TowerMonsterName(string kind, long amount)
+        {
+            var name = RavenNest.Combat.Tower.Floors.SelectMany(f => f.Enemies).FirstOrDefault(e => e.Id == kind)?.Name;
+            if (name == null) return kind;
+            if (amount == 1 || name.EndsWith("s")) return name;
+            return name.EndsWith("y") && !name.EndsWith("ey") ? name.Substring(0, name.Length - 1) + "ies" : name + "s";
         }
 
         private static string StoryTask(VillageStoryInfo s)
@@ -444,6 +477,8 @@ namespace RavenNest.Blazor.Services
         /// <summary>0 offered, 1 taken, 2 finished, 3 expired, 4 given up.</summary>
         public int State { get; set; }
         public string Reward { get; set; }
+        /// <summary>What it gives besides coins and experience, as the game says it after "a": a Tome of Forgetting, experience books; or null.</summary>
+        public string Item { get; set; }
         public DateTime Expires { get; set; }
         /// <summary>The chat command that takes it, while it is on offer.</summary>
         public string Command { get; set; }

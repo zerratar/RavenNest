@@ -5706,6 +5706,13 @@ a.rf-badge:hover {
     box-shadow: inset 0 0 0 1px rgba(233,184,92,0.55), inset 0 0 0 4px rgba(14,12,30,0.9), inset 0 0 0 5px rgba(233,184,92,0.25); color: #ece4d6; }
 .rf-stage__map { position: absolute; inset: 0; }
 .rf-stage__map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* over the canvases: the sky darkens towards the stage's edges, and the stage's gold frame (the canvases cover the one drawn under them) */
+.rf-stage__map::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, rgba(4,6,16,0) 58%, rgba(4,6,16,0.5) 100%); }
+.rf-stage::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 2;
+    box-shadow: inset 0 0 0 1px rgba(233,184,92,0.6), inset 0 0 0 4px rgba(14,12,30,0.9), inset 0 0 0 5px rgba(233,184,92,0.28); }
+.rf-skilltree { cursor: grab; }
+.rf-skilltree.is-hover { cursor: pointer; }
+.rf-skilltree.is-dragging { cursor: grabbing; }
 .rf-stage__hud, .rf-stage__pop, .rf-stage__loadout, .rf-stage__slotmenu, .rf-stage__modes, .rf-stage__note {
     background: linear-gradient(180deg, rgba(20,26,58,0.94) 0%, rgba(10,14,36,0.94) 100%); border: 1px solid rgba(233,184,92,0.5); border-radius: 10px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.45), 0 0 0 3px rgba(10,12,30,0.55); backdrop-filter: blur(4px); }
@@ -5741,6 +5748,10 @@ a.rf-badge:hover {
 @keyframes rf-stage-fade { 0% { opacity: 0; transform: translate(-50%, -6px); } 8% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .rf-stage__pop { position: absolute; top: 0; left: 0; width: 330px; max-width: calc(100% - 16px); padding: 12px 14px; visibility: hidden; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
 .rf-stage__pop:empty { padding: 0; border: none; }
+/* a picked skill's panel fades in (its place is the map's doing, so only what is in it moves) */
+.rf-stage__pop > * { animation: rf-stage-pop 0.16s ease-out; }
+@keyframes rf-stage-pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rf-stage__pop > * { animation: none; } }
 .rf-stage__pop-head { display: flex; align-items: center; gap: 10px; }
 .rf-stage__pop-head img { width: 48px; height: 48px; flex: none; filter: drop-shadow(0 0 6px rgba(255,220,150,0.35)); }
 .rf-stage__pop-head > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }

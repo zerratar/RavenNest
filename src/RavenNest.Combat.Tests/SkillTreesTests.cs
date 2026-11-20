@@ -1,4 +1,5 @@
 using RavenNest.Combat;
+using System;
 using System.Linq;
 using Xunit;
 
@@ -50,6 +51,26 @@ namespace RavenNest.Combat.Tests
             Assert.StartsWith("There is no skill called no such skill.", SkillTrees.NotFoundText("no such skill"));
             Assert.Equal("Vitality", SkillTrees.SkillName(CombatSkill.Health));
             Assert.Equal("Ranged", SkillTrees.SkillName(CombatSkill.Ranged));
+        }
+
+        [Fact]
+        public void Every_tree_has_one_capstone_for_a_maxed_skill()
+        {
+            foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
+            {
+                var capstones = SkillTrees.Of(tree).Where(n => n.Capstone).ToList();
+                Assert.Single(capstones);
+                var c = capstones[0];
+                Assert.Equal(999, c.RequiredLevel);
+                Assert.Equal(1, c.MaxRank);
+                Assert.Equal(SkillTrees.CapstoneCost, c.Cost);
+                Assert.False(c.IsActive);
+                // its path: a node of the tier below, in the same tree
+                Assert.NotEmpty(c.Requires);
+                Assert.All(c.Requires, r => { var n = SkillTrees.Get(r); Assert.NotNull(n); Assert.Equal(tree, n.Tree); Assert.Equal(3, n.Tier); });
+                // stats the game knows
+                Assert.False(GearStats.Parse(c.Passive).IsEmpty);
+            }
         }
 
         [Fact]

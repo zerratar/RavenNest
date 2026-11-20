@@ -84,6 +84,7 @@ namespace RavenNest.BusinessLogic.Game
                 lastTame[characterId] = DateTime.UtcNow;
                 if (treatItemId != Guid.Empty) EatTreat(character, species, treatItemId);
                 var pet = Create(character, species, PetSource.Tamed, null);
+                QuestTracker.Tamed(character); // quest steps that ask for a tame
                 return Ok(character, pet);
             }
         }

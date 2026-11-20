@@ -7,32 +7,47 @@
 // compass rays to each tree, the skills as stars (lit and gold rimmed when learned, dim stone when locked), starlight
 // links, and the trees' names on gold framed plates.
 //
-// Two ways to draw the same map: WebGL (three.js) where the browser has it, and a plain 2D canvas where it does not (a
-// good share of players have WebGL turned off). The names and numbers are always drawn on a 2D layer on top, so both
-// read the same.
+// Two layers. The sky behind (the nebula, the stars, each tree's wedge of light) is WebGL (three.js) where the browser
+// has it and a plain 2D canvas where it does not (a good share of players have WebGL turned off). The map itself (rings,
+// links, nodes, names) is always drawn on a 2D canvas on top, by the same code, so both read the same.
 import * as THREE from './three.module.min.js';
 
 // ---- the map's shape ----------------------------------------------------------------------------------------------
 
-const HUB_RADIUS = 185;          // where each tree's name sits
-const FIRST_RING = 340;          // tier 0
-const RING_STEP = 190;           // between tiers
-const NODE_RADIUS = { active: 26, passive: 20, special: 30 };
-const WEDGE_PADDING = 0.07;      // radians kept free at each side of a wedge
+const HUB_RADIUS = 185;          // where each tree's emblem sits
+const FIRST_RING = 345;          // tier 0
+const RING_STEP = 172;           // between tiers
+const CAPSTONE_GAP = 26;         // a little more room before the last ring: the crowns are big
+const TIERS = 5;                 // rings: skill level 1, 100, 300, 600 and the capstone at 999
+const TIER_LEVELS = [1, 100, 300, 600, 999];
+const NODE_RADIUS = { active: 27, passive: 21, special: 30, capstone: 44 };
+const CROWN_RAYS = 1.72;         // how far a capstone's rays reach, in its radius
+const WEDGE_PADDING = 0.045;     // radians kept free at each side of a wedge
 const LABEL_MIN_ZOOM = 0.42;     // names show from this zoom up
-const TITLE_RADIUS = FIRST_RING + 3 * RING_STEP + 95; // the trees' names, past the outer ring
 const MIN_ZOOM = 0.1, MAX_ZOOM = 3.2;
+const LEGEND = true;             // the key in the map's corner (wide screens only)
 
-const STATE_ALPHA = { learned: 1, maxed: 1, available: 0.95, open: 0.6, locked: 0.32 };
+function ringRadius(tier) { return FIRST_RING + tier * RING_STEP + (tier >= TIERS - 1 ? CAPSTONE_GAP : 0); }
+const OUTER_RING = ringRadius(TIERS - 1);
+
+/** Zoomed out, the nodes are drawn bigger than the map's scale, so the whole map still reads (up to half again). */
+function boostOf(zoom) { return Math.min(1.5, Math.max(1, 1 + (0.8 - zoom) * 1.15)); }
 
 // the star map's colours
 const SKY = 0x060a1c;
 const SKY_CSS = '#060a1c';
 const GOLD = '#e9b85c';
+const GOLD_BRIGHT = '#ffd98a';
 const GOLD_DEEP = '#a8762c';
-const STONE = '#4a5170';
+const STONE = '#5a6388';
 const NODE_DARK = '#0c1230';
+const NODE_LOCKED = '#090c1e';
+const CREAM = '#fff4d6';
 const MEDALLION_RADIUS = 118;
+const FONT = '"Segoe UI", system-ui, sans-serif';
+const TITLE_FONT = '"FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif';
+
+const ICON_ALPHA = { learned: 1, maxed: 1, available: 1, open: 0.62, locked: 0.36 };
 
 /** A low poly raven perched, facing right, in a box of -1..1 (y down): the medallion's emblem. */
 const RAVEN = [[-1.0, 0.12], [-0.6, 0.02], [-0.36, -0.2], [-0.02, -0.36], [0.24, -0.32], [0.38, -0.5], [0.56, -0.56],
@@ -40,7 +55,7 @@ const RAVEN = [[-1.0, 0.12], [-0.6, 0.02], [-0.36, -0.2], [-0.02, -0.36], [0.24,
     [0.02, 0.66], [-0.01, 0.44], [-0.14, 0.44], [-0.17, 0.66], [-0.23, 0.66], [-0.22, 0.42], [-0.46, 0.3], [-1.0, 0.24]];
 const RAVEN_WING = [[-0.62, 0.1], [-0.3, -0.12], [0.18, -0.16], [0.34, 0.02], [0.08, 0.2], [-0.3, 0.2]];
 
-/** The raven emblem on a canvas (gold on dark), for the WebGL medallion's texture and the 2D map. */
+/** The raven emblem on a canvas (gold on dark): the medallion until (or without) its painted picture. */
 function drawRaven(g, cx, cy, size) {
     const trace = pts => { g.beginPath(); pts.forEach(([x, y], i) => { const px = cx + x * size, py = cy + y * size; if (i === 0) g.moveTo(px, py); else g.lineTo(px, py); }); g.closePath(); };
     trace(RAVEN);
@@ -76,23 +91,85 @@ function rgba(hex, a) {
     return `rgba(${r},${g},${b},${a})`;
 }
 
+/** A colour between two (t of the way from a to b). */
+function mix(a, b, t) {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    return `rgb(${Math.round(A[0] + (B[0] - A[0]) * t)},${Math.round(A[1] + (B[1] - A[1]) * t)},${Math.round(A[2] + (B[2] - A[2]) * t)})`;
+}
+
+/** The shades of a tree's colour the map draws with, made once. */
+function paletteOf(color) {
+    return {
+        c: color,
+        light: mix(color, '#ffffff', 0.45),
+        mid: mix(color, NODE_DARK, 0.42),
+        deep: mix(color, NODE_DARK, 0.74),
+        rim: rgba(color, 0.66),
+        faint: rgba(color, 0.4),
+    };
+}
+
+function angleBetween(a, b) {
+    let d = (a - b) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    return Math.abs(d);
+}
+
+function lit(node) { return node.state === 'learned' || node.state === 'maxed'; }
+
+/** How far a node's drawing reaches from its middle, in map units (its rank ring or gold ring included). */
+function outerOf(n) {
+    if (n.capstone) return n.r * 1.12;
+    if (n.kind === 'active') return n.r * 1.15 + 7;
+    if (n.kind === 'special') return n.r * 1.1 + 7;
+    return n.r + (n.max > 1 ? 10 : 7);
+}
+
+/**
+ * A path's line. walked: both ends learned. next: from a learned skill (or the tree's emblem) to one that can be
+ * learned now. reach: the same, but the points are missing. dim: the level is there, the path is not. locked: the
+ * level is not there.
+ */
+function linkKind(l) {
+    const from = l.a.state === undefined || lit(l.a);
+    if (l.b.state === 'locked') return 'locked';
+    if (from && lit(l.b)) return 'walked';
+    if (from && l.b.state === 'available') return 'next';
+    if (from) return 'reach';
+    return 'dim';
+}
+const LINK_ORDER = ['locked', 'dim', 'reach', 'next', 'walked'];
+
 /** Places the trees as wedges (tree 0 at the top, clockwise), their tiers as rings, the links from tier to tier. */
 function layout(data) {
     const trees = data.trees;
     const wedge = (Math.PI * 2) / trees.length;
     const nodes = data.nodes.map(n => ({ ...n }));
-    const byTree = trees.map(() => [[], [], [], []]);
-    for (const n of nodes) byTree[n.tree][n.tier].push(n);
+    const byTree = trees.map(() => Array.from({ length: TIERS }, () => []));
+    for (const n of nodes) {
+        n.tier = Math.max(0, Math.min(TIERS - 1, n.tier | 0));
+        if (byTree[n.tree]) byTree[n.tree][n.tier].push(n);
+    }
 
     const hubs = trees.map((t, i) => {
         const angle = -Math.PI / 2 + i * wedge;
-        return { ...t, index: i, angle, x: Math.cos(angle) * HUB_RADIUS, y: Math.sin(angle) * HUB_RADIUS };
+        // how far out the tree's level reaches: past the ring it has opened, and on towards the next one
+        let tier = 0;
+        while (tier < TIERS - 1 && t.level >= TIER_LEVELS[tier + 1]) tier++;
+        const part = tier < TIERS - 1 ? Math.max(0, (t.level - TIER_LEVELS[tier]) / (TIER_LEVELS[tier + 1] - TIER_LEVELS[tier])) : 0;
+        const frontier = tier < TIERS - 1 ? ringRadius(tier) + (ringRadius(tier + 1) - ringRadius(tier)) * (0.4 + 0.42 * part) : OUTER_RING + 78;
+        return {
+            ...t, index: i, angle, x: Math.cos(angle) * HUB_RADIUS, y: Math.sin(angle) * HUB_RADIUS, pal: paletteOf(t.color), frontier,
+            cos: Math.cos(angle), sin: Math.sin(angle),
+            rings: TIER_LEVELS.map((level, k) => k === TIERS - 1 ? rgba(GOLD, t.level >= level ? 0.6 : 0.24) : rgba(t.color, t.level >= level ? 0.4 : 0.13)),
+        };
     });
 
     const byId = new Map(nodes.map(n => [n.id, n]));
     for (let t = 0; t < trees.length; t++) {
         const centre = hubs[t].angle;
-        for (let tier = 0; tier < 4; tier++) {
+        for (let tier = 0; tier < TIERS; tier++) {
             let ring = byTree[t][tier];
             // above the first ring, each node sits under the middle of the nodes its path comes from, so links rarely cross
             if (tier > 0 && ring.some(n => n.requires && n.requires.length)) {
@@ -102,14 +179,15 @@ function layout(data) {
                 };
                 ring = byTree[t][tier] = ring.map((n, i) => ({ n, key: placeOf(n), i })).sort((a, b) => a.key - b.key || a.i - b.i).map(x => x.n);
             }
-            const radius = FIRST_RING + tier * RING_STEP;
+            const radius = ringRadius(tier);
             const span = wedge - WEDGE_PADDING * 2;
             ring.forEach((n, i) => {
                 const a = ring.length === 1 ? centre : centre - span / 2 + span * (i + 0.5) / ring.length;
                 n.angle = a;
                 n.x = Math.cos(a) * radius;
                 n.y = Math.sin(a) * radius;
-                n.r = NODE_RADIUS[n.kind] || 22;
+                n.r = n.capstone ? NODE_RADIUS.capstone : NODE_RADIUS[n.kind] || 22;
+                n.outer = outerOf(n);
             });
         }
     }
@@ -127,7 +205,7 @@ function layout(data) {
             }
             continue;
         }
-        for (let tier = 1; tier < 4; tier++) {
+        for (let tier = 1; tier < TIERS; tier++) {
             const below = byTree[t][tier - 1].length ? byTree[t][tier - 1] : byTree[t][Math.max(0, tier - 2)];
             for (const n of byTree[t][tier]) {
                 let best = null, bestD = Infinity;
@@ -139,26 +217,40 @@ function layout(data) {
             }
         }
     }
-
-    for (const hub of hubs) {
-        hub.tx = Math.cos(hub.angle) * TITLE_RADIUS;
-        hub.ty = Math.sin(hub.angle) * TITLE_RADIUS;
+    // drawn kind by kind (the walked ones last, on top), a tree at a time
+    for (const l of links) l.kind = linkKind(l);
+    const linkGroups = [];
+    for (const kind of LINK_ORDER) {
+        for (let t = 0; t < trees.length; t++) {
+            const of = links.filter(l => l.kind === kind && l.tree === t);
+            if (of.length) linkGroups.push({ kind, tree: t, links: of });
+        }
     }
-    const extent = TITLE_RADIUS + 40;
-    return { hubs, nodes, links, extent };
+
+    // the wedges' borders, and the room each ring has there for its level's label
+    const borders = hubs.map(hub => {
+        const angle = hub.angle + wedge / 2;
+        const room = Array.from({ length: TIERS }, (_, tier) => {
+            let best = null;
+            for (const n of nodes) {
+                if (n.tier !== tier || n.angle === undefined) continue;
+                const d = angleBetween(n.angle, angle) * ringRadius(tier);
+                if (!best || d - n.outer * 1.5 < best.d - best.outer * 1.5) best = { d, outer: n.outer };
+            }
+            return best;
+        });
+        return { angle, cos: Math.cos(angle), sin: Math.sin(angle), room };
+    });
+
+    // whose name is written first where names crowd: learned, then what can be learned, then the rest; crowns before others
+    const weight = n => (lit(n) ? 0 : n.state === 'available' ? 2 : n.state === 'open' ? 4 : 6) + (n.capstone ? 0 : 1);
+    const named = nodes.filter(n => n.angle !== undefined).sort((a, b) => weight(a) - weight(b) || a.tier - b.tier);
+
+    const lively = nodes.some(n => n.state === 'available' || (n.capstone && lit(n)));
+    return { hubs, nodes, links, linkGroups, borders, byId, wedge, lively, named, extent: OUTER_RING + 150 };
 }
 
-function lit(node) { return node.state === 'learned' || node.state === 'maxed'; }
-
-/** A path's line: walked (both ends learned) bright, open (the lower end learned) half, the rest faint in the tree's colour. */
-function linkStyle(l) {
-    const from = l.a.state === undefined || lit(l.a);
-    if (from && lit(l.b)) return { alpha: 0.95, width: 3.5 };
-    if (from && l.b.state !== 'locked') return { alpha: 0.55, width: 2.6 };
-    return { alpha: 0.22, width: 1.8 };
-}
-
-// ---- the camera and the pointer, shared by both ways of drawing ----------------------------------------------------
+// ---- the camera and the pointer ------------------------------------------------------------------------------------
 
 class Camera {
     constructor() { this.x = 0; this.y = 0; this.zoom = 0.5; }
@@ -173,44 +265,372 @@ class Camera {
     }
 }
 
-// ---- drawing: shapes on a 2D canvas (the fallback) ----------------------------------------------------------------
+// ---- small pictures made once ---------------------------------------------------------------------------------------
 
-function drawShapes2d(g, view) {
-    const { w, h, cam, map, selected, time } = view;
-    g.clearRect(0, 0, w, h);
+const glowSprites = new Map();
 
-    // the sky: deep blue with a violet glow round the middle, and still stars
+/** A soft round glow in a colour, to stamp behind lit things (far cheaper than a gradient each frame). */
+function glowSprite(color) {
+    let c = glowSprites.get(color);
+    if (c) return c;
+    c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const fill = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    [[0, 1], [0.15, 0.82], [0.3, 0.55], [0.45, 0.32], [0.6, 0.17], [0.8, 0.05], [1, 0]].forEach(([at, a]) => fill.addColorStop(at, rgba(color, a)));
+    g.fillStyle = fill;
+    g.fillRect(0, 0, 128, 128);
+    glowSprites.set(color, c);
+    return c;
+}
+
+function stampGlow(g, color, x, y, size, alpha) {
+    if (alpha <= 0.01 || size < 2) return;
+    g.globalAlpha = Math.min(1, alpha);
+    g.drawImage(glowSprite(color), x - size / 2, y - size / 2, size, size);
+}
+
+/**
+ * Each tree's wedge of light, the same in both skies: a whisper of the tree's colour over the whole wedge, brighter out
+ * to where the tree's level reaches, with a bright edge there. So the map shows at a glance how far every tree is
+ * open. As bands of the wedge: [from, to, alpha at from, alpha at to], in map units from the middle.
+ */
+const WEDGE_INNER = HUB_RADIUS + 62, WEDGE_OUTER = OUTER_RING + 78, WEDGE_GAP = 0.007;
+function wedgeBands(hub) {
+    const reach = Math.max(WEDGE_INNER + 20, hub.frontier), knee = WEDGE_INNER + (reach - WEDGE_INNER) * 0.7;
+    return [[WEDGE_INNER, WEDGE_OUTER, 0.04, 0.04], [WEDGE_INNER, knee, 0.03, 0.09], [knee, reach, 0.09, 0.17], [reach - 2.5, reach + 2.5, 0.45, 0.45]];
+}
+
+// ---- drawing: the sky on a 2D canvas (the fallback for WebGL) -----------------------------------------------------
+
+const NEBULA_2D = [[0, 0, 1700, '#5a38c0', 0.42], [-700, -500, 2000, '#2640b4', 0.36], [800, 400, 1900, '#1a738c', 0.3],
+    [600, -800, 1500, '#80339a', 0.26], [-900, 700, 1700, '#334dc0', 0.3]];
+const STARS_2D = Array.from({ length: 260 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 997) / 997, 0.4 + ((i * 31) % 10) / 10]);
+
+/** Still: drawn again only when the map moves or changes, so the fallback stays light. */
+function drawSky2d(g, view) {
+    const { w, h, cam } = view;
     const sky = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.75);
-    sky.addColorStop(0, '#1a1d48');
-    sky.addColorStop(0.5, '#0c1230');
+    sky.addColorStop(0, '#15183f');
+    sky.addColorStop(0.5, '#0b102c');
     sky.addColorStop(1, SKY_CSS);
     g.fillStyle = sky;
     g.fillRect(0, 0, w, h);
-    view.stars = view.stars || Array.from({ length: 260 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 997) / 997, 0.4 + ((i * 31) % 10) / 10]);
-    for (const [sx, sy, b] of view.stars) {
-        g.fillStyle = `rgba(220,230,255,${0.25 + 0.5 * b * (0.7 + 0.3 * Math.sin(time * 2 + sx * 40))})`;
-        g.fillRect(sx * w, sy * h, b > 1 ? 2 : 1.2, b > 1 ? 2 : 1.2);
+    const [cx, cy] = cam.toScreen(0, 0, w, h);
+    g.globalCompositeOperation = 'lighter';
+    for (const [x, y, size, color, a] of NEBULA_2D) stampGlow(g, color, cx + x * cam.zoom, cy + y * cam.zoom, size * cam.zoom, a * 0.5);
+    g.globalCompositeOperation = 'source-over';
+    for (const [sx, sy, b] of STARS_2D) {
+        g.globalAlpha = Math.min(1, 0.25 + 0.5 * b);
+        g.fillStyle = '#dce6ff';
+        g.fillRect(sx * w, sy * h, b > 1 ? 2 : 1.3, b > 1 ? 2 : 1.3);
+    }
+    g.globalAlpha = 1;
+    for (const hub of view.map.hubs) {
+        const a0 = hub.angle - view.map.wedge / 2 + WEDGE_GAP, a1 = hub.angle + view.map.wedge / 2 - WEDGE_GAP;
+        for (const [from, to, alphaFrom, alphaTo] of wedgeBands(hub)) {
+            g.beginPath();
+            g.arc(cx, cy, to * cam.zoom, a0, a1);
+            g.arc(cx, cy, from * cam.zoom, a1, a0, true);
+            g.closePath();
+            if (alphaFrom === alphaTo) {
+                g.fillStyle = rgba(hub.color, alphaFrom);
+            } else {
+                const fill = g.createRadialGradient(cx, cy, from * cam.zoom, cx, cy, to * cam.zoom);
+                fill.addColorStop(0, rgba(hub.color, alphaFrom));
+                fill.addColorStop(1, rgba(hub.color, alphaTo));
+                g.fillStyle = fill;
+            }
+            g.fill();
+        }
+    }
+}
+
+// ---- drawing: the map (rings, links, nodes), the same over both skies ---------------------------------------------
+
+/** Actives are diamonds, passives and capstones round, the specials (Battle Rhythm, Last Stand) hexagons. */
+function nodePath(g, shape, x, y, r) {
+    if (shape === 'active') {
+        g.moveTo(x, y - r * 1.15);
+        g.lineTo(x + r * 1.15, y);
+        g.lineTo(x, y + r * 1.15);
+        g.lineTo(x - r * 1.15, y);
+        g.closePath();
+    } else if (shape === 'special') {
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 6 + i * Math.PI / 3;
+            const px = x + Math.cos(a) * r * 1.1, py = y + Math.sin(a) * r * 1.1;
+            if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+        }
+        g.closePath();
+    } else {
+        g.moveTo(x + r, y);
+        g.arc(x, y, r, 0, Math.PI * 2);
+    }
+}
+
+function shapeOf(n) { return n.capstone ? 'capstone' : n.kind; }
+
+/** A four pointed sparkle. */
+function sparklePath(g, x, y, s) {
+    const t = s * 0.24;
+    g.moveTo(x, y - s); g.lineTo(x + t, y - t); g.lineTo(x + s, y); g.lineTo(x + t, y + t);
+    g.lineTo(x, y + s); g.lineTo(x - t, y + t); g.lineTo(x - s, y); g.lineTo(x - t, y - t);
+    g.closePath();
+}
+
+/** A little padlock on a dark disc: the level is not there yet. */
+function drawLock(g, x, y, s) {
+    g.beginPath();
+    g.arc(x, y, s, 0, Math.PI * 2);
+    g.fillStyle = NODE_LOCKED;
+    g.fill();
+    g.lineWidth = Math.max(1, s * 0.16);
+    g.strokeStyle = STONE;
+    g.stroke();
+    const bw = s * 0.92, bh = s * 0.66;
+    g.fillStyle = '#aab3d6';
+    g.fillRect(x - bw / 2, y - bh * 0.22, bw, bh);
+    g.beginPath();
+    g.arc(x, y - bh * 0.22, bw * 0.3, Math.PI, 0);
+    g.lineWidth = Math.max(1, s * 0.2);
+    g.strokeStyle = '#aab3d6';
+    g.stroke();
+}
+
+/** A crown, its base's middle at x, y. */
+function drawCrown(g, x, y, width, fill, edge, jewel) {
+    const hw = width / 2, hgt = width * 0.52, band = width * 0.16;
+    g.beginPath();
+    g.moveTo(x - hw, y);
+    g.lineTo(x - hw * 1.08, y - hgt * 0.78);
+    g.lineTo(x - hw * 0.46, y - hgt * 0.36);
+    g.lineTo(x, y - hgt);
+    g.lineTo(x + hw * 0.46, y - hgt * 0.36);
+    g.lineTo(x + hw * 1.08, y - hgt * 0.78);
+    g.lineTo(x + hw, y);
+    g.lineTo(x + hw, y + band);
+    g.lineTo(x - hw, y + band);
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+    g.lineJoin = 'round';
+    g.lineWidth = Math.max(1, width * 0.055);
+    g.strokeStyle = edge;
+    g.stroke();
+    if (width < 12) return;
+    g.fillStyle = jewel;
+    for (const [dx, dy] of [[-hw * 1.08, -hgt * 0.78], [0, -hgt], [hw * 1.08, -hgt * 0.78]]) {
+        g.beginPath();
+        g.arc(x + dx, y + dy, width * 0.075, 0, Math.PI * 2);
+        g.fill();
+    }
+}
+
+/** 0 to 1 and round again, every two seconds: the ring that spreads from a skill that can be learned now. */
+function pulseOf(time) { return (time * 0.5) % 1; }
+
+/**
+ * A capstone, the crown of its tree: a big gold medallion with the tree's emblem, a crown on top and a burst of rays
+ * behind. Dull bronze while its level is far, gold when it can be learned, ablaze and slowly turning once it is.
+ */
+function drawCapstone(g, n, x, y, r, pal, time, emblem) {
+    const st = n.state || 'open';
+    const on = lit(n), locked = st === 'locked', ready = st === 'available';
+    const gold = locked ? '#6f6a5c' : st === 'open' ? '#b08f55' : on ? GOLD_BRIGHT : GOLD;
+    const beat = 0.5 + 0.5 * Math.sin(time * 2.4);
+
+    // the rays
+    const turn = on || ready ? time * 0.06 : 0;
+    g.globalAlpha = locked ? 0.3 : st === 'open' ? 0.5 : ready ? 0.62 + 0.3 * beat : 1;
+    g.fillStyle = on ? '#ffe7ad' : gold;
+    g.beginPath();
+    for (let i = 0; i < 16; i++) {
+        const a = turn + i * Math.PI / 8;
+        const long = i % 2 === 0;
+        const reach = r * (long ? CROWN_RAYS : 1.38), side = r * (long ? 0.1 : 0.07), base = r * 0.9;
+        const ox = Math.cos(a), oy = Math.sin(a);
+        g.moveTo(x + ox * base - oy * side, y + oy * base + ox * side);
+        g.lineTo(x + ox * reach, y + oy * reach);
+        g.lineTo(x + ox * base + oy * side, y + oy * base - ox * side);
+        g.closePath();
+    }
+    g.fill();
+    g.globalAlpha = 1;
+
+    if (ready) {
+        const p = pulseOf(time);
+        g.beginPath();
+        g.arc(x, y, r * (1.12 + 0.5 * p), 0, Math.PI * 2);
+        g.globalAlpha = 0.8 * (1 - p) * (1 - p);
+        g.lineWidth = Math.max(1.2, r * 0.07);
+        g.strokeStyle = GOLD_BRIGHT;
+        g.stroke();
+        g.globalAlpha = 1;
     }
 
-    // the rings and the wedge borders
-    const [cx, cy] = cam.toScreen(0, 0, w, h);
-    g.lineWidth = 1;
-    for (let tier = 0; tier < 4; tier++) {
-        g.strokeStyle = 'rgba(150,170,255,0.08)';
-        g.setLineDash([2, 6]);
+    // the medallion
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    if (on || ready) {
+        const face = g.createRadialGradient(x, y - r * 0.2, r * 0.1, x, y, r);
+        face.addColorStop(0, on ? pal.mid : pal.deep);
+        face.addColorStop(1, on ? pal.deep : NODE_DARK);
+        g.fillStyle = face;
+    } else {
+        g.fillStyle = locked ? NODE_LOCKED : NODE_DARK;
+    }
+    g.fill();
+    g.lineWidth = Math.max(2, r * 0.14);
+    g.strokeStyle = gold;
+    g.stroke();
+    g.beginPath();
+    g.arc(x, y, r * 1.07, 0, Math.PI * 2);
+    g.lineWidth = Math.max(1, r * 0.035);
+    g.strokeStyle = locked ? '#3c3a36' : GOLD_DEEP;
+    g.stroke();
+    g.beginPath();
+    g.arc(x, y, r * 0.8, 0, Math.PI * 2);
+    g.lineWidth = Math.max(1, r * 0.045);
+    g.strokeStyle = locked ? rgba(STONE, 0.7) : on || ready ? pal.c : pal.rim;
+    g.stroke();
+
+    if (emblem) {
+        const size = r * 1.22;
+        g.globalAlpha = locked ? 0.36 : st === 'open' ? 0.62 : 1;
+        g.drawImage(emblem, x - size / 2, y - size / 2, size, size);
+        g.globalAlpha = 1;
+    } else {
         g.beginPath();
-        g.arc(cx, cy, (FIRST_RING + tier * RING_STEP) * cam.zoom, 0, Math.PI * 2);
+        sparklePath(g, x, y, r * 0.5);
+        g.fillStyle = locked ? STONE : pal.c;
+        g.fill();
+    }
+
+    drawCrown(g, x, y - r * 0.99, r * 1.02, gold, locked ? '#2a2822' : '#3a2608', locked ? '#8d8a80' : on || ready ? pal.light : pal.c);
+    if (locked && r >= 14) drawLock(g, x, y + r * 0.98, Math.min(12, Math.max(6, r * 0.3)));
+}
+
+/**
+ * One skill. Its state reads from afar: stone and dark with a padlock while the level is missing, the tree's colour
+ * dimly once the level is there, bright with a spreading ring when it can be learned now, lit with gold round it
+ * when learned. A passive with ranks wears them as a ring of segments that turn gold one by one.
+ */
+function drawNode(g, n, x, y, r, pal, time, picture) {
+    if (n.capstone) { drawCapstone(g, n, x, y, r, pal, time, picture); return; }
+    const u = r / n.r;
+    const st = n.state || 'open';
+    const on = lit(n), locked = st === 'locked', ready = st === 'available';
+    const shape = n.kind;
+    const ranks = n.kind === 'passive' && n.max > 1;
+
+    if (ready) {
+        const p = pulseOf(time);
+        g.beginPath();
+        nodePath(g, shape, x, y, r + (n.outer - n.r + 1 + 15 * p) * u);
+        g.globalAlpha = 0.8 * (1 - p) * (1 - p);
+        g.lineWidth = Math.max(1.2, 2.6 * u);
+        g.strokeStyle = pal.c;
+        g.stroke();
+        g.globalAlpha = 1;
+    }
+
+    // the face and its rim
+    g.beginPath();
+    nodePath(g, shape, x, y, r);
+    if (on || ready) {
+        const face = g.createRadialGradient(x, y - r * 0.3, r * 0.1, x, y, r * 1.2);
+        face.addColorStop(0, on ? pal.mid : pal.deep);
+        face.addColorStop(1, on ? pal.deep : NODE_DARK);
+        g.fillStyle = face;
+    } else {
+        g.fillStyle = locked ? NODE_LOCKED : NODE_DARK;
+    }
+    g.fill();
+    g.lineWidth = Math.max(1.5, (ready ? 3.8 : 3) * u);
+    g.strokeStyle = locked ? STONE : on ? pal.light : ready ? pal.c : pal.rim;
+    g.stroke();
+
+    // the picture: the skill's own, or for a passive its tree's emblem
+    if (picture) {
+        const size = r * (n.kind === 'passive' ? 1.5 : n.kind === 'active' ? 1.55 : 1.6);
+        g.globalAlpha = ICON_ALPHA[st] ?? 0.6;
+        g.drawImage(picture, x - size / 2, y - size / 2, size, size);
+        g.globalAlpha = 1;
+    } else if (n.kind === 'passive') {
+        g.beginPath();
+        sparklePath(g, x, y, r * 0.5);
+        g.fillStyle = locked ? STONE : on ? pal.light : pal.c;
+        g.globalAlpha = ICON_ALPHA[st] ?? 0.6;
+        g.fill();
+        g.globalAlpha = 1;
+    }
+
+    if (ranks) {
+        // the ranks: a ring of segments, gold for each one learned
+        const rr = r + 6 * u, gap = n.max > 6 ? 0.1 : 0.2, seg = Math.PI * 2 / n.max;
+        g.lineWidth = Math.max(1.6, 4.4 * u);
+        const arcs = (from, to) => {
+            g.beginPath();
+            for (let i = from; i < to; i++) {
+                const a0 = -Math.PI / 2 + i * seg + gap / 2, a1 = -Math.PI / 2 + (i + 1) * seg - gap / 2;
+                g.moveTo(x + Math.cos(a0) * rr, y + Math.sin(a0) * rr);
+                g.arc(x, y, rr, a0, a1);
+            }
+            g.stroke();
+        };
+        if (n.rank < n.max) { g.strokeStyle = locked ? rgba(STONE, 0.6) : pal.faint; arcs(Math.max(0, n.rank), n.max); }
+        if (n.rank > 0) { g.strokeStyle = GOLD_BRIGHT; arcs(0, Math.min(n.rank, n.max)); }
+    } else if (on) {
+        // learned: gold round it
+        g.beginPath();
+        nodePath(g, shape, x, y, r + 5.5 * u);
+        g.lineWidth = Math.max(1.5, 2.8 * u);
+        g.strokeStyle = GOLD_BRIGHT;
         g.stroke();
     }
-    g.setLineDash([]);
+
+    if (locked && r >= 13) drawLock(g, x, y + r * (shape === 'passive' ? 0.95 : 1.05), Math.min(11, Math.max(5.5, r * 0.36)));
+}
+
+function linkPath(g, view, links) {
+    const { w, h, cam } = view;
+    g.beginPath();
+    for (const l of links) {
+        const [ax, ay] = cam.toScreen(l.a.x, l.a.y, w, h);
+        const [bx, by] = cam.toScreen(l.b.x, l.b.y, w, h);
+        g.moveTo(ax, ay);
+        g.lineTo(bx, by);
+    }
+}
+
+/** The whole map over the sky: rings, the medallion, links, the trees' emblems and every skill. */
+function drawMap(g, view, icons) {
+    const { w, h, cam, map, selected, hover, time } = view;
+    const zoom = cam.zoom, u = zoom * boostOf(zoom);
+    const [cx, cy] = cam.toScreen(0, 0, w, h);
+    g.lineJoin = 'round';
+    g.lineCap = 'butt';
+
+    // the rings, each wedge's arc in its tree's colour (brighter where the tree's level has opened it), the last in gold
+    g.lineWidth = 1.4;
+    for (const hub of map.hubs) {
+        for (let tier = 0; tier < TIERS; tier++) {
+            g.strokeStyle = hub.rings[tier];
+            g.beginPath();
+            g.arc(cx, cy, ringRadius(tier) * zoom, hub.angle - map.wedge / 2 + 0.007, hub.angle + map.wedge / 2 - 0.007);
+            g.stroke();
+        }
+    }
+
     // the compass rays: long gold ones to each tree, short ones between
     for (let i = 0; i < map.hubs.length * 2; i++) {
         const a = -Math.PI / 2 + i * Math.PI / map.hubs.length;
         const long = i % 2 === 0;
-        const reach = (long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40) * cam.zoom;
-        const side = (long ? 10 : 6) * cam.zoom;
+        const reach = (long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40) * zoom;
+        const side = (long ? 10 : 6) * zoom;
         const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
-        const base = MEDALLION_RADIUS * 0.8 * cam.zoom;
+        const base = MEDALLION_RADIUS * 0.8 * zoom;
         g.beginPath();
         g.moveTo(cx + ox * base + px * side, cy + oy * base + py * side);
         g.lineTo(cx + ox * reach, cy + oy * reach);
@@ -219,209 +639,305 @@ function drawShapes2d(g, view) {
         g.fillStyle = long ? 'rgba(233,184,92,0.85)' : 'rgba(233,184,92,0.45)';
         g.fill();
     }
-    // the medallion
-    {
-        const r = MEDALLION_RADIUS * cam.zoom;
-        const glow = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.2);
-        glow.addColorStop(0, 'rgba(233,184,92,0.35)');
-        glow.addColorStop(1, 'rgba(233,184,92,0)');
-        g.fillStyle = glow;
-        g.beginPath(); g.arc(cx, cy, r * 2.2, 0, Math.PI * 2); g.fill();
+
+    // links, the faint ones first
+    for (const group of map.linkGroups) {
+        const pal = map.hubs[group.tree].pal;
+        const width = px => Math.max(1, px * u);
+        linkPath(g, view, group.links);
+        if (group.kind === 'walked') {
+            g.strokeStyle = rgba(pal.c, 0.3); g.lineWidth = Math.max(3, 11 * u); g.stroke();
+            g.strokeStyle = pal.light; g.lineWidth = Math.max(1.8, 4.2 * u); g.stroke();
+        } else if (group.kind === 'next') {
+            g.strokeStyle = rgba(pal.c, 0.2); g.lineWidth = Math.max(2.5, 8 * u); g.stroke();
+            const dash = Math.max(5, 11 * u);
+            g.setLineDash([dash, dash * 0.7]);
+            g.lineDashOffset = -time * dash * 1.5;
+            g.strokeStyle = pal.c; g.lineWidth = Math.max(1.6, 3.2 * u); g.stroke();
+            g.setLineDash([]);
+            g.lineDashOffset = 0;
+        } else if (group.kind === 'reach') {
+            g.strokeStyle = rgba(pal.c, 0.6); g.lineWidth = width(2.6); g.stroke();
+        } else if (group.kind === 'dim') {
+            g.strokeStyle = rgba(pal.c, 0.34); g.lineWidth = width(2.1); g.stroke();
+        } else {
+            g.strokeStyle = rgba(pal.c, 0.19); g.lineWidth = width(1.7); g.stroke();
+        }
+    }
+    // the paths of the skill under the pointer, or the picked one: what it needs and what it opens
+    const focus = hover || selected;
+    if (focus) {
+        const of = map.links.filter(l => l.b.id === focus || l.a.id === focus);
+        if (of.length) {
+            linkPath(g, view, of);
+            g.strokeStyle = 'rgba(255,244,214,0.7)';
+            g.lineWidth = Math.max(1.4, 2 * u);
+            g.stroke();
+        }
+    }
+
+    // the glows, behind everything they belong to
+    g.globalCompositeOperation = 'lighter';
+    stampGlow(g, GOLD, cx, cy, MEDALLION_RADIUS * 4.6 * zoom, 0.5);
+    for (const hub of map.hubs) {
+        const [x, y] = cam.toScreen(hub.x, hub.y, w, h);
+        stampGlow(g, hub.color, x, y, 170 * zoom, 0.4);
+    }
+    const beat = 0.5 + 0.5 * Math.sin(time * Math.PI);
+    for (const n of map.nodes) {
+        const on = lit(n);
+        if (!on && n.state !== 'available') continue;
+        const [x, y] = cam.toScreen(n.x, n.y, w, h);
+        const r = n.r * u;
+        if (x < -r * 4 || y < -r * 4 || x > w + r * 4 || y > h + r * 4) continue;
+        if (n.capstone) {
+            stampGlow(g, GOLD, x, y, r * 6.2, on ? 0.85 : 0.3 + 0.2 * beat);
+            if (on) stampGlow(g, n.pal.c, x, y, r * 4, 0.6);
+        } else {
+            stampGlow(g, n.pal.c, x, y, r * (on ? 5.4 : 4.6), on ? (n.state === 'maxed' ? 0.75 : 0.55) : 0.24 + 0.14 * beat);
+        }
+    }
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+
+    // the medallion: the painted one, or the drawn one until it has loaded
+    const medallion = icons.get('medallion');
+    if (medallion) {
+        const size = MEDALLION_RADIUS * 2.35 * zoom;
+        g.drawImage(medallion, cx - size / 2, cy - size / 2, size, size);
+    } else {
+        const r = MEDALLION_RADIUS * zoom;
         g.fillStyle = '#100c26';
         g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-        g.strokeStyle = GOLD; g.lineWidth = Math.max(2, 5 * cam.zoom); g.stroke();
-        g.strokeStyle = GOLD_DEEP; g.lineWidth = Math.max(1, 2 * cam.zoom);
+        g.strokeStyle = GOLD; g.lineWidth = Math.max(2, 5 * zoom); g.stroke();
+        g.strokeStyle = GOLD_DEEP; g.lineWidth = Math.max(1, 2 * zoom);
         g.beginPath(); g.arc(cx, cy, r * 0.84, 0, Math.PI * 2); g.stroke();
         drawRaven(g, cx, cy + r * 0.02, r * 0.66);
     }
 
-    // links
-    for (const l of map.links) {
-        const color = map.hubs[l.tree].color;
-        const style = linkStyle(l);
-        const [ax, ay] = cam.toScreen(l.a.x, l.a.y, w, h);
-        const [bx, by] = cam.toScreen(l.b.x, l.b.y, w, h);
-        g.strokeStyle = rgba(color, style.alpha);
-        g.lineWidth = Math.max(1, style.width * cam.zoom);
-        g.beginPath();
-        g.moveTo(ax, ay);
-        g.lineTo(bx, by);
-        g.stroke();
-    }
-
-    // hubs
+    // the trees' emblems on their discs by the medallion
     for (const hub of map.hubs) {
         const [x, y] = cam.toScreen(hub.x, hub.y, w, h);
-        g.fillStyle = rgba(hub.color, 0.18);
+        const r = 34 * zoom;
+        const face = g.createRadialGradient(x, y - r * 0.3, r * 0.1, x, y, r);
+        face.addColorStop(0, hub.pal.mid);
+        face.addColorStop(1, hub.pal.deep);
         g.beginPath();
-        g.arc(x, y, 34 * cam.zoom, 0, Math.PI * 2);
-        g.fill();
-        g.strokeStyle = rgba(hub.color, 0.8);
-        g.lineWidth = Math.max(1, 2 * cam.zoom);
-        g.stroke();
-    }
-
-    // nodes
-    for (const n of map.nodes) {
-        const [x, y] = cam.toScreen(n.x, n.y, w, h);
-        const r = n.r * cam.zoom;
-        if (x < -r * 3 || y < -r * 3 || x > w + r * 3 || y > h + r * 3) continue;
-        const color = map.hubs[n.tree].color;
-        const alpha = STATE_ALPHA[n.state] ?? 0.5;
-
-        if (lit(n)) {
-            const glow = g.createRadialGradient(x, y, r * 0.5, x, y, r * 2.2);
-            glow.addColorStop(0, rgba(color, 0.45));
-            glow.addColorStop(1, rgba(color, 0));
-            g.fillStyle = glow;
-            g.beginPath();
-            g.arc(x, y, r * 2.2, 0, Math.PI * 2);
-            g.fill();
-        }
-
-        g.beginPath();
-        nodePath(g, n.kind, x, y, r);
-        g.fillStyle = lit(n) ? rgba(color, 0.9) : NODE_DARK;
-        g.fill();
-        const breathe = n.state === 'available' ? 0.65 + 0.35 * Math.sin(time * 3) : 1;
-        g.strokeStyle = n.state === 'locked' ? rgba(STONE, 0.9) : rgba(color, alpha * breathe);
-        g.lineWidth = Math.max(1.5, (n.state === 'available' ? 4 : 3) * cam.zoom);
-        g.stroke();
-        if (lit(n)) {
-            g.beginPath();
-            nodePath(g, n.kind, x, y, r + 5 * cam.zoom);
-            g.strokeStyle = GOLD;
-            g.lineWidth = Math.max(1.5, 2.5 * cam.zoom);
-            g.stroke();
-        }
-
-        drawRank(g, n, x, y, r, color);
-
-        if (selected === n.id) {
-            g.strokeStyle = '#fff4d6';
-            g.lineWidth = Math.max(2, 3 * cam.zoom);
-            g.beginPath();
-            g.arc(x, y, r + 7 * cam.zoom, 0, Math.PI * 2);
-            g.stroke();
-        }
-    }
-}
-
-/** Actives are diamonds, passives circles, the specials (Battle Rhythm, Last Stand) hexagons. */
-function nodePath(g, kind, x, y, r) {
-    if (kind === 'active') {
-        g.moveTo(x, y - r * 1.15);
-        g.lineTo(x + r * 1.15, y);
-        g.lineTo(x, y + r * 1.15);
-        g.lineTo(x - r * 1.15, y);
-        g.closePath();
-    } else if (kind === 'special') {
-        for (let i = 0; i < 6; i++) {
-            const a = Math.PI / 6 + i * Math.PI / 3;
-            const px = x + Math.cos(a) * r * 1.1, py = y + Math.sin(a) * r * 1.1;
-            if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
-        }
-        g.closePath();
-    } else {
         g.arc(x, y, r, 0, Math.PI * 2);
+        g.fillStyle = face;
+        g.fill();
+        g.strokeStyle = GOLD;
+        g.lineWidth = Math.max(1.5, 4 * zoom);
+        g.stroke();
+        const img = icons.get('tree:' + hub.index);
+        const size = 56 * zoom;
+        if (img && size >= 8) g.drawImage(img, x - size / 2, y - size / 2, size, size);
+    }
+
+    // the skills (the one under the pointer a touch bigger, and last so it lies on top)
+    let top = null;
+    for (const n of map.nodes) {
+        if (n.id === hover) { top = n; continue; }
+        const [x, y] = cam.toScreen(n.x, n.y, w, h);
+        const r = n.r * u;
+        const reach = r * (n.capstone ? CROWN_RAYS : 2);
+        if (x < -reach || y < -reach || x > w + reach || y > h + reach) continue;
+        drawNode(g, n, x, y, r, n.pal, time, icons.get(n.picture));
+    }
+    if (top) {
+        const [x, y] = cam.toScreen(top.x, top.y, w, h);
+        const r = top.r * u * 1.1;
+        drawNode(g, top, x, y, r, top.pal, time, icons.get(top.picture));
+        g.beginPath();
+        nodePath(g, shapeOf(top) === 'capstone' ? 'passive' : top.kind, x, y, r + (top.outer - top.r + 4) * u * 1.1);
+        g.strokeStyle = 'rgba(255,255,255,0.85)';
+        g.lineWidth = 2;
+        g.stroke();
+    }
+
+    // the picked skill: a slowly turning dashed ring, cream on a soft halo
+    const pick = selected ? map.byId.get(selected) : null;
+    if (pick) {
+        const [x, y] = cam.toScreen(pick.x, pick.y, w, h);
+        const r = (pick.outer + 9) * u * (pick.id === hover ? 1.1 : 1);
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        g.strokeStyle = 'rgba(255,244,214,0.22)';
+        g.lineWidth = Math.max(5, 8 * u);
+        g.stroke();
+        const dash = Math.PI * 2 * r / 12;
+        g.setLineDash([dash * 0.62, dash * 0.38]);
+        g.lineDashOffset = -time * dash * 0.5;
+        g.strokeStyle = CREAM;
+        g.lineWidth = Math.max(2, 3 * u);
+        g.stroke();
+        g.setLineDash([]);
+        g.lineDashOffset = 0;
     }
 }
 
-/** A passive's ranks as an arc around it (3 of 5 is three fifths). */
-function drawRank(g, n, x, y, r, color) {
-    if (n.max <= 1 || n.rank <= 0) return;
-    g.strokeStyle = rgba(color, 1);
-    g.lineWidth = Math.max(2, r * 0.18);
+// ---- drawing: the names and numbers --------------------------------------------------------------------------------
+
+function titleSize(zoom) { return Math.max(15, Math.min(26, 34 * zoom)); }
+
+/** A tree's name plate and the line under it: half its width and height, and the name's own width. */
+function titleBox(g, hub, size) {
+    g.font = `800 ${size}px ${TITLE_FONT}`;
+    const nameWidth = g.measureText(hub.name.toUpperCase()).width;
+    g.font = `800 ${Math.max(12, size * 0.62)}px ${FONT}`;
+    const subWidth = g.measureText(`${hub.skill} ${hub.level}`).width;
+    return { nameWidth, hw: Math.max(nameWidth / 2 + size * 1.5, subWidth / 2 + 4), hh: size * 1.25 };
+}
+
+function roundRect(g, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
     g.beginPath();
-    g.arc(x, y, r + Math.max(3, r * 0.22), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (n.rank / n.max));
+    g.moveTo(x + r, y);
+    g.lineTo(x + width - r, y);
+    g.arcTo(x + width, y, x + width, y + r, r);
+    g.lineTo(x + width, y + height - r);
+    g.arcTo(x + width, y + height, x + width - r, y + height, r);
+    g.lineTo(x + r, y + height);
+    g.arcTo(x, y + height, x, y + height - r, r);
+    g.lineTo(x, y + r);
+    g.arcTo(x, y, x + r, y, r);
+    g.closePath();
+}
+
+/** A small dark panel with a gold line round it, as the page's own panels over the map. */
+function panel(g, x, y, width, height) {
+    roundRect(g, x, y, width, height, 9);
+    g.fillStyle = 'rgba(12,16,40,0.93)';
+    g.fill();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(233,184,92,0.5)';
     g.stroke();
 }
 
-// ---- drawing: the icons, on top in both ways -----------------------------------------------------------------------
-
-const ICON_ALPHA = { learned: 1, maxed: 1, available: 0.9, open: 0.55, locked: 0.28 };
-
-/** The painted sigils (imgs/skills): inside actives and specials, and the trees' emblems on their discs by the medallion. */
-function drawIcons(g, view, icons) {
-    const { w, h, cam, map } = view;
-    for (const n of map.nodes) {
-        const img = icons.get(n.id);
-        if (!img) continue;
-        const [x, y] = cam.toScreen(n.x, n.y, w, h);
-        const r = n.r * cam.zoom;
-        if (r < 6 || x < -r * 2 || y < -r * 2 || x > w + r * 2 || y > h + r * 2) continue;
-        const size = r * (n.kind === 'active' ? 1.55 : 1.6);
-        g.globalAlpha = ICON_ALPHA[n.state] ?? 0.6;
-        g.drawImage(img, x - size / 2, y - size / 2, size, size);
-    }
-    // the painted medallion over the drawn one, at the centre
-    const medallion = icons.get('medallion');
-    if (medallion) {
-        const [x, y] = cam.toScreen(0, 0, w, h);
-        const size = MEDALLION_RADIUS * 2.35 * cam.zoom;
-        g.globalAlpha = 1;
-        g.drawImage(medallion, x - size / 2, y - size / 2, size, size);
-    }
-    map.hubs.forEach((hub, i) => {
-        const img = icons.get('tree:' + i);
-        if (!img) return;
-        const [x, y] = cam.toScreen(hub.x, hub.y, w, h);
-        const size = 54 * cam.zoom;
-        if (size < 8) return;
-        g.globalAlpha = 1;
-        g.drawImage(img, x - size / 2, y - size / 2, size, size);
-    });
-    g.globalAlpha = 1;
+function badge(g, text, x, y, size, fill, ink) {
+    g.font = `800 ${size}px ${FONT}`;
+    const width = Math.max(size * 1.5, g.measureText(text).width + size * 0.8), height = size * 1.5;
+    roundRect(g, x - width / 2, y - height / 2, width, height, height / 2);
+    g.fillStyle = fill;
+    g.fill();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(8,9,12,0.8)';
+    g.stroke();
+    g.fillStyle = ink;
+    g.fillText(text, x, y + 0.5);
 }
 
-// ---- drawing: the names and numbers, on top in both ways ----------------------------------------------------------
-
 function drawLabels(g, view) {
-    const { w, h, cam, map, selected } = view;
+    const { w, h, cam, map, selected, hover } = view;
+    const zoom = cam.zoom, u = zoom * boostOf(zoom);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
 
-    // tree names past the outer ring, readable at every zoom
+    // the rings' levels, on the borders between the trees where there is room. From afar only on the borders that have
+    // room for every ring (a whole scale, the short way: "Lv" on the crown ring only); up close on every other border,
+    // wherever one fits. Found here, drawn last: a skill's name goes first where the two would meet.
+    const levels = [];
+    {
+        const close = zoom >= 0.6;
+        const size = close ? 13 : 12, height = size + 8;
+        g.font = `800 ${size}px ${FONT}`;
+        const texts = TIER_LEVELS.map((level, tier) => close || tier === TIERS - 1 ? 'Lv ' + level : String(level));
+        const widths = texts.map(text => g.measureText(text).width + 13);
+        const fits = (border, tier) => { const room = border.room[tier]; return !room || (room.d * zoom - room.outer * u) * 2 >= widths[tier] + 5; };
+        for (let b = 0; b < map.borders.length; b++) {
+            const border = map.borders[b];
+            if (close ? b % 2 === 1 : !texts.every((_, tier) => tier === 0 || fits(border, tier))) continue;
+            for (let tier = 0; tier < TIERS; tier++) {
+                const [x, y] = cam.toScreen(border.cos * ringRadius(tier), border.sin * ringRadius(tier), w, h);
+                if (x < -40 || y < -20 || x > w + 40 || y > h + 20 || !fits(border, tier)) continue;
+                levels.push({ x, y, half: widths[tier] / 2, tall: height / 2, text: texts[tier], crown: tier === TIERS - 1, size });
+            }
+        }
+    }
+    const placed = []; // where names lie
+    const drawLevels = () => {
+        for (const l of levels) {
+            if (placed.some(b => Math.abs(b.x - l.x) < b.half + l.half && Math.abs(b.y - l.y) < b.tall + l.tall)) continue;
+            g.font = `800 ${l.size}px ${FONT}`;
+            roundRect(g, l.x - l.half, l.y - l.tall, l.half * 2, l.tall * 2, l.tall);
+            g.fillStyle = 'rgba(8,10,28,0.9)';
+            g.fill();
+            g.lineWidth = 1;
+            g.strokeStyle = l.crown ? 'rgba(233,184,92,0.65)' : 'rgba(150,170,255,0.35)';
+            g.stroke();
+            g.fillStyle = l.crown ? GOLD_BRIGHT : '#c6d0f5';
+            g.fillText(l.text, l.x, l.y + 0.5);
+        }
+    };
+
+    // the trees' names past their crowns, readable at every zoom
+    const size = titleSize(zoom);
+    const crown = NODE_RADIUS.capstone * u * CROWN_RAYS;
     for (const hub of map.hubs) {
-        let [x, y] = cam.toScreen(hub.tx, hub.ty, w, h);
-        const size = Math.max(14, Math.min(26, 34 * cam.zoom));
-        g.font = `800 ${size}px "FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif`;
-        // kept inside the view, so a phone shows the side trees' names whole
-        const titleWidth = g.measureText(hub.name.toUpperCase()).width;
-        g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
-        const half = Math.max(titleWidth, g.measureText(`${hub.skill} ${hub.level}`).width) / 2 + 6;
-        g.font = `800 ${size}px "FOT-NewRodin Pro B", "Segoe UI", system-ui, sans-serif`;
-        if (half * 2 < w && cam.zoom < LABEL_MIN_ZOOM) x = Math.min(w - half, Math.max(half, x)); // only in the overview: up close it would sit on the nodes
-        drawPlate(g, x, y - size * 0.35, titleWidth + size * 1.6, size * 1.5);
-        shadowText(g, hub.name.toUpperCase(), x, y - size * 0.32, '#fbe7b8');
-        g.font = `700 ${Math.max(11, size * 0.6)}px "Segoe UI", system-ui, sans-serif`;
-        shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.95, hub.color);
+        const box = titleBox(g, hub, size);
+        const [ox, oy] = cam.toScreen(hub.cos * OUTER_RING, hub.sin * OUTER_RING, w, h);
+        const away = crown + 8 + box.hw * Math.abs(hub.cos) + box.hh * Math.abs(hub.sin);
+        let x = ox + hub.cos * away, y = oy + hub.sin * away;
+        if (box.hw * 2 < w && zoom < LABEL_MIN_ZOOM) {
+            // in the overview kept inside the view (a phone shows the side trees' names whole), and off the crown
+            x = Math.min(w - box.hw - 4, Math.max(box.hw + 4, x));
+            if (Math.abs(x - ox) < box.hw + crown * 0.7 && Math.abs(y - oy) < box.hh + crown * 0.7) y = oy + (hub.sin > 0.3 ? 1 : -1) * (crown * 0.8 + box.hh + 4);
+        }
+        drawPlate(g, x, y - size * 0.45, box.nameWidth + size * 1.6, size * 1.5);
+        g.font = `800 ${size}px ${TITLE_FONT}`;
+        shadowText(g, hub.name.toUpperCase(), x, y - size * 0.42, '#fbe7b8');
+        g.font = `800 ${Math.max(12, size * 0.62)}px ${FONT}`;
+        shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.86, hub.pal.light);
+        placed.push({ x, y, half: box.hw, tall: box.hh });
     }
 
-    if (cam.zoom < LABEL_MIN_ZOOM) return;
-    const size = Math.max(11, Math.min(16, 15 * cam.zoom));
+    // loadout slots, and the ranks learned of a passive: small badges at the node's shoulder
+    const names = zoom >= LABEL_MIN_ZOOM;
+    const nameSize = Math.max(12, Math.min(16, 15 * zoom));
     for (const n of map.nodes) {
         const [x, y] = cam.toScreen(n.x, n.y, w, h);
-        const r = n.r * cam.zoom;
-        if (x < -80 || y < -40 || x > w + 80 || y > h + 40) continue;
-        g.font = `${selected === n.id ? 800 : 700} ${size}px "Segoe UI", system-ui, sans-serif`;
-        const color = n.state === 'locked' ? 'rgba(236,228,214,0.45)' : 'rgba(255,244,222,0.95)';
-        shadowText(g, n.name, x, y + r + 6 + size * 0.6, color);
-        if (n.max > 1) {
-            g.font = `800 ${Math.max(10, size * 0.8)}px "Segoe UI", system-ui, sans-serif`;
-            shadowText(g, `${n.rank}/${n.max}`, x, y, lit(n) ? '#10131a' : 'rgba(255,244,222,0.85)', !lit(n));
-        }
-        if (n.slot) {
-            const bx = x + r * 0.95, by = y - r * 0.95;
-            g.fillStyle = '#e8a33d';
-            g.beginPath();
-            g.arc(bx, by, Math.max(8, 10 * cam.zoom), 0, Math.PI * 2);
-            g.fill();
-            g.font = `800 ${Math.max(10, 12 * cam.zoom)}px "Segoe UI", system-ui, sans-serif`;
-            g.fillStyle = '#10131a';
-            g.fillText(String(n.slot), bx, by + 0.5);
+        n.sx = x; n.sy = y;
+        n.seen = x > -90 && y > -50 && x < w + 90 && y < h + 50;
+        if (!n.seen) continue;
+        const r = n.r * u;
+        if (n.slot && r >= 8) {
+            badge(g, String(n.slot), x + r * 0.95, y - r * 0.95, Math.max(11, Math.min(15, 13 * u)), '#e8a33d', '#10131a');
+        } else if (names && n.kind === 'passive' && n.max > 1 && n.rank > 0) {
+            const full = n.rank >= n.max;
+            badge(g, `${n.rank}/${n.max}`, x + r * 0.95, y - r * 0.95, Math.max(11, Math.min(14, 12 * u)), full ? GOLD_BRIGHT : '#141a3c', full ? '#1a1206' : GOLD_BRIGHT);
         }
     }
+    if (!names) { drawLevels(); return; }
+
+    // the skills' names, the ones that matter most first (map.named): a name that would lie over another name or
+    // over another skill is tried above its node, and left out if that is taken too. Closer in, all of them fit.
+    for (const n of map.named) {
+        if (!n.seen) continue;
+        const capstone = n.capstone, picked = selected === n.id || hover === n.id;
+        const fontSize = capstone ? nameSize + 2 : nameSize;
+        g.font = `${picked || capstone ? 800 : 700} ${fontSize}px ${FONT}`;
+        const half = g.measureText(n.name).width / 2 + 3, tall = fontSize * 0.62;
+        const reach = n.outer * u * (n.id === hover ? 1.1 : 1) + 5 + fontSize * 0.6;
+        let at = null;
+        for (const side of capstone ? [1] : [1, -1]) {
+            const cy = n.sy + side * reach;
+            let free = true;
+            for (const b of placed) { if (Math.abs(b.x - n.sx) < b.half + half && Math.abs(b.y - cy) < b.tall + tall) { free = false; break; } }
+            if (free) {
+                for (const m of map.nodes) {
+                    if (m === n || !m.seen) continue;
+                    const mr = m.outer * u * 0.9;
+                    if (Math.abs(m.sx - n.sx) < mr + half && Math.abs(m.sy - cy) < mr + tall) { free = false; break; }
+                }
+            }
+            if (free || picked) { at = cy; break; }
+        }
+        if (at === null) continue;
+        placed.push({ x: n.sx, y: at, half, tall });
+        const color = n.state === 'locked' ? (capstone ? 'rgba(214,196,150,0.6)' : 'rgba(226,224,236,0.55)') : capstone ? GOLD_BRIGHT : n.state === 'open' ? 'rgba(255,244,222,0.82)' : '#fff6e2';
+        shadowText(g, n.name, n.sx, at, color);
+    }
+    drawLevels();
 }
 
 /** A dark plate with a gold frame and pointed ends, behind a tree's name (as the mockup's banners). */
@@ -450,15 +966,86 @@ function drawPlate(g, x, y, width, height) {
 
 function shadowText(g, text, x, y, color, shadow = true) {
     if (shadow) {
-        g.lineWidth = 3;
-        g.strokeStyle = 'rgba(8,9,12,0.9)';
+        g.lineJoin = 'round';
+        g.lineWidth = 3.5;
+        g.strokeStyle = 'rgba(6,8,18,0.92)';
         g.strokeText(text, x, y);
     }
     g.fillStyle = color;
     g.fillText(text, x, y);
 }
 
-// ---- drawing: shapes with WebGL (three.js) -----------------------------------------------------------------------
+/** What a skill's state means, in a few words (under the pointer). */
+function stateText(n, hub) {
+    switch (n.state) {
+        case 'locked': return [`Needs ${hub.skill} ${TIER_LEVELS[n.tier]}`, '#ff9a7a'];
+        case 'available': return ['Ready to learn', '#a5ecb4'];
+        case 'learned': return [n.max > 1 ? `Rank ${n.rank} of ${n.max}` : 'Learned', GOLD_BRIGHT];
+        case 'maxed': return [n.max > 1 ? 'Max rank' : 'Learned', GOLD_BRIGHT];
+        default: return ['Needs a path or points', 'rgba(236,228,214,0.8)'];
+    }
+}
+
+/** The name of the skill under the pointer and where it stands, on a small panel above it. */
+function drawTip(g, view) {
+    const { w, h, cam, map, hover, selected } = view;
+    const n = hover && hover !== selected ? map.byId.get(hover) : null;
+    if (!n) return;
+    const u = cam.zoom * boostOf(cam.zoom);
+    const [x, y] = cam.toScreen(n.x, n.y, w, h);
+    const [text, color] = stateText(n, map.hubs[n.tree]);
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `800 15px ${FONT}`;
+    const nameWidth = g.measureText(n.name).width;
+    g.font = `700 13px ${FONT}`;
+    const width = Math.max(nameWidth, g.measureText(text).width) + 24, height = 50;
+    const reach = (n.capstone ? n.r * 1.5 : n.outer) * u * 1.1;
+    const below = cam.zoom >= LABEL_MIN_ZOOM ? 26 : 8; // past the name under the node
+    const px = Math.max(6, Math.min(w - width - 6, x - width / 2));
+    let py = y - reach - 10 - height;
+    if (py < 6) py = y + reach + below;
+    panel(g, px, py, width, height);
+    g.font = `800 15px ${FONT}`;
+    g.fillStyle = n.capstone ? GOLD_BRIGHT : '#fbe7b8';
+    g.fillText(n.name, px + width / 2, py + 17);
+    g.font = `700 13px ${FONT}`;
+    g.fillStyle = color;
+    g.fillText(text, px + width / 2, py + 36);
+}
+
+const LEGEND_PAL = paletteOf('#8fa2ff');
+const LEGEND_KINDS = [['Active', { kind: 'active', r: NODE_RADIUS.active }], ['Passive', { kind: 'passive', r: NODE_RADIUS.passive, max: 5 }],
+    ['Special', { kind: 'special', r: NODE_RADIUS.special }], ['Capstone', { kind: 'special', capstone: true, r: NODE_RADIUS.capstone, state: 'learned', still: true }]];
+const LEGEND_STATES = [['Locked', 'locked', 0], ['Not yet', 'open', 0], ['Ready', 'available', 0], ['Learned', 'learned', 2]];
+
+/** The map's key in its bottom left corner, drawn with the map's own nodes so it always matches. Wide screens only. */
+function drawLegend(g, view) {
+    const { w, h, time } = view;
+    if (!LEGEND || w < 1100 || h < 620) return;
+    const row = 27, pad = 12, left = 114, width = pad * 2 + left + 100, height = pad * 2 + row * 4 - 3;
+    const x0 = 14, y0 = h - 14 - height;
+    panel(g, x0, y0, width, height);
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    for (let i = 0; i < 4; i++) {
+        const y = y0 + pad + 12 + i * row;
+        const [kindName, kind] = LEGEND_KINDS[i];
+        const a = { state: 'open', rank: 0, max: 1, ...kind };
+        a.outer = outerOf(a);
+        drawNode(g, a, x0 + pad + 12, y + (a.capstone ? 2 : 0), a.capstone ? 7.5 : a.kind === 'active' ? 9.5 : 9, LEGEND_PAL, a.still ? 0 : time, null);
+        const [stateName, state, rank] = LEGEND_STATES[i];
+        const b = { kind: 'passive', r: NODE_RADIUS.passive, max: 3, rank, state };
+        b.outer = outerOf(b);
+        drawNode(g, b, x0 + pad + left + 12, y, 8, LEGEND_PAL, time, null);
+        g.font = `700 13px ${FONT}`;
+        g.fillStyle = '#f3e6cc';
+        g.fillText(kindName, x0 + pad + 31, y + 0.5);
+        g.fillText(stateName, x0 + pad + left + 30, y + 0.5);
+    }
+}
+
+// ---- the sky with WebGL (three.js) ---------------------------------------------------------------------------------
 
 function webglAvailable() {
     try {
@@ -499,8 +1086,6 @@ class GlScene {
         this.renderer.setClearColor(SKY, 1);
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
-        this.groups = new THREE.Group();
-        this.scene.add(this.groups);
         this.nebula = this.makeNebula();
         this.scene.add(this.nebula);
         this.stars = this.makeStars();
@@ -509,6 +1094,12 @@ class GlScene {
         this.scene.add(this.constellations);
         this.motes = this.makeMotes();
         this.scene.add(this.motes);
+
+        this.wedgeMaterial = new THREE.ShaderMaterial({
+            vertexShader: 'attribute vec4 tint; varying vec4 vTint; void main() { vTint = tint; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+            fragmentShader: 'varying vec4 vTint; void main() { gl_FragColor = vTint; }',
+            transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+        });
     }
 
     /** Big soft clouds of violet, blue and teal behind everything. */
@@ -522,7 +1113,7 @@ class GlScene {
         geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
         geom.setAttribute('size', new THREE.BufferAttribute(size, 1));
         geom.setAttribute('strength', new THREE.BufferAttribute(str, 1));
-        this.nebulaMaterial = this.glowMaterial(true);
+        this.nebulaMaterial = this.glowMaterial();
         return new THREE.Points(geom, this.nebulaMaterial);
     }
 
@@ -597,7 +1188,7 @@ class GlScene {
         return new THREE.Points(geom, this.moteMaterial);
     }
 
-    glowMaterial(soft) {
+    glowMaterial() {
         return new THREE.ShaderMaterial({
             uniforms: { zoom: { value: 1 }, pixelRatio: { value: window.devicePixelRatio || 1 } },
             vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG,
@@ -605,158 +1196,43 @@ class GlScene {
         });
     }
 
-    /** Builds the map's meshes: links as lines, nodes as filled shapes with rims, glows as soft points. */
+    /** Each tree's wedge of light (wedgeBands) as triangles, made again when the trees' levels change. */
     build(map) {
-        this.groups.clear();
-        this.nodeMeshes = new Map();
-
-        // rings: faint orbits
-        for (let tier = 0; tier < 4; tier++) {
-            const ring = new THREE.RingGeometry(FIRST_RING + tier * RING_STEP - 0.8, FIRST_RING + tier * RING_STEP + 0.8, 160);
-            const mesh = new THREE.Mesh(ring, new THREE.MeshBasicMaterial({ color: 0x96aaff, transparent: true, opacity: 0.07 }));
-            mesh.position.z = -0.8;
-            this.groups.add(mesh);
-        }
-
-        // the compass rays: long gold ones to each tree, short ones between
-        const gold = new THREE.Color(GOLD);
-        for (let i = 0; i < map.hubs.length * 2; i++) {
-            const a = -Math.PI / 2 + i * Math.PI / map.hubs.length;
-            const long = i % 2 === 0;
-            const reach = long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40, side = long ? 10 : 6, base = MEDALLION_RADIUS * 0.8;
-            const ox = Math.cos(a), oy = -Math.sin(a), px = -oy, py = ox;
-            const shape = new THREE.Shape();
-            shape.moveTo(ox * base + px * side, oy * base + py * side);
-            shape.lineTo(ox * reach, oy * reach);
-            shape.lineTo(ox * base - px * side, oy * base - py * side);
-            const ray = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: gold, transparent: true, opacity: long ? 0.85 : 0.45 }));
-            ray.position.z = -0.2;
-            this.groups.add(ray);
-        }
-
-        // the medallion: a dark disc in a double gold ring with the raven, glowing softly
-        {
-            const disc = new THREE.Mesh(new THREE.CircleGeometry(MEDALLION_RADIUS, 64), new THREE.MeshBasicMaterial({ color: 0x100c26 }));
-            disc.position.z = 0.05;
-            const outer = new THREE.Mesh(new THREE.RingGeometry(MEDALLION_RADIUS - 2, MEDALLION_RADIUS + 4, 64), new THREE.MeshBasicMaterial({ color: gold }));
-            outer.position.z = 0.1;
-            const inner = new THREE.Mesh(new THREE.RingGeometry(MEDALLION_RADIUS * 0.84 - 1, MEDALLION_RADIUS * 0.84 + 1, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(GOLD_DEEP) }));
-            inner.position.z = 0.1;
-            const c = document.createElement('canvas');
-            c.width = c.height = 256;
-            drawRaven(c.getContext('2d'), 128, 130, 84);
-            const texture = new THREE.CanvasTexture(c);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            const emblem = new THREE.Mesh(new THREE.PlaneGeometry(MEDALLION_RADIUS * 2, MEDALLION_RADIUS * 2), new THREE.MeshBasicMaterial({ map: texture, transparent: true }));
-            emblem.position.z = 0.15;
-            this.groups.add(disc, outer, inner, emblem);
-        }
-
-        // links
-        for (const l of map.links) {
-            const style = linkStyle(l);
-            const color = new THREE.Color(map.hubs[l.tree].color);
-            const width = style.width;
-            const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y, len = Math.hypot(dx, dy);
-            const geom = new THREE.PlaneGeometry(len, width);
-            const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: style.alpha }));
-            mesh.position.set((l.a.x + l.b.x) / 2, -(l.a.y + l.b.y) / 2, -0.5);
-            mesh.rotation.z = -Math.atan2(dy, dx);
-            this.groups.add(mesh);
-        }
-
-        // glows behind the lit nodes, the breathing ones and the hubs
-        const glowing = map.nodes.filter(n => lit(n) || n.state === 'available');
-        const count = glowing.length + map.hubs.length;
-        const pos = new Float32Array(count * 3), col = new Float32Array(count * 3), size = new Float32Array(count), str = new Float32Array(count);
-        glowing.forEach((n, i) => {
-            const c = new THREE.Color(map.hubs[n.tree].color);
-            pos.set([n.x, -n.y, -0.3], i * 3);
-            col.set([c.r, c.g, c.b], i * 3);
-            size[i] = n.r * (lit(n) ? 6 : 4.2);
-            str[i] = lit(n) ? 0.8 : 0.4;
-        });
-        map.hubs.forEach((hub, j) => {
-            const i = glowing.length + j;
-            const c = new THREE.Color(hub.color);
-            pos.set([hub.x, -hub.y, -0.3], i * 3);
-            col.set([c.r, c.g, c.b], i * 3);
-            size[i] = 150;
-            str[i] = 0.28;
-        });
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
-        geom.setAttribute('size', new THREE.BufferAttribute(size, 1));
-        geom.setAttribute('strength', new THREE.BufferAttribute(str, 1));
-        this.glowMat = this.glowMaterial();
-        this.glows = new THREE.Points(geom, this.glowMat);
-        this.glowStrength = str.slice();
-        this.glowAvailable = glowing.map(n => n.state === 'available');
-        this.groups.add(this.glows);
-
-        // nodes: a dark (or lit) face and a rim in the tree's colour
-        for (const n of map.nodes) {
-            const color = new THREE.Color(map.hubs[n.tree].color);
-            const shape = shapeOf(n.kind, n.r);
-            const face = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), new THREE.MeshBasicMaterial({ color: lit(n) ? color.clone().multiplyScalar(0.9) : new THREE.Color(NODE_DARK) }));
-            face.position.set(n.x, -n.y, 0);
-            const rimShape = shapeOf(n.kind, n.r + 4);
-            rimShape.holes.push(pathOf(n.kind, n.r));
-            const locked = n.state === 'locked';
-            const rim = new THREE.Mesh(new THREE.ShapeGeometry(rimShape, 24), new THREE.MeshBasicMaterial({ color: locked ? new THREE.Color(STONE) : color, transparent: true, opacity: locked ? 0.85 : STATE_ALPHA[n.state] ?? 0.5 }));
-            rim.position.set(n.x, -n.y, 0.1);
-            this.groups.add(face);
-            this.groups.add(rim);
-            if (lit(n)) {
-                // learned: a gold ring round the star, and a sparkle in its middle
-                const ringShape = shapeOf(n.kind, n.r + 8.5);
-                ringShape.holes.push(pathOf(n.kind, n.r + 6));
-                const ring = new THREE.Mesh(new THREE.ShapeGeometry(ringShape, 24), new THREE.MeshBasicMaterial({ color: gold }));
-                ring.position.set(n.x, -n.y, 0.12);
-                this.groups.add(ring);
-                const spark = new THREE.Shape();
-                const s = n.r * 0.55;
-                spark.moveTo(0, s); spark.lineTo(s * 0.22, s * 0.22); spark.lineTo(s, 0); spark.lineTo(s * 0.22, -s * 0.22);
-                spark.lineTo(0, -s); spark.lineTo(-s * 0.22, -s * 0.22); spark.lineTo(-s, 0); spark.lineTo(-s * 0.22, s * 0.22);
-                const sparkle = new THREE.Mesh(new THREE.ShapeGeometry(spark), new THREE.MeshBasicMaterial({ color: 0xfff6dc, transparent: true, opacity: 0.9 }));
-                sparkle.position.set(n.x, -n.y, 0.13);
-                this.groups.add(sparkle);
-            }
-            this.nodeMeshes.set(n.id, { face, rim, node: n });
-
-            if (n.max > 1 && n.rank > 0) {
-                const arc = new THREE.RingGeometry(n.r + 5, n.r + 9, 48, 1, Math.PI / 2 - Math.PI * 2 * (n.rank / n.max), Math.PI * 2 * (n.rank / n.max));
-                const arcMesh = new THREE.Mesh(arc, new THREE.MeshBasicMaterial({ color }));
-                arcMesh.position.set(n.x, -n.y, 0.2);
-                this.groups.add(arcMesh);
-            }
-        }
-
-        // hubs
+        const key = map.hubs.map(hub => hub.color + hub.frontier).join(' ');
+        if (key === this.wedgeKey) return;
+        this.wedgeKey = key;
+        if (this.wedges) { this.scene.remove(this.wedges); this.wedges.geometry.dispose(); }
+        const steps = 32, pos = [], tint = [];
         for (const hub of map.hubs) {
-            const color = new THREE.Color(hub.color);
-            const disc = new THREE.Mesh(new THREE.CircleGeometry(30, 40), new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.35) }));
-            disc.position.set(hub.x, -hub.y, -0.1);
-            const rim = new THREE.Mesh(new THREE.RingGeometry(30, 35, 40), new THREE.MeshBasicMaterial({ color: gold }));
-            rim.position.set(hub.x, -hub.y, 0);
-            this.groups.add(disc);
-            this.groups.add(rim);
+            const [r, g, b] = hexToRgb(hub.color).map(v => v / 255);
+            const a0 = hub.angle - map.wedge / 2 + WEDGE_GAP, span = map.wedge - WEDGE_GAP * 2;
+            for (const [from, to, alphaFrom, alphaTo] of wedgeBands(hub)) {
+                for (let i = 0; i < steps; i++) {
+                    const a = a0 + span * i / steps, n = a0 + span * (i + 1) / steps;
+                    const corners = [[a, from, alphaFrom], [a, to, alphaTo], [n, to, alphaTo], [a, from, alphaFrom], [n, to, alphaTo], [n, from, alphaFrom]];
+                    for (const [angle, radius, alpha] of corners) {
+                        pos.push(Math.cos(angle) * radius, -Math.sin(angle) * radius, -0.9);
+                        tint.push(r, g, b, alpha);
+                    }
+                }
+            }
         }
-
-        this.selectRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.12, 48), new THREE.MeshBasicMaterial({ color: 0xfff4d6 }));
-        this.selectRing.visible = false;
-        this.selectRing.position.z = 0.3;
-        this.groups.add(this.selectRing);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+        geom.setAttribute('tint', new THREE.BufferAttribute(new Float32Array(tint), 4));
+        this.wedges = new THREE.Mesh(geom, this.wedgeMaterial);
+        this.wedges.frustumCulled = false;
+        this.wedges.renderOrder = 5; // over the stars and the motes
+        this.scene.add(this.wedges);
     }
 
     render(view) {
-        const { w, h, cam, time, selected } = view;
+        const { w, h, cam, time } = view;
         const ratio = window.devicePixelRatio || 1;
-        if (this.w !== w || this.h !== h) {
+        if (this.w !== w || this.h !== h || this.ratio !== ratio) {
             this.renderer.setPixelRatio(ratio);
             this.renderer.setSize(w, h, false);
-            this.w = w; this.h = h;
+            this.w = w; this.h = h; this.ratio = ratio;
         }
         this.camera.left = cam.x - w / 2 / cam.zoom;
         this.camera.right = cam.x + w / 2 / cam.zoom;
@@ -769,57 +1245,13 @@ class GlScene {
         this.starMaterial.uniforms.time.value = time;
         this.nebulaMaterial.uniforms.zoom.value = cam.zoom;
         this.nebula.rotation.z = time * 0.002;
-        if (this.glows) {
-            this.glowMat.uniforms.zoom.value = cam.zoom;
-            const str = this.glows.geometry.attributes.strength;
-            for (let i = 0; i < this.glowAvailable.length; i++) {
-                if (this.glowAvailable[i]) str.array[i] = this.glowStrength[i] * (0.55 + 0.45 * Math.sin(time * 3 + i));
-            }
-            str.needsUpdate = true;
-        }
-
-        const pick = selected && this.nodeMeshes ? this.nodeMeshes.get(selected) : null;
-        if (pick) {
-            this.selectRing.visible = true;
-            const s = pick.node.r + 8;
-            this.selectRing.scale.set(s, s, 1);
-            this.selectRing.position.set(pick.node.x, -pick.node.y, 0.3);
-        } else if (this.selectRing) {
-            this.selectRing.visible = false;
-        }
-
         this.renderer.render(this.scene, this.camera);
     }
 
     dispose() {
+        this.wedges?.geometry.dispose();
         this.renderer.dispose();
         this.renderer.forceContextLoss?.();
-    }
-}
-
-function pathOf(kind, r) {
-    const p = new THREE.Path();
-    tracePath(p, kind, r);
-    return p;
-}
-
-function shapeOf(kind, r) {
-    const s = new THREE.Shape();
-    tracePath(s, kind, r);
-    return s;
-}
-
-// the same outlines as nodePath, in three.js (y up)
-function tracePath(p, kind, r) {
-    if (kind === 'active') {
-        p.moveTo(0, r * 1.15); p.lineTo(r * 1.15, 0); p.lineTo(0, -r * 1.15); p.lineTo(-r * 1.15, 0); p.lineTo(0, r * 1.15);
-    } else if (kind === 'special') {
-        for (let i = 0; i <= 6; i++) {
-            const a = Math.PI / 6 + i * Math.PI / 3;
-            if (i === 0) p.moveTo(Math.cos(a) * r * 1.1, Math.sin(a) * r * 1.1); else p.lineTo(Math.cos(a) * r * 1.1, Math.sin(a) * r * 1.1);
-        }
-    } else {
-        p.absarc(0, 0, r, 0, Math.PI * 2, false);
     }
 }
 
@@ -832,9 +1264,17 @@ class SkillTreeView {
         this.options = options || {};
         this.cam = new Camera();
         this.selected = null;
+        this.hover = null;
         this.pointers = new Map();
         this.dirty = true;
         this.start = performance.now();
+        this.lastDraw = 0;
+
+        // people who asked their system for less motion get a still map: no pulses, turning rings or gliding camera
+        this.motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+        this.reduced = !!(this.motion && this.motion.matches);
+        this.onMotion = () => { this.reduced = this.motion.matches; this.dirty = true; };
+        this.motion?.addEventListener?.('change', this.onMotion);
 
         element.classList.add('rf-skilltree');
         element.style.touchAction = 'none';
@@ -844,7 +1284,13 @@ class SkillTreeView {
             this.glCanvas.className = 'rf-skilltree__gl';
             element.appendChild(this.glCanvas);
             try { this.gl = new GlScene(this.glCanvas); }
-            catch { this.useGl = false; this.glCanvas.remove(); }
+            catch { this.useGl = false; this.gl = null; this.glCanvas.remove(); }
+        }
+        if (!this.useGl) {
+            this.skyCanvas = document.createElement('canvas');
+            this.skyCanvas.className = 'rf-skilltree__sky';
+            element.appendChild(this.skyCanvas);
+            this.sky = this.skyCanvas.getContext('2d');
         }
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'rf-skilltree__ui';
@@ -859,6 +1305,12 @@ class SkillTreeView {
         // a new size keeps the whole map in view until the reader moves or zooms it themselves
         this.resizeObserver = new ResizeObserver(() => { if (this.fitted) this.needsFit = true; this.dirty = true; });
         this.resizeObserver.observe(element);
+        // nothing is drawn while the map is scrolled out of sight
+        this.inSight = true;
+        if (window.IntersectionObserver) {
+            this.sightObserver = new IntersectionObserver(entries => { this.inSight = entries[entries.length - 1].isIntersecting; this.dirty = true; });
+            this.sightObserver.observe(element);
+        }
         this.needsFit = true; // the element may not have its size yet: fit on the first frame that has one
         this.update(data, false);
         this.loop = this.loop.bind(this);
@@ -870,11 +1322,14 @@ class SkillTreeView {
     /** Icons by node id (imgs/skills/<id>.webp) and the trees' emblems (tree-<name>.webp); missing ones are left out. */
     loadIcons(data) {
         const base = this.options.iconBase || '/imgs/skills/';
-        const want = data.nodes.filter(n => n.kind !== 'passive').map(n => [n.id, n.id]);
+        // capstones and passives have no picture of their own: they wear their tree's emblem
+        const want = data.nodes.filter(n => n.kind !== 'passive' && !n.capstone).map(n => [n.id, n.id]);
         data.trees.forEach((t, i) => want.push(['tree:' + i, 'tree-' + t.name.toLowerCase()]));
         want.push(['medallion', 'medallion']);
+        this.wanted = this.wanted || new Set();
         for (const [key, file] of want) {
-            if (this.icons.has(key)) continue;
+            if (this.wanted.has(key)) continue;
+            this.wanted.add(key);
             const img = new Image();
             img.onload = () => { this.icons.set(key, img); this.dirty = true; };
             img.src = base + file + '.webp';
@@ -890,11 +1345,11 @@ class SkillTreeView {
     placePopover(w, h) {
         const el = this.popover;
         if (!el) return;
-        const n = this.selected ? this.map.nodes.find(x => x.id === this.selected) : null;
+        const n = this.selected ? this.map.byId.get(this.selected) : null;
         if (!n) { el.style.visibility = 'hidden'; return; }
         const pw = el.offsetWidth, ph = el.offsetHeight;
         const [x, y] = this.cam.toScreen(n.x, n.y, w, h);
-        const r = n.r * this.cam.zoom + 18;
+        const r = (n.capstone ? n.r * 1.45 : n.outer + 9) * this.cam.zoom * boostOf(this.cam.zoom) + 14;
         let left, top;
         if (w < 620) {
             left = 8; top = h - ph - (this.options.bottomInset || 0) - 8;
@@ -912,32 +1367,75 @@ class SkillTreeView {
         this.data = data;
         if (this.icons) this.loadIcons(data);
         this.map = layout(data);
-        if (this.gl) this.gl.build(this.map);
+        for (const n of this.map.nodes) {
+            const hub = this.map.hubs[n.tree];
+            n.pal = hub ? hub.pal : LEGEND_PAL;
+            n.picture = n.kind === 'passive' || n.capstone ? 'tree:' + n.tree : n.id;
+        }
+        if (this.hover && !this.map.byId.has(this.hover)) this.hover = null;
+        this.gl?.build(this.map);
         if (fit) this.fit();
         this.dirty = true;
     }
 
-    fit() {
+    /** What the map needs round its middle at a zoom, in screen pixels: the outer ring, the crowns' rays, the names. */
+    fitNeeds(zoom, narrow) {
+        const crown = NODE_RADIUS.capstone * zoom * boostOf(zoom) * CROWN_RAYS;
+        const size = titleSize(zoom);
+        let hw = 0, hh = 0;
+        for (const hub of this.map.hubs) { const box = titleBox(this.g, hub, size); hw = Math.max(hw, box.hw); hh = Math.max(hh, box.hh); }
+        const reach = OUTER_RING * zoom + crown;
+        // on a narrow screen the side trees' names move in over the map instead of taking its width
+        return { w: reach + (narrow ? 6 : 12 + hw * 2), h: reach + 18 + hh * 2 };
+    }
+
+    /** The whole map in view. Glides there, except when asked not to (the first frame, a new size). */
+    fit(glide = true) {
         const r = this.element.getBoundingClientRect();
         // room kept free for what lies over the map (the loadout along the bottom)
         const narrow = r.width < 620;
         const top = (narrow ? this.options.fitTopNarrow : this.options.fitTop) || 0;
         const bottom = (narrow ? this.options.fitBottomNarrow : this.options.fitBottom) || 0;
-        const height = Math.max(200, (r.height || r.width) - top - bottom);
-        const size = Math.max(200, Math.min(r.width, height));
-        // the trees' names stick out past the extent on the sides: room for them
-        this.cam.zoom = Math.max(MIN_ZOOM, size / ((this.map.extent + 90) * 2));
-        this.cam.x = 0;
-        this.cam.y = (bottom - top) / 2 / this.cam.zoom;
+        const height = Math.max(200, (r.height || r.width) - top - bottom), width = Math.max(200, r.width);
+        let lo = MIN_ZOOM, hi = 1.5;
+        for (let i = 0; i < 18; i++) {
+            const mid = (lo + hi) / 2;
+            const needs = this.fitNeeds(mid, narrow);
+            if (needs.w * 2 <= width && needs.h * 2 <= height) lo = mid; else hi = mid;
+        }
         this.fitted = true;
+        this.glideTo(0, (bottom - top) / 2 / lo, lo, glide ? 320 : 0);
+    }
+
+    /** Moves the camera there over a moment (at once for those who asked for less motion). */
+    glideTo(x, y, zoom, ms) {
+        zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
+        if (!ms || this.reduced) {
+            this.glide = null;
+            this.cam.x = x; this.cam.y = y; this.cam.zoom = zoom;
+        } else {
+            this.glide = { x0: this.cam.x, y0: this.cam.y, z0: this.cam.zoom, x, y, zoom, from: performance.now(), ms };
+        }
+        this.dirty = true;
+    }
+
+    stepGlide(now) {
+        const a = this.glide;
+        if (!a) return;
+        const k = Math.min(1, (now - a.from) / a.ms), e = 1 - Math.pow(1 - k, 3);
+        this.cam.zoom = a.z0 * Math.pow(a.zoom / a.z0, e);
+        // the middle moves with the zoom, so the point under the view's middle glides straight
+        const m = a.zoom === a.z0 ? e : (1 / a.z0 - 1 / this.cam.zoom) / (1 / a.z0 - 1 / a.zoom);
+        this.cam.x = a.x0 + (a.x - a.x0) * m;
+        this.cam.y = a.y0 + (a.y - a.y0) * m;
+        if (k >= 1) this.glide = null;
         this.dirty = true;
     }
 
     zoomBy(factor) {
         this.fitted = false;
-        const r = this.element.getBoundingClientRect();
-        this.cam.zoomAt(factor, r.width / 2, r.height / 2, r.width, r.height);
-        this.dirty = true;
+        const to = this.glide || this.cam;
+        this.glideTo(to.x, to.y, to.zoom * factor, 220);
     }
 
     select(id, notify) {
@@ -948,24 +1446,31 @@ class SkillTreeView {
 
     /** Centres the camera on a node (from the page's list or search). */
     focus(id) {
-        const n = this.map.nodes.find(x => x.id === id);
+        const n = this.map.byId.get(id);
         if (!n) return;
-        this.cam.x = n.x;
-        this.cam.y = n.y;
-        this.cam.zoom = Math.max(this.cam.zoom, 1.1);
+        this.fitted = false;
+        this.glideTo(n.x, n.y, Math.max(this.cam.zoom, 1.1), 360);
         this.select(id, false);
     }
 
     hit(sx, sy) {
         const r = this.element.getBoundingClientRect();
         const [wx, wy] = this.cam.toWorld(sx, sy, r.width, r.height);
+        const boost = boostOf(this.cam.zoom);
         let best = null, bestD = Infinity;
         for (const n of this.map.nodes) {
             const d = Math.hypot(n.x - wx, n.y - wy);
-            const reach = n.r * 1.35 + 14 / this.cam.zoom; // fingers are bigger than mice
+            const reach = n.r * boost * 1.35 + 14 / this.cam.zoom; // fingers are bigger than mice
             if (d < reach && d < bestD) { best = n; bestD = d; }
         }
         return best;
+    }
+
+    setHover(id) {
+        if (id === this.hover) return;
+        this.hover = id;
+        this.element.classList.toggle('is-hover', !!id);
+        this.dirty = true;
     }
 
     bindInput() {
@@ -976,17 +1481,22 @@ class SkillTreeView {
             this.pointers.set(e.pointerId, local(e));
             this.moved = 0;
             this.pinch = null;
+            this.glide = null;
         };
         this.onMove = e => {
-            if (!this.pointers.has(e.pointerId)) return;
+            if (!this.pointers.has(e.pointerId)) {
+                // a mouse moving over the map: the skill under it lifts and says what it is
+                if (e.pointerType === 'mouse' && this.pointers.size === 0) { const [x, y] = local(e); const n = this.hit(x, y); this.setHover(n ? n.id : null); }
+                return;
+            }
             const prev = this.pointers.get(e.pointerId);
             const now = local(e);
             this.pointers.set(e.pointerId, now);
             if (this.pointers.size === 1) {
-                this.fitted = false;
                 this.cam.x -= (now[0] - prev[0]) / this.cam.zoom;
                 this.cam.y -= (now[1] - prev[1]) / this.cam.zoom;
                 this.moved += Math.abs(now[0] - prev[0]) + Math.abs(now[1] - prev[1]);
+                if (this.moved >= 8) { this.fitted = false; el.classList.add('is-dragging'); this.setHover(null); }
                 this.dirty = true;
             } else if (this.pointers.size === 2) {
                 this.fitted = false;
@@ -1008,14 +1518,17 @@ class SkillTreeView {
             const p = this.pointers.get(e.pointerId);
             this.pointers.delete(e.pointerId);
             if (this.pointers.size < 2) this.pinch = null;
+            if (this.pointers.size === 0) el.classList.remove('is-dragging');
             if (p && this.pointers.size === 0 && this.moved < 8) {
                 const n = this.hit(p[0], p[1]);
                 this.select(n ? n.id : null, true);
             }
         };
+        this.onLeave = () => { if (this.pointers.size === 0) this.setHover(null); };
         this.onWheel = e => {
             e.preventDefault();
             this.fitted = false;
+            this.glide = null;
             const [x, y] = local(e);
             const r = el.getBoundingClientRect();
             this.cam.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y, r.width, r.height);
@@ -1023,6 +1536,7 @@ class SkillTreeView {
         };
         this.onDouble = e => {
             this.fitted = false;
+            this.glide = null;
             const [x, y] = local(e);
             const r = el.getBoundingClientRect();
             this.cam.zoomAt(1.8, x, y, r.width, r.height);
@@ -1040,56 +1554,86 @@ class SkillTreeView {
         el.addEventListener('pointermove', this.onMove);
         el.addEventListener('pointerup', this.onUp);
         el.addEventListener('pointercancel', this.onUp);
+        el.addEventListener('pointerleave', this.onLeave);
         el.addEventListener('wheel', this.onWheel, { passive: false });
         el.addEventListener('dblclick', this.onDouble);
     }
 
     loop(now) {
         this.frame = requestAnimationFrame(this.loop);
-        if (document.hidden) return;
-        const time = (now - this.start) / 1000;
-        const box = this.element.getBoundingClientRect();
-        if (box.width >= 2) this.placePopover(box.width, box.height);
-        const breathing = this.map.nodes.some(n => n.state === 'available');
-        if (!this.dirty && !breathing && !this.useGl) return;
-        if (!this.dirty && !breathing && this.useGl && time - (this.lastGl || 0) < 0.1) return; // the motes drift slowly
-        this.lastGl = time;
-
+        if (document.hidden || !this.inSight) return;
         const r = this.element.getBoundingClientRect();
         if (r.width < 2 || r.height < 2) return;
-        if (this.needsFit) { this.needsFit = false; this.fit(); }
+        if (this.needsFit) {
+            this.needsFit = false;
+            this.fit(false);
+            if (!this.opened) {
+                // the first look: the map settles in from a little further away
+                this.opened = true;
+                const { x, y, zoom } = this.cam;
+                this.cam.zoom = zoom * 0.88;
+                this.glideTo(x, y, zoom, 700);
+            }
+        }
+        this.stepGlide(now);
+        this.placePopover(r.width, r.height);
+
+        // how often to draw: at once after a change; while something pulses or turns, every frame (the plain canvas
+        // every other); otherwise only the WebGL sky's slow drift, ten times a second; and never for a still map
+        const lively = this.map.lively || !!this.selected;
+        const wait = this.dirty ? 0 : this.reduced ? Infinity : lively ? (this.useGl ? 0 : 30) : (this.useGl ? 100 : Infinity);
+        if (now - this.lastDraw < wait) return;
+        this.lastDraw = now;
+
+        const time = this.reduced ? 0 : (now - this.start) / 1000;
         const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
         const ratio = window.devicePixelRatio || 1;
-        if (this.canvas.width !== Math.round(w * ratio) || this.canvas.height !== Math.round(h * ratio)) {
-            this.canvas.width = Math.round(w * ratio);
-            this.canvas.height = Math.round(h * ratio);
-        }
-        const view = { w, h, cam: this.cam, map: this.map, selected: this.selected, time };
-        const g = this.g;
-        g.setTransform(ratio, 0, 0, ratio, 0, 0);
+        const sized = (canvas) => {
+            if (canvas.width === Math.round(w * ratio) && canvas.height === Math.round(h * ratio)) return false;
+            canvas.width = Math.round(w * ratio);
+            canvas.height = Math.round(h * ratio);
+            return true;
+        };
+        sized(this.canvas);
+        const view = { w, h, cam: this.cam, map: this.map, selected: this.selected, hover: this.hover, time };
         if (this.useGl) {
             this.gl.render(view);
-            g.clearRect(0, 0, w, h);
         } else {
-            drawShapes2d(g, view);
+            // the still sky: only when the map moved or changed
+            const key = `${w} ${h} ${ratio} ${this.cam.x} ${this.cam.y} ${this.cam.zoom}`;
+            if (sized(this.skyCanvas) || key !== this.skyKey || this.skyMap !== this.map) {
+                this.skyKey = key;
+                this.skyMap = this.map;
+                this.sky.setTransform(ratio, 0, 0, ratio, 0, 0);
+                drawSky2d(this.sky, view);
+            }
         }
-        drawIcons(g, view, this.icons);
+        const g = this.g;
+        g.setTransform(ratio, 0, 0, ratio, 0, 0);
+        g.clearRect(0, 0, w, h);
+        drawMap(g, view, this.icons);
         drawLabels(g, view);
+        drawLegend(g, view);
+        drawTip(g, view);
         this.dirty = false;
     }
 
     dispose() {
         cancelAnimationFrame(this.frame);
         this.resizeObserver.disconnect();
+        this.sightObserver?.disconnect();
+        this.motion?.removeEventListener?.('change', this.onMotion);
         const el = this.element;
         el.removeEventListener('pointerdown', this.onDown);
         el.removeEventListener('pointermove', this.onMove);
         el.removeEventListener('pointerup', this.onUp);
         el.removeEventListener('pointercancel', this.onUp);
+        el.removeEventListener('pointerleave', this.onLeave);
         el.removeEventListener('wheel', this.onWheel);
         el.removeEventListener('dblclick', this.onDouble);
         document.removeEventListener('pointerdown', this.onOutside, true);
         document.removeEventListener('keydown', this.onKey);
+        el.classList.remove('is-hover', 'is-dragging');
         this.gl?.dispose();
         el.innerHTML = '';
     }
@@ -1097,8 +1641,9 @@ class SkillTreeView {
 
 /**
  * Opens the map in an element. data: { trees: [{ name, skill, level, color }], nodes: [{ id, name, tree, tier,
- * kind ('active' | 'passive' | 'special'), rank, max, state ('learned' | 'maxed' | 'available' | 'open' | 'locked'),
- * slot (loadout slot from 1, or 0) }] }. options.mode '2d' forces the canvas. dotnet gets OnNodeSelected(id).
+ * kind ('active' | 'passive' | 'special'), capstone, rank, max, state ('learned' | 'maxed' | 'available' | 'open' |
+ * 'locked'), slot (loadout slot from 1, or 0), requires }] }. options.mode '2d' forces the plain canvas sky. dotnet
+ * gets OnNodeSelected(id).
  */
 export function open(element, data, dotnet, options) {
     return new SkillTreeView(element, data, dotnet, options);
