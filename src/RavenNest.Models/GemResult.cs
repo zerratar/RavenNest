@@ -19,6 +19,12 @@ namespace RavenNest.Models
         EmptySocket,
         NoSuchSocket,
         Busy,
+
+        /// <summary>
+        /// A gem would be taken out (unsocketing, or socketing over it) and most likely destroyed: nothing was done.
+        /// OldKind, OldTier and KeepChance say which gem and its chance; the same call with confirm does it.
+        /// </summary>
+        NeedsConfirm,
     }
 
     public class GemResult

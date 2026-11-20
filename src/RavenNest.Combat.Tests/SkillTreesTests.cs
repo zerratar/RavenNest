@@ -34,6 +34,25 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void A_part_of_a_name_only_finds_a_skill_when_it_can_mean_one()
+        {
+            // "shield" took the first of three and !learn spent the points on it
+            Assert.Null(SkillTrees.Find("shield"));
+            Assert.True(SkillTrees.Matches("shield").Count > 1);
+            Assert.Contains("could mean", SkillTrees.NotFoundText("shield"));
+            Assert.Contains("Shield Wall", SkillTrees.NotFoundText("shield"));
+            Assert.Equal("Cleave", SkillTrees.Find("cleave").Name);
+            Assert.Equal("Cleave", SkillTrees.Find("cleav").Name);
+            Assert.Null(SkillTrees.Find("clea")); // Cleave or Cleanse
+            Assert.Equal("Shield Wall", SkillTrees.Find("shield wall").Name);
+            Assert.Equal("Shield Wall", SkillTrees.Find("shield-wall").Name);
+            Assert.Null(SkillTrees.Find("no such skill"));
+            Assert.StartsWith("There is no skill called no such skill.", SkillTrees.NotFoundText("no such skill"));
+            Assert.Equal("Vitality", SkillTrees.SkillName(CombatSkill.Health));
+            Assert.Equal("Ranged", SkillTrees.SkillName(CombatSkill.Ranged));
+        }
+
+        [Fact]
         public void Raising_needs_the_level_and_the_points()
         {
             var build = new SkillBuild();

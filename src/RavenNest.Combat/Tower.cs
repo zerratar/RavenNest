@@ -82,10 +82,10 @@ namespace RavenNest.Combat
             new TowerTownDefinition
             {
                 Key = "galewharf", Name = "Galewharf", Band = 3, Layout = "Tower_Galewharf",
-                Description = "A harbour on the clouds where sky sailors moor their ships, mend their sails and swear at the weather.",
+                Description = "A harbor on the clouds where sky sailors moor their ships, mend their sails and swear at the weather.",
                 People = new[]
                 {
-                    new TowerNpc { Key = "brisa", Name = "Captain Brisa Windlass", Role = "Harbourmaster of the cloud docks", Chain = "windlass" },
+                    new TowerNpc { Key = "brisa", Name = "Captain Brisa Windlass", Role = "Harbormaster of the cloud docks", Chain = "windlass" },
                     new TowerNpc { Key = "volt", Name = "Tinker Volt", Role = "An inventor who bottles lightning", Chain = "bottled" },
                     new TowerNpc { Key = "tessa", Name = "Tessa", Role = "A shepherd girl whose sheep floated away", Chain = "woolly" },
                     new TowerNpc { Key = "hob", Name = "Skipper Hob", Role = "Keeper of the Crow's Nest inn" },
@@ -392,7 +392,7 @@ namespace RavenNest.Combat
 
             list.AddRange(new[]
             {
-                Floor(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbour of planks and rope. The ships moored here are not friendly.",
+                Floor(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbor of planks and rope. The ships moored here are not friendly.",
                     new[] { skyPirate, staticHare }, Defeat(skyPirate, 35), Defeat(staticHare, 30),
                     new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
                 Floor(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",

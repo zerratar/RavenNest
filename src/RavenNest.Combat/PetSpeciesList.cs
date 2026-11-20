@@ -421,7 +421,7 @@ namespace RavenNest.Combat
         public static string CannotTame(int tamingLevel, PetSpecies species, string creature)
         {
             if (species == null) return (string.IsNullOrWhiteSpace(creature) ? "That" : creature) + " cannot be tamed.";
-            if (tamingLevel < species.TameLevel) return species.NameAt(0) + " needs Taming " + species.TameLevel + ".";
+            if (tamingLevel < species.TameLevel) return "Taming a " + species.CreatureName + " needs Taming " + species.TameLevel + " (yours is " + tamingLevel + "). Taming trains while a battle pet is out with you, and with every try on a creature you can tame.";
             return null;
         }
     }

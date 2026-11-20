@@ -70,7 +70,13 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(0, Taming.Chance(99, dragon));
             Assert.Equal(0.02, Taming.Chance(100, dragon), 6);
             Assert.True(Taming.Chance(999, quackers) < 0.01);
-            Assert.Equal("Red Whelp needs Taming 100.", Taming.CannotTame(50, dragon, "Red Dragon"));
+            // the creature's name, not its baby form's (players looked for whelps), and what to do about it
+            Assert.StartsWith("Taming a Red Dragon needs Taming 100 (yours is 50).", Taming.CannotTame(50, dragon, "Red Dragon"));
+            Assert.Equal("Red Dragon", dragon.CreatureName);
+            Assert.Equal("Bunny", bunny.CreatureName);
+            Assert.Equal("Cow", BattlePets.GetSpecies("cow").CreatureName);
+            Assert.Equal("Metalon", BattlePets.GetSpecies("metalon").CreatureName);
+            Assert.Equal("Lord Quackers", quackers.CreatureName);
             Assert.Equal("Pirate cannot be tamed.", Taming.CannotTame(50, null, "Pirate"));
             Assert.Null(Taming.CannotTame(100, dragon, "Red Dragon"));
             Assert.Equal(1, Taming.TryShare(100, 100), 6);

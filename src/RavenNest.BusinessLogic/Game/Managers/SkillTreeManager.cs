@@ -90,7 +90,7 @@ namespace RavenNest.BusinessLogic.Game
             return Change(characterId, (character, skills, build, row) =>
             {
                 var node = SkillTrees.Find(nodeText);
-                if (node == null) return "There is no skill called " + nodeText + ".";
+                if (node == null) return SkillTrees.NotFoundText(nodeText);
                 var reason = build.Raise(node.Id, LevelOf(skills), SkillTrees.EarnedPoints(TotalCombatLevels(skills)));
                 if (reason != null) return reason;
                 // a new active goes into the first free slot, so it is used at once
@@ -116,11 +116,12 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (string.IsNullOrWhiteSpace(nodeText) || nodeText == "-")
                 {
+                    if (slot < 1 || slot > build.LoadoutSlots) return "Your loadout's slots go from 1 to " + build.LoadoutSlots + ".";
                     build.ClearSlot(slot - 1);
                     return null;
                 }
                 var node = SkillTrees.Find(nodeText);
-                if (node == null) return "There is no skill called " + nodeText + ".";
+                if (node == null) return SkillTrees.NotFoundText(nodeText);
                 return build.SetLoadout(slot - 1, node.Id);
             });
         }

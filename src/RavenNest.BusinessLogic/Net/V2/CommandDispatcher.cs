@@ -118,8 +118,8 @@ namespace RavenNest.BusinessLogic.Net.V2
             // gems
             Add(Commands.GemEnchant, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int kind, out int amount); c.Watch(ch); return gems.Enchant(c.SessionToken, ch, kind, amount); });
             Add(Commands.GemCombine, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int kind, out int tier, out int times); c.Watch(ch); return gems.Combine(c.SessionToken, ch, kind, tier, times); });
-            Add(Commands.GemSocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int kind, out int tier, out int socket); c.Watch(ch); return gems.Socket(c.SessionToken, ch, inv, kind, tier, socket); });
-            Add(Commands.GemUnsocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int socket); c.Watch(ch); return gems.Unsocket(c.SessionToken, ch, inv, socket); });
+            Add(Commands.GemSocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int kind, out int tier, out int socket, out bool confirm); c.Watch(ch); return gems.Socket(c.SessionToken, ch, inv, kind, tier, socket, confirm); });
+            Add(Commands.GemUnsocket, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out int socket, out bool confirm); c.Watch(ch); return gems.Unsocket(c.SessionToken, ch, inv, socket, confirm); });
 
             // battle pets
             Add(Commands.PetList, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return pets.List(c.SessionToken, ch); });

@@ -114,7 +114,7 @@ namespace RavenNest.BusinessLogic.Game
         ///     Puts a gem of a kind (the tier named, or the best one owned) into an item: the first free socket, or the
         ///     one named (1 based), which destroys the gem there unless the keep roll succeeds.
         /// </summary>
-        public GemResult Socket(SessionToken token, Guid characterId, Guid inventoryItemId, int kind, int tier, int socket)
+        public GemResult Socket(SessionToken token, Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, bool confirm = false)
         {
             if (!Valid(kind)) return GemResult.Fail(GemResultStatus.NoGem);
             var character = GetCharacter(token, characterId);
@@ -145,7 +145,10 @@ namespace RavenNest.BusinessLogic.Game
                 var id = Gems.ItemId(gemKind, (GemTier)t);
                 if (inventory.GetAllItems().Any(x => x.ItemId == id && !x.Equipped && x.Amount > 0)) { gemTier = t; break; }
             }
-            if (gemTier < 0) return new GemResult { Status = GemResultStatus.NoGem, Kind = kind, Tier = Math.Max(0, tier) };
+            if (gemTier < 0) return new GemResult { Status = GemResultStatus.NoGem, Kind = kind, Tier = tier };
+
+            // socketing over a gem destroys it unless the keep roll succeeds: said first, done when confirmed
+            if (sockets[index].HasValue && !confirm) return NeedsConfirm(character, item, sockets[index].Value, index, count);
 
             var result = new GemResult { Status = GemResultStatus.Ok, Kind = kind, Tier = gemTier, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
             var target = inventory.Get(item, true);
@@ -165,7 +168,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>Takes the gem out of a socket (1 based): it is destroyed unless the keep roll succeeds.</summary>
-        public GemResult Unsocket(SessionToken token, Guid characterId, Guid inventoryItemId, int socket)
+        public GemResult Unsocket(SessionToken token, Guid characterId, Guid inventoryItemId, int socket, bool confirm = false)
         {
             var character = GetCharacter(token, characterId);
             if (character == null) return GemResult.Fail(GemResultStatus.Error);
@@ -177,9 +180,15 @@ namespace RavenNest.BusinessLogic.Game
             var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
             var sockets = Gems.ParseSockets(item.Sockets, count);
             var index = socket - 1;
-            if (socket <= 0) index = Array.FindLastIndex(sockets, x => x.HasValue);
+            if (socket <= 0)
+            {
+                index = Array.FindLastIndex(sockets, x => x.HasValue);
+                // no socket named and no gem in any: "has no gems in it" (Socket 0), not "has 2 socket(s)"
+                if (index < 0 && count > 0) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = 0, SocketCount = count };
+            }
             if (index < 0 || index >= count) return new GemResult { Status = count == 0 ? GemResultStatus.NoSockets : GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
             if (!sockets[index].HasValue) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
+            if (!confirm) return NeedsConfirm(character, item, sockets[index].Value, index, count);
 
             var result = new GemResult { Status = GemResultStatus.Ok, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
             var target = inventory.Get(item, true);
@@ -194,6 +203,19 @@ namespace RavenNest.BusinessLogic.Game
             {
                 inventory.Unlock(item.Id);
             }
+        }
+
+        // What taking this gem out would risk, with nothing done (docs/gems-design.md, section 4: the chance is said
+        // before the player confirms; a Perfect gem replaced by a Chipped one was gone without a word).
+        private GemResult NeedsConfirm(Character character, ReadOnlyInventoryItem item, Guid gemId, int index, int count)
+        {
+            var result = new GemResult { Status = GemResultStatus.NeedsConfirm, ItemName = NameOf(item), Socket = index + 1, SocketCount = count, KeepChance = KeepChance(character) };
+            if (Gems.TryGetGem(gemId, out var oldKind, out var oldTier))
+            {
+                result.OldKind = (int)oldKind;
+                result.OldTier = (int)oldTier;
+            }
+            return result;
         }
 
         /// <summary>The chance this character has to keep a gem taken out: the clan's Enchanting and the Gem Salvager node.</summary>

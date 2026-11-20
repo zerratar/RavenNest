@@ -346,13 +346,73 @@ namespace RavenNest.Combat
 
         public static SkillNode Get(string id) => id != null && byId.TryGetValue(id.Trim(), out var node) ? node : null;
 
-        /// <summary>A node by id or by name ("cleave", "Crushing Blow"), for chat commands.</summary>
+        /// <summary>
+        /// A node by id or by name ("cleave", "Crushing Blow"), for chat commands. A part of a name only when it can
+        /// mean one skill: "shield" used to pick the first of Shield Wall, Shield Training and Shield Bash, and
+        /// !learn spent the points on it (getting them back costs coins). Null when unknown or unclear:
+        /// <see cref="NotFoundText"/> says which.
+        /// </summary>
         public static SkillNode Find(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return null;
+            var matches = Matches(text);
+            return matches.Count == 1 ? matches[0] : null;
+        }
+
+        /// <summary>Every node the text could mean: the one with that id or name, otherwise those whose name starts with it, otherwise those with it as a word.</summary>
+        public static IReadOnlyList<SkillNode> Matches(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return Array.Empty<SkillNode>();
             var key = text.Trim();
-            return Get(key) ?? Get(key.Replace(' ', '-')) ?? all.FirstOrDefault(n => n.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
-                ?? all.FirstOrDefault(n => n.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase));
+            var exact = Get(key) ?? Get(key.Replace(' ', '-')) ?? all.FirstOrDefault(n => n.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return new[] { exact };
+            var starts = all.Where(n => n.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (starts.Count > 0) return starts;
+            return all.Where(n => n.Name.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+        }
+
+        /// <summary>Why <see cref="Find"/> found nothing, for chat: the skills it could mean, or that there is none.</summary>
+        public static string NotFoundText(string text)
+        {
+            var matches = Matches(text);
+            if (matches.Count > 1)
+            {
+                var names = matches.Take(6).Select(n => n.Name).ToList();
+                var list = names.Count == 2 ? names[0] + " or " + names[1] : string.Join(", ", names.Take(names.Count - 1)) + " or " + names[names.Count - 1];
+                return (text ?? "").Trim() + " could mean " + list + ". Type the full name.";
+            }
+            return "There is no skill called " + (text ?? "").Trim() + ". !tree Might (or another tree) lists the skills.";
+        }
+
+        /// <summary>A combat skill's name as players see it: Health is shown as Vitality since 0.9.7.</summary>
+        public static string SkillName(CombatSkill skill) => skill == CombatSkill.Health ? "Vitality" : skill.ToString();
+
+        /// <summary>When an active is used, for chat and the website ("on bosses").</summary>
+        public static string UseText(SkillUse use)
+        {
+            switch (use)
+            {
+                case SkillUse.EnemiesNear: return "when three or more enemies are near";
+                case SkillUse.OnBoss: return "on bosses";
+                case SkillUse.AllyHurt: return "when an ally is below 60% health";
+                case SkillUse.SelfHurt: return "when you are below half health";
+                case SkillUse.TargetLow: return "when the target is below 20% health";
+                case SkillUse.EnemyOnAlly: return "when an enemy attacks someone else";
+                case SkillUse.AllyHarmed: return "when an ally burns, bleeds or is poisoned";
+                default: return "in any fight";
+            }
+        }
+
+        /// <summary>What an active needs equipped ("a bow"), or empty: without it the skill is never used.</summary>
+        public static string NeedsText(SkillGear gear)
+        {
+            switch (gear)
+            {
+                case SkillGear.Shield: return "a shield";
+                case SkillGear.MeleeWeapon: return "a melee weapon";
+                case SkillGear.Bow: return "a bow";
+                case SkillGear.Staff: return "a staff";
+                default: return "";
+            }
         }
 
         public static IEnumerable<SkillNode> Of(SkillTree tree) => all.Where(n => n.Tree == tree);
@@ -616,7 +676,7 @@ namespace RavenNest.Combat
             if (node == null) return "There is no such skill.";
             if (Rank(id) >= node.MaxRank) return node.Name + " is already at its highest rank.";
             var level = levelOf(SkillTrees.SkillOf(node.Tree));
-            if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.SkillOf(node.Tree) + " " + node.RequiredLevel + ".";
+            if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.SkillName(SkillTrees.SkillOf(node.Tree)) + " " + node.RequiredLevel + ".";
             // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path)
             if (Rank(id) == 0 && node.Requires.Length > 0 && !node.Requires.Any(Has))
                 return node.Name + " needs " + string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r)) + " first.";

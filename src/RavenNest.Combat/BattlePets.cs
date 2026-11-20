@@ -199,6 +199,23 @@ namespace RavenNest.Combat
         public string NameAt(int stage) =>
             StageNames != null && StageNames.Length > 0 ? StageNames[Math.Max(0, Math.Min(StageNames.Length - 1, stage))] : Id;
 
+        /// <summary>
+        /// The creature a tameable species is tamed from, as players know it: "Cow" for the Calf, "Red Dragon" for
+        /// the Red Whelp, "Metalon" for its three colors. !tame cow answered "Taming Calf", and players looked for
+        /// calves. The first stage's name when the species is not tamed from a creature.
+        /// </summary>
+        public string CreatureName
+        {
+            get
+            {
+                var plain = (Creatures ?? Array.Empty<string>()).Where(c => !string.IsNullOrEmpty(c) && char.IsUpper(c[0]) && c.IndexOf('-') < 0).ToList();
+                if (plain.Count == 0) return NameAt(0);
+                if (plain.Count == 1) return plain[0];
+                var last = plain[0].Split(' ').Last();
+                return plain.All(p => p.Split(' ').Last() == last) ? last : plain[0];
+            }
+        }
+
         /// <summary>The skills a pet of this species knows at a level and stage, in learning order.</summary>
         public IEnumerable<PetSkill> SkillsAt(int level, int stage) =>
             (Skills ?? Array.Empty<string>()).Select(BattlePets.GetSkill).Where(s => s != null && s.LearnLevel <= level && s.Stage <= stage);
