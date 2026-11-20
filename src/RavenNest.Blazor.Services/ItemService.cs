@@ -328,6 +328,19 @@ namespace RavenNest.Blazor.Services
             if (item == null)
                 return ItemRarityBand.Common;
 
+            // boats have no material, which made a Brigantine "common": a boat of one's own is rare at least, and the
+            // bigger the ship the rarer
+            if (item.Type == RavenNest.Models.ItemType.Boat)
+            {
+                switch (item.Name)
+                {
+                    case "Galleon": return ItemRarityBand.Legendary;
+                    case "Brigantine":
+                    case "Sloop": return ItemRarityBand.Epic;
+                    default: return ItemRarityBand.Rare;
+                }
+            }
+
             return ItemRarity.FromMaterialIndex(GetMaterialIndex(item));
         }
 

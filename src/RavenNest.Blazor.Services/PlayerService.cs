@@ -17,12 +17,14 @@ namespace RavenNest.Blazor.Services
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
         private readonly AdminManager adminManager;
+        private readonly GemManager gemManager;
         private readonly Microsoft.Extensions.Logging.ILogger<PlayerService> logger;
 
         public PlayerService(
             GameData gameData,
             PlayerManager playerManager,
             AdminManager adminManager,
+            GemManager gemManager,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider,
             Microsoft.Extensions.Logging.ILogger<PlayerService> logger)
@@ -31,6 +33,7 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.adminManager = adminManager;
+            this.gemManager = gemManager;
             this.logger = logger;
         }
 
@@ -221,6 +224,68 @@ namespace RavenNest.Blazor.Services
         {
             playerManager.EquipItem(characterId, item);
             return playerManager.GetWebsitePlayer(characterId);
+        }
+
+        /// <summary>
+        ///     Puts one of the character's enchanted gems into a socket (1 based) of one of its items, as !socket does
+        ///     in the game. Only for the signed-in user's own character.
+        /// </summary>
+        /// <remarks>
+        ///     Socketing over a gem usually destroys the old one, so the first call answers NeedsConfirm with that gem
+        ///     and the chance to keep it, and changes nothing. It is done when called again with
+        ///     <paramref name="confirmedGem"/> set to the gem that was shown (its item id), and only while that gem is
+        ///     still the one in the socket. A character in a running game works too: the game hears of the change
+        ///     through the inventory feed, like every other inventory change made here.
+        /// </remarks>
+        public GemChange SocketGem(Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, Guid? confirmedGem)
+        {
+            var refused = OwnCharacter(characterId, out var userId);
+            if (refused != null) return new GemChange { Refused = refused, ItemId = inventoryItemId };
+
+            var result = gemManager.SocketForOwner(userId, characterId, inventoryItemId, kind, tier, socket, confirmedGem, out var itemId);
+            return new GemChange { Result = result, ItemId = itemId, Player = playerManager.GetWebsitePlayer(characterId) };
+        }
+
+        /// <summary>
+        ///     Takes the gem out of a socket (1 based) of one of the character's items, as !unsocket does in the game.
+        ///     Only for the signed-in user's own character. The first call answers NeedsConfirm with the gem and the
+        ///     chance to keep it; see <see cref="SocketGem"/> for <paramref name="confirmedGem"/>.
+        /// </summary>
+        public GemChange UnsocketGem(Guid characterId, Guid inventoryItemId, int socket, Guid? confirmedGem)
+        {
+            var refused = OwnCharacter(characterId, out var userId);
+            if (refused != null) return new GemChange { Refused = refused, ItemId = inventoryItemId };
+
+            var result = gemManager.UnsocketForOwner(userId, characterId, inventoryItemId, socket, confirmedGem, out var itemId);
+            return new GemChange { Result = result, ItemId = itemId, Player = playerManager.GetWebsitePlayer(characterId) };
+        }
+
+        /// <summary>The chance (0 to 1) this character has to keep a gem taken out of a socket; 0 for an unknown character.</summary>
+        public double GetGemKeepChance(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            return character == null ? 0 : gemManager.KeepChance(character);
+        }
+
+        // Null when the character is the signed-in user's own, otherwise why not. Checked here as well as on the
+        // page: the character id arrives from the browser.
+        private string OwnCharacter(Guid characterId, out Guid userId)
+        {
+            userId = Guid.Empty;
+            var session = GetSession();
+            if (session == null || !session.Authenticated || session.UserId == Guid.Empty)
+            {
+                return "You need to be signed in to change gems.";
+            }
+
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || character.UserId != session.UserId)
+            {
+                return "That character does not belong to you.";
+            }
+
+            userId = session.UserId;
+            return null;
         }
 
         /// <summary>
@@ -525,5 +590,21 @@ namespace RavenNest.Blazor.Services
         public string Name { get; set; }
         public bool IsCollectingItem { get; set; }
         public string ItemName { get; set; }
+    }
+
+    /// <summary>What a gem action on the website did (<see cref="PlayerService.SocketGem"/>, <see cref="PlayerService.UnsocketGem"/>).</summary>
+    public class GemChange
+    {
+        /// <summary>Why it was refused before the gem rules were asked (not signed in, not your character); null otherwise.</summary>
+        public string Refused { get; set; }
+
+        /// <summary>What the gem rules answered; null when refused.</summary>
+        public GemResult Result { get; set; }
+
+        /// <summary>The character as it is now, changed or not; null when refused.</summary>
+        public WebsitePlayer Player { get; set; }
+
+        /// <summary>The stack that is the item now: socketing one of a stack of more splits it off as a new stack.</summary>
+        public Guid ItemId { get; set; }
     }
 }

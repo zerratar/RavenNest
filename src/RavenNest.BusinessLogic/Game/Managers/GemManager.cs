@@ -28,6 +28,10 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger<GemManager> logger;
         private readonly Random random = new Random();
 
+        // one socket change at a time: the game (!socket) and the website reach the same items, and two changes
+        // working from the same reading of an item's sockets would lose a gem
+        private readonly object socketMutex = new object();
+
         public GemManager(GameData gameData, PlayerInventoryProvider inventories, ILogger<GemManager> logger)
         {
             this.gameData = gameData;
@@ -116,93 +120,140 @@ namespace RavenNest.BusinessLogic.Game
         /// </summary>
         public GemResult Socket(SessionToken token, Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, bool confirm = false)
         {
+            return Socket(GetCharacter(token, characterId), inventoryItemId, kind, tier, socket, confirm, null, out _);
+        }
+
+        /// <summary>
+        ///     The same from the website, for a character of this account, in a game or not (a running game hears of it
+        ///     through the inventory feed, like any inventory change). Socketing over a gem answers NeedsConfirm until
+        ///     <paramref name="confirmedGem"/> names the gem in that socket: the one the player was shown and agreed to
+        ///     risk. <paramref name="socketedItemId"/> is the stack that holds the gems afterwards (one of a stack of
+        ///     more splits off).
+        /// </summary>
+        public GemResult SocketForOwner(Guid userId, Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, Guid? confirmedGem, out Guid socketedItemId)
+        {
+            return Socket(GetOwnedCharacter(userId, characterId), inventoryItemId, kind, tier, socket, confirmedGem.HasValue, confirmedGem, out socketedItemId);
+        }
+
+        // Both paths end here, with the character each has checked to be the caller's (null when it was not).
+        private GemResult Socket(Character character, Guid inventoryItemId, int kind, int tier, int socket, bool confirm, Guid? confirmedGem, out Guid socketedItemId)
+        {
+            socketedItemId = inventoryItemId;
             if (!Valid(kind)) return GemResult.Fail(GemResultStatus.NoGem);
-            var character = GetCharacter(token, characterId);
             if (character == null) return GemResult.Fail(GemResultStatus.Error);
-            var inventory = inventories.Get(character.Id);
-            var item = inventory.Get(inventoryItemId);
-            if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
-            if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
-            if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
-            var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
-            if (count == 0) return new GemResult { Status = GemResultStatus.NoSockets, ItemName = NameOf(item) };
-
-            var sockets = Gems.ParseSockets(item.Sockets, count);
-            var index = socket - 1;
-            if (socket <= 0)
+            lock (socketMutex)
             {
-                index = Array.FindIndex(sockets, x => !x.HasValue);
-                if (index < 0) return new GemResult { Status = GemResultStatus.SocketsFull, ItemName = NameOf(item), SocketCount = count };
-            }
-            else if (index >= count) return new GemResult { Status = GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
+                var inventory = inventories.Get(character.Id);
+                var item = inventory.Get(inventoryItemId);
+                if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
+                if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
+                if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
+                var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
+                if (count == 0) return new GemResult { Status = GemResultStatus.NoSockets, ItemName = NameOf(item) };
 
-            // the gem: of the tier named, or the best one owned
-            var gemKind = (GemKind)kind;
-            var gemTier = -1;
-            for (var t = Gems.TierCount - 1; t >= 0; --t)
-            {
-                if (tier >= 0 && t != tier) continue;
-                var id = Gems.ItemId(gemKind, (GemTier)t);
-                if (inventory.GetAllItems().Any(x => x.ItemId == id && !x.Equipped && x.Amount > 0)) { gemTier = t; break; }
-            }
-            if (gemTier < 0) return new GemResult { Status = GemResultStatus.NoGem, Kind = kind, Tier = tier };
+                var sockets = Gems.ParseSockets(item.Sockets, count);
+                var index = socket - 1;
+                if (socket <= 0)
+                {
+                    index = Array.FindIndex(sockets, x => !x.HasValue);
+                    if (index < 0) return new GemResult { Status = GemResultStatus.SocketsFull, ItemName = NameOf(item), SocketCount = count };
+                }
+                else if (index >= count) return new GemResult { Status = GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
 
-            // socketing over a gem destroys it unless the keep roll succeeds: said first, done when confirmed
-            if (sockets[index].HasValue && !confirm) return NeedsConfirm(character, item, sockets[index].Value, index, count);
+                // the gem: of the tier named, or the best one owned
+                var gemKind = (GemKind)kind;
+                var gemTier = -1;
+                for (var t = Gems.TierCount - 1; t >= 0; --t)
+                {
+                    if (tier >= 0 && t != tier) continue;
+                    var id = Gems.ItemId(gemKind, (GemTier)t);
+                    if (inventory.GetAllItems().Any(x => x.ItemId == id && !x.Equipped && x.Amount > 0)) { gemTier = t; break; }
+                }
+                if (gemTier < 0) return new GemResult { Status = GemResultStatus.NoGem, Kind = kind, Tier = tier };
 
-            var result = new GemResult { Status = GemResultStatus.Ok, Kind = kind, Tier = gemTier, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
-            var target = inventory.Get(item, true);
-            try
-            {
-                if (!TakeGems(inventory, Gems.ItemId(gemKind, (GemTier)gemTier), 1)) return GemResult.Fail(GemResultStatus.Error);
+                // socketing over a gem destroys it unless the keep roll succeeds: said first, done when confirmed
+                if (sockets[index].HasValue && !Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
 
-                if (sockets[index].HasValue) Remove(character, inventory, sockets[index].Value, result);
-                sockets[index] = Gems.ItemId(gemKind, (GemTier)gemTier);
-                SetSockets(inventory, target, Gems.FormatSockets(sockets));
-                return result;
-            }
-            finally
-            {
-                inventory.Unlock(item.Id);
+                var result = new GemResult { Status = GemResultStatus.Ok, Kind = kind, Tier = gemTier, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
+                var target = inventory.Get(item, true);
+                try
+                {
+                    if (!TakeGems(inventory, Gems.ItemId(gemKind, (GemTier)gemTier), 1)) return GemResult.Fail(GemResultStatus.Error);
+
+                    if (sockets[index].HasValue) Remove(character, inventory, sockets[index].Value, result);
+                    sockets[index] = Gems.ItemId(gemKind, (GemTier)gemTier);
+                    socketedItemId = SetSockets(inventory, target, Gems.FormatSockets(sockets))?.Id ?? inventoryItemId;
+                    return result;
+                }
+                finally
+                {
+                    inventory.Unlock(item.Id);
+                }
             }
         }
 
         /// <summary>Takes the gem out of a socket (1 based): it is destroyed unless the keep roll succeeds.</summary>
         public GemResult Unsocket(SessionToken token, Guid characterId, Guid inventoryItemId, int socket, bool confirm = false)
         {
-            var character = GetCharacter(token, characterId);
-            if (character == null) return GemResult.Fail(GemResultStatus.Error);
-            var inventory = inventories.Get(character.Id);
-            var item = inventory.Get(inventoryItemId);
-            if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
-            if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
-            if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
-            var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
-            var sockets = Gems.ParseSockets(item.Sockets, count);
-            var index = socket - 1;
-            if (socket <= 0)
-            {
-                index = Array.FindLastIndex(sockets, x => x.HasValue);
-                // no socket named and no gem in any: "has no gems in it" (Socket 0), not "has 2 socket(s)"
-                if (index < 0 && count > 0) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = 0, SocketCount = count };
-            }
-            if (index < 0 || index >= count) return new GemResult { Status = count == 0 ? GemResultStatus.NoSockets : GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
-            if (!sockets[index].HasValue) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
-            if (!confirm) return NeedsConfirm(character, item, sockets[index].Value, index, count);
+            return Unsocket(GetCharacter(token, characterId), inventoryItemId, socket, confirm, null, out _);
+        }
 
-            var result = new GemResult { Status = GemResultStatus.Ok, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
-            var target = inventory.Get(item, true);
-            try
+        /// <summary>
+        ///     The same from the website, for a character of this account, in a game or not. Answers NeedsConfirm until
+        ///     <paramref name="confirmedGem"/> names the gem in that socket: the one the player was shown and agreed to
+        ///     risk. <paramref name="socketedItemId"/> is the stack the item is afterwards.
+        /// </summary>
+        public GemResult UnsocketForOwner(Guid userId, Guid characterId, Guid inventoryItemId, int socket, Guid? confirmedGem, out Guid socketedItemId)
+        {
+            return Unsocket(GetOwnedCharacter(userId, characterId), inventoryItemId, socket, confirmedGem.HasValue, confirmedGem, out socketedItemId);
+        }
+
+        // Both paths end here, with the character each has checked to be the caller's (null when it was not).
+        private GemResult Unsocket(Character character, Guid inventoryItemId, int socket, bool confirm, Guid? confirmedGem, out Guid socketedItemId)
+        {
+            socketedItemId = inventoryItemId;
+            if (character == null) return GemResult.Fail(GemResultStatus.Error);
+            lock (socketMutex)
             {
-                Remove(character, inventory, sockets[index].Value, result);
-                sockets[index] = null;
-                SetSockets(inventory, target, Gems.FormatSockets(sockets));
-                return result;
+                var inventory = inventories.Get(character.Id);
+                var item = inventory.Get(inventoryItemId);
+                if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
+                if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
+                if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
+                var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
+                var sockets = Gems.ParseSockets(item.Sockets, count);
+                var index = socket - 1;
+                if (socket <= 0)
+                {
+                    index = Array.FindLastIndex(sockets, x => x.HasValue);
+                    // no socket named and no gem in any: "has no gems in it" (Socket 0), not "has 2 socket(s)"
+                    if (index < 0 && count > 0) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = 0, SocketCount = count };
+                }
+                if (index < 0 || index >= count) return new GemResult { Status = count == 0 ? GemResultStatus.NoSockets : GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
+                if (!sockets[index].HasValue) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
+                if (!Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
+
+                var result = new GemResult { Status = GemResultStatus.Ok, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
+                var target = inventory.Get(item, true);
+                try
+                {
+                    Remove(character, inventory, sockets[index].Value, result);
+                    sockets[index] = null;
+                    socketedItemId = SetSockets(inventory, target, Gems.FormatSockets(sockets))?.Id ?? inventoryItemId;
+                    return result;
+                }
+                finally
+                {
+                    inventory.Unlock(item.Id);
+                }
             }
-            finally
-            {
-                inventory.Unlock(item.Id);
-            }
+        }
+
+        // The game confirms by asking again (its player was told the gem and the chance in chat). The website also names
+        // the gem it showed, so a confirm click cannot destroy another gem that got into the socket in between.
+        private static bool Confirmed(bool confirm, Guid? confirmedGem, Guid gemInSocket)
+        {
+            return confirm && (!confirmedGem.HasValue || confirmedGem.Value == gemInSocket);
         }
 
         // What taking this gem out would risk, with nothing done (docs/gems-design.md, section 4: the chance is said
@@ -236,20 +287,22 @@ namespace RavenNest.BusinessLogic.Game
             if (result.Kept) AddGem(inventory, kind, tier, 1);
         }
 
-        // an item of more than one splits: one of them gets the gems, the rest stay a plain stack
-        private void SetSockets(PlayerInventory inventory, DataModels.InventoryItem stack, string sockets)
+        // an item of more than one splits: one of them gets the gems, the rest stay a plain stack.
+        // Returns the stack that holds the sockets now (null when nothing was set).
+        private DataModels.InventoryItem SetSockets(PlayerInventory inventory, DataModels.InventoryItem stack, string sockets)
         {
-            if (stack == null) return;
+            if (stack == null) return null;
             if (stack.Amount.GetValueOrDefault(1) <= 1)
             {
                 stack.Sockets = sockets;
-                return;
+                return stack;
             }
 
-            if (!inventory.RemoveItem(stack, 1)) return;
+            if (!inventory.RemoveItem(stack, 1)) return null;
             var single = inventory.AddItemStack(stack, 1);
             single.Equipped = false;
             single.Sockets = sockets;
+            return single;
         }
 
         private static bool TakeOne(PlayerInventory inventory, Guid stackId)
@@ -316,19 +369,51 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        /// <summary>An item's sockets for showing: ("Socket 1", "Flawless Ruby: +18% Fire Damage") or ("Socket 2", "empty").</summary>
-        public static System.Collections.Generic.List<(string Label, string Value)> SocketLines(RavenNest.Models.Item item, string sockets)
+        /// <summary>One socket of an item for showing: its number (1 based) and the gem in it, if any.</summary>
+        public sealed class SocketView
         {
-            var lines = new System.Collections.Generic.List<(string, string)>();
-            if (!TryGetSlot(item, out var slot)) return lines;
+            public int Number { get; set; }
+            /// <summary>The gem's item id; null for an empty socket.</summary>
+            public Guid? GemId { get; set; }
+            public GemKind Kind { get; set; }
+            public GemTier Tier { get; set; }
+            /// <summary>"Flawless Ruby"; null for an empty socket.</summary>
+            public string Name { get; set; }
+            /// <summary>What the gem gives in this kind of item: "+18% Fire Damage"; null for an empty socket.</summary>
+            public string Bonus { get; set; }
+            public bool Empty => !GemId.HasValue;
+        }
+
+        /// <summary>An item's sockets, first to last; none for an item that cannot have any (or not yet, by its level).</summary>
+        public static System.Collections.Generic.List<SocketView> SocketsOf(RavenNest.Models.Item item, string sockets)
+        {
+            var views = new System.Collections.Generic.List<SocketView>();
+            if (!TryGetSlot(item, out var slot)) return views;
             var count = Gems.Sockets(Gems.ItemLevel(item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, item.Level), slot);
             var parsed = Gems.ParseSockets(sockets, count);
             for (var s = 0; s < parsed.Length; ++s)
             {
-                var value = parsed[s].HasValue && Gems.TryGetGem(parsed[s].Value, out var kind, out var tier)
-                    ? Gems.Name(kind, tier) + ": " + Gems.Describe(kind, tier, slot)
-                    : "empty";
-                lines.Add(("Socket " + (s + 1), value));
+                var view = new SocketView { Number = s + 1 };
+                if (parsed[s].HasValue && Gems.TryGetGem(parsed[s].Value, out var kind, out var tier))
+                {
+                    view.GemId = parsed[s].Value;
+                    view.Kind = kind;
+                    view.Tier = tier;
+                    view.Name = Gems.Name(kind, tier);
+                    view.Bonus = Gems.Describe(kind, tier, slot);
+                }
+                views.Add(view);
+            }
+            return views;
+        }
+
+        /// <summary>An item's sockets for showing: ("Socket 1", "Flawless Ruby: +18% Fire Damage") or ("Socket 2", "empty").</summary>
+        public static System.Collections.Generic.List<(string Label, string Value)> SocketLines(RavenNest.Models.Item item, string sockets)
+        {
+            var lines = new System.Collections.Generic.List<(string, string)>();
+            foreach (var socket in SocketsOf(item, sockets))
+            {
+                lines.Add(("Socket " + socket.Number, socket.Empty ? "empty" : socket.Name + ": " + socket.Bonus));
             }
             return lines;
         }
@@ -354,6 +439,14 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
             return gameData.GetActiveSessionCharacters(session)?.FirstOrDefault(x => x.Id == characterId);
+        }
+
+        // the website: a character of this account, in a game or not
+        private Character GetOwnedCharacter(Guid userId, Guid characterId)
+        {
+            if (userId == Guid.Empty) return null;
+            var character = gameData.GetCharacter(characterId);
+            return character != null && character.UserId == userId ? character : null;
         }
     }
 }
