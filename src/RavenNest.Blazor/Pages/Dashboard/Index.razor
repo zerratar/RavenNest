@@ -3,6 +3,7 @@
 @using RavenNest
 @using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.BotService BotService
@@ -99,6 +100,77 @@ else
     </section>
 
     @*
+        Auto join spending. A player lost 17 million coins in 12 days to auto join on a stream that ran
+        raids and dungeons back to back (2026-11) without seeing it go. This shows what it costs them, their
+        patron perk (free auto joins a day and a discount on the rest) and a limit of their own (also
+        !auto limit in chat). Status layout: AutoJoinSpending.Status.
+    *@
+    @if (autoJoin != null)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Auto join</h2>
+            <p class="rf-meta">
+                Joining raids and dungeons automatically (<span class="rf-cmd">!auto raid on</span>,
+                <span class="rf-cmd">!auto dungeon on</span>) costs @PlayerManager.AutoJoinRaidCost.ToString("N0") coins per raid
+                and @PlayerManager.AutoJoinDungeonCost.ToString("N0") per dungeon. All your characters pay from the same coins.
+            </p>
+            @if (IsAutoJoinPatron)
+            {
+                <p class="rf-meta">
+                    As a patron you get <b>@autoJoin[5] raids</b> and <b>@autoJoin[6] dungeons</b> free every day (UTC),
+                    and @autoJoin[7]% off the rest: @autoJoin[8].ToString("N0") per raid, @autoJoin[9].ToString("N0") per dungeon.
+                </p>
+            }
+            else
+            {
+                <p class="rf-meta">
+                    Patrons get free auto joins every day and a discount on the rest. <NavLink href="/patreon">See the tiers</NavLink>.
+                </p>
+            }
+            <div class="rf-stats">
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@autoJoin[0].ToString("N0")</div>
+                    <div class="rf-stat__label">Paid today</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@autoJoin[1].ToString("N0")</div>
+                    <div class="rf-stat__label">Paid in the last 7 days</div>
+                </div>
+                @if (IsAutoJoinPatron)
+                {
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@autoJoin[3] + @autoJoin[4]</div>
+                        <div class="rf-stat__label">Free left today (raids + dungeons)</div>
+                    </div>
+                }
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@(autoJoin[2] < 0 ? "None" : autoJoin[2].ToString("N0"))</div>
+                    <div class="rf-stat__label">Your daily limit</div>
+                </div>
+            </div>
+            <label class="rf-field">
+                <span class="rf-label">Your own daily limit</span>
+                <input class="rf-input" type="text" inputmode="numeric" placeholder="No limit, for example 50000 or 50k" @bind="limitText" />
+            </label>
+            <p class="rf-meta">
+                Paid auto joins stop for the rest of the day when the next one would pass your limit. Leave it empty for no limit.
+                In chat: <span class="rf-cmd">!auto limit 50k</span>, <span class="rf-cmd">!auto limit off</span>.
+            </p>
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveAutoJoinLimit">Save limit</button>
+                @if (autoJoin[2] >= 0)
+                {
+                    <button type="button" class="rf-btn" @onclick="RemoveAutoJoinLimit">Remove limit</button>
+                }
+                @if (limitMessage != null)
+                {
+                    <span class="@(limitError ? "rf-form__error" : "rf-form__ok")">@limitMessage</span>
+                }
+            </div>
+        </section>
+    }
+
+    @*
         Destinations rather than a link list. Each one says what it is for, because half of these
         are pages people never found.
     *@
@@ -129,6 +201,11 @@ else
     private RavenNest.Models.SessionInfo session;
     private IReadOnlyList<WebsitePlayer> players;
     private RavenNest.Blazor.Services.BotStatus bot;
+    private long[] autoJoin;
+    private string limitText;
+    private string limitMessage;
+    private bool limitError;
+    private bool IsAutoJoinPatron => autoJoin != null && (autoJoin[5] > 0 || autoJoin[6] > 0 || autoJoin[7] > 0);
 
     private int HighestLevel => players == null || players.Count == 0
         ? 0
@@ -144,6 +221,31 @@ else
 
         players = await PlayerService.GetMyPlayersAsync();
         bot = BotService.GetBotStatus();
+        autoJoin = PlayerService.GetAutoJoinStatus();
+        limitText = autoJoin != null && autoJoin[2] >= 0 ? autoJoin[2].ToString() : "";
+    }
+
+    private void SaveAutoJoinLimit()
+    {
+        if (string.IsNullOrWhiteSpace(limitText)) { RemoveAutoJoinLimit(); return; }
+        if (!AutoJoinSpending.TryParseLimit(limitText, out var limit))
+        {
+            limitError = true;
+            limitMessage = "Type an amount of coins, like 50000 or 50k.";
+            return;
+        }
+        autoJoin = PlayerService.SetAutoJoinLimit(limit);
+        limitText = limit?.ToString() ?? "";
+        limitError = false;
+        limitMessage = limit == null ? "Limit removed." : "Limit saved.";
+    }
+
+    private void RemoveAutoJoinLimit()
+    {
+        autoJoin = PlayerService.SetAutoJoinLimit(null);
+        limitText = "";
+        limitError = false;
+        limitMessage = "Limit removed.";
     }
 
     protected override void OnAfterRender(bool firstRender)

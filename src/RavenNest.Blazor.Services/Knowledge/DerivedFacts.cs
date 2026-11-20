@@ -59,7 +59,13 @@ namespace RavenNest.Blazor.Services.Knowledge
 
                 Make("What does auto join cost?",
                      "Joining dungeons automatically costs " + PlayerManager.AutoJoinDungeonCost +
-                     " coins, and raids " + PlayerManager.AutoJoinRaidCost + " coins.",
+                     " coins, and raids " + PlayerManager.AutoJoinRaidCost + " coins. All characters on an account " +
+                     "pay from the same coins. Patrons get some auto joins free every day and a discount on the rest " +
+                     "(Mithril " + AutoJoinSpending.PerkFor(1).FreeRaids + " raids and " + AutoJoinSpending.PerkFor(1).FreeDungeons +
+                     " dungeons free and " + AutoJoinSpending.PerkFor(1).DiscountPercent + "% off, up to Phantom " +
+                     AutoJoinSpending.PerkFor(5).FreeRaids + " raids and " + AutoJoinSpending.PerkFor(5).FreeDungeons +
+                     " dungeons free and " + AutoJoinSpending.PerkFor(5).DiscountPercent + "% off). Players can set a daily " +
+                     "limit on what auto join may spend with !auto limit (for example !auto limit 50k) or on the website's dashboard.",
                      "coins", "dungeons", "raids"),
 
                 Make("What does auto rest cost?",

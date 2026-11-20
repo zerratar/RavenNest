@@ -22,8 +22,35 @@
         <div class="rf-inv__coins" title="@coins.ToString("N0") coins">
             <i class="fa-solid fa-coins" aria-hidden="true"></i>
             <span>@Utility.FormatAmount(coins)</span>
+            @if (CanModify && Player != null)
+            {
+                <button type="button" class="rf-btn rf-btn--small" @onclick="ToggleSetCoins">Set coins</button>
+            }
         </div>
     </div>
+
+    @*
+        Administrators set an account's coins here (refunds, corrections). The server holds them in memory, so it
+        works at once with no restart; a running game shows it within a minute. All the account's characters share them.
+    *@
+    @if (CanModify && Player != null && setCoinsOpen)
+    {
+        <div class="rf-panel">
+            <label class="rf-field">
+                <span class="rf-label">Coins for this account (now @coins.ToString("N0"))</span>
+                <input class="rf-input" type="text" inputmode="numeric" placeholder="10000000, 10m, or +500k / -500k to add or take" @bind="setCoinsText" />
+            </label>
+            <p class="rf-meta">Every character on the account shares these coins. The change is logged.</p>
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="SetCoins">Set coins</button>
+                <button type="button" class="rf-btn" @onclick="ToggleSetCoins">Cancel</button>
+                @if (setCoinsMessage != null)
+                {
+                    <span class="@(setCoinsError ? "rf-form__error" : "rf-form__ok")">@setCoinsMessage</span>
+                }
+            </div>
+        </div>
+    }
 
     @if (activeTab == "equipment")
     {
@@ -1070,6 +1097,43 @@
     ///     looking at any character.
     /// </summary>
     private bool IsMyCharacter => Player == null || session == null || Player.UserId == session.UserId;
+
+    private bool setCoinsOpen;
+    private string setCoinsText;
+    private string setCoinsMessage;
+    private bool setCoinsError;
+
+    private void ToggleSetCoins()
+    {
+        setCoinsOpen = !setCoinsOpen;
+        setCoinsText = coins.ToString();
+        setCoinsMessage = null;
+    }
+
+    private void SetCoins()
+    {
+        var text = (setCoinsText ?? "").Trim();
+        var sign = text.StartsWith("+") ? 1 : text.StartsWith("-") ? -1 : 0;
+        if (sign != 0) text = text.Substring(1);
+        if (!RavenNest.BusinessLogic.Game.AutoJoinSpending.TryParseLimit(text, out var amount) || amount == null)
+        {
+            setCoinsError = true;
+            setCoinsMessage = "Type an amount, like 10000000, 10m, or +500k.";
+            return;
+        }
+        var target = sign == 0 ? amount.Value : coins + sign * amount.Value;
+        var now = PlayerService.SetCoins(Player.UserId, target);
+        if (now == null)
+        {
+            setCoinsError = true;
+            setCoinsMessage = "Could not set the coins.";
+            return;
+        }
+        coins = now.Value;
+        setCoinsText = coins.ToString();
+        setCoinsError = false;
+        setCoinsMessage = "Coins set to " + coins.ToString("N0") + ".";
+    }
 
     private void UpdateCoins()
     {

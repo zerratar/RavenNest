@@ -17,18 +17,21 @@ namespace RavenNest.Blazor.Services
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
         private readonly AdminManager adminManager;
+        private readonly Microsoft.Extensions.Logging.ILogger<PlayerService> logger;
 
         public PlayerService(
             GameData gameData,
             PlayerManager playerManager,
             AdminManager adminManager,
             IHttpContextAccessor accessor,
-            SessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider,
+            Microsoft.Extensions.Logging.ILogger<PlayerService> logger)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.adminManager = adminManager;
+            this.logger = logger;
         }
 
         public TrainingSkill GetTrainingSkill(RavenNest.Models.CharacterState state)
@@ -346,6 +349,25 @@ namespace RavenNest.Blazor.Services
             return (long)resx.Coins;
         }
 
+        /// <summary>
+        /// Administrators: sets an account's coins (a refund, a correction). The server holds them in memory, so this
+        /// takes effect at once, is saved with the next save and reaches a running game within a minute (the coin
+        /// resend, dd7fa2c1); no restart. Changing the database row instead was overwritten by the server's copy.
+        /// Logged with who, whose and the amounts. Returns the coins now, or null when not allowed or not found.
+        /// </summary>
+        public long? SetCoins(Guid userId, long coins)
+        {
+            var session = GetSession();
+            if (session == null || !session.Administrator) return null;
+            var user = gameData.GetUser(userId);
+            var resx = user?.Resources != null ? gameData.GetResources(user.Resources.Value) : null;
+            if (resx == null) return null;
+            var before = (long)resx.Coins;
+            resx.Coins = Math.Max(0, coins);
+            Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(logger, $"Admin {session.UserName} set the coins of {user.UserName} ({user.Id}) from {before} to {(long)resx.Coins}.");
+            return (long)resx.Coins;
+        }
+
         public long GetMyCoins()
         {
             var session = GetSession();
@@ -358,6 +380,23 @@ namespace RavenNest.Blazor.Services
             if (resx == null) return 0;
 
             return (long)resx.Coins;
+        }
+
+        /// <summary>The signed-in account's auto join spending and patron perk (layout: AutoJoinSpending.Status).</summary>
+        public long[] GetAutoJoinStatus()
+        {
+            var session = GetSession();
+            if (session == null || !session.Authenticated) return null;
+            return playerManager.AutoJoinSpending.Status(session.UserId);
+        }
+
+        /// <summary>Sets the signed-in account's own daily auto join limit (null for none) and returns the new status.</summary>
+        public long[] SetAutoJoinLimit(long? limit)
+        {
+            var session = GetSession();
+            if (session == null || !session.Authenticated) return null;
+            playerManager.AutoJoinSpending.SetLimit(session.UserId, limit);
+            return playerManager.AutoJoinSpending.Status(session.UserId);
         }
 
         public async Task<IReadOnlyList<WebsitePlayer>> GetMyPlayersAsync()

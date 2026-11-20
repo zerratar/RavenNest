@@ -63,7 +63,11 @@ namespace RavenNest.BusinessLogic.Game
             this.integrityChecker = integrityChecker;
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
             this.marketPrices = marketPrices;
+            this.AutoJoinSpending = new AutoJoinSpending(gameData);
         }
+
+        /// <summary>What each account pays for auto joins per day, its patron perk for them and its own limit.</summary>
+        public AutoJoinSpending AutoJoinSpending { get; }
 
         public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
         {
@@ -2937,89 +2941,104 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool[] AutoJoinRaid(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
-            return AutoJoin(sessionToken, characters, AutoJoinRaidCost, "raid");
+            return Joined(AutoJoin(sessionToken, characters, AutoJoinRaidCost, true));
         }
 
         public bool[] AutoJoinDungeon(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
-            return AutoJoin(sessionToken, characters, AutoJoinDungeonCost, "dungeon");
+            return Joined(AutoJoin(sessionToken, characters, AutoJoinDungeonCost, false));
         }
 
-        // One call for everyone the game auto joins when a raid or dungeon starts: takes the cost from each character that
-        // has it and says who paid. The session's characters are looked up once; looking them up per character sorted the
-        // whole session again for each one, which made a big stream's batch slow.
-        private bool[] AutoJoin(SessionToken sessionToken, IReadOnlyList<Guid> characters, int cost, string what)
+        /// <summary>Like <see cref="AutoJoinRaid(SessionToken, IReadOnlyList{Guid})"/>, with why each one did or did not join (<see cref="AutoJoinSpending.Result"/>).</summary>
+        public int[] AutoJoinRaidResults(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
-            var paid = new bool[characters.Count];
-            if (paid.Length == 0) return paid;
+            return AutoJoin(sessionToken, characters, AutoJoinRaidCost, true);
+        }
+
+        /// <summary>Like <see cref="AutoJoinDungeon(SessionToken, IReadOnlyList{Guid})"/>, with why each one did or did not join (<see cref="AutoJoinSpending.Result"/>).</summary>
+        public int[] AutoJoinDungeonResults(SessionToken sessionToken, IReadOnlyList<Guid> characters)
+        {
+            return AutoJoin(sessionToken, characters, AutoJoinDungeonCost, false);
+        }
+
+        private static bool[] Joined(int[] results)
+        {
+            var joined = new bool[results.Length];
+            for (var i = 0; i < results.Length; ++i)
+                joined[i] = results[i] == (int)AutoJoinSpending.Result.Paid || results[i] == (int)AutoJoinSpending.Result.Free;
+            return joined;
+        }
+
+        // One call for everyone the game auto joins when a raid or dungeon starts: takes the cost from each character's
+        // account (free while a patron has free joins left today, discounted by tier, refused past the account's own
+        // limit) and says what happened to each. The session's characters are looked up once; looking them up per
+        // character sorted the whole session again for each one, which made a big stream's batch slow.
+        private int[] AutoJoin(SessionToken sessionToken, IReadOnlyList<Guid> characters, int cost, bool raid)
+        {
+            var results = new int[characters.Count];
+            if (results.Length == 0) return results;
+            var what = raid ? "raid" : "dungeon";
             try
             {
                 var session = gameData.GetSession(sessionToken.SessionId);
                 var sessionCharacters = gameData.GetActiveSessionCharacters(session);
-                if (sessionCharacters == null) return paid;
+                if (sessionCharacters == null) return results;
 
                 var byId = new Dictionary<Guid, Character>(sessionCharacters.Count);
                 foreach (var c in sessionCharacters) byId[c.Id] = c;
 
-                var paidCount = 0;
-                for (var i = 0; i < paid.Length; ++i)
+                var joined = 0;
+                for (var i = 0; i < results.Length; ++i)
                 {
                     if (!byId.TryGetValue(characters[i], out var character)) continue;
-                    var res = gameData.GetResources(character);
-                    if (res == null || res.Coins < cost) continue;
-                    res.Coins -= cost;
-                    paid[i] = true;
-                    paidCount++;
+                    var result = AutoJoinSpending.Charge(character.UserId, gameData.GetResources(character), cost, raid);
+                    results[i] = (int)result;
+                    if (result is AutoJoinSpending.Result.Paid or AutoJoinSpending.Result.Free) joined++;
                 }
 
-                if (paidCount < paid.Length)
-                    logger.LogInformation($"[{sessionToken.UserName}] {paidCount} of {paid.Length} characters paid to auto join the {what}.");
+                if (joined < results.Length)
+                    logger.LogInformation($"[{sessionToken.UserName}] {joined} of {results.Length} characters auto joined the {what}.");
             }
             catch (Exception exc)
             {
                 logger.LogError($"[{sessionToken.UserName}] auto join {what} failed for {characters.Count} characters: {exc}");
             }
-            return paid;
+            return results;
         }
 
         public bool AutoJoinDungeon(SessionToken sessionToken, Guid characterId)
         {
-            try
-            {
-                var character = GetCharacter(sessionToken, characterId);
-                if (character == null) return false;
-
-                var res = gameData.GetResources(character);
-                var cost = AutoJoinDungeonCost;
-                if (cost > res.Coins) return false;
-                res.Coins -= cost;
-                return true;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError($"Character with Id {characterId}, session: {sessionToken.UserName} failed to auto join dungeon: {exc}");
-            }
-            return false;
+            return AutoJoinDungeon(sessionToken, new[] { characterId })[0];
         }
 
         public bool AutoJoinRaid(SessionToken sessionToken, Guid characterId)
         {
+            return AutoJoinRaid(sessionToken, new[] { characterId })[0];
+        }
+
+        /// <summary>
+        /// A character's account's auto join spending and patron perk (<see cref="AutoJoinSpending.Status"/>). With a
+        /// limit given (as typed: 100k, 1.5m, off), sets it first. Null when the character is not in this session or
+        /// the limit could not be read.
+        /// </summary>
+        public long[] AutoJoinLimit(SessionToken sessionToken, Guid characterId, string limit)
+        {
             try
             {
                 var character = GetCharacter(sessionToken, characterId);
-                if (character == null) return false;
-
-                var res = gameData.GetResources(character);
-                var cost = AutoJoinRaidCost;
-                if (cost > res.Coins) return false;
-                res.Coins -= cost;
-                return true;
+                if (character == null) return null;
+                if (!string.IsNullOrWhiteSpace(limit))
+                {
+                    if (!AutoJoinSpending.TryParseLimit(limit, out var value)) return null;
+                    AutoJoinSpending.SetLimit(character.UserId, value);
+                }
+                return AutoJoinSpending.Status(character.UserId);
             }
             catch (Exception exc)
             {
-                logger.LogError($"Character with Id {characterId}, session: {sessionToken.UserName} failed to auto join raid: {exc}");
+                logger.LogError($"[{sessionToken.UserName}] auto join limit for {characterId} failed: {exc}");
+                return null;
             }
-            return false;
         }
 
         [Obsolete]

@@ -93,6 +93,13 @@ else
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
                             <span><b>@CurrentTier.ExpMultiplier&times; experience</b> for your characters.</span>
                         </li>
+                        <li class="rf-perk">
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                            <span>
+                                <b>@RavenNest.BusinessLogic.Game.AutoJoinSpending.PerkFor(CurrentTier.Tier).FreeRaids raids and @RavenNest.BusinessLogic.Game.AutoJoinSpending.PerkFor(CurrentTier.Tier).FreeDungeons dungeons</b>
+                                auto joined free every day, and @RavenNest.BusinessLogic.Game.AutoJoinSpending.PerkFor(CurrentTier.Tier).DiscountPercent% off the rest.
+                            </span>
+                        </li>
 
                         @if (CurrentTier.VillageHouses > 0)
                         {

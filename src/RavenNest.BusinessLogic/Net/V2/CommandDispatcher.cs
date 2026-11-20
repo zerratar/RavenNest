@@ -140,6 +140,9 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.AutoJoinRaid, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinRaid(c.SessionToken, ids ?? Array.Empty<Guid>()); });
             Add(Commands.AutoJoinDungeon, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinDungeon(c.SessionToken, ids ?? Array.Empty<Guid>()); });
             Add(Commands.AutoJoinRaidCost, (c, a) => PlayerManager.AutoJoinRaidCost);
+            Add(Commands.AutoJoinRaidResults, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinRaidResults(c.SessionToken, ids ?? Array.Empty<Guid>()); });
+            Add(Commands.AutoJoinDungeonResults, (c, a) => { CommandArgs.Unpack(a, out Guid[] ids); return p.AutoJoinDungeonResults(c.SessionToken, ids ?? Array.Empty<Guid>()); });
+            Add(Commands.AutoJoinLimit, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string limit); return p.AutoJoinLimit(c.SessionToken, ch, limit); });
 
             // other
             Add(Commands.Highscore, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string skill); return p.GetHighscore(c.SessionToken, ch, skill); });
