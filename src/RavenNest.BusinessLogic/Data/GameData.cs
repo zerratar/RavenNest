@@ -1945,7 +1945,8 @@ namespace RavenNest.BusinessLogic.Data
 
             if (!string.IsNullOrEmpty(itemNameMaterial))
             {
-                if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res))
+                // metals only: class gear's tier names are words that other items start with too (Celestial Logs)
+                if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res) && (int)res < (int)ItemMaterial.Apprentice)
                 {
                     return res;
                 }
@@ -1994,7 +1995,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == (int)ItemMaterial.None)
                 {
-                    if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res))
+                    if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res) && (int)res < (int)ItemMaterial.Apprentice)
                     {
                         return res;
                     }

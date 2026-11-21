@@ -268,6 +268,32 @@ namespace RavenNest.Combat
             return sb.ToString().TrimEnd(',');
         }
 
+        /// <summary>
+        ///     An item's name with the gems in it, for chat: "Sorcerer Robe with a Polished Sapphire", "... with a
+        ///     Flawed Ruby and a Chipped Topaz". The name alone for an item without gems.
+        /// </summary>
+        public static string SocketedName(string itemName, string sockets)
+        {
+            if (string.IsNullOrEmpty(sockets)) return itemName;
+            var gems = new List<string>();
+            foreach (var part in sockets.Split(','))
+            {
+                if (Guid.TryParse(part.Trim(), out var id) && TryGetGem(id, out var kind, out var tier))
+                {
+                    var gem = Name(kind, tier);
+                    gems.Add(("AEIOU".IndexOf(char.ToUpperInvariant(gem[0])) >= 0 ? "an " : "a ") + gem);
+                }
+            }
+            if (gems.Count == 0) return itemName;
+            var sb = new StringBuilder(itemName).Append(" with ");
+            for (var i = 0; i < gems.Count; ++i)
+            {
+                if (i > 0) sb.Append(i == gems.Count - 1 ? " and " : ", ");
+                sb.Append(gems[i]);
+            }
+            return sb.ToString();
+        }
+
         /// <summary>Every gem's bonus in an item's sockets.</summary>
         public static GearStats SocketBonus(string text, GemSlot slot)
         {

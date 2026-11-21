@@ -525,6 +525,86 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
+        ///     Class gear from a tower clear's chest (the game's docs/class-gear-design.md, "From the tower"): for every
+        ///     character the chance of RavenNest.Combat.TowerLoot, then one piece of a line that fits what the character
+        ///     trains (the lines auto-equip counts as fitting; the lines it wears when the skill names none; any line when
+        ///     that names none either), of the highest tier at or below the floor's level that the character can wear,
+        ///     with a gem of the floor's band in its first socket when the piece has sockets. The gem is an ordinary one:
+        ///     it can be taken out or socketed over with the usual chance to keep it.
+        ///     Every line that has pieces is in it (ItemLines and GameData.ClassGear's table, no list of lines here).
+        /// </summary>
+        public EventItemReward[] RollTowerGear(DataModels.GameSession gameSession, int floor, Guid[] characters, bool firstClearByStream)
+        {
+            var rewards = new List<EventItemReward>();
+            if (gameSession == null || characters == null) return rewards.ToArray();
+            var made = GameData.ClassGearLinesMade;
+            if (made.Count == 0) return rewards.ToArray();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+            var floorTier = RavenNest.Combat.TowerLoot.GearTier(ItemLines.TierLevels, floor);
+            foreach (var id in characters.Distinct())
+            {
+                try
+                {
+                    var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
+                    if (character == null) continue;
+                    if (!RavenNest.Combat.TowerLoot.Drops(firstClearByStream, rng.NextDouble())) continue;
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+                    if (skills == null) continue;
+                    var inventory = inventoryProvider.Get(character.Id);
+
+                    // the lines that fit: by the trained skill, else by what is worn, else every line
+                    var state = gameData.GetCharacterState(character.StateId);
+                    var fits = GearScore.FitsFor(state?.Task, state?.TaskArgument);
+                    if (fits == 0)
+                    {
+                        foreach (var worn in inventory.GetEquippedItems())
+                        {
+                            if (worn.Item != null) fits = fits | GearScore.KeepWorn(0, (RavenNest.Models.ItemMaterial)worn.Item.Material);
+                        }
+                    }
+                    var lines = made.Where(l => ItemLines.Has(fits, l)).ToList();
+                    if (lines.Count == 0) lines = made.ToList();
+                    var line = lines[RavenNest.Combat.TowerLoot.Pick(lines.Count, rng.NextDouble())];
+
+                    // one of the five slots (the head's two looks count as one), then down from the floor's tier
+                    // to the first the character can wear
+                    var slotCount = GameData.ClassGearSlots(line, 1).Count;
+                    if (slotCount == 0) continue;
+                    var slot = RavenNest.Combat.TowerLoot.Pick(slotCount, rng.NextDouble());
+                    var look = rng.NextDouble();
+                    DataModels.Item item = null;
+                    for (var tier = floorTier; tier >= 1 && item == null; --tier)
+                    {
+                        var ids = GameData.ClassGearSlots(line, tier)[slot];
+                        var candidate = gameData.GetItem(ids[RavenNest.Combat.TowerLoot.Pick(ids.Length, look)]);
+                        if (candidate != null && PlayerInventory.CanEquipItem(candidate, skills)) item = candidate;
+                    }
+                    if (item == null) continue;
+
+                    // the gem in its first socket: the band's element, at a tier that grows with the floor
+                    string sockets = null;
+                    if (GemManager.TryGetSlot(item, out var gemSlot))
+                    {
+                        var kind = RavenNest.Combat.TowerLoot.Gem(floor, ItemLines.ArmorFactor(line));
+                        var gemTier = RavenNest.Combat.TowerLoot.GemTier(floor);
+                        if (gameData.GetItem(RavenNest.Combat.Gems.ItemId(kind, gemTier)) != null)
+                            sockets = RavenNest.Combat.TowerLoot.Sockets(kind, gemTier, RavenNest.Combat.Gems.Sockets(GameMath.GetItemLevel(item), gemSlot));
+                    }
+
+                    var stack = inventory.AddItem(item.Id, 1, sockets: sockets).FirstOrDefault();
+                    if (stack == null) continue;
+                    rewards.Add(new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = item.Id, InventoryItemId = stack.Id, Sockets = sockets });
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Could not give class gear from the tower: " + exc);
+                }
+            }
+            return rewards.ToArray();
+        }
+
+        /// <summary>
         ///     A pet egg now and then (RavenNest.Combat.PetEggs): the source's chance per character, then an egg from its
         ///     table at the tier. Added to the inventory and to the rewards the game shows.
         /// </summary>

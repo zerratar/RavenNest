@@ -17,6 +17,23 @@ namespace RavenNest.Models
         Melee = 4,
         /// <summary>Heavy plate for Defense: health, threat, damage reduction.</summary>
         Tank = 5,
+
+        // the second seven (2026-11-21). A new line is a new value here, its eight materials at the end of
+        // ItemMaterial, and its entries in ItemLines.ArmorFactor and ItemLines.Fits: nothing else counts lines.
+        /// <summary>Light leather for Attack: crits, attack speed, evasion.</summary>
+        Rogue = 6,
+        /// <summary>Hide and fur for Strength: melee power, crit damage, health.</summary>
+        Barbarian = 7,
+        /// <summary>Lacquered plates for Attack and Strength: melee power, accuracy, armor penetration.</summary>
+        Samurai = 8,
+        /// <summary>Blessed plate for Defense and Healing: health, healing power, threat.</summary>
+        Paladin = 9,
+        /// <summary>Dark plate for Defense and Strength: life steal, thorns, melee power.</summary>
+        DarkKnight = 10,
+        /// <summary>A hunter's coat for Ranged: ranged power, more against bosses and the undead.</summary>
+        WitchHunter = 11,
+        /// <summary>Wraps for Healing: healing power, cooldowns, regeneration, evasion.</summary>
+        Monk = 12,
     }
 
     /// <summary>
@@ -31,6 +48,27 @@ namespace RavenNest.Models
         /// <summary>The level a tier's pieces need (in the line's skill), tier 1 first.</summary>
         public static readonly int[] TierLevels = { 1, 30, 70, 120, 200, 400, 650, 900 };
 
+        // every class line, in the order of their materials (the values 1, 2, 3, ... of ItemLine)
+        private static readonly ItemLine[] all = BuildAll();
+
+        private static ItemLine[] BuildAll()
+        {
+            var highest = 0;
+            foreach (ItemLine line in Enum.GetValues(typeof(ItemLine)))
+            {
+                if ((int)line > highest) highest = (int)line;
+            }
+            var lines = new ItemLine[highest];
+            for (var i = 0; i < highest; ++i) lines[i] = (ItemLine)(i + 1);
+            return lines;
+        }
+
+        /// <summary>How many class lines there are (Plate is not one).</summary>
+        public static int Count => all.Length;
+
+        /// <summary>Every class line, the first one first. A copy: change it as you like.</summary>
+        public static ItemLine[] All => (ItemLine[])all.Clone();
+
         /// <summary>The armor of a piece next to a plate piece of the same level and slot.</summary>
         public static double ArmorFactor(ItemLine line)
         {
@@ -40,6 +78,13 @@ namespace RavenNest.Models
                 case ItemLine.Healer: return 0.4;
                 case ItemLine.Ranger: return 0.6;
                 case ItemLine.Melee: return 0.75;
+                case ItemLine.Rogue: return 0.6;
+                case ItemLine.Barbarian: return 0.5;
+                case ItemLine.Samurai: return 0.75;
+                case ItemLine.Paladin: return 0.9;
+                case ItemLine.DarkKnight: return 0.9;
+                case ItemLine.WitchHunter: return 0.6;
+                case ItemLine.Monk: return 0.4;
                 default: return 1.0;
             }
         }
@@ -51,7 +96,7 @@ namespace RavenNest.Models
             var index = (int)material - (int)ItemMaterial.Apprentice;
             if (index < 0) return ItemLine.Plate;
             var line = 1 + index / Tiers;
-            return line > (int)ItemLine.Tank ? ItemLine.Plate : (ItemLine)line;
+            return line > all.Length ? ItemLine.Plate : (ItemLine)line; // a line from a newer version
         }
 
         /// <summary>1 to 8 for class gear, 0 for anything else.</summary>
@@ -66,6 +111,61 @@ namespace RavenNest.Models
             if (line == ItemLine.Plate) throw new ArgumentException("Plate has its own tiers.", nameof(line));
             if (tier < 1 || tier > Tiers) throw new ArgumentOutOfRangeException(nameof(tier));
             return (ItemMaterial)((int)ItemMaterial.Apprentice + ((int)line - 1) * Tiers + tier - 1);
+        }
+
+        /// <summary>The highest tier (1 to 8) whose level is at or below <paramref name="level"/>; 1 at least.</summary>
+        public static int TierAt(int level)
+        {
+            var tier = 1;
+            for (var i = 0; i < TierLevels.Length; ++i)
+            {
+                if (TierLevels[i] <= level) tier = i + 1;
+            }
+            return tier;
+        }
+
+        // ---- which lines fit a trained skill -------------------------------------------------------------------
+        // Several lines can fit one skill (Attack: Melee, Rogue, Samurai), and a line can fit several skills
+        // (Paladin: Defense and Healing). A set of lines is a number with one bit a line (Bit), 0 for none, so asking
+        // costs nothing and no new type is needed in the game.
+
+        /// <summary>A line's bit in a set of lines; 0 for Plate.</summary>
+        public static int Bit(ItemLine line) => line == ItemLine.Plate ? 0 : 1 << (int)line;
+
+        /// <summary>Is the line in the set.</summary>
+        public static bool Has(int lines, ItemLine line) => line != ItemLine.Plate && (lines & (1 << (int)line)) != 0;
+
+        /// <summary>
+        /// The lines that fit a player training this skill, as a set (<see cref="Has"/>); 0 when none does. Health is
+        /// what the game trains for "all" (and what the server keeps as "All"), so it names no line, and neither does
+        /// a skill that is not combat.
+        /// </summary>
+        public static int Fits(Skill trained)
+        {
+            switch (trained)
+            {
+                case Skill.Magic: return Bit(ItemLine.Mage);
+                case Skill.Healing: return Bit(ItemLine.Healer) | Bit(ItemLine.Paladin) | Bit(ItemLine.Monk);
+                case Skill.Ranged: return Bit(ItemLine.Ranger) | Bit(ItemLine.WitchHunter);
+                case Skill.Attack: return Bit(ItemLine.Melee) | Bit(ItemLine.Rogue) | Bit(ItemLine.Samurai);
+                case Skill.Strength: return Bit(ItemLine.Melee) | Bit(ItemLine.Barbarian) | Bit(ItemLine.Samurai) | Bit(ItemLine.DarkKnight);
+                case Skill.Defense: return Bit(ItemLine.Tank) | Bit(ItemLine.Paladin) | Bit(ItemLine.DarkKnight);
+                default: return 0;
+            }
+        }
+
+        /// <summary>Does the line fit a player training this skill.</summary>
+        public static bool Fits(ItemLine line, Skill trained) => Has(Fits(trained), line);
+
+        /// <summary>The lines of a set, the first one first.</summary>
+        public static ItemLine[] In(int lines)
+        {
+            var count = 0;
+            for (var i = 0; i < all.Length; ++i) if (Has(lines, all[i])) count++;
+            var result = new ItemLine[count];
+            var n = 0;
+            for (var i = 0; i < all.Length; ++i) if (Has(lines, all[i])) result[n++] = all[i];
+            return result;
         }
     }
 }

@@ -9,6 +9,13 @@ namespace RavenNest.Models
         public Guid ItemId { get; set; }
         public Guid InventoryItemId { get; set; }
         public int Amount { get; set; }
+
+        /// <summary>
+        /// The gems the item came with, in the inventory item's text form (a gem item id per socket, joined by commas;
+        /// RavenNest.Combat.Gems.ParseSockets). Null for an item without gems. A tower chest's class gear arrives with
+        /// one (v0.9.7), and the game says so when it announces the drop.
+        /// </summary>
+        public string Sockets { get; set; }
     }
 
     public class ItemCraftingRequirement

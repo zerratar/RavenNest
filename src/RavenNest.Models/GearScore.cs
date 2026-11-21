@@ -13,67 +13,67 @@ namespace RavenNest.Models
     ///  - a piece whose line fits counts as the plate piece of its level would (its armor divided by the line's
     ///    <see cref="ItemLines.ArmorFactor"/>), plus <see cref="FitMargin"/>: it beats plate of its level and the next
     ///    metals up, and loses to plate many tiers above;
-    ///  - a piece that does not fit counts as its own, lower armor; the Tank line, which has the armor of plate, counts
-    ///    as <see cref="UnfitTankShare"/> of it, so nobody ends up in threat gear by accident.
-    /// What the player is doing is the skill being trained (<see cref="LineFor(Skill)"/>). When that names no line
-    /// (training all, or a skill that is not combat), the line of the class piece already worn in the slot is the one
-    /// that fits: what a player wears is kept, and plain armor is the fallback.
+    ///  - a piece that does not fit counts as its own, lower armor; a line with the armor of plate (the Tank's) counts
+    ///    as <see cref="UnfitShare"/> of it, so nobody ends up in threat gear by accident.
+    /// What the player is doing is the skill being trained, and several lines can fit one skill
+    /// (<see cref="ItemLines.Fits(Skill)"/>: a set of lines). When the skill names no line (training all, or a skill
+    /// that is not combat), the line of the class piece already worn in the slot is the one that fits: what a player
+    /// wears is kept, and plain armor is the fallback.
+    /// Between two fitting pieces of different lines and the same tier the one already worn stays
+    /// (<see cref="Beats"/>): which of two paths' gear to wear is the player's choice, not the ranking's.
     /// Only the ranking is decided here; when an item is replaced is up to the caller, as before.
+    ///
+    /// The game loads this library on its own runtime: nothing here may use a type that runtime lacks
+    /// (MidpointRounding made EquipBestItems throw a TypeLoadException in the first play test). Plain numbers only.
     /// </summary>
     public static class GearScore
     {
         /// <summary>The share a fitting class gear piece counts for above a plate piece of its level.</summary>
         public const double FitMargin = 0.25;
 
-        /// <summary>What Tank gear that does not fit counts for, next to a plate piece with the same armor.</summary>
-        public const double UnfitTankShare = 0.95;
+        /// <summary>
+        /// What class gear that does not fit counts for at most, next to a plate piece of its level: a line with
+        /// more armor than this share of plate (the Tank's has all of it) is counted down to it.
+        /// </summary>
+        public const double UnfitShare = 0.95;
+
+        /// <summary>The lines that fit the trained skill, as a set (<see cref="ItemLines.Has"/>); 0 when none does.</summary>
+        public static int FitsFor(Skill trained) => ItemLines.Fits(trained);
 
         /// <summary>
-        /// The line the trained skill calls for; <see cref="ItemLine.Plate"/> when none does. Health is what the game
-        /// trains for "all" (and what the server keeps as "All"), so it names no line.
+        /// The skill a character trains, from the task the server keeps for it: the task "Fighting" and its argument
+        /// (Attack, Defense, Strength, Ranged, Magic, Healing or All; the short forms players type are understood
+        /// too). <see cref="Skill.None"/> for anything else.
         /// </summary>
-        public static ItemLine LineFor(Skill trained)
+        public static Skill Trained(string task, string taskArgument)
         {
-            switch (trained)
-            {
-                case Skill.Magic: return ItemLine.Mage;
-                case Skill.Healing: return ItemLine.Healer;
-                case Skill.Ranged: return ItemLine.Ranger;
-                case Skill.Attack:
-                case Skill.Strength: return ItemLine.Melee;
-                case Skill.Defense: return ItemLine.Tank;
-                default: return ItemLine.Plate;
-            }
-        }
-
-        /// <summary>
-        /// The same from the task the server keeps for a character: the task "Fighting" and its argument (Attack,
-        /// Defense, Strength, Ranged, Magic, Healing or All; the short forms players type are understood too).
-        /// </summary>
-        public static ItemLine LineFor(string task, string taskArgument)
-        {
-            if (string.IsNullOrEmpty(task) || string.IsNullOrEmpty(taskArgument)) return ItemLine.Plate;
-            if (!task.Trim().Equals("Fighting", StringComparison.OrdinalIgnoreCase)) return ItemLine.Plate;
+            if (string.IsNullOrEmpty(task) || string.IsNullOrEmpty(taskArgument)) return Skill.None;
+            if (!task.Trim().Equals("Fighting", StringComparison.OrdinalIgnoreCase)) return Skill.None;
             var argument = taskArgument.Trim().ToLowerInvariant();
-            if (argument.StartsWith("mag")) return ItemLine.Mage;
-            if (argument.StartsWith("heal")) return ItemLine.Healer;
-            if (argument.StartsWith("rang")) return ItemLine.Ranger;
-            if (argument.StartsWith("att") || argument.StartsWith("atk") || argument.StartsWith("str")) return ItemLine.Melee;
-            if (argument.StartsWith("def")) return ItemLine.Tank;
-            return ItemLine.Plate;
+            if (argument.StartsWith("mag")) return Skill.Magic;
+            if (argument.StartsWith("heal")) return Skill.Healing;
+            if (argument.StartsWith("rang")) return Skill.Ranged;
+            if (argument.StartsWith("att") || argument.StartsWith("atk")) return Skill.Attack;
+            if (argument.StartsWith("str")) return Skill.Strength;
+            if (argument.StartsWith("def")) return Skill.Defense;
+            return Skill.None;
         }
 
+        /// <summary>The lines that fit, from the server's task for a character.</summary>
+        public static int FitsFor(string task, string taskArgument) => ItemLines.Fits(Trained(task, taskArgument));
+
         /// <summary>
-        /// The line that fits for one slot: the trained skill's, or, when that names none, the line of the class gear
+        /// The lines that fit for one slot: the trained skill's, or, when that names none, the line of the class gear
         /// piece worn there now (<see cref="ItemMaterial.None"/> for an empty slot).
         /// </summary>
-        public static ItemLine LineFor(ItemLine trained, ItemMaterial worn)
+        public static int KeepWorn(int trainedFits, ItemMaterial worn)
         {
-            if (trained != ItemLine.Plate) return trained;
-            return ItemLines.IsClassGear(worn) ? ItemLines.Of(worn) : ItemLine.Plate;
+            if (trainedFits != 0) return trainedFits;
+            return ItemLines.IsClassGear(worn) ? ItemLines.Bit(ItemLines.Of(worn)) : 0;
         }
 
-        public static ItemLine LineFor(Skill trained, ItemMaterial worn) => LineFor(LineFor(trained), worn);
+        /// <summary>The lines that fit for one slot, from the trained skill and what is worn there.</summary>
+        public static int FitsFor(Skill trained, ItemMaterial worn) => KeepWorn(ItemLines.Fits(trained), worn);
 
         /// <summary>The sum of the seven classic columns: what an item was worth before class gear.</summary>
         public static int Classic(Item item)
@@ -84,22 +84,41 @@ namespace RavenNest.Models
 
         /// <summary>
         /// An item's worth. <paramref name="classic"/> is the worth by the old rule (the classic columns, with the
-        /// enchantments the caller counts); <paramref name="fits"/> is the line that fits (<see cref="LineFor(Skill, ItemMaterial)"/>).
+        /// enchantments the caller counts); <paramref name="fits"/> is the set of lines that fit
+        /// (<see cref="FitsFor(Skill, ItemMaterial)"/>).
         /// </summary>
-        public static int Value(ItemMaterial material, int classic, ItemLine fits)
+        public static int Value(ItemMaterial material, int classic, int fits)
         {
             if (classic <= 0 || !ItemLines.IsClassGear(material)) return classic;
             var line = ItemLines.Of(material);
             if (line == ItemLine.Plate) return classic; // a line this version does not know
-            if (line == fits)
-                // a half rounds up, written without MidpointRounding: the game's runtime cannot load that type from
-                // this library (a TypeLoadException in EquipBestItems, found in the first play test)
-                return (int)Math.Floor(classic / ItemLines.ArmorFactor(line) * (1 + FitMargin) + 0.5);
-            if (line == ItemLine.Tank)
-                return Math.Min(classic - 1, (int)Math.Floor(classic * UnfitTankShare));
+            var factor = ItemLines.ArmorFactor(line);
+            if (ItemLines.Has(fits, line))
+                // a half rounds up, written without MidpointRounding (see the note on the class)
+                return (int)Math.Floor(classic / factor * (1 + FitMargin) + 0.5);
+            if (factor >= UnfitShare)
+                return Math.Min(classic - 1, (int)Math.Floor(classic / factor * UnfitShare));
             return classic;
         }
 
-        public static int Value(Item item, ItemLine fits) => item == null ? 0 : Value(item.Material, Classic(item), fits);
+        public static int Value(Item item, int fits) => item == null ? 0 : Value(item.Material, Classic(item), fits);
+
+        /// <summary>
+        /// Should the candidate replace what is worn. The higher <see cref="Value(ItemMaterial, int, int)"/> wins,
+        /// with one exception: two fitting class pieces of different lines and the same tier are a choice of path
+        /// (a Paladin's or a Tank's for someone training Defense), and there the worn one stays. Nothing worn is
+        /// <see cref="ItemMaterial.None"/> with a worth of 0.
+        /// </summary>
+        public static bool Beats(ItemMaterial candidate, int candidateClassic, ItemMaterial worn, int wornClassic, int fits)
+        {
+            if (ItemLines.IsClassGear(candidate) && ItemLines.IsClassGear(worn))
+            {
+                var a = ItemLines.Of(candidate);
+                var b = ItemLines.Of(worn);
+                if (a != b && ItemLines.Has(fits, a) && ItemLines.Has(fits, b) && ItemLines.TierOf(candidate) == ItemLines.TierOf(worn))
+                    return false;
+            }
+            return Value(candidate, candidateClassic, fits) > Value(worn, wornClassic, fits);
+        }
     }
 }

@@ -13,7 +13,8 @@ using ItemLines = RavenNest.Models.ItemLines;
 namespace RavenNest.BusinessLogic.Data
 {
     /// <summary>
-    ///     Class gear (v0.9.7, the game's docs/class-gear-design.md): five armor lines of eight tiers, six pieces each.
+    ///     Class gear (v0.9.7, the game's docs/class-gear-design.md): armor lines of eight tiers, six pieces each (twelve
+    ///     lines: the first five, and seven more since 2026-11-21).
     ///     Everything about them is made here at startup from two tables: <see cref="ClassGearPieces"/> (what a piece is
     ///     and how it looks) and <see cref="ClassGearLines"/> (what a line gives). The code is the record for these items:
     ///     a row that differs is put right at the next start. Adding a line or a piece is adding rows.
@@ -122,9 +123,82 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Tank, "gloves", ItemType.Gloves, "Gauntlets", "12,4"),
             Piece(ItemLine.Tank, "leggings", ItemType.Leggings, "Greaves", "20,7").From(3, "20,6"),
             Piece(ItemLine.Tank, "boots", ItemType.Boots, "Sabatons", "13"),
+
+            // ---------------------------------------------------------------------------------------------------------
+            // PLACEHOLDER LOOKS from here on (the seven lines of 2026-11-21). The lines, keys, types, stats, requirements
+            // and recipes are decided; the model ids and masks are first candidates from the unused parts (valid
+            // indices, nothing looked at on a character), there are no per-tier attachments yet, and the names of
+            // the pieces may still change (an item's id is made from line, tier and key, so a rename is safe).
+            // The game-side work replaces the model ids, masks and .From(...) looks in these rows.
+            // ---------------------------------------------------------------------------------------------------------
+            Piece(ItemLine.Rogue, "head1", ItemType.HeadCovering, "Hood", "12", HeadMask.Hair | HeadMask.Ears),             // PLACEHOLDER: leather hood (12, or 5)
+            Piece(ItemLine.Rogue, "head2", ItemType.Mask, "Mask", "3", HeadMask.Beard),                                      // PLACEHOLDER: face scarf
+            Piece(ItemLine.Rogue, "chest", ItemType.Chest, "Tunic", "7,20,10,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 7
+            Piece(ItemLine.Rogue, "gloves", ItemType.Gloves, "Gloves", "3,8"),                                               // PLACEHOLDER: lower arm 8
+            Piece(ItemLine.Rogue, "leggings", ItemType.Leggings, "Breeches", "24"),                                          // PLACEHOLDER: hips 24
+            Piece(ItemLine.Rogue, "boots", ItemType.Boots, "Boots", "18"),                                                   // PLACEHOLDER
+
+            Piece(ItemLine.Barbarian, "head1", ItemType.HeadCovering, "Bear Hood", "8", HeadMask.Hair | HeadMask.Ears),      // PLACEHOLDER: bear head hood
+            Piece(ItemLine.Barbarian, "head2", ItemType.HeadCovering, "Wolf Hood", "9", HeadMask.Hair | HeadMask.Ears),      // PLACEHOLDER: wolf pelt hood
+            Piece(ItemLine.Barbarian, "chest", ItemType.Chest, "Harness", "2,5,3,0", HeadMask.NoElbowPads),                  // PLACEHOLDER: torso 2 shows skin (needs the player's skin color on armor parts), fur shoulders 5
+            Piece(ItemLine.Barbarian, "gloves", ItemType.Gloves, "Bracers", "8,9"),                                          // PLACEHOLDER: both show skin
+            Piece(ItemLine.Barbarian, "leggings", ItemType.Leggings, "Kilt", "28"),                                          // PLACEHOLDER: hips 28
+            Piece(ItemLine.Barbarian, "boots", ItemType.Boots, "Fur Boots", "9"),                                            // PLACEHOLDER: legs 9
+
+            Piece(ItemLine.Samurai, "head1", ItemType.Helmet, "Kabuto", "12", HeadMask.All),                                 // PLACEHOLDER: helmet 12 (neck guard)
+            Piece(ItemLine.Samurai, "head2", ItemType.HeadCovering, "Jingasa", "2", HeadMask.Hair),                          // PLACEHOLDER: wide-brim kettle hat
+            Piece(ItemLine.Samurai, "chest", ItemType.Chest, "Yoroi", "26,15,19,0", HeadMask.NoElbowPads),                   // PLACEHOLDER: torso 26, layered shoulders 15
+            Piece(ItemLine.Samurai, "gloves", ItemType.Gloves, "Kote", "5,14"),                                              // PLACEHOLDER
+            Piece(ItemLine.Samurai, "leggings", ItemType.Leggings, "Haidate", "26"),                                         // PLACEHOLDER: striped long skirt
+            Piece(ItemLine.Samurai, "boots", ItemType.Boots, "Suneate", "1"),                                                // PLACEHOLDER: boot with shin plate
+
+            Piece(ItemLine.Paladin, "head1", ItemType.Helmet, "Crested Helm", "7,10", HeadMask.All),                         // PLACEHOLDER: closed armet with the cross crest
+            Piece(ItemLine.Paladin, "head2", ItemType.Helmet, "Winged Helm", "2,2", HeadMask.All),                           // PLACEHOLDER: rounded helm with wings
+            Piece(ItemLine.Paladin, "chest", ItemType.Chest, "Breastplate", "24,11,14,3"),                                   // PLACEHOLDER: torso 24, shoulders 11
+            Piece(ItemLine.Paladin, "gloves", ItemType.Gloves, "Gauntlets", "12,4"),                                         // PLACEHOLDER
+            Piece(ItemLine.Paladin, "leggings", ItemType.Leggings, "Cuisses", "15,6"),                                       // PLACEHOLDER: hips 15
+            Piece(ItemLine.Paladin, "boots", ItemType.Boots, "Sabatons", "14"),                                              // PLACEHOLDER: legs 14 (winged knee)
+
+            Piece(ItemLine.DarkKnight, "head1", ItemType.Helmet, "Dread Helm", "3", HeadMask.All),                           // PLACEHOLDER: helmet 3 (visor slit)
+            Piece(ItemLine.DarkKnight, "head2", ItemType.Helmet, "Barbute", "8,1", HeadMask.All),                            // PLACEHOLDER: barbute with a dark plume
+            Piece(ItemLine.DarkKnight, "chest", ItemType.Chest, "Chestplate", "22,7,4,1"),                                   // PLACEHOLDER: spiked shoulders 7 (or 4)
+            Piece(ItemLine.DarkKnight, "gloves", ItemType.Gloves, "Gauntlets", "12,14"),                                     // PLACEHOLDER
+            Piece(ItemLine.DarkKnight, "leggings", ItemType.Leggings, "Legplates", "21,5"),                                  // PLACEHOLDER
+            Piece(ItemLine.DarkKnight, "boots", ItemType.Boots, "Warboots", "12"),                                           // PLACEHOLDER: legs 12
+
+            Piece(ItemLine.WitchHunter, "head1", ItemType.Hat, "Buckle Hat", "8"),                                           // PLACEHOLDER: hats 8
+            Piece(ItemLine.WitchHunter, "head2", ItemType.Hat, "Tricorne", "6"),                                             // PLACEHOLDER: hats 6
+            Piece(ItemLine.WitchHunter, "chest", ItemType.Chest, "Coat", "4,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 4
+            Piece(ItemLine.WitchHunter, "gloves", ItemType.Gloves, "Gloves", "6,16"),                                        // PLACEHOLDER
+            Piece(ItemLine.WitchHunter, "leggings", ItemType.Leggings, "Coat Skirt", "5"),                                   // PLACEHOLDER: hips 5
+            Piece(ItemLine.WitchHunter, "boots", ItemType.Boots, "Boots", "2"),                                              // PLACEHOLDER
+
+            Piece(ItemLine.Monk, "head1", ItemType.Hat, "Headband", "0"),                                                    // PLACEHOLDER: hats 0 (headband with knot)
+            Piece(ItemLine.Monk, "head2", ItemType.HeadCovering, "Cap", "0", HeadMask.Hair | HeadMask.Ears),                 // PLACEHOLDER: cap with band
+            Piece(ItemLine.Monk, "chest", ItemType.Chest, "Wrap", "8,20,18,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 8 (one-shoulder wrap)
+            Piece(ItemLine.Monk, "gloves", ItemType.Gloves, "Handwraps", "8,18"),                                            // PLACEHOLDER: hands 8 shows skin
+            Piece(ItemLine.Monk, "leggings", ItemType.Leggings, "Leg Wraps", "23"),                                          // PLACEHOLDER: hips 23 (or 22)
+            Piece(ItemLine.Monk, "boots", ItemType.Boots, "Sandals", "6"),                                                   // PLACEHOLDER: legs 6
         };
 
         private enum ClassGearSkill { Magic, Ranged, Attack, Defense }
+
+        /// <summary>
+        ///     What a piece is made from, as { chest, leggings, each of head, gloves and boots }: linen and leather are
+        ///     times the tier (one linen and one leather for all tiers, more of it higher up), bars are of the tier's
+        ///     metal and not times anything (a higher tier's bar is dearer by itself).
+        /// </summary>
+        private sealed class ClassGearCost
+        {
+            public int[] Linen = { 0, 0, 0 };
+            public int[] Leather = { 0, 0, 0 };
+            public int[] Bars = { 0, 0, 0 };
+
+            public static int Of(int[] amounts, ItemType type) => amounts[type == ItemType.Chest ? 0 : type == ItemType.Leggings ? 1 : 2];
+        }
+
+        /// <summary>A set's stat: in percent at tier 1 and tier 8. Fine: one too small for halves and tenths (see <see cref="ClassGearStats"/>).</summary>
+        private static (GearStat Stat, double From, double To, bool Fine) Stat(GearStat stat, double from, double to, bool fine = false) => (stat, from, to, fine);
 
         private sealed class ClassGearLineInfo
         {
@@ -137,8 +211,14 @@ namespace RavenNest.BusinessLogic.Data
             ///     What a full set of five gives, in percent, at tier 1 and at tier 8 (linear between, in halves).
             ///     Evasion is a rating, not a share: see <see cref="ClassGearEvasion"/>.
             /// </summary>
-            public (GearStat Stat, double From, double To)[] Stats;
+            public (GearStat Stat, double From, double To, bool Fine)[] Stats;
+            /// <summary>What a piece is made from.</summary>
+            public ClassGearCost Cost;
         }
+
+        // the recipes: cloth or leather per tier and a bar of trim, or bars and a strap of leather (or linen) per tier
+        private static readonly int[] ClassGearCloth = { 4, 3, 2 };
+        private static readonly int[] ClassGearOne = { 1, 1, 1 };
 
         private static readonly ClassGearLineInfo[] ClassGearLines =
         {
@@ -146,38 +226,94 @@ namespace RavenNest.BusinessLogic.Data
             {
                 Line = ItemLine.Mage, Requires = ClassGearSkill.Magic,
                 Description = "Cloth for those who train Magic: far less armor than plate, but more magic power, faster casts and better accuracy.",
-                Stats = new[] { (GearStat.MagicPowerBonus, 2.0, 16.0), (GearStat.CastSpeed, 1.0, 8.0), (GearStat.AccuracyBonus, 1.0, 8.0) },
+                Stats = new[] { Stat(GearStat.MagicPowerBonus, 2, 16), Stat(GearStat.CastSpeed, 1, 8), Stat(GearStat.AccuracyBonus, 1, 8) },
+                Cost = new ClassGearCost { Linen = ClassGearCloth, Bars = ClassGearOne },
             },
             new ClassGearLineInfo
             {
                 Line = ItemLine.Healer, Requires = ClassGearSkill.Magic,
                 Description = "Cloth for those who train Healing: far less armor than plate, but stronger heals that also shield, shorter cooldowns and more health.",
-                Stats = new[] { (GearStat.HealingPowerBonus, 2.0, 16.0), (GearStat.HealShield, 1.0, 8.0), (GearStat.CooldownReduction, 1.0, 6.0), (GearStat.MaxHealthBonus, 1.0, 5.0) },
+                Stats = new[] { Stat(GearStat.HealingPowerBonus, 2, 16), Stat(GearStat.HealShield, 1, 8), Stat(GearStat.CooldownReduction, 1, 6), Stat(GearStat.MaxHealthBonus, 1, 5) },
+                Cost = new ClassGearCost { Linen = ClassGearCloth, Bars = ClassGearOne },
             },
             new ClassGearLineInfo
             {
                 Line = ItemLine.Ranger, Requires = ClassGearSkill.Ranged,
                 Description = "Leather for those who train Ranged: less armor than plate, but more ranged power, critical hits, attack speed and evasion.",
-                Stats = new[] { (GearStat.RangedPowerBonus, 2.0, 14.0), (GearStat.CritChance, 0.5, 4.0), (GearStat.AttackSpeed, 1.0, 6.0), (GearStat.Evasion, 1.0, 6.0) },
+                Stats = new[] { Stat(GearStat.RangedPowerBonus, 2, 14), Stat(GearStat.CritChance, 0.5, 4), Stat(GearStat.AttackSpeed, 1, 6), Stat(GearStat.Evasion, 1, 6) },
+                Cost = new ClassGearCost { Leather = ClassGearCloth, Bars = ClassGearOne },
             },
             new ClassGearLineInfo
             {
                 Line = ItemLine.Melee, Requires = ClassGearSkill.Attack,
                 Description = "Mail for those who train Attack or Strength: a little less armor than plate, but more melee power, critical damage, attack speed and armor penetration.",
-                Stats = new[] { (GearStat.MeleePowerBonus, 2.0, 14.0), (GearStat.CritDamage, 3.0, 20.0), (GearStat.AttackSpeed, 1.0, 5.0), (GearStat.ArmorPenetration, 2.0, 12.0) },
+                Stats = new[] { Stat(GearStat.MeleePowerBonus, 2, 14), Stat(GearStat.CritDamage, 3, 20), Stat(GearStat.AttackSpeed, 1, 5), Stat(GearStat.ArmorPenetration, 2, 12) },
+                Cost = new ClassGearCost { Bars = new[] { 4, 3, 2 }, Leather = ClassGearOne },
             },
             new ClassGearLineInfo
             {
                 Line = ItemLine.Tank, Requires = ClassGearSkill.Defense,
                 Description = "Heavy plate for those who train Defense and stand in front: the armor of plate, with more health, more threat and less damage taken.",
-                Stats = new[] { (GearStat.MaxHealthBonus, 2.0, 12.0), (GearStat.Threat, 5.0, 30.0), (GearStat.DamageReduction, 1.0, 5.0) },
+                Stats = new[] { Stat(GearStat.MaxHealthBonus, 2, 12), Stat(GearStat.Threat, 5, 30), Stat(GearStat.DamageReduction, 1, 5) },
+                Cost = new ClassGearCost { Bars = new[] { 6, 5, 3 }, Leather = ClassGearOne },
+            },
+
+            // the second seven (2026-11-21)
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Rogue, Requires = ClassGearSkill.Attack,
+                Description = "Light leather for those who train Attack and strike first: less armor than plate, but more critical hits, attack speed, melee power and evasion.",
+                Stats = new[] { Stat(GearStat.CritChance, 1, 6), Stat(GearStat.AttackSpeed, 1, 8), Stat(GearStat.MeleePowerBonus, 1, 8), Stat(GearStat.Evasion, 1, 6) },
+                Cost = new ClassGearCost { Leather = ClassGearCloth, Bars = ClassGearOne },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Barbarian, Requires = ClassGearSkill.Attack,
+                Description = "Hide and fur for those who train Strength: half the armor of plate, but much more melee power, critical damage and health.",
+                Stats = new[] { Stat(GearStat.MeleePowerBonus, 2, 16), Stat(GearStat.CritDamage, 3, 20), Stat(GearStat.MaxHealthBonus, 1, 8) },
+                // hide all over; metal only where it holds the harness and the kilt together
+                Cost = new ClassGearCost { Leather = ClassGearCloth, Bars = new[] { 2, 1, 0 } },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Samurai, Requires = ClassGearSkill.Attack,
+                Description = "Lacquered plates for those who train Attack or Strength: a little less armor than plate, but more melee power, accuracy, armor penetration and critical hits.",
+                Stats = new[] { Stat(GearStat.MeleePowerBonus, 2, 12), Stat(GearStat.AccuracyBonus, 1, 8), Stat(GearStat.ArmorPenetration, 2, 14), Stat(GearStat.CritChance, 0.5, 3) },
+                Cost = new ClassGearCost { Bars = new[] { 4, 3, 2 }, Leather = ClassGearOne },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Paladin, Requires = ClassGearSkill.Defense,
+                Description = "Blessed plate for those who train Defense or Healing: nearly the armor of plate, with more health, healing power and threat, and less damage taken.",
+                Stats = new[] { Stat(GearStat.MaxHealthBonus, 1, 8), Stat(GearStat.HealingPowerBonus, 1, 10), Stat(GearStat.DamageReduction, 1, 4), Stat(GearStat.Threat, 3, 15) },
+                Cost = new ClassGearCost { Bars = new[] { 5, 4, 3 }, Linen = ClassGearOne },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.DarkKnight, Requires = ClassGearSkill.Defense,
+                Description = "Dark plate for those who train Defense or Strength: nearly the armor of plate, with life steal, thorns that hurt melee attackers, melee power and more health.",
+                // thorns: the THORNS enchantment gives 2% to 15% on one item, so a whole set gives a little more than one
+                Stats = new[] { Stat(GearStat.LifeSteal, 0.5, 4), Stat(GearStat.Thorns, 3, 20), Stat(GearStat.MeleePowerBonus, 1, 8), Stat(GearStat.MaxHealthBonus, 1, 8) },
+                Cost = new ClassGearCost { Bars = new[] { 5, 4, 3 }, Leather = ClassGearOne },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.WitchHunter, Requires = ClassGearSkill.Ranged,
+                Description = "A hunter's coat for those who train Ranged: less armor than plate, but more ranged power and critical hits, and more damage to bosses and the undead.",
+                Stats = new[] { Stat(GearStat.RangedPowerBonus, 2, 12), Stat(GearStat.BossDamage, 1, 8), Stat(GearStat.UndeadDamage, 2, 12), Stat(GearStat.CritChance, 0.5, 3) },
+                // leather lined with linen: as much cloth as the Ranger's leather, and the bar of trim every piece has
+                Cost = new ClassGearCost { Leather = new[] { 3, 2, 1 }, Linen = ClassGearOne, Bars = ClassGearOne },
+            },
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Monk, Requires = ClassGearSkill.Magic,
+                Description = "Wraps for those who train Healing: far less armor than plate, but more healing power, shorter cooldowns, health that comes back in a fight, more health and evasion.",
+                // combat regen is a share of all health every second (the Vitality tree's Regeneration gives 0.2% a rank, its
+                // capstone 0.6%): a set gives 0.1% to 0.6%
+                Stats = new[] { Stat(GearStat.HealingPowerBonus, 1, 10), Stat(GearStat.CooldownReduction, 1, 6), Stat(GearStat.CombatRegen, 0.1, 0.6, fine: true), Stat(GearStat.MaxHealthBonus, 1, 6), Stat(GearStat.Evasion, 1, 6) },
+                Cost = new ClassGearCost { Linen = ClassGearCloth, Bars = ClassGearOne },
             },
         };
-
-        // what a piece costs to make (the spec's recipes): cloth or leather per tier and a bar of trim, or bars and a strap of leather per tier
-        private const int ClassGearChestCloth = 4, ClassGearLeggingsCloth = 3, ClassGearOtherCloth = 2;
-        private const int ClassGearChestBars = 4, ClassGearLeggingsBars = 3, ClassGearOtherBars = 2;
-        private const int ClassGearTankChestBars = 6, ClassGearTankLeggingsBars = 5, ClassGearTankOtherBars = 3;
 
         /// <summary>The item id of a class gear piece: fixed, so it is the same in every database and survives a rename.</summary>
         public static Guid ClassGearItemId(ItemLine line, int tier, string key)
@@ -189,11 +325,15 @@ namespace RavenNest.BusinessLogic.Data
             return new Guid(hash);
         }
 
-        /// <summary>A set's total of a stat at a tier, in percent: linear from tier 1 to tier 8, in halves.</summary>
-        internal static decimal ClassGearSetTotal(double from, double to, int tier)
+        /// <summary>
+        ///     A set's total of a stat at a tier, in percent: linear from tier 1 to tier 8, in halves (in steps of 0.05
+        ///     for a fine one).
+        /// </summary>
+        internal static decimal ClassGearSetTotal(double from, double to, int tier, bool fine = false)
         {
             var raw = (decimal)from + ((decimal)to - (decimal)from) * (tier - 1) / (ItemLines.Tiers - 1);
-            return Math.Round(raw * 2, MidpointRounding.AwayFromZero) / 2;
+            var steps = fine ? 20 : 2;
+            return Math.Round(raw * steps, MidpointRounding.AwayFromZero) / steps;
         }
 
         /// <summary>
@@ -224,10 +364,17 @@ namespace RavenNest.BusinessLogic.Data
             var info = ClassGearLines.First(x => x.Line == line);
             var level = ItemLines.TierLevels[tier - 1];
             var stats = new RavenNest.Combat.GearStats();
-            foreach (var (stat, from, to) in info.Stats)
+            foreach (var (stat, from, to, fine) in info.Stats)
             {
-                var percent = ClassGearSetTotal(from, to, tier);
-                if (RavenNest.Combat.GearStats.IsShare(stat))
+                var percent = ClassGearSetTotal(from, to, tier, fine);
+                if (fine)
+                {
+                    // a share too small for tenths (combat regen, a share of all health every second): a piece's
+                    // part in hundredths of a percent
+                    var hundredths = ClassGearShare((int)(percent * 100), type);
+                    stats[stat] = (double)(hundredths / 10000m);
+                }
+                else if (RavenNest.Combat.GearStats.IsShare(stat))
                 {
                     // shares in tenths of a percent, so no piece says "0.37%"
                     var tenths = ClassGearShare((int)(percent * 10), type);
@@ -293,6 +440,25 @@ namespace RavenNest.BusinessLogic.Data
             }
             return below.Value; // above the last set
         }
+
+        /// <summary>
+        ///     The item ids of a line's pieces at a tier, by slot: head (both head pieces), chest, gloves, leggings,
+        ///     boots. Empty for a line without pieces. For whoever hands class gear out (the tower's chests).
+        /// </summary>
+        public static IReadOnlyList<Guid[]> ClassGearSlots(ItemLine line, int tier)
+        {
+            var slots = new List<Guid[]>();
+            if (line == ItemLine.Plate || tier < 1 || tier > ItemLines.Tiers) return slots;
+            foreach (var slot in new[] { ItemType.Helmet, ItemType.Chest, ItemType.Gloves, ItemType.Leggings, ItemType.Boots })
+            {
+                var ids = ClassGearPieces.Where(p => p.Line == line && ClassGearPlateSlot(p.Type) == slot).Select(p => ClassGearItemId(line, tier, p.Key)).ToArray();
+                if (ids.Length > 0) slots.Add(ids);
+            }
+            return slots;
+        }
+
+        /// <summary>The lines that have pieces, the first one first.</summary>
+        public static IReadOnlyList<ItemLine> ClassGearLinesMade => ClassGearLines.Select(x => x.Line).Where(l => ClassGearPieces.Any(p => p.Line == l)).ToList();
 
         private void EnsureClassGear()
         {
@@ -426,23 +592,14 @@ namespace RavenNest.BusinessLogic.Data
 
                     // the recipe: Crafting at the tier's level, always a success, as the metal tiers
                     var bar = bars[tier - 1];
-                    Ingredient[] ingredients;
-                    switch (piece.Line)
-                    {
-                        case ItemLine.Mage:
-                        case ItemLine.Healer:
-                            ingredients = new[] { new Ingredient { Item = linen, Amount = ClassGearAmount(piece.Type, ClassGearChestCloth, ClassGearLeggingsCloth, ClassGearOtherCloth) * tier }, new Ingredient { Item = bar, Amount = 1 } };
-                            break;
-                        case ItemLine.Ranger:
-                            ingredients = new[] { new Ingredient { Item = leather, Amount = ClassGearAmount(piece.Type, ClassGearChestCloth, ClassGearLeggingsCloth, ClassGearOtherCloth) * tier }, new Ingredient { Item = bar, Amount = 1 } };
-                            break;
-                        case ItemLine.Melee:
-                            ingredients = new[] { new Ingredient { Item = bar, Amount = ClassGearAmount(piece.Type, ClassGearChestBars, ClassGearLeggingsBars, ClassGearOtherBars) }, new Ingredient { Item = leather, Amount = tier } };
-                            break;
-                        default:
-                            ingredients = new[] { new Ingredient { Item = bar, Amount = ClassGearAmount(piece.Type, ClassGearTankChestBars, ClassGearTankLeggingsBars, ClassGearTankOtherBars) }, new Ingredient { Item = leather, Amount = tier } };
-                            break;
-                    }
+                    var wanted = new List<Ingredient>();
+                    var linenAmount = ClassGearCost.Of(info.Cost.Linen, piece.Type) * tier;
+                    var leatherAmount = ClassGearCost.Of(info.Cost.Leather, piece.Type) * tier;
+                    var barAmount = ClassGearCost.Of(info.Cost.Bars, piece.Type);
+                    if (linenAmount > 0) wanted.Add(new Ingredient { Item = linen, Amount = linenAmount });
+                    if (leatherAmount > 0) wanted.Add(new Ingredient { Item = leather, Amount = leatherAmount });
+                    if (barAmount > 0) wanted.Add(new Ingredient { Item = bar, Amount = barAmount });
+                    var ingredients = wanted.ToArray();
 
                     var recipe = EnsureExactCraftingRecipe(level, item, ingredients);
                     if (recipe.Name != item.Name) recipe.Name = item.Name;
@@ -452,11 +609,6 @@ namespace RavenNest.BusinessLogic.Data
 
             if (created > 0 || corrected > 0)
                 logger.LogInformation("Class gear: {Created} item(s) created, {Corrected} corrected.", created, corrected);
-        }
-
-        private static int ClassGearAmount(ItemType type, int chest, int leggings, int other)
-        {
-            return type == ItemType.Chest ? chest : type == ItemType.Leggings ? leggings : other;
         }
 
         /// <summary>

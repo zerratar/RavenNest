@@ -33,7 +33,7 @@
         ElderAncient,
         ElderAtlarus,
 
-        // Class gear (v0.9.7): five lines of eight tiers each, in this order (ItemLines in RavenNest.Models).
+        // Class gear (v0.9.7): lines of eight tiers each, in this order (ItemLines in RavenNest.Models).
         // Never reorder or insert: the number is what is saved, and the game picks the material by it.
         // Mage
         Apprentice,
@@ -80,5 +80,70 @@
         Templar,
         Ironclad,
         Aegis,
+
+        // The second seven lines (2026-11-21), appended: never reorder or insert.
+        // Rogue
+        Cutpurse,
+        Footpad,
+        Prowler,
+        Shadowblade,
+        Nightstalker,
+        Assassin,
+        Wraithwalker,
+        Nightfall,
+        // Barbarian
+        Brute,
+        Raider,
+        Marauder,
+        Berserker,
+        Ravager,
+        Warchief,
+        Stormborn,
+        Worldbreaker,
+        // Samurai
+        Ashigaru,
+        Ronin,
+        Bushi,
+        Hatamoto,
+        Kensei,
+        Daimyo,
+        Shogun,
+        Tenno,
+        // Paladin
+        Initiate,
+        Crusader,
+        Justicar,
+        Vindicator,
+        Protector,
+        Exemplar,
+        Lightsworn,
+        Archon,
+        // Dark Knight
+        Blackguard,
+        Dreadknight,
+        Oathbreaker,
+        Doomguard,
+        Deathlord,
+        Nightlord,
+        Voidknight,
+        Abyssal,
+        // Witch Hunter
+        Seeker,
+        Inquisitor,
+        Purifier,
+        Exorcist,
+        Witchfinder,
+        Demonhunter,
+        Nightwatch,
+        Vanquisher,
+        // Monk
+        Novice,
+        Disciple,
+        Ascetic,
+        Sage,
+        Mystic,
+        Enlightened,
+        Transcendent,
+        Celestial,
     }
 }

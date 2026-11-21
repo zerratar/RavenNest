@@ -436,7 +436,9 @@ namespace RavenNest.Blazor.Services
 
                 if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == RavenNest.Models.ItemMaterial.None)
                 {
-                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res))
+                    // a metal by its first word only: class gear's tier names are words too (the Monk's Celestial made
+                    // Celestial Logs a piece of class gear), and class gear always says its material itself
+                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res) && !RavenNest.Models.ItemLines.IsClassGear(res))
                     {
                         return res.ToString();
                     }
@@ -472,7 +474,9 @@ namespace RavenNest.Blazor.Services
 
                 if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == RavenNest.Models.ItemMaterial.None)
                 {
-                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res))
+                    // a metal by its first word only: class gear's tier names are words too (the Monk's Celestial made
+                    // Celestial Logs a piece of class gear), and class gear always says its material itself
+                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res) && !RavenNest.Models.ItemLines.IsClassGear(res))
                     {
                         return (int)res;
                     }

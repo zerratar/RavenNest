@@ -332,7 +332,8 @@ namespace RavenNest.BusinessLogic.Game
 
                     // class gear is ranked by what the character trains (RavenNest.Models.GearScore, the game's rule too)
                     var state = gameData.GetCharacterState(character.StateId);
-                    var trainedLine = RavenNest.Models.GearScore.LineFor(state?.Task, state?.TaskArgument);
+                    // the lines that fit it, as a set: several can (Attack: Melee, Rogue, Samurai)
+                    var trainedFits = RavenNest.Models.GearScore.FitsFor(state?.Task, state?.TaskArgument);
 
                     foreach (var itemGroup in inventoryItems
                         .Where(x =>
@@ -349,16 +350,18 @@ namespace RavenNest.BusinessLogic.Game
                             if (equippedItem.IsNotNull())
                             {
                                 // training nothing that names a line: the line of the class piece worn here is kept
-                                var fits = RavenNest.Models.GearScore.LineFor(trainedLine, MaterialOf(equippedItem));
-                                var eqValue = GetItemValue(equippedItem, fits);
+                                var fits = RavenNest.Models.GearScore.KeepWorn(trainedFits, MaterialOf(equippedItem));
+                                var wornMaterial = MaterialOf(equippedItem);
+                                var wornValue = GetItemValue(equippedItem);
+                                // the best that beats what is worn; between two fitting lines of one tier the worn one stays
                                 itemToEquip = itemGroup
                                     .OrderByDescending(x => GetItemValue(x, fits))
-                                    .FirstOrDefault(x => GetItemValue(x, fits) > eqValue);
+                                    .FirstOrDefault(x => RavenNest.Models.GearScore.Beats(MaterialOf(x), GetItemValue(x), wornMaterial, wornValue, fits));
                             }
                             else
                             {
                                 itemToEquip = itemGroup
-                                    .OrderByDescending(x => GetItemValue(x, trainedLine))
+                                    .OrderByDescending(x => GetItemValue(x, trainedFits))
                                     .FirstOrDefault();
                             }
 
@@ -1836,10 +1839,10 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        ///     An item's worth when the best is picked, with class gear ranked by the line that fits
-        ///     (RavenNest.Models.GearScore): the value above for everything else.
+        ///     An item's worth when the best is picked, with class gear ranked by the lines that fit
+        ///     (RavenNest.Models.GearScore, a set of lines): the value above for everything else.
         /// </summary>
-        public int GetItemValue(ReadOnlyInventoryItem i, RavenNest.Models.ItemLine fits)
+        public int GetItemValue(ReadOnlyInventoryItem i, int fits)
         {
             return RavenNest.Models.GearScore.Value(MaterialOf(i), GetItemValue(i), fits);
         }

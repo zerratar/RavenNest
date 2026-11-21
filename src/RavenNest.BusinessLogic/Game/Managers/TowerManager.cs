@@ -144,6 +144,7 @@ namespace RavenNest.BusinessLogic.Game
 
             TowerClear clear;
             bool worldFirst;
+            bool streamFirst;
             lock (mutex)
             {
                 var tower = GetOrCreate(session.UserId);
@@ -154,6 +155,9 @@ namespace RavenNest.BusinessLogic.Game
                     return new TowerClearResult { Message = "The floor's quests are not done.", State = State(session.UserId) };
 
                 worldFirst = !gameData.GetTowerClears().Any(x => x.Floor == floor);
+                // the stream's own first clear of the floor. Today always: a stream clears a floor once, then it is on
+                // the next. Asked anyway, so class gear's chance stays right if a floor can ever be cleared again.
+                streamFirst = !gameData.GetTowerClears(session.UserId).Any(x => x.Floor == floor);
                 var characters = gameData.GetActiveSessionCharacters(session);
                 var players = (characterIds ?? Array.Empty<Guid>()).Distinct().Count(id => characters.Any(c => c.Id == id));
                 clear = new TowerClear
@@ -199,6 +203,10 @@ namespace RavenNest.BusinessLogic.Game
 
             var tier = Math.Min(4, (floor - 1) / 3);
             var rewards = gameManager.RollTowerChest(session, tier, ids, floor % 5 == 0 ? 2 : 1);
+            // and class gear made for the floor, with a gem of the band's element in it (RavenNest.Combat.TowerLoot):
+            // everyone who fought on the stream's first clear of the floor
+            var gear = gameManager.RollTowerGear(session, floor, ids, streamFirst);
+            if (gear.Length > 0) rewards = rewards.Concat(gear).ToArray();
             gameData.Touch();
 
             return new TowerClearResult
