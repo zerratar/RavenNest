@@ -3460,6 +3460,8 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             UpdateCharacterAppearance(appearance, character);
+            // the cape toggle is kept beside the appearance: a look saved on the website must not show a hidden cape again
+            appearance.CapeHidden = gameData.GetUserProperty(character.UserId, ModelMapper.CapeHiddenKey(character.Id)) == "1";
 
             var sessionOwnerUserId = character.UserIdLock.GetValueOrDefault();
             var gameSession = gameData.GetSessionByUserId(sessionOwnerUserId);
@@ -3491,6 +3493,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) return false;
 
                 UpdateCharacterAppearance(appearance, character);
+                appearance.CapeHidden = gameData.GetUserProperty(character.UserId, ModelMapper.CapeHiddenKey(character.Id)) == "1";
 
                 var sessionOwnerUserId = character.UserIdLock.GetValueOrDefault();
                 var gameSession = gameData.GetSessionByUserId(sessionOwnerUserId);
