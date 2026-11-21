@@ -104,6 +104,54 @@ namespace RavenNest.Models
         public static int Value(Item item, int fits) => item == null ? 0 : Value(item.Material, Classic(item), fits);
 
         /// <summary>
+        /// One line for a whole outfit. Several lines can fit one skill, and slot by slot the best piece would come
+        /// from whichever line rounds a point higher: a paladin's helm over a monk's wrap (the first play test of
+        /// "equip best" dressed everyone like that). So before the slots are filled the fitting lines are narrowed to
+        /// one: the line whose pieces are worth the most together, counting the best piece per slot among what the
+        /// character wears or could wear; between lines within a hundredth of each other the one worn more, then the first
+        /// named (a skill's own line: the Tank's for Defense, the Healer's for Healing). The other fitting
+        /// lines then count as lines that do not fit. Unchanged when fewer than two lines fit or none has a piece.
+        /// </summary>
+        /// <param name="fits">The lines that fit the trained skill (<see cref="ItemLines.Fits(Skill)"/>).</param>
+        /// <param name="materials">The armor pieces worn or wearable, by material; <paramref name="classics"/> their
+        /// worth by the old rule, <paramref name="slots"/> where each is worn (any number, the same for the same
+        /// slot), <paramref name="worn"/> whether it is worn now.</param>
+        public static int OneLine(int fits, ItemMaterial[] materials, int[] classics, int[] slots, bool[] worn)
+        {
+            var lines = ItemLines.In(fits);
+            if (lines.Length < 2 || materials == null || classics == null || slots == null) return fits;
+            var best = ItemLine.Plate;
+            long bestTotal = 0;
+            var bestWorn = -1;
+            foreach (var line in lines)
+            {
+                var perSlot = new System.Collections.Generic.Dictionary<int, int>();
+                var wornCount = 0;
+                for (var i = 0; i < materials.Length && i < classics.Length && i < slots.Length; ++i)
+                {
+                    if (!ItemLines.IsClassGear(materials[i]) || ItemLines.Of(materials[i]) != line) continue;
+                    if (worn != null && i < worn.Length && worn[i]) wornCount++;
+                    var value = Value(materials[i], classics[i], fits);
+                    if (!perSlot.TryGetValue(slots[i], out var current) || value > current) perSlot[slots[i]] = value;
+                }
+                long total = 0;
+                foreach (var value in perSlot.Values) total += value;
+                if (total <= 0) continue;
+                // equal sets of two lines differ by a point or two of rounding (a paladin's 90% armor against a
+                // tank's 100%): within a hundredth they are equal, and the one worn more or named first stays
+                var clearlyMore = total * 100 > bestTotal * 101;
+                var aboutEqual = !clearlyMore && total * 100 >= bestTotal * 99;
+                if (best == ItemLine.Plate || clearlyMore || (aboutEqual && wornCount > bestWorn))
+                {
+                    best = line;
+                    bestTotal = total;
+                    bestWorn = wornCount;
+                }
+            }
+            return best == ItemLine.Plate ? fits : ItemLines.Bit(best);
+        }
+
+        /// <summary>
         /// Should the candidate replace what is worn. The higher <see cref="Value(ItemMaterial, int, int)"/> wins,
         /// with one exception: two fitting class pieces of different lines and the same tier are a choice of path
         /// (a Paladin's or a Tank's for someone training Defense), and there the worn one stays. Nothing worn is

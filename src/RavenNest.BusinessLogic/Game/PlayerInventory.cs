@@ -334,6 +334,21 @@ namespace RavenNest.BusinessLogic.Game
                     var state = gameData.GetCharacterState(character.StateId);
                     // the lines that fit it, as a set: several can (Attack: Melee, Rogue, Samurai)
                     var trainedFits = RavenNest.Models.GearScore.FitsFor(state?.Task, state?.TaskArgument);
+                    // one line for the whole outfit: the fitting line whose pieces are worth the most together
+                    {
+                        var armor = inventoryItems.Select(x => (Item: x, Worn: false))
+                            .Concat(GetEquippedItems().Select(x => (Item: x, Worn: true)))
+                            .Where(x => x.Item.IsNotNull() && x.Item.Item != null && RavenNest.Models.ItemLines.IsClassGear(MaterialOf(x.Item)))
+                            .ToList();
+                        if (armor.Count > 0)
+                        {
+                            trainedFits = RavenNest.Models.GearScore.OneLine(trainedFits,
+                                armor.Select(x => MaterialOf(x.Item)).ToArray(),
+                                armor.Select(x => GetItemValue(x.Item)).ToArray(),
+                                armor.Select(x => (int)ReadOnlyInventoryItem.GetEquipmentSlot((DataModels.ItemType)x.Item.Item.Type)).ToArray(),
+                                armor.Select(x => x.Worn).ToArray());
+                        }
+                    }
 
                     foreach (var itemGroup in inventoryItems
                         .Where(x =>
