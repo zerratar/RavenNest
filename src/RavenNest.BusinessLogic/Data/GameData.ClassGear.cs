@@ -33,6 +33,37 @@ namespace RavenNest.BusinessLogic.Data
             public string FemaleModels;
             /// <summary>What a head piece hides, or what a body piece leaves off.</summary>
             public HeadMask Mask;
+            /// <summary>The tiers that look different from tier 1 (a plume, a pouch on the belt): see <see cref="From"/>.</summary>
+            public readonly List<ClassGearLook> Looks = new List<ClassGearLook>();
+
+            /// <summary>
+            ///     From this tier on the piece is these parts (and this mask; the piece's own when none is given). The
+            ///     item's id does not change: it is made from line, tier and key.
+            /// </summary>
+            public ClassGearPiece From(int tier, string models, HeadMask? mask = null, string femaleModels = null)
+            {
+                Looks.Add(new ClassGearLook { Tier = tier, MaleModels = models, FemaleModels = femaleModels ?? models, Mask = mask ?? Mask });
+                return this;
+            }
+
+            /// <summary>The parts and the mask of a tier: the last look that starts at or below it, or the piece's own.</summary>
+            public ClassGearLook LookAt(int tier)
+            {
+                var look = new ClassGearLook { Tier = 1, MaleModels = MaleModels, FemaleModels = FemaleModels, Mask = Mask };
+                foreach (var other in Looks)
+                {
+                    if (other.Tier <= tier && other.Tier >= look.Tier) look = other;
+                }
+                return look;
+            }
+        }
+
+        private sealed class ClassGearLook
+        {
+            public int Tier;
+            public string MaleModels;
+            public string FemaleModels;
+            public HeadMask Mask;
         }
 
         private static ClassGearPiece Piece(ItemLine line, string key, ItemType type, string name, string models, HeadMask mask = HeadMask.None, string femaleModels = null)
@@ -44,43 +75,52 @@ namespace RavenNest.BusinessLogic.Data
         ///     The pieces of every line. The model ids must be valid part indices in games before 0.9.7 too (they read the
         ///     same list and never look at the mask), so "no part" is said with a mask flag and a harmless index.
         ///     The two head pieces of a line have the same stats: they are a choice of look.
+        ///     <para>
+        ///     Higher tiers wear more (docs/class-gear-design.md, "Attachments"). The model ids, in the game's order:
+        ///     a head piece is its part, then any head attachments (plume, wings, crown, cross); a chest is torso,
+        ///     pauldrons, upper arms, elbow pads, then what is worn on the back; leggings are hips, knee pads, then what
+        ///     hangs on the belt. A game before 0.9.7 reads the positions it knows (all of a head piece's, a chest's
+        ///     first four, the leggings' first two) and only parses the rest, so those positions always hold a real
+        ///     part index: leggings with a belt and no knee pads say knee pad 10 and NoKneePads.
+        ///     The game's copy of this table is tools/items/class-gear-parts.txt (icons and previews are made from it).
+        ///     </para>
         /// </summary>
         private static readonly ClassGearPiece[] ClassGearPieces =
         {
-            //    line            key         type                   name          model ids      mask
-            Piece(ItemLine.Mage, "head1", ItemType.Hat, "Wizard Hat", "1"),
-            Piece(ItemLine.Mage, "head2", ItemType.HeadCovering, "Hood", "6", HeadMask.Hair | HeadMask.Ears),
-            Piece(ItemLine.Mage, "chest", ItemType.Chest, "Robe", "27,20,20,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads),
+            //    line, key, type, name, model ids at tier 1, mask; then .From(tier, model ids, mask) for the tiers that have more
+            Piece(ItemLine.Mage, "head1", ItemType.Hat, "Wizard Hat", "1").From(3, "1,8").From(6, "1,7"),
+            Piece(ItemLine.Mage, "head2", ItemType.HeadCovering, "Hood", "6", HeadMask.Hair | HeadMask.Ears).From(3, "6,8").From(6, "6,7"),
+            Piece(ItemLine.Mage, "chest", ItemType.Chest, "Robe", "27,20,20,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "27,20,20,0,4"),
             Piece(ItemLine.Mage, "gloves", ItemType.Gloves, "Gloves", "9,18"),
-            Piece(ItemLine.Mage, "leggings", ItemType.Leggings, "Robe Skirt", "9"),
+            Piece(ItemLine.Mage, "leggings", ItemType.Leggings, "Robe Skirt", "9").From(2, "9,10,7", HeadMask.NoKneePads).From(4, "9,10,7,0", HeadMask.NoKneePads),
             Piece(ItemLine.Mage, "boots", ItemType.Boots, "Boots", "11"),
 
-            Piece(ItemLine.Healer, "head1", ItemType.HeadCovering, "Cowl", "4", HeadMask.Hair | HeadMask.Ears),
-            Piece(ItemLine.Healer, "head2", ItemType.HeadCovering, "Cap", "0", HeadMask.Hair | HeadMask.Ears),
+            Piece(ItemLine.Healer, "head1", ItemType.HeadCovering, "Cowl", "4", HeadMask.Hair | HeadMask.Ears).From(3, "4,10").From(6, "4,7").From(7, "4,2"),
+            Piece(ItemLine.Healer, "head2", ItemType.HeadCovering, "Cap", "0", HeadMask.Hair | HeadMask.Ears).From(3, "0,10").From(6, "0,7").From(7, "0,2"),
             Piece(ItemLine.Healer, "chest", ItemType.Chest, "Vestment", "10,20,20,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads),
             Piece(ItemLine.Healer, "gloves", ItemType.Gloves, "Gloves", "13,18"),
-            Piece(ItemLine.Healer, "leggings", ItemType.Leggings, "Tabard", "8"),
+            Piece(ItemLine.Healer, "leggings", ItemType.Leggings, "Tabard", "8").From(2, "8,10,2", HeadMask.NoKneePads).From(4, "8,10,2,8", HeadMask.NoKneePads),
             Piece(ItemLine.Healer, "boots", ItemType.Boots, "Boots", "11"),
 
-            Piece(ItemLine.Ranger, "head1", ItemType.Hat, "Cap", "4"),
-            Piece(ItemLine.Ranger, "head2", ItemType.HeadCovering, "Hood", "5", HeadMask.Hair | HeadMask.Ears), // 12 left the nape bare and hung a strap over the beard
-            Piece(ItemLine.Ranger, "chest", ItemType.Chest, "Jerkin", "14,20,10,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads),
+            Piece(ItemLine.Ranger, "head1", ItemType.Hat, "Cap", "4").From(5, "4,11"),
+            Piece(ItemLine.Ranger, "head2", ItemType.HeadCovering, "Hood", "5", HeadMask.Hair | HeadMask.Ears).From(3, "5,12").From(6, "5,3"), // 12 left the nape bare and hung a strap over the beard
+            Piece(ItemLine.Ranger, "chest", ItemType.Chest, "Jerkin", "14,20,10,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(4, "14,15,10,0", HeadMask.NoElbowPads).From(5, "14,15,10,0,1", HeadMask.NoElbowPads).From(7, "14,15,10,0,0", HeadMask.NoElbowPads),
             Piece(ItemLine.Ranger, "gloves", ItemType.Gloves, "Gloves", "3,3"),
-            Piece(ItemLine.Ranger, "leggings", ItemType.Leggings, "Trousers", "6"),
+            Piece(ItemLine.Ranger, "leggings", ItemType.Leggings, "Trousers", "6").From(2, "6,10,3", HeadMask.NoKneePads).From(4, "6,4,3").From(6, "6,4,3,6"),
             Piece(ItemLine.Ranger, "boots", ItemType.Boots, "Boots", "19"),
 
-            Piece(ItemLine.Melee, "head1", ItemType.HeadCovering, "Helm", "1", HeadMask.Hair | HeadMask.Ears),
-            Piece(ItemLine.Melee, "head2", ItemType.HeadCovering, "Coif", "11", HeadMask.Hair | HeadMask.Ears),
-            Piece(ItemLine.Melee, "chest", ItemType.Chest, "Hauberk", "17,13,19,0", HeadMask.NoElbowPads),
+            Piece(ItemLine.Melee, "head1", ItemType.HeadCovering, "Helm", "1", HeadMask.Hair | HeadMask.Ears).From(3, "1,1").From(6, "1,6"),
+            Piece(ItemLine.Melee, "head2", ItemType.HeadCovering, "Coif", "11", HeadMask.Hair | HeadMask.Ears).From(3, "11,8").From(6, "11,7"),
+            Piece(ItemLine.Melee, "chest", ItemType.Chest, "Hauberk", "17,13,19,0", HeadMask.NoElbowPads).From(4, "17,9,19,0").From(7, "17,8,19,0,3"),
             Piece(ItemLine.Melee, "gloves", ItemType.Gloves, "Gauntlets", "5,17"),
-            Piece(ItemLine.Melee, "leggings", ItemType.Leggings, "Tassets", "10"),
+            Piece(ItemLine.Melee, "leggings", ItemType.Leggings, "Tassets", "10").From(2, "10,10,0", HeadMask.NoKneePads).From(4, "10,8,0,9"),
             Piece(ItemLine.Melee, "boots", ItemType.Boots, "Boots", "4"),
 
-            Piece(ItemLine.Tank, "head1", ItemType.Helmet, "Greathelm", "6", HeadMask.All),
-            Piece(ItemLine.Tank, "head2", ItemType.Helmet, "Visor Helm", "10", HeadMask.All),
-            Piece(ItemLine.Tank, "chest", ItemType.Chest, "Cuirass", "20,10,14,3"),
+            Piece(ItemLine.Tank, "head1", ItemType.Helmet, "Greathelm", "6", HeadMask.All).From(3, "6,0").From(6, "6,0,10").From(7, "6,2").From(8, "6,2,7"),
+            Piece(ItemLine.Tank, "head2", ItemType.Helmet, "Visor Helm", "10", HeadMask.All).From(3, "10,1").From(6, "10,1,10").From(7, "10,2").From(8, "10,2,7"),
+            Piece(ItemLine.Tank, "chest", ItemType.Chest, "Cuirass", "20,12,14,3").From(3, "20,10,14,3").From(6, "20,11,14,3,9"),
             Piece(ItemLine.Tank, "gloves", ItemType.Gloves, "Gauntlets", "12,4"),
-            Piece(ItemLine.Tank, "leggings", ItemType.Leggings, "Greaves", "20,6"),
+            Piece(ItemLine.Tank, "leggings", ItemType.Leggings, "Greaves", "20,7").From(3, "20,6"),
             Piece(ItemLine.Tank, "boots", ItemType.Boots, "Sabatons", "13"),
         };
 
@@ -305,6 +345,7 @@ namespace RavenNest.BusinessLogic.Data
                     var material = ItemLines.Material(piece.Line, tier);
                     var level = ItemLines.TierLevels[tier - 1];
                     var id = ClassGearItemId(piece.Line, tier, piece.Key);
+                    var look = piece.LookAt(tier);
                     var name = material + " " + piece.Name;
 
                     if (byName.TryGetValue(name, out var sameName) && sameName.Id != id)
@@ -345,9 +386,9 @@ namespace RavenNest.BusinessLogic.Data
                     Fix(item.Type, (int)piece.Type, v => item.Type = v);
                     Fix(item.Material, (int)material, v => item.Material = v);
                     Fix(item.Level, level, v => item.Level = v);
-                    Fix(item.MaleModelId, piece.MaleModels, v => item.MaleModelId = v);
-                    Fix(item.FemaleModelId, piece.FemaleModels, v => item.FemaleModelId = v);
-                    Fix(item.HeadMask, (int)piece.Mask, v => item.HeadMask = v);
+                    Fix(item.MaleModelId, look.MaleModels, v => item.MaleModelId = v);
+                    Fix(item.FemaleModelId, look.FemaleModels, v => item.FemaleModelId = v);
+                    Fix(item.HeadMask, (int)look.Mask, v => item.HeadMask = v);
                     // the parts and the tier's material are the look: no prefabs
                     Fix(item.GenericPrefab, null, v => item.GenericPrefab = v);
                     Fix(item.MalePrefab, null, v => item.MalePrefab = v);
