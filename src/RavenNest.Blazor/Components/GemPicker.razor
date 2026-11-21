@@ -1,0 +1,437 @@
+@using Gems = RavenNest.Combat.Gems
+@using GemKind = RavenNest.Combat.GemKind
+@using GemTier = RavenNest.Combat.GemTier
+@using GemSlot = RavenNest.Combat.GemSlot
+
+@*
+    The gem picker: one socket of one item. Opens over the item details dialog.
+
+    It lists the enchanted gems the character carries, with a search box and a chip per kind, and shows the
+    picked gem's details before anything is done. When the socket already holds a gem, that gem is shown on
+    top with "Remove gem", and the main button reads "Replace gem".
+
+    Taking a gem out, or socketing over one, usually destroys it. The server answers such a request with the
+    gem and the chance to keep it and changes nothing; the picker then shows that question (Confirm) in place
+    of the list, never as another popup on top. After a change it shows what happened (Result).
+
+    The picker makes no calls itself. It is given everything and reports clicks, so the page that owns the
+    character does the work, and /dev/gems-preview can show every state with made up data.
+*@
+
+<div class="rf-modal-backdrop rf-modal-backdrop--stacked" @onclick="Close">
+    <div class="rf-modal rf-gempick" role="dialog" aria-modal="true"
+         aria-label="@("Gem for socket " + Socket + " of " + ItemName)"
+         tabindex="-1" @ref="dialog" @onkeydown="OnKeyDown" @onclick:stopPropagation="true">
+        <div class="rf-modal__head">
+            <div class="rf-gempick__heading">
+                <h2 class="rf-modal__title">Gem for socket @Socket</h2>
+                <p class="rf-gempick__item @ItemClass">@ItemName</p>
+            </div>
+            <button type="button" class="rf-modal__close" aria-label="Close" @onclick="Close">&times;</button>
+        </div>
+
+        @if (Result != null)
+        {
+            @* What the change did. The socket shown is the socket as it is now. *@
+            <div class="rf-gempick__state" role="status">
+                @if (Current != null)
+                {
+                    <span class="rf-item__img rf-gempick__big"><img src="@Current.Icon" alt="" /></span>
+                }
+                else
+                {
+                    <span class="rf-gempick__hole rf-gempick__big"><i class="fa-regular fa-gem" aria-hidden="true"></i></span>
+                }
+                <h3 class="rf-gempick__statetitle @(Result.Lost ? "is-bad" : "is-good")">
+                    @if (Result.Lost)
+                    {
+                        <i class="fa-solid fa-burst" aria-hidden="true"></i>
+                        <span>The old gem crumbled</span>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>Done</span>
+                    }
+                </h3>
+                <p class="rf-gempick__statetext">@Result.Text</p>
+                @if (Current != null)
+                {
+                    <p class="rf-gempick__statenow">
+                        In this item the <b>@Current.Name</b> gives <span class="rf-gempick__bonus">@BonusOf(Current)</span>.
+                    </p>
+                }
+                else
+                {
+                    <p class="rf-gempick__statenow">Socket @Socket is empty now.</p>
+                }
+            </div>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="OnBack">@(Current != null ? "Change it again" : "Pick a gem")</button>
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="Close">Done</button>
+            </div>
+        }
+        else if (Confirm != null)
+        {
+            @* The server's question. Nothing has changed yet; the red button does it. *@
+            <div class="rf-gempick__state rf-gempick__state--warn" role="alertdialog" aria-label="Confirm">
+                <div class="rf-gempick__swap">
+                    <span class="rf-item__img rf-gempick__big"><img src="@Confirm.Old.Icon" alt="" /></span>
+                    @if (Confirm.Replacing && Confirm.New != null)
+                    {
+                        <i class="fa-solid fa-arrow-right rf-gempick__arrow" aria-hidden="true"></i>
+                        <span class="rf-item__img rf-gempick__big"><img src="@Confirm.New.Icon" alt="" /></span>
+                    }
+                </div>
+                @if (Confirm.Replacing && Confirm.New != null)
+                {
+                    <h3 class="rf-gempick__statetitle is-warn">Replace the @(Confirm.Old.Name)?</h3>
+                    <p class="rf-gempick__statetext">
+                        Socket @Socket already holds a <b>@Confirm.Old.Name</b>. Putting the <b>@Confirm.New.Name</b> in
+                        gives a <b>@Percent(Confirm.KeepChance)</b> chance to keep the old gem. Otherwise it crumbles
+                        for good.
+                    </p>
+                }
+                else
+                {
+                    <h3 class="rf-gempick__statetitle is-warn">Take out the @(Confirm.Old.Name)?</h3>
+                    <p class="rf-gempick__statetext">
+                        Socket @Socket holds a <b>@Confirm.Old.Name</b>. Taking it out gives a
+                        <b>@Percent(Confirm.KeepChance)</b> chance to keep it. Otherwise it crumbles for good.
+                    </p>
+                }
+                <div class="rf-gempick__odds">
+                    <span class="rf-gempick__oddsnum">@Percent(Confirm.KeepChance)</span>
+                    <span class="rf-gempick__oddstext">
+                        chance to keep the @Confirm.Old.Name. It comes from your clan's Enchanting level and the
+                        Gem Salvager skill.
+                    </span>
+                </div>
+            </div>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="OnCancel">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="OnConfirm">
+                    @(Confirm.Replacing ? "Replace it" : "Take it out")
+                </button>
+            </div>
+        }
+        else
+        {
+            var selected = Selected;
+            var visible = Visible();
+
+            @if (Current != null)
+            {
+                <div class="rf-gempick__current">
+                    <span class="rf-gempick__label">Currently in this socket</span>
+                    <div class="rf-gempick__currentrow">
+                        <span class="rf-item__img"><img src="@Current.Icon" alt="" /></span>
+                        <span class="rf-gempick__currentbody">
+                            <span class="rf-gempick__name">@Current.Name</span>
+                            <span class="rf-gempick__bonus">@BonusOf(Current)</span>
+                        </span>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="OnRemove">
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i> Remove gem
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <p class="rf-gempick__error" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                    <span>@Error</span>
+                </p>
+            }
+
+            @if (Owned == null || Owned.Count == 0)
+            {
+                <div class="rf-gempick__none">
+                    <span class="rf-gempick__hole"><i class="fa-regular fa-gem" aria-hidden="true"></i></span>
+                    <div>
+                        <h3 class="rf-gempick__nonetitle">No enchanted gems to put in</h3>
+                        <p>
+                            This character carries no enchanted gems. Mine raw gems and have your clan enchant
+                            them: <span class="rf-cmd">!gems enchant ruby</span> in the game.
+                        </p>
+                    </div>
+                </div>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="Close">Close</button>
+                </div>
+            }
+            else
+            {
+                <div class="rf-gempick__grid">
+                    <div class="rf-gempick__browse">
+                        <input type="search" class="rf-input rf-gempick__search" placeholder="Search by gem or bonus"
+                               aria-label="Search your gems" value="@search" @oninput="OnSearchChanged" />
+
+                        @if (Kinds.Count > 1)
+                        {
+                            <div class="rf-gempick__kinds" role="group" aria-label="Kind of gem">
+                                <button type="button" class="rf-filter @(kindFilter == null ? "is-active" : "")"
+                                        aria-pressed="@(kindFilter == null ? "true" : "false")" @onclick="() => SetKind(null)">
+                                    All
+                                </button>
+                                @foreach (var kind in Kinds)
+                                {
+                                    var k = kind;
+                                    <button type="button" class="rf-filter @(kindFilter == k ? "is-active" : "")"
+                                            aria-pressed="@(kindFilter == k ? "true" : "false")" @onclick="() => SetKind(k)">
+                                        @k
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        @if (visible.Count == 0)
+                        {
+                            <div class="rf-gempick__nomatch">
+                                <p>None of your gems match that.</p>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Show all gems</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="rf-gempick__list" role="listbox" aria-label="Your gems">
+                                @foreach (var gem in visible)
+                                {
+                                    var g = gem;
+                                    var isSelected = selected != null && selected.Key == g.Key;
+                                    <button type="button" role="option" aria-selected="@(isSelected ? "true" : "false")"
+                                            class="rf-gempick__row @(isSelected ? "is-selected" : "")" @onclick="() => Select(g)">
+                                        <span class="rf-item__img"><img src="@g.Icon" alt="" loading="lazy" /></span>
+                                        <span class="rf-gempick__rowbody">
+                                            <span class="rf-gempick__name">@g.Name</span>
+                                            <span class="rf-gempick__bonus">@BonusOf(g)</span>
+                                        </span>
+                                        <span class="rf-gempick__owned" title="@(g.Amount.ToString("N0") + " owned")">x@(g.Amount.ToString("N0"))</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="rf-gempick__detail @(selected == null ? "is-idle" : "")" aria-live="polite">
+                        @if (selected == null)
+                        {
+                            <span class="rf-gempick__hole"><i class="fa-regular fa-gem" aria-hidden="true"></i></span>
+                            <p class="rf-gempick__idle">Pick a gem to see what it does in this item.</p>
+                        }
+                        else
+                        {
+                            var same = Current != null && Current.Key == selected.Key;
+
+                            <div class="rf-gempick__detailhead">
+                                <span class="rf-item__img rf-gempick__big"><img src="@selected.Icon" alt="" /></span>
+                                <div class="rf-gempick__detailtitle">
+                                    <h3 class="rf-gempick__detailname">@selected.Name</h3>
+                                    <span class="rf-gempick__tier" title="@("Tier " + ((int)selected.Tier + 1) + " of " + Gems.TierCount)">
+                                        @for (var t = 0; t < Gems.TierCount; ++t)
+                                        {
+                                            <i class="rf-gempick__pip @(t <= (int)selected.Tier ? "is-on" : "")" aria-hidden="true"></i>
+                                        }
+                                        <span>Tier @((int)selected.Tier + 1) of @Gems.TierCount</span>
+                                    </span>
+                                    <span class="rf-gempick__have">You own @selected.Amount.ToString("N0")</span>
+                                </div>
+                            </div>
+
+                            <div class="rf-gempick__gives">
+                                <span class="rf-gempick__label">In this item</span>
+                                <span class="rf-gempick__givesvalue">@BonusOf(selected)</span>
+                            </div>
+
+                            <ul class="rf-gempick__else">
+                                @foreach (var other in OtherSlots)
+                                {
+                                    <li><span>@SlotLabel(other):</span> <b>@Gems.Describe(selected.Kind, selected.Tier, other)</b></li>
+                                }
+                            </ul>
+
+                            @if (same)
+                            {
+                                <p class="rf-gempick__note">This gem is already in the socket.</p>
+                            }
+                            else if (Current != null)
+                            {
+                                <p class="rf-gempick__warn">
+                                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                                    <span>
+                                        The @Current.Name in this socket has a <b>@Percent(KeepChance)</b> chance to be
+                                        kept. Otherwise it crumbles. You are asked before anything happens.
+                                    </span>
+                                </p>
+                            }
+
+                            <button type="button" class="rf-btn rf-btn--primary rf-btn--block" disabled="@same"
+                                    @onclick="() => OnSocket.InvokeAsync(selected)">
+                                @(Current != null ? "Replace gem" : "Socket it")
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>An enchanted gem: one the character carries (with how many), or the one in the socket.</summary>
+    public sealed record Gem(GemKind Kind, GemTier Tier, long Amount, string Icon)
+    {
+        public string Key => (int)Kind + ":" + (int)Tier;
+        public string Name => Gems.Name(Kind, Tier);
+    }
+
+    /// <summary>The question before a gem is put at risk: the gem in the socket, the one going in (null when it is only taken out) and the chance to keep the old one.</summary>
+    public sealed record ConfirmInfo(bool Replacing, Gem Old, Gem New, double KeepChance);
+
+    /// <summary>What a change did, in words. Lost: a gem crumbled, so it does not read as good news.</summary>
+    public sealed record ResultInfo(string Text, bool Lost);
+
+    [Parameter] public string ItemName { get; set; }
+
+    /// <summary>The item's rarity class, for the color of its name.</summary>
+    [Parameter] public string ItemClass { get; set; }
+
+    /// <summary>Where the gem would sit; it decides what each gem gives.</summary>
+    [Parameter] public GemSlot Slot { get; set; }
+
+    /// <summary>The socket's number, from 1.</summary>
+    [Parameter] public int Socket { get; set; }
+
+    /// <summary>The gem in the socket now; null when it is empty.</summary>
+    [Parameter] public Gem Current { get; set; }
+
+    /// <summary>The gems the character carries, in the order to list them.</summary>
+    [Parameter] public IReadOnlyList<Gem> Owned { get; set; }
+
+    /// <summary>The chance (0 to 1) to keep a gem that is taken out or replaced.</summary>
+    [Parameter] public double KeepChance { get; set; }
+
+    /// <summary>Set while the server waits for a yes; the picker shows the question in place of the list.</summary>
+    [Parameter] public ConfirmInfo Confirm { get; set; }
+
+    /// <summary>Set after a change; the picker shows it in place of the list.</summary>
+    [Parameter] public ResultInfo Result { get; set; }
+
+    /// <summary>Why the last try was not done; shown above the list.</summary>
+    [Parameter] public string Error { get; set; }
+
+    /// <summary>A gem (its Key) to open with as the picked one. For the preview page.</summary>
+    [Parameter] public string InitialGem { get; set; }
+
+    /// <summary>"Socket it" or "Replace gem" for the picked gem.</summary>
+    [Parameter] public EventCallback<Gem> OnSocket { get; set; }
+
+    /// <summary>"Remove gem" on the gem in the socket.</summary>
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    /// <summary>Yes to the question.</summary>
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    /// <summary>No to the question: back to the list.</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    /// <summary>From the result back to the list.</summary>
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private ElementReference dialog;
+    private string search = "";
+    private GemKind? kindFilter;
+    private string selectedKey;
+    private string shownView;
+
+    protected override void OnInitialized()
+    {
+        selectedKey = InitialGem;
+    }
+
+    // The picked gem, while the character still carries it.
+    private Gem Selected => selectedKey == null || Owned == null ? null : Owned.FirstOrDefault(x => x.Key == selectedKey);
+
+    private List<GemKind> Kinds => (Owned ?? Array.Empty<Gem>()).Select(x => x.Kind).Distinct().OrderBy(x => x).ToList();
+
+    private IEnumerable<GemSlot> OtherSlots => new[] { GemSlot.Weapon, GemSlot.Armor, GemSlot.Jewellery }.Where(x => x != Slot);
+
+    private string BonusOf(Gem gem) => Gems.Describe(gem.Kind, gem.Tier, Slot);
+
+    private static string SlotLabel(GemSlot slot)
+    {
+        switch (slot)
+        {
+            case GemSlot.Weapon: return "In a weapon";
+            case GemSlot.Armor: return "In armor";
+            default: return "In a ring or amulet";
+        }
+    }
+
+    private static string Percent(double chance)
+    {
+        return Math.Round(chance * 100).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    // The carried gems that pass the kind chip and the search. Every typed word has to be in the name or the bonus.
+    private List<Gem> Visible()
+    {
+        var words = (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var list = new List<Gem>();
+        foreach (var gem in Owned ?? Array.Empty<Gem>())
+        {
+            if (kindFilter.HasValue && gem.Kind != kindFilter.Value) continue;
+            var text = gem.Name + " " + BonusOf(gem);
+            if (words.All(w => text.Contains(w, StringComparison.OrdinalIgnoreCase))) list.Add(gem);
+        }
+        return list;
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+    }
+
+    private void SetKind(GemKind? kind)
+    {
+        kindFilter = kind;
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        kindFilter = null;
+    }
+
+    private void Select(Gem gem)
+    {
+        selectedKey = gem.Key;
+    }
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private Task OnKeyDown(KeyboardEventArgs e)
+    {
+        return e.Key == "Escape" ? Close() : Task.CompletedTask;
+    }
+
+    // Escape only reaches the picker while the focus is inside it. It is taken on opening, and again when the
+    // list, the question and the result swap places: the button that was clicked is gone by then.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var view = Result != null ? "result" : Confirm != null ? "confirm" : "pick";
+        if (view == shownView) return;
+        shownView = view;
+        try
+        {
+            await dialog.FocusAsync(true);
+        }
+        catch
+        {
+            // the picker was closed before the browser got to it
+        }
+    }
+}

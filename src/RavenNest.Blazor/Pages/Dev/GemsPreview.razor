@@ -1,0 +1,351 @@
+@layout DashboardLayout
+@page "/dev/gems-preview"
+@using Gems = RavenNest.Combat.Gems
+@using GemKind = RavenNest.Combat.GemKind
+@using GemTier = RavenNest.Combat.GemTier
+@using GemSlot = RavenNest.Combat.GemSlot
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject NavigationManager NavigationManager
+
+@*
+    The socket rows of the item details and the gem picker with made up data, for working on their look
+    without signing in. Only on a development server; elsewhere it is a page not found.
+
+    ?state=  rows          the item details only, with its socket rows
+             empty         the picker for an empty socket
+             selected      the same with a gem picked
+             filled        the picker for a socket that holds a gem
+             replace       the same with another gem picked (the keep chance warning)
+             same          the same with the socket's own gem picked
+             confirm       the question before replacing
+             confirmremove the question before taking the gem out
+             result, kept, lost, removed, removedlost   what a change did
+             error         a try that was refused
+             few           only one kind of gem carried (no kind chips)
+             nogems, nogemsfilled   no gems carried
+    &slot=   weapon (default), armor, jewelry
+    &luck=   kept or lost, to settle what a click on the confirm button does (it rolls otherwise)
+
+    Nothing here is saved or sent anywhere: the clicks change this page's own made up item.
+*@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <div class="rf-modal-backdrop">
+        <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="@itemName">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title @itemClass">@itemName</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="rf-itemview">
+                <div class="rf-itemview__art">
+                    <span class="rf-item__img rf-itemview__img">
+                        <img src="@itemImage" alt="" />
+                    </span>
+                </div>
+                <div class="rf-itemview__body">
+                    <div class="rf-actions">
+                        <span class="rf-badge @itemClass">Epic</span>
+                    </div>
+                    <dl class="rf-facts">
+                        <dt>Type</dt>
+                        <dd>@itemType</dd>
+                        <dt>Material</dt>
+                        <dd>Abraxas</dd>
+                        <dt>@(slot == GemSlot.Armor ? "Armor" : slot == GemSlot.Weapon ? "Weapon aim" : "Magic power")</dt>
+                        <dd>121</dd>
+                        @for (var i = 0; i < sockets.Length; ++i)
+                        {
+                            var number = i + 1;
+                            var gem = sockets[i];
+                            <dt class="rf-socket-label">Socket @number</dt>
+                            <dd>
+                                <GemSocketButton Number="number" Name="@gem?.Name" Icon="@gem?.Icon"
+                                                 Bonus="@(gem == null ? null : Gems.Describe(gem.Kind, gem.Tier, slot))"
+                                                 OnClick="() => Open(number)" />
+                            </dd>
+                        }
+                        <dt>Requires attack</dt>
+                        <dd>160</dd>
+                        <dt>Vendor price</dt>
+                        <dd>1,250,000 coins each</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="rf-modal__foot rf-modal__foot--spread">
+                <div class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger">Vendor</button>
+                </div>
+                <div class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--small">Send to stash</button>
+                    <button type="button" class="rf-btn rf-btn--primary">Equip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (pickerSocket > 0)
+    {
+        <GemPicker @key="pickerSocket" ItemName="@itemName" ItemClass="@itemClass" Slot="slot" Socket="pickerSocket"
+                   Current="sockets[pickerSocket - 1]" Owned="owned" KeepChance="keepChance"
+                   Confirm="confirm" Result="result" Error="@error" InitialGem="@initialGem"
+                   OnSocket="SocketGem" OnRemove="RemoveGem" OnConfirm="ConfirmChange"
+                   OnCancel="CancelChange" OnBack="BackToList" OnClose="ClosePicker" />
+    }
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private GemSlot slot = GemSlot.Weapon;
+    private string itemName = "Abraxas Sword";
+    private string itemType = "OneHandedSword";
+    private string itemImage = "/imgs/items/abraxas-sword.png";
+    private string itemClass = "rf-rarity-epic";
+
+    private GemPicker.Gem[] sockets;
+    private List<GemPicker.Gem> owned = new();
+    private double keepChance = 0.38;
+    private string luck;
+
+    private int pickerSocket;
+    private string initialGem;
+    private GemPicker.ConfirmInfo confirm;
+    private GemPicker.ResultInfo result;
+    private string error;
+
+    private static readonly Random random = new Random();
+
+    protected override void OnInitialized()
+    {
+        if (Environment.EnvironmentName != "Development") return;
+
+        var state = Query("state") ?? "rows";
+        luck = Query("luck");
+
+        switch (Query("slot"))
+        {
+            case "armor":
+                slot = GemSlot.Armor;
+                itemName = "Abraxas Chest";
+                itemType = "Chest";
+                itemImage = "/imgs/items/abraxas-chest.png";
+                break;
+            case "jewelry":
+                slot = GemSlot.Jewellery;
+                itemName = "Dragon Amulet";
+                itemType = "Amulet";
+                itemImage = "/imgs/items/dragon-amulet.png";
+                break;
+        }
+
+        // socket 1 holds a gem, the others are empty; rings and amulets have one socket at most
+        sockets = new GemPicker.Gem[slot == GemSlot.Jewellery ? 1 : 3];
+        sockets[0] = G(GemKind.Ruby, GemTier.Flawed);
+
+        if (state == "few")
+        {
+            owned.Add(G(GemKind.Topaz, GemTier.Polished, 2));
+            owned.Add(G(GemKind.Topaz, GemTier.Chipped, 14));
+        }
+        else if (state != "nogems" && state != "nogemsfilled")
+        {
+            owned.Add(G(GemKind.Ruby, GemTier.Flawless, 1));
+            owned.Add(G(GemKind.Ruby, GemTier.Flawed, 3));
+            owned.Add(G(GemKind.Ruby, GemTier.Chipped, 12));
+            owned.Add(G(GemKind.Sapphire, GemTier.Polished, 2));
+            owned.Add(G(GemKind.Sapphire, GemTier.Chipped, 7));
+            owned.Add(G(GemKind.Topaz, GemTier.Chipped, 1240));
+            owned.Add(G(GemKind.Emerald, GemTier.Perfect, 1));
+            owned.Add(G(GemKind.Emerald, GemTier.Flawed, 4));
+            owned.Add(G(GemKind.Diamond, GemTier.Polished, 1));
+            owned.Add(G(GemKind.Diamond, GemTier.Chipped, 5));
+            owned.Add(G(GemKind.Onyx, GemTier.Flawed, 2));
+            owned.Add(G(GemKind.Amethyst, GemTier.Flawless, 1));
+            owned.Add(G(GemKind.Amethyst, GemTier.Chipped, 9));
+        }
+
+        var emptySocket = sockets.Length > 1 ? 2 : 1;
+        if (sockets.Length == 1 && (state == "empty" || state == "selected" || state == "nogems" || state == "error" || state == "few" || state == "result"))
+        {
+            sockets[0] = null;
+        }
+
+        var sapphire = G(GemKind.Sapphire, GemTier.Polished);
+        var ruby = sockets[0] ?? G(GemKind.Ruby, GemTier.Flawed);
+        switch (state)
+        {
+            case "empty":
+            case "nogems":
+            case "few":
+                pickerSocket = emptySocket;
+                break;
+            case "selected":
+                pickerSocket = emptySocket;
+                initialGem = G(GemKind.Ruby, GemTier.Flawless).Key;
+                break;
+            case "error":
+                pickerSocket = emptySocket;
+                initialGem = G(GemKind.Ruby, GemTier.Flawless).Key;
+                error = "That item is busy (being enchanted or traded). Try again in a moment.";
+                break;
+            case "filled":
+            case "nogemsfilled":
+                pickerSocket = 1;
+                break;
+            case "replace":
+                pickerSocket = 1;
+                initialGem = sapphire.Key;
+                break;
+            case "same":
+                pickerSocket = 1;
+                initialGem = ruby.Key;
+                break;
+            case "confirm":
+                pickerSocket = 1;
+                initialGem = sapphire.Key;
+                confirm = new GemPicker.ConfirmInfo(true, ruby, sapphire, keepChance);
+                break;
+            case "confirmremove":
+                pickerSocket = 1;
+                confirm = new GemPicker.ConfirmInfo(false, ruby, null, keepChance);
+                break;
+            case "result":
+                pickerSocket = emptySocket;
+                sockets[emptySocket - 1] = G(GemKind.Ruby, GemTier.Flawless);
+                result = new GemPicker.ResultInfo("Flawless Ruby is now in socket " + emptySocket + ".", false);
+                break;
+            case "kept":
+                pickerSocket = 1;
+                sockets[0] = sapphire;
+                result = new GemPicker.ResultInfo("Polished Sapphire is now in socket 1. " + Outcome(ruby, true), false);
+                break;
+            case "lost":
+                pickerSocket = 1;
+                sockets[0] = sapphire;
+                result = new GemPicker.ResultInfo("Polished Sapphire is now in socket 1. " + Outcome(ruby, false), true);
+                break;
+            case "removed":
+                pickerSocket = 1;
+                sockets[0] = null;
+                result = new GemPicker.ResultInfo(Outcome(ruby, true), false);
+                break;
+            case "removedlost":
+                pickerSocket = 1;
+                sockets[0] = null;
+                result = new GemPicker.ResultInfo(Outcome(ruby, false), true);
+                break;
+        }
+    }
+
+    private string Query(string name)
+    {
+        var pair = new Uri(NavigationManager.Uri).Query.TrimStart('?').Split('&').Select(p => p.Split('=')).FirstOrDefault(p => p[0] == name);
+        return pair != null && pair.Length == 2 ? pair[1] : null;
+    }
+
+    private static GemPicker.Gem G(GemKind kind, GemTier tier, long amount = 0)
+    {
+        return new GemPicker.Gem(kind, tier, amount, "/imgs/items/" + Gems.Name(kind, tier).ToLowerInvariant().Replace(' ', '-') + ".png");
+    }
+
+    private string Outcome(GemPicker.Gem old, bool kept)
+    {
+        var chance = Math.Round(keepChance * 100) + "%";
+        return kept
+            ? "The " + old.Name + " came out whole and is back in the inventory (" + chance + " chance)."
+            : "The " + old.Name + " crumbled to dust (" + chance + " chance to keep it).";
+    }
+
+    // ---- a stand-in for the server: the same two steps, on this page's made up item ----
+
+    private void Open(int socket)
+    {
+        ClosePicker();
+        pickerSocket = socket;
+    }
+
+    private void ClosePicker()
+    {
+        pickerSocket = 0;
+        initialGem = null;
+        confirm = null;
+        result = null;
+        error = null;
+    }
+
+    private void BackToList()
+    {
+        result = null;
+        error = null;
+    }
+
+    private void CancelChange()
+    {
+        confirm = null;
+    }
+
+    private void SocketGem(GemPicker.Gem gem)
+    {
+        error = null;
+        var old = sockets[pickerSocket - 1];
+        if (old != null)
+        {
+            confirm = new GemPicker.ConfirmInfo(true, old, gem, keepChance);
+            return;
+        }
+
+        Take(gem);
+        sockets[pickerSocket - 1] = gem with { Amount = 0 };
+        result = new GemPicker.ResultInfo(gem.Name + " is now in socket " + pickerSocket + ".", false);
+    }
+
+    private void RemoveGem()
+    {
+        error = null;
+        var old = sockets[pickerSocket - 1];
+        if (old != null) confirm = new GemPicker.ConfirmInfo(false, old, null, keepChance);
+    }
+
+    private void ConfirmChange()
+    {
+        var c = confirm;
+        confirm = null;
+        if (c == null) return;
+
+        var kept = luck == "kept" || (luck != "lost" && random.NextDouble() < keepChance);
+        if (kept) Give(c.Old);
+
+        if (c.Replacing)
+        {
+            Take(c.New);
+            sockets[pickerSocket - 1] = c.New with { Amount = 0 };
+            result = new GemPicker.ResultInfo(c.New.Name + " is now in socket " + pickerSocket + ". " + Outcome(c.Old, kept), !kept);
+        }
+        else
+        {
+            sockets[pickerSocket - 1] = null;
+            result = new GemPicker.ResultInfo(Outcome(c.Old, kept), !kept);
+        }
+    }
+
+    private void Take(GemPicker.Gem gem)
+    {
+        var i = owned.FindIndex(x => x.Key == gem.Key);
+        if (i < 0) return;
+        if (owned[i].Amount <= 1) owned.RemoveAt(i);
+        else owned[i] = owned[i] with { Amount = owned[i].Amount - 1 };
+    }
+
+    private void Give(GemPicker.Gem gem)
+    {
+        var i = owned.FindIndex(x => x.Key == gem.Key);
+        if (i >= 0) owned[i] = owned[i] with { Amount = owned[i].Amount + 1 };
+        else owned.Add(gem with { Amount = 1 });
+        owned = owned.OrderBy(x => x.Kind).ThenByDescending(x => x.Tier).ToList();
+    }
+}

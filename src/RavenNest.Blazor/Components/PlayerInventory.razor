@@ -397,11 +397,37 @@
                             }
                         }
 
-                        @* gems in the sockets (!socket in the game) *@
-                        @foreach (var (label, value) in GemManager.SocketLines(item, itemDetailsDialogItem.Sockets))
+                        @*
+                            Gems in the sockets (!socket and !unsocket in the game). For the character's owner
+                            each socket is the control itself: the row opens the gem picker for that socket.
+                            Everyone else reads them as plain rows.
+                        *@
+                        @if (CanSocket && GemManager.TryGetSlot(item, out _))
                         {
-                            <dt>@label</dt>
-                            <dd>@if (value == "empty") { <span class="rf-meta">empty</span> } else { <span class="rf-itemview__bonus">@value</span> }</dd>
+                            var gemSockets = GemManager.SocketsOf(item, itemDetailsDialogItem.Sockets);
+                            foreach (var socket in gemSockets)
+                            {
+                                var socketNumber = socket.Number;
+                                <dt class="rf-socket-label">Socket @socketNumber</dt>
+                                <dd>
+                                    <GemSocketButton Number="socketNumber" Name="@socket.Name" Bonus="@socket.Bonus"
+                                                     Icon="@(socket.Empty ? null : ItemService.GetItemImage(socket.GemId.Value))"
+                                                     OnClick="() => OpenGemPicker(socketNumber)" />
+                                </dd>
+                            }
+                            if (gemSockets.Count == 0)
+                            {
+                                <dt>Sockets</dt>
+                                <dd>None. Items like this get their first socket at item level 25.</dd>
+                            }
+                        }
+                        else
+                        {
+                            @foreach (var (label, value) in GemManager.SocketLines(item, itemDetailsDialogItem.Sockets))
+                            {
+                                <dt>@label</dt>
+                                <dd>@if (value == "empty") { <span class="rf-meta">empty</span> } else { <span class="rf-itemview__bonus">@value</span> }</dd>
+                            }
                         }
 
                         @if (item != null && item.RequiredAttackLevel > 0)
@@ -479,154 +505,6 @@
                         }
                     </div>
                 </div>
-
-                @*
-                    Gems and sockets, as !socket and !unsocket do in the game, for the character's owner.
-
-                    Taking a gem out, or socketing over one, usually destroys it. So the server first answers
-                    with the gem and the chance to keep it and changes nothing (NeedsConfirm); it is done on
-                    the confirm click, and only while that gem is still the one in the socket.
-
-                    The section is the same bordered block as the transmogrification one below.
-                *@
-                @if (CanSocket && GemManager.TryGetSlot(item, out var gemSlot))
-                {
-                    var gemSockets = GemManager.SocketsOf(item, itemDetailsDialogItem.Sockets);
-                    var ownedGems = OwnedGems();
-
-                    <div class="rf-itemview__transmog">
-                        <h3 class="rf-panel__title">Gems</h3>
-                        @if (gemSockets.Count == 0)
-                        {
-                            <p class="rf-meta">
-                                This item has no sockets. Weapons, armor (not hats or masks), rings and amulets
-                                have one from item level 25, two from 150 and three from 400. Rings and amulets
-                                have one at most.
-                            </p>
-                        }
-                        else
-                        {
-                            <p class="rf-meta">
-                                A gem that is taken out or replaced crumbles unless you are lucky. Your chance to
-                                keep it is <b>@Percent(gemKeepChance)</b>. It comes from your clan's Enchanting level
-                                and the Gem Salvager skill.
-                            </p>
-
-                            @foreach (var socket in gemSockets)
-                            {
-                                <div class="rf-field">
-                                    <div class="rf-item">
-                                        <span class="rf-item__img">
-                                            @if (socket.Empty)
-                                            {
-                                                <i class="fa-regular fa-circle" aria-hidden="true"></i>
-                                            }
-                                            else
-                                            {
-                                                <img src="@ItemService.GetItemImage(socket.GemId.Value)" alt="" />
-                                            }
-                                        </span>
-                                        <span class="rf-item__body">
-                                            <span class="rf-item__name">Socket @socket.Number: @(socket.Empty ? "empty" : socket.Name)</span>
-                                            @if (!socket.Empty)
-                                            {
-                                                <span class="rf-item__meta">@socket.Bonus</span>
-                                            }
-                                        </span>
-                                        @if (!socket.Empty && gemConfirm == null)
-                                        {
-                                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => TakeOutGem(socket.Number)">Take out</button>
-                                        }
-                                    </div>
-                                </div>
-                            }
-
-                            @if (gemConfirm != null)
-                            {
-                                <div class="rf-banner rf-banner--warn">
-                                    @if (gemConfirm.Socketing)
-                                    {
-                                        <h3 class="rf-banner__title">Replace the @(gemConfirm.OldName)?</h3>
-                                        <p>
-                                            Socket @gemConfirm.Socket already holds a <b>@gemConfirm.OldName</b>. Putting the
-                                            @Gems.Name((GemKind)gemConfirm.Kind, (GemTier)gemConfirm.Tier) in gives a
-                                            <b>@Percent(gemConfirm.KeepChance)</b> chance to keep the old gem. Otherwise it
-                                            crumbles for good.
-                                        </p>
-                                    }
-                                    else
-                                    {
-                                        <h3 class="rf-banner__title">Take out the @(gemConfirm.OldName)?</h3>
-                                        <p>
-                                            Socket @gemConfirm.Socket holds a <b>@gemConfirm.OldName</b>. Taking it out gives a
-                                            <b>@Percent(gemConfirm.KeepChance)</b> chance to keep it. Otherwise it crumbles
-                                            for good.
-                                        </p>
-                                    }
-                                </div>
-                                <div class="rf-actions">
-                                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="ConfirmGemChange">
-                                        @(gemConfirm.Socketing ? "Replace it" : "Take it out")
-                                    </button>
-                                    <button type="button" class="rf-btn rf-btn--small" @onclick="CancelGemChange">Cancel</button>
-                                </div>
-                            }
-                            else if (ownedGems.Count == 0)
-                            {
-                                <p class="rf-meta">
-                                    This character carries no enchanted gems to put in. Mine raw gems and have your
-                                    clan enchant them: !gems enchant ruby in the game.
-                                </p>
-                            }
-                            else
-                            {
-                                var chosenGem = ChosenGem(ownedGems);
-                                var chosenSocket = ChosenSocket(gemSockets);
-
-                                <label class="rf-field">
-                                    <span class="rf-label">Socket a gem</span>
-                                    <select class="rf-input" value="@chosenGem.Key" @onchange="OnGemChoiceChanged">
-                                        @foreach (var gem in ownedGems)
-                                        {
-                                            <option value="@gem.Key">@gem.Name (@gem.Amount.ToString("N0") owned): @Gems.Describe(gem.Kind, gem.Tier, gemSlot)</option>
-                                        }
-                                    </select>
-                                </label>
-                                @if (gemSockets.Count > 1)
-                                {
-                                    <label class="rf-field">
-                                        <span class="rf-label">Into socket</span>
-                                        <select class="rf-input" value="@chosenSocket.Number" @onchange="OnGemSocketChanged">
-                                            @foreach (var option in gemSockets)
-                                            {
-                                                <option value="@option.Number">Socket @option.Number: @(option.Empty ? "empty" : "holds a " + option.Name)</option>
-                                            }
-                                        </select>
-                                    </label>
-                                }
-                                @if (!chosenSocket.Empty)
-                                {
-                                    <p class="rf-meta">
-                                        Replaces the @chosenSocket.Name in socket @chosenSocket.Number:
-                                        @Percent(gemKeepChance) chance to keep it, otherwise it crumbles. You are asked
-                                        before anything happens.
-                                    </p>
-                                }
-                                <div class="rf-actions">
-                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary"
-                                            @onclick="() => SocketGem(chosenGem, chosenSocket.Number)">
-                                        @(chosenSocket.Empty ? "Socket it" : "Replace the gem")
-                                    </button>
-                                </div>
-                            }
-                        }
-
-                        @if (gemMessage != null)
-                        {
-                            <p class="@(gemMessageError ? "rf-form__error" : "rf-form__ok")">@gemMessage</p>
-                        }
-                    </div>
-                }
 
                 @if (CanBeTransmogrified(itemDetailsDialogItem))
                 {
@@ -716,6 +594,33 @@
             }
         </div>
     </div>
+}
+
+@*
+    The gem picker, for one socket of the item in the details dialog (opened by a socket row there).
+    Gems and sockets work as !socket and !unsocket do in the game, for the character's owner.
+
+    Taking a gem out, or socketing over one, usually destroys it. So the server first answers with the gem
+    and the chance to keep it and changes nothing (NeedsConfirm); it is done on the confirm click, and only
+    while that gem is still the one in the socket. The question and the result are shown inside the picker,
+    so there is never more than this one dialog over the item details.
+
+    The picker makes no calls; the handlers below do, and hand it what to show.
+*@
+@if (gemPickerSocket > 0 && itemDetailDialogVisible && itemDetailsDialogItem != null && CanSocket)
+{
+    var pickerItem = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+    var pickerSocket = GemManager.SocketsOf(pickerItem, itemDetailsDialogItem.Sockets).FirstOrDefault(x => x.Number == gemPickerSocket);
+    if (pickerSocket != null && GemManager.TryGetSlot(pickerItem, out var pickerSlot))
+    {
+        <GemPicker ItemName="@GetItemName()" ItemClass="@ItemService.GetRarityClass(pickerItem)"
+                   Slot="pickerSlot" Socket="gemPickerSocket"
+                   Current="@(pickerSocket.Empty ? null : PickerGem(pickerSocket.Kind, pickerSocket.Tier))"
+                   Owned="OwnedGems()" KeepChance="gemKeepChance"
+                   Confirm="PickerConfirm()" Result="gemResult" Error="@gemError"
+                   OnSocket="SocketGem" OnRemove="TakeOutGem" OnConfirm="ConfirmGemChange"
+                   OnCancel="CancelGemChange" OnBack="BackToGemList" OnClose="CloseGemPicker" />
+    }
 }
 
 @*
@@ -1746,67 +1651,86 @@
     /// </summary>
     private bool CanSocket => CanManage && Player != null && session != null && session.Authenticated && Player.UserId == session.UserId;
 
-    /// <summary>The enchanted gems of one kind and tier that the character carries (not equipped), added up.</summary>
-    private sealed record OwnedGem(GemKind Kind, GemTier Tier, long Amount)
-    {
-        public string Key => (int)Kind + ":" + (int)Tier;
-        public string Name => Gems.Name(Kind, Tier);
-    }
-
     /// <summary>
     ///     What the confirm click does, and the gem it puts at risk, as the server named it. The gem goes back
     ///     with the confirm, so it is only done while that gem is still the one in the socket.
     /// </summary>
     private sealed record GemConfirm(bool Socketing, int Socket, int Kind, int Tier, Guid OldGem, string OldName, double KeepChance);
 
-    private string gemChoiceKey;
-    private int gemSocketChoice;
+    // The socket of the item in the details dialog that the gem picker is open for (from 1); 0 while it is closed.
+    private int gemPickerSocket;
     private double gemKeepChance;
     private GemConfirm gemConfirm;
-    private string gemMessage;
-    private bool gemMessageError;
+    // What the last change did, and why the last try was not done. Both are shown inside the picker.
+    private GemPicker.ResultInfo gemResult;
+    private string gemError;
 
     private void ResetGemState()
     {
+        gemPickerSocket = 0;
         gemConfirm = null;
-        gemMessage = null;
-        gemMessageError = false;
-        gemSocketChoice = 0;
+        gemResult = null;
+        gemError = null;
     }
 
-    // The same gems the server takes from: this character's own stacks, not equipped. Best tier first per kind.
-    private List<OwnedGem> OwnedGems()
+    private void OpenGemPicker(int socket)
     {
-        var gems = new List<OwnedGem>();
+        if (!CanSocket || itemDetailsDialogItem == null || socket <= 0) return;
+
+        ResetGemState();
+        gemKeepChance = PlayerService.GetGemKeepChance(Player.Id);
+        gemPickerSocket = socket;
+    }
+
+    private void CloseGemPicker()
+    {
+        ResetGemState();
+    }
+
+    // From the result back to the list, for the same socket.
+    private void BackToGemList()
+    {
+        gemResult = null;
+        gemError = null;
+    }
+
+    private GemPicker.Gem PickerGem(GemKind kind, GemTier tier, long amount = 0)
+    {
+        return new GemPicker.Gem(kind, tier, amount, ItemService.GetItemImage(Gems.ItemId(kind, tier)));
+    }
+
+    // The server's question in the picker's terms; null while there is none.
+    private GemPicker.ConfirmInfo PickerConfirm()
+    {
+        var confirm = gemConfirm;
+        if (confirm == null || !Gems.TryGetGem(confirm.OldGem, out var oldKind, out var oldTier)) return null;
+
+        return new GemPicker.ConfirmInfo(
+            confirm.Socketing,
+            PickerGem(oldKind, oldTier),
+            confirm.Socketing ? PickerGem((GemKind)confirm.Kind, (GemTier)confirm.Tier) : null,
+            confirm.KeepChance);
+    }
+
+    // The same gems the server takes from: this character's own stacks, not equipped, added up per kind and tier.
+    // Best tier first per kind.
+    private List<GemPicker.Gem> OwnedGems()
+    {
+        var amounts = new Dictionary<(GemKind Kind, GemTier Tier), long>();
         foreach (var stack in Player.InventoryItems)
         {
             if (stack.Equipped || stack.Amount <= 0) continue;
             if (Gems.TryGetGem(stack.ItemId, out var kind, out var tier))
             {
-                gems.Add(new OwnedGem(kind, tier, stack.Amount));
+                amounts[(kind, tier)] = amounts.GetValueOrDefault((kind, tier)) + stack.Amount;
             }
         }
 
-        return gems
-            .GroupBy(x => x.Key)
-            .Select(g => g.First() with { Amount = g.Sum(x => x.Amount) })
-            .OrderBy(x => x.Kind)
-            .ThenByDescending(x => x.Tier)
+        return amounts
+            .OrderBy(x => x.Key.Kind)
+            .ThenByDescending(x => x.Key.Tier)
+            .Select(x => PickerGem(x.Key.Kind, x.Key.Tier, x.Value))
             .ToList();
-    }
-
-    // The gem picked in the list, or the first when nothing is picked or the picked one is used up.
-    private OwnedGem ChosenGem(List<OwnedGem> owned)
-    {
-        return owned.FirstOrDefault(x => x.Key == gemChoiceKey) ?? owned[0];
-    }
-
-    // The socket picked in the list, or the first empty one, or the first when all are filled.
-    private GemManager.SocketView ChosenSocket(List<GemManager.SocketView> sockets)
-    {
-        return sockets.FirstOrDefault(x => x.Number == gemSocketChoice)
-            ?? sockets.FirstOrDefault(x => x.Empty)
-            ?? sockets[0];
     }
 
     private static string Percent(double chance)
@@ -1814,32 +1738,22 @@
         return Math.Round(chance * 100).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
     }
 
-    private void OnGemChoiceChanged(ChangeEventArgs e)
+    // The picked gem into the socket the picker is open for. Always a named socket: the server takes "no
+    // socket" as the first empty one. When the socket holds a gem this only asks (NeedsConfirm).
+    private void SocketGem(GemPicker.Gem gem)
     {
-        gemChoiceKey = e.Value?.ToString();
-        gemMessage = null;
-    }
+        if (itemDetailsDialogItem == null || gem == null || gemPickerSocket <= 0) return;
 
-    private void OnGemSocketChanged(ChangeEventArgs e)
-    {
-        int.TryParse(e.Value?.ToString(), out gemSocketChoice);
-        gemMessage = null;
-    }
-
-    private void SocketGem(OwnedGem gem, int socket)
-    {
-        if (itemDetailsDialogItem == null || gem == null) return;
-
-        var change = PlayerService.SocketGem(Player.Id, itemDetailsDialogItem.Id, (int)gem.Kind, (int)gem.Tier, socket, null);
+        var change = PlayerService.SocketGem(Player.Id, itemDetailsDialogItem.Id, (int)gem.Kind, (int)gem.Tier, gemPickerSocket, null);
         ApplyGemChange(change, true, (int)gem.Kind, (int)gem.Tier);
     }
 
     // Never done by this call: the server answers with the gem and the chance, and the confirm click does it.
-    private void TakeOutGem(int socket)
+    private void TakeOutGem()
     {
-        if (itemDetailsDialogItem == null) return;
+        if (itemDetailsDialogItem == null || gemPickerSocket <= 0) return;
 
-        var change = PlayerService.UnsocketGem(Player.Id, itemDetailsDialogItem.Id, socket, null);
+        var change = PlayerService.UnsocketGem(Player.Id, itemDetailsDialogItem.Id, gemPickerSocket, null);
         ApplyGemChange(change, false, 0, 0);
     }
 
@@ -1858,7 +1772,7 @@
     private void CancelGemChange()
     {
         gemConfirm = null;
-        gemMessage = null;
+        gemError = null;
     }
 
     /// <summary>
@@ -1870,16 +1784,17 @@
         const string failed = "That did not work. Try again in a moment.";
 
         gemConfirm = null;
-        gemMessageError = true;
+        gemResult = null;
+        gemError = null;
         if (change == null || (change.Refused == null && change.Result == null))
         {
-            gemMessage = failed;
+            gemError = failed;
             return;
         }
 
         if (change.Refused != null)
         {
-            gemMessage = change.Refused;
+            gemError = change.Refused;
             return;
         }
 
@@ -1905,59 +1820,56 @@
             case GemResultStatus.Ok:
                 var lost = result.OldKind.HasValue && !result.Kept;
                 var outcome = OldGemOutcome(result);
-                gemMessage = socketing
+                var done = socketing
                     ? (Gems.Name((GemKind)result.Kind, (GemTier)result.Tier) + " is now in socket " + result.Socket + ". " + outcome).TrimEnd()
                     : (outcome.Length > 0 ? outcome : "The gem was taken out.");
                 // A crumbled gem is a loss even though the action was done, so it does not read as good news.
-                gemMessageError = lost;
-                gemSocketChoice = 0;
+                gemResult = new GemPicker.ResultInfo(done, lost);
                 break;
 
             case GemResultStatus.NeedsConfirm:
                 if (!result.OldKind.HasValue)
                 {
-                    gemMessage = failed;
+                    gemError = failed;
                     break;
                 }
 
                 var oldKind = (GemKind)result.OldKind.Value;
                 var oldTier = (GemTier)result.OldTier.GetValueOrDefault();
                 gemConfirm = new GemConfirm(socketing, result.Socket, kind, tier, Gems.ItemId(oldKind, oldTier), Gems.Name(oldKind, oldTier), result.KeepChance);
-                gemMessage = null;
-                gemMessageError = false;
                 break;
 
             case GemResultStatus.NoGem:
-                gemMessage = "This character has no " + Gems.Name((GemKind)kind, (GemTier)tier) + " left to put in.";
+                gemError = "This character has no " + Gems.Name((GemKind)kind, (GemTier)tier) + " left to put in.";
                 break;
 
             case GemResultStatus.NoSuchItem:
-                gemMessage = "That item is no longer in this inventory.";
+                gemError = "That item is no longer in this inventory.";
                 break;
 
             case GemResultStatus.Busy:
-                gemMessage = "That item is busy (being enchanted or traded). Try again in a moment.";
+                gemError = "That item is busy (being enchanted or traded). Try again in a moment.";
                 break;
 
             case GemResultStatus.NotSocketable:
             case GemResultStatus.NoSockets:
-                gemMessage = "This item has no sockets. Weapons, armor (not hats or masks), rings and amulets have them from item level 25.";
+                gemError = "This item has no sockets. Weapons, armor (not hats or masks), rings and amulets have them from item level 25.";
                 break;
 
             case GemResultStatus.SocketsFull:
-                gemMessage = "Every socket is filled. Pick the socket whose gem to replace.";
+                gemError = "Every socket is filled. Pick the socket whose gem to replace.";
                 break;
 
             case GemResultStatus.EmptySocket:
-                gemMessage = "That socket is empty now.";
+                gemError = "That socket is empty now.";
                 break;
 
             case GemResultStatus.NoSuchSocket:
-                gemMessage = "This item has " + result.SocketCount + (result.SocketCount == 1 ? " socket." : " sockets.");
+                gemError = "This item has " + result.SocketCount + (result.SocketCount == 1 ? " socket." : " sockets.");
                 break;
 
             default:
-                gemMessage = failed;
+                gemError = failed;
                 break;
         }
     }

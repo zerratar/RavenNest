@@ -6021,3 +6021,734 @@ a.rf-badge:hover {
 .rf-tower__hidden p {
     margin: 0;
 }
+
+/* ---- Gem sockets and the gem picker --------------------------------------
+   A socket in the item details is the control itself: the row says what is in
+   it and opens the picker for that socket (Components/GemSocketButton.razor).
+   The picker (Components/GemPicker.razor) is one dialog over the item details;
+   its question ("replace this gem?") and its result are states of that same
+   dialog, never another layer on top. */
+
+/* The "Socket 1" label sits beside a taller value than the other rows have. */
+.rf-facts > dt.rf-socket-label {
+    display: flex;
+    align-items: center;
+}
+
+.rf-socket {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    width: 100%;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-body);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-socket:hover,
+.rf-socket:focus-visible {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-ink);
+}
+
+.rf-socket:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-socket--empty {
+    border-style: dashed;
+}
+
+.rf-socket__gem {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--rf-ink-muted);
+}
+
+.rf-socket__gem img {
+    max-width: 34px;
+    max-height: 34px;
+}
+
+.rf-socket--empty .rf-socket__gem {
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: 50%;
+}
+
+.rf-socket__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.rf-socket__name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.rf-socket__name--empty {
+    color: var(--rf-ink-muted);
+    font-weight: 600;
+}
+
+.rf-socket__bonus {
+    color: var(--rf-good);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-socket__act {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-gold);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rf-socket:hover .rf-socket__act,
+.rf-socket:focus-visible .rf-socket__act {
+    color: var(--rf-gold-bright);
+}
+
+/* The picker. Wider than the item dialog under it, so it reads as a new step
+   rather than as the same dialog redrawn. */
+.rf-gempick {
+    box-sizing: border-box;
+    width: 48rem;
+    outline: none;
+}
+
+.rf-gempick .rf-modal__head {
+    align-items: flex-start;
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-gempick__heading {
+    min-width: 0;
+}
+
+.rf-gempick__item {
+    margin: var(--rf-space-1) 0 0 0;
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+/* Without a rarity class the item name is plain muted text. */
+.rf-gempick__item:not([class*="rf-rarity-"]) {
+    color: var(--rf-ink-muted);
+}
+
+.rf-gempick__label {
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-muted);
+}
+
+.rf-gempick__name {
+    font-weight: 700;
+    color: var(--rf-ink);
+    overflow-wrap: anywhere;
+}
+
+.rf-gempick__bonus {
+    color: var(--rf-good);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+/* The gem in the socket now. */
+.rf-gempick__current {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-3);
+    margin-bottom: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+}
+
+.rf-gempick__currentrow {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-gempick__currentbody {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.rf-gempick__current .rf-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.rf-gempick__error {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    margin: 0 0 var(--rf-space-4) 0;
+    padding: var(--rf-space-3);
+    background: var(--rf-bad-wash);
+    border: 1px solid var(--rf-bad);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gempick__error i {
+    color: var(--rf-bad);
+}
+
+/* The list on the left, the picked gem on the right. */
+.rf-gempick__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-gempick__browse {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    min-width: 0;
+}
+
+.rf-gempick__search {
+    width: 100%;
+    font-size: var(--rf-size-body);
+}
+
+.rf-gempick__kinds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-gempick__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    max-height: 22.5rem;
+    overflow-y: auto;
+    /* room for the focus ring and the scrollbar */
+    padding: 2px;
+    margin: -2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rf-surface-raised) transparent;
+}
+
+.rf-gempick__row {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    width: 100%;
+    padding: var(--rf-space-2);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-body);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-gempick__row:hover {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-strong);
+}
+
+.rf-gempick__row:focus-visible {
+    outline: none;
+    border-color: var(--rf-gold);
+}
+
+/* Border as well as background, as the chosen row of a picker table has. */
+.rf-gempick__row.is-selected {
+    background: var(--rf-gold-wash);
+    border-color: var(--rf-gold);
+}
+
+.rf-gempick__row.is-selected .rf-gempick__name {
+    color: var(--rf-gold-bright);
+}
+
+.rf-gempick__row .rf-item__img {
+    width: 40px;
+    height: 40px;
+}
+
+.rf-gempick__rowbody {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.rf-gempick__owned {
+    flex: 0 0 auto;
+    padding: 0 var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-gempick__nomatch {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+}
+
+.rf-gempick__nomatch p {
+    margin: 0;
+    color: var(--rf-ink);
+}
+
+/* The picked gem. */
+.rf-gempick__detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-gempick__detail.is-idle {
+    align-items: center;
+    justify-content: center;
+    min-height: 14rem;
+    border-style: dashed;
+    box-shadow: none;
+    text-align: center;
+}
+
+.rf-gempick__idle {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+}
+
+/* An empty socket: a dashed ring with a gem outline in it. */
+.rf-gempick__hole {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: 50%;
+    color: var(--rf-ink-muted);
+    font-size: 1.1rem;
+}
+
+.rf-gempick__big,
+.rf-item__img.rf-gempick__big {
+    width: 72px;
+    height: 72px;
+}
+
+.rf-gempick__hole.rf-gempick__big {
+    font-size: 1.6rem;
+}
+
+.rf-gempick__big img {
+    max-width: 62px;
+    max-height: 62px;
+}
+
+.rf-gempick__detailhead {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-gempick__detailtitle {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 0;
+}
+
+.rf-gempick__detailname {
+    margin: 0;
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    color: var(--rf-ink);
+    overflow-wrap: anywhere;
+}
+
+.rf-gempick__tier {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gempick__tier > span {
+    margin-left: var(--rf-space-1);
+}
+
+/* One small diamond per tier, lit up to the gem's own. */
+.rf-gempick__pip {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line-strong);
+}
+
+.rf-gempick__pip.is-on {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+}
+
+.rf-gempick__have {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gempick__gives {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    padding: var(--rf-space-3);
+    background: var(--rf-good-wash);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-gempick__givesvalue {
+    color: var(--rf-good);
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+/* What the same gem would give in the other kinds of item. */
+.rf-gempick__else {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--rf-size-small);
+    line-height: 1.4;
+}
+
+.rf-gempick__else span {
+    color: var(--rf-ink-muted);
+}
+
+.rf-gempick__else b {
+    color: var(--rf-ink);
+    font-weight: 600;
+}
+
+.rf-gempick__note {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gempick__warn {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    margin: 0;
+    padding: var(--rf-space-3);
+    background: var(--rf-warn-wash);
+    border: 1px solid var(--rf-warn);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    line-height: 1.4;
+}
+
+.rf-gempick__warn i {
+    color: var(--rf-warn);
+}
+
+/* No gems to put in. */
+.rf-gempick__none {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-4);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+}
+
+.rf-gempick__nonetitle {
+    margin: 0 0 var(--rf-space-2) 0;
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-gempick__none p {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.5;
+}
+
+/* The question and the result: one centered block in place of the list. */
+.rf-gempick__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-5) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    text-align: center;
+}
+
+.rf-gempick__state--warn {
+    border-color: var(--rf-warn);
+    background: linear-gradient(180deg, var(--rf-warn-wash), transparent 60%), var(--rf-surface-2);
+}
+
+.rf-gempick__swap {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-4);
+}
+
+.rf-gempick__arrow {
+    color: var(--rf-ink-muted);
+    font-size: 1.2rem;
+}
+
+.rf-gempick__statetitle {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-gempick__statetitle i {
+    color: inherit;
+}
+
+.rf-gempick__statetitle.is-good { color: var(--rf-good); }
+.rf-gempick__statetitle.is-warn { color: var(--rf-warn); }
+.rf-gempick__statetitle.is-bad { color: var(--rf-bad); }
+
+.rf-gempick__statetext,
+.rf-gempick__statenow {
+    max-width: 32rem;
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    line-height: 1.5;
+}
+
+.rf-gempick__statenow {
+    color: var(--rf-ink-muted);
+}
+
+.rf-gempick__statenow b {
+    color: var(--rf-ink);
+}
+
+.rf-gempick__statenow .rf-gempick__bonus {
+    font-size: inherit;
+}
+
+.rf-gempick__odds {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    max-width: 30rem;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    text-align: left;
+}
+
+.rf-gempick__oddsnum {
+    flex: 0 0 auto;
+    color: var(--rf-warn);
+    font-size: var(--rf-size-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.rf-gempick__oddstext {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.4;
+}
+
+.rf-gempick .rf-modal__foot {
+    margin-top: var(--rf-space-4);
+}
+
+/* A phone: the picker takes the whole screen, so the item details do not show around it. The page of the
+   picker scrolls as one, and the picked gem is docked to its bottom edge with the button always in reach. */
+@media (max-width: 720px) {
+    .rf-gempick {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+    }
+
+    .rf-gempick__grid {
+        flex: 1 0 auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rf-gempick__list {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .rf-gempick__kinds {
+        gap: var(--rf-space-1);
+    }
+
+    .rf-gempick__kinds .rf-filter {
+        padding: var(--rf-space-1) var(--rf-space-2);
+    }
+
+    .rf-gempick__none {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--rf-space-3);
+    }
+
+    /* room for the gem's bonus beside the button */
+    .rf-gempick__current .rf-btn i {
+        display: none;
+    }
+
+    .rf-gempick__detail.is-idle {
+        display: none;
+    }
+
+    .rf-gempick__detail {
+        position: sticky;
+        /* down over the dialog's own padding, to its bottom edge */
+        bottom: calc(var(--rf-space-5) * -1);
+        z-index: 1;
+        margin: auto calc(var(--rf-space-5) * -1) calc(var(--rf-space-5) * -1);
+        padding: var(--rf-space-3) var(--rf-space-5) var(--rf-space-4);
+        gap: var(--rf-space-2);
+        border-width: 1px 0 0 0;
+        border-top-color: var(--rf-line-gold);
+        border-radius: 0 0 var(--rf-radius-lg) var(--rf-radius-lg);
+        box-shadow: 0 -8px 16px var(--rf-scrim);
+    }
+
+    .rf-gempick__detail .rf-gempick__big {
+        width: 48px;
+        height: 48px;
+    }
+
+    .rf-gempick__detail .rf-gempick__big img {
+        max-width: 40px;
+        max-height: 40px;
+    }
+
+    .rf-gempick__detailtitle {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 var(--rf-space-3);
+    }
+
+    .rf-gempick__detailname {
+        flex: 1 0 100%;
+    }
+
+    .rf-gempick__gives {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--rf-space-1) var(--rf-space-3);
+        padding: var(--rf-space-2) var(--rf-space-3);
+    }
+
+    .rf-gempick__else {
+        display: none;
+    }
+
+    .rf-gempick__warn {
+        padding: var(--rf-space-2) var(--rf-space-3);
+    }
+
+    .rf-gempick__state {
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    .rf-gempick__odds {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .rf-gempick .rf-modal__foot {
+        flex-wrap: wrap;
+    }
+
+    .rf-gempick .rf-modal__foot .rf-btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}

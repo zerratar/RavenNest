@@ -1,0 +1,60 @@
+@*
+    One socket of an item, as the row you click to change its gem (the value side of a "Socket 1" stat row).
+    Empty: a dashed gem and "Add a gem". Filled: the gem's picture, name and bonus, and "Change".
+    Clicking either opens the gem picker for that socket; this only says it was clicked.
+*@
+<button type="button" class="rf-socket @(Empty ? "rf-socket--empty" : "")"
+        aria-label="@(Empty ? "Socket " + Number + " is empty. Add a gem" : "Socket " + Number + " holds a " + Name + ". Change it")"
+        @onclick="OnClick">
+    <span class="rf-socket__gem">
+        @if (Empty)
+        {
+            <i class="fa-regular fa-gem" aria-hidden="true"></i>
+        }
+        else
+        {
+            <img src="@Icon" alt="" />
+        }
+    </span>
+    <span class="rf-socket__body">
+        @if (Empty)
+        {
+            <span class="rf-socket__name rf-socket__name--empty">Empty</span>
+        }
+        else
+        {
+            <span class="rf-socket__name">@Name</span>
+            <span class="rf-socket__bonus">@Bonus</span>
+        }
+    </span>
+    <span class="rf-socket__act">
+        @if (Empty)
+        {
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span>Add a gem</span>
+        }
+        else
+        {
+            <span>Change</span>
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        }
+    </span>
+</button>
+
+@code {
+    /// <summary>The socket's number, from 1.</summary>
+    [Parameter] public int Number { get; set; }
+
+    /// <summary>"Flawless Ruby"; null for an empty socket.</summary>
+    [Parameter] public string Name { get; set; }
+
+    /// <summary>What the gem gives in this item: "+18% Fire Damage".</summary>
+    [Parameter] public string Bonus { get; set; }
+
+    /// <summary>The gem's picture.</summary>
+    [Parameter] public string Icon { get; set; }
+
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private bool Empty => string.IsNullOrEmpty(Name);
+}
