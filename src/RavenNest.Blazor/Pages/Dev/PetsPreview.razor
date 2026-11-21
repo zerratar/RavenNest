@@ -1,0 +1,94 @@
+@layout DashboardLayout
+@page "/dev/pets-preview"
+@using RavenNest.Combat
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject NavigationManager NavigationManager
+
+@*
+    The Pets tab of a character page with made up stables, for working on its look without signing in or playing to
+    a given state: ?state=full (one out, two resting, a warming egg, an empty place), none-out, empty, evolved (a fully
+    evolved pet out, a woken pet item). Only on a development server; elsewhere it is a page not found.
+*@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <PetStable Stable="stable" TamingLevel="taming" Places="places" RookeryLevel="rookery" />
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private RavenNest.Models.BattlePet[] stable = Array.Empty<RavenNest.Models.BattlePet>();
+    private int taming = 1;
+    private int places;
+    private int rookery;
+
+    protected override void OnInitialized()
+    {
+        if (Environment.EnvironmentName != "Development") return;
+        var pair = new Uri(NavigationManager.Uri).Query.TrimStart('?').Split('&').Select(p => p.Split('=')).FirstOrDefault(p => p[0] == "state");
+        var state = pair != null && pair.Length == 2 ? pair[1] : "full";
+        switch (state)
+        {
+            case "empty":
+                taming = 1;
+                break;
+            case "none-out":
+                taming = 34;
+                stable = new[]
+                {
+                    Pet("starter-bear", "Bramble", 34, 1, false, "guard,harden"),
+                    Pet("bunny", "Sir Floof", 21, 0, false, "binky,lick-wounds"),
+                    Egg("bud", 12),
+                };
+                break;
+            case "evolved":
+                taming = 412;
+                places = 9;
+                rookery = 140;
+                stable = new[]
+                {
+                    Pet("red-dragon", "Cinder", 412, 2, true, "pounce,frenzy,fire-breath"),
+                    Pet("companion-disco-raven", "Disco Raven", 138, 1, false, "binky,spark,hex", PetSource.Companion),
+                    Pet("wolf-pup", "Biscuit", 100, 1, false, "pounce,howl,frenzy"),
+                    Pet("companion-blue-orb", "Blue Orb", 12, 0, false, "spark", PetSource.Companion),
+                    Pet("cow", "Moothunder", 260, 2, false, "moo,harden,bodyslam"),
+                };
+                break;
+            default:
+                taming = 76;
+                stable = new[]
+                {
+                    Pet("starter-fox", "Ember", 62, 1, true, "pounce,frenzy"),
+                    Pet("bunny", "Sir Floof", 30, 0, false, "binky,hex"),
+                    Pet("tormented-soul", "Wisp", 16, 0, false, "lick-wounds"),
+                    Egg("wolf-pup", 41),
+                };
+                break;
+        }
+    }
+
+    private static RavenNest.Models.BattlePet Pet(string species, string name, int level, int stage, bool active, string slots, PetSource source = PetSource.Tamed) => new RavenNest.Models.BattlePet
+    {
+        Id = Guid.NewGuid(),
+        Species = species,
+        Name = name,
+        Level = level,
+        Stage = stage,
+        Active = active,
+        Slots = slots,
+        Source = (int)source,
+    };
+
+    private static RavenNest.Models.BattlePet Egg(string species, double minutes) => new RavenNest.Models.BattlePet
+    {
+        Id = Guid.NewGuid(),
+        Species = species,
+        Name = BattlePets.GetSpecies(species).EggName,
+        Level = 0,
+        Source = (int)PetSource.Egg,
+        PlayTime = TimeSpan.FromMinutes(minutes),
+    };
+}

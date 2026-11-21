@@ -1,0 +1,1682 @@
+/*
+  Battle pets: the Pets tab of a character page (Components/PetStable.razor, .rf-stable) and the guide at /pets
+  (Pages/Front/PetsPage.razor, .rf-petguide), which share their pieces (.rf-petpic, .rf-petchip, .rf-petskill...).
+
+  Loaded after the design system, and only its tokens are used: the two color tables below (one tint per element,
+  one per role) are the only raw colors, kept as "r, g, b" so a backdrop can take any strength of them.
+
+  Text a player has to read is never smaller than --rf-size-small and never fainter than --rf-ink-muted.
+*/
+
+.is-el-fire { --pet-tint: 240, 122, 66; }
+.is-el-ice { --pet-tint: 104, 190, 240; }
+.is-el-lightning { --pet-tint: 244, 214, 84; }
+.is-el-poison { --pet-tint: 132, 210, 86; }
+.is-el-none { --pet-tint: 156, 166, 186; }
+
+.is-role-tank { --pet-role: 106, 169, 224; }
+.is-role-healer { --pet-role: 92, 201, 138; }
+.is-role-damage { --pet-role: 239, 122, 102; }
+.is-role-support { --pet-role: 185, 149, 240; }
+.is-role-gatherer { --pet-role: 210, 171, 98; }
+
+.rf-stable,
+.rf-stable *,
+.rf-petguide,
+.rf-petguide *,
+.rf-petguide-hero * {
+    box-sizing: border-box;
+}
+
+/* site.css paints every Font Awesome icon white. Here an icon takes the color of what it sits in, unless a rule
+   below says otherwise (:where keeps this one no stronger than site.css's, so every "x i" rule below wins). */
+:where(.rf-stable, .rf-petguide, .rf-petguide-hero) .fa-solid,
+:where(.rf-stable, .rf-petguide, .rf-petguide-hero) .fa-regular {
+    color: inherit;
+}
+
+/* ==========================================================================
+   Shared pieces
+   ========================================================================== */
+
+/* ---- A picture in a fixed box ---------------------------------------------
+   The box has its size whether the file loads or not, so a missing picture never collapses a card, and it shows a
+   paw instead of the browser's broken image (PetLook.Pic adds is-missing from the image's onerror). */
+.rf-petpic {
+    --pic: 6rem;
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--pic);
+    height: var(--pic);
+}
+
+.rf-petpic img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.4));
+}
+
+.rf-petpic__paw {
+    display: none;
+    font-size: calc(var(--pic) * 0.4);
+    line-height: 1;
+    color: var(--rf-ink-faint);
+}
+
+.rf-petpic.is-missing img { display: none; }
+.rf-petpic.is-missing .rf-petpic__paw { display: block; }
+
+/* A soft glow of the pet's element behind it. */
+.rf-petpic--tint {
+    border-radius: var(--rf-radius-lg);
+    background: radial-gradient(circle at 50% 58%, rgba(var(--pet-tint, 156, 166, 186), 0.34), rgba(var(--pet-tint, 156, 166, 186), 0.08) 58%, transparent 74%);
+}
+
+/* A species with one model for all three stages is shown growing instead. */
+.is-grow-0 .rf-petpic img { transform: scale(0.7); transform-origin: 50% 85%; }
+.is-grow-1 .rf-petpic img { transform: scale(0.85); transform-origin: 50% 85%; }
+
+/* ---- Chips: role, element, strike ------------------------------------------ */
+.rf-petchips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-petchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.rf-petchip i { color: var(--rf-ink-muted); font-size: 0.9em; }
+.rf-petchip[class*="is-el-"] { border-color: rgba(var(--pet-tint), 0.45); }
+.rf-petchip[class*="is-el-"] i { color: rgb(var(--pet-tint)); }
+.rf-petchip[class*="is-role-"] { border-color: rgba(var(--pet-role), 0.45); }
+.rf-petchip[class*="is-role-"] i { color: rgb(var(--pet-role)); }
+
+/* ---- State tags: Out, Resting, Warming ------------------------------------- */
+.rf-pettag {
+    flex: none;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--rf-line-strong);
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.5;
+}
+
+.rf-pettag--out {
+    background: var(--rf-good);
+    border-color: var(--rf-good);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-pettag--warm {
+    background: var(--rf-gold-wash);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-gold-bright);
+}
+
+/* ---- Bars: level against the cap, an egg's warmth -------------------------- */
+.rf-petbar {
+    height: 0.65rem;
+    border-radius: 999px;
+    background: var(--rf-surface-3);
+    border: 1px solid var(--rf-line-strong);
+    overflow: hidden;
+}
+
+.rf-petbar > span {
+    display: block;
+    height: 100%;
+    min-width: 0.4rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--rf-gold-dim), var(--rf-gold-bright));
+}
+
+.rf-petbar--warm > span {
+    background: linear-gradient(90deg, var(--rf-bad), var(--rf-gold-bright));
+}
+
+/* ---- Skills: an icon tile, the name, what it does -------------------------- */
+.rf-petskills {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-petskill {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    margin: 0;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+}
+
+.rf-petskill__icon {
+    --skill-tint: 169, 163, 150;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: var(--rf-radius);
+    border: 1px solid rgba(var(--skill-tint), 0.55);
+    background: rgba(var(--skill-tint), 0.14);
+    color: rgb(var(--skill-tint));
+    font-size: 1.15rem;
+}
+
+.rf-petskill__icon[class*="is-role-"] { --skill-tint: var(--pet-role); }
+.rf-petskill__icon[class*="is-el-"] { --skill-tint: var(--pet-tint); }
+
+.rf-petskill__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.rf-petskill__text strong {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.rf-petskill__text > span {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.45;
+}
+
+.rf-petskill__text > .rf-petskill__effect {
+    color: var(--rf-gold);
+    font-weight: 600;
+}
+
+/* The level that teaches a skill, beside its name. */
+.rf-petskill__text em {
+    margin-left: 0.35em;
+    padding: 0 0.5em;
+    border: 1px solid var(--rf-line-gold);
+    border-radius: 999px;
+    color: var(--rf-gold);
+    font-size: 0.8rem;
+    font-style: normal;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rf-petskill__cooldown {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rf-petskill__cooldown i { color: var(--rf-ink-muted); }
+
+.rf-petskill.is-empty,
+.rf-petskill.is-later,
+.rf-petskill.is-spare {
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--rf-line-strong);
+}
+
+.rf-petskill.is-later .rf-petskill__text strong { color: var(--rf-ink-muted); }
+
+.rf-petskills--compact .rf-petskill {
+    align-items: flex-start;
+    padding: var(--rf-space-2);
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--rf-line);
+    border-radius: 0;
+}
+
+.rf-petskills--compact { gap: 0; }
+.rf-petskills--compact .rf-petskill__icon { width: 2.25rem; height: 2.25rem; font-size: 1rem; margin-top: 2px; }
+
+/* ---- Chat commands with what each does ------------------------------------- */
+.rf-petcmds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-petcmd {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-2);
+    padding: 0.3rem 0.7rem 0.3rem 0.3rem;
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    max-width: 100%;
+}
+
+.rf-petcmd__what {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-stable .rf-cmd,
+.rf-petguide .rf-cmd {
+    font-weight: 700;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   The stable (the Pets tab of a character page)
+   ========================================================================== */
+
+.rf-stable {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-5);
+    color: var(--rf-ink);
+}
+
+.rf-stable .rf-panel { margin-bottom: 0; }
+
+.rf-stable h3,
+.rf-stable h4,
+.rf-stable p {
+    margin: 0;
+}
+
+/* ---- Header: title, Taming, places ------------------------------------------ */
+.rf-stable__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3) var(--rf-space-5);
+}
+
+.rf-stable__title {
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+}
+
+.rf-stable__taming {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3rem 0.9rem;
+    border: 1px solid var(--rf-gold);
+    border-radius: var(--rf-radius);
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+    font-size: 1.05rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rf-stable__places {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+}
+
+.rf-stable__places-label { font-weight: 700; color: var(--rf-ink); }
+
+.rf-stable__pips { display: inline-flex; gap: 0.4rem; }
+
+.rf-stable__pips i {
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 50%;
+    border: 2px solid var(--rf-ink-faint);
+}
+
+.rf-stable__pips i.is-full {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 6px rgba(232, 163, 61, 0.45);
+}
+
+.rf-stable__guide {
+    margin-left: auto;
+    color: var(--rf-gold);
+    font-size: var(--rf-size-body);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.rf-stable__guide:hover,
+.rf-stable__guide:focus-visible {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+/* ---- The pet that is out beside the others ---------------------------------- */
+.rf-stable__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(19rem, 1fr);
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-stable__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    min-width: 0;
+}
+
+.rf-pethero {
+    display: grid;
+    grid-template-columns: minmax(13rem, 19rem) minmax(0, 1fr);
+    grid-template-areas: "art body" "evo evo";
+    gap: var(--rf-space-5);
+    border-color: rgba(var(--pet-tint), 0.4);
+}
+
+.rf-pethero__art {
+    grid-area: art;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+}
+
+.rf-pethero__portrait {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid rgba(var(--pet-tint), 0.22);
+    border-radius: var(--rf-radius-lg);
+    background:
+        radial-gradient(circle at 50% 56%, rgba(var(--pet-tint), 0.45), rgba(var(--pet-tint), 0.1) 56%, transparent 76%),
+        linear-gradient(180deg, rgba(var(--pet-tint), 0.1), rgba(var(--pet-tint), 0.02));
+}
+
+.rf-pethero__portrait .rf-petpic {
+    --pic: 100%;
+}
+
+.rf-pethero__body {
+    grid-area: body;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+}
+
+.rf-pethero__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-3);
+}
+
+.rf-pethero__name h3 {
+    color: var(--rf-ink);
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.rf-pethero__kind {
+    margin-top: calc(var(--rf-space-2) * -1);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+}
+
+.rf-pethero__blurb {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.5;
+    text-align: center;
+    text-wrap: balance;
+}
+
+.rf-petlevel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+}
+
+.rf-petlevel__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-1) var(--rf-space-4);
+}
+
+.rf-petlevel__level {
+    color: var(--rf-ink);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.rf-petlevel__level b { font-weight: 800; }
+.rf-petlevel__level span { color: var(--rf-ink-muted); }
+
+.rf-petlevel__health {
+    color: var(--rf-ink);
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-petlevel__health i { color: var(--rf-bad); margin-right: 0.25em; }
+
+.rf-petlevel__note {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-pethero__evo {
+    grid-area: evo;
+    padding-top: var(--rf-space-5);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* ---- Evolution: the three stages, and what the next one needs --------------- */
+.rf-petevo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: center;
+    gap: var(--rf-space-4) var(--rf-space-6);
+}
+
+.rf-petevo__text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-petevo__text h4 {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+}
+
+.rf-petevo__text p {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.5;
+}
+
+.rf-petevo__text p b { color: var(--rf-ink); }
+.rf-petevo__text p i { color: var(--rf-gold); margin-right: 0.3em; }
+
+.rf-petevo__needs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-petneed {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rf-petneed i { color: var(--rf-warn); }
+.rf-petneed.is-met { border-color: rgba(76, 191, 106, 0.5); }
+.rf-petneed.is-met i { color: var(--rf-good); }
+.rf-petneed img { width: 1.3rem; height: 1.3rem; object-fit: contain; }
+
+.rf-petevo__track {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-petevo__track li { margin: 0; }
+
+.rf-petevo__stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-1);
+    width: 6.5rem;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.3;
+    text-align: center;
+}
+
+.rf-petevo__stage .rf-petpic {
+    --pic: 5rem;
+    padding: 0.35rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-lg);
+    background: var(--rf-surface-2);
+}
+
+.rf-petevo__stage.is-now .rf-petpic {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 1px var(--rf-gold), 0 0 16px rgba(232, 163, 61, 0.35);
+}
+
+.rf-petevo__stage.is-now .rf-petevo__name {
+    color: var(--rf-ink);
+    font-weight: 700;
+}
+
+.rf-petevo__when {
+    color: var(--rf-gold);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rf-petevo__stage.is-next .rf-petpic img { opacity: 0.6; }
+
+.rf-petevo__arrow {
+    flex: 1 1 1.5rem;
+    min-width: 1.25rem;
+    max-width: 5rem;
+    padding-top: 2.2rem;
+    color: var(--rf-ink-muted);
+}
+
+/* A line that ends in the arrow's head, so the three stages read as one track. */
+.rf-petevo__rail {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.rf-petevo__rail::before {
+    content: "";
+    flex: 1;
+    height: 2px;
+    margin-right: -0.35rem;
+    background: currentColor;
+    opacity: 0.55;
+}
+
+.rf-petevo__rail i { font-size: 1rem; }
+.rf-petevo__arrow.is-done { color: var(--rf-gold); }
+
+/* ---- Resting pets, warming eggs, empty places ------------------------------- */
+.rf-petrest {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-4);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+}
+
+.rf-petrest > .rf-petpic { --pic: 5.75rem; }
+
+.rf-petrest__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-petrest__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-2);
+}
+
+.rf-petrest__top strong {
+    min-width: 0;
+    color: var(--rf-ink);
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.rf-petrest__kind {
+    margin-top: calc(var(--rf-space-2) * -1);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-petrest__level {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-petrest__level b { color: var(--rf-ink); }
+
+.rf-petrest__send {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-petempty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-3);
+    min-height: 4rem;
+    padding: var(--rf-space-3);
+    border: 2px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    font-weight: 600;
+    text-align: center;
+}
+
+.rf-petempty i { color: var(--rf-ink-faint); font-size: 1.2rem; }
+.rf-petempty.is-locked { border-width: 1px; }
+
+/* ---- Nobody out, and the empty stable --------------------------------------- */
+.rf-stable__main--noneout { grid-template-columns: minmax(0, 1fr); }
+
+.rf-stable__main--noneout .rf-stable__side {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+}
+
+.rf-stable__noneout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-6) var(--rf-space-5);
+    border: 2px dashed var(--rf-line-gold);
+    text-align: center;
+}
+
+.rf-stable__noneout-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold);
+    font-size: 1.75rem;
+}
+
+.rf-stable__noneout h3,
+.rf-stable__start h3 {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+}
+
+.rf-stable__noneout p,
+.rf-stable__start p {
+    max-width: 44rem;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.55;
+}
+
+.rf-stable__noneout-more { font-size: var(--rf-size-small); }
+
+.rf-stable__start {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+}
+
+.rf-stable__start-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-stable__starters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-stable__starter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid rgba(var(--pet-tint), 0.35);
+    border-radius: var(--rf-radius-lg);
+    text-align: center;
+}
+
+.rf-stable__starter .rf-petpic { --pic: 9rem; }
+.rf-stable__starter strong { font-size: 1.25rem; font-weight: 800; }
+.rf-stable__starter .rf-petchips { justify-content: center; }
+.rf-stable__starter p { flex: 1; font-size: var(--rf-size-small); }
+.rf-stable__starter .rf-cmd { font-size: var(--rf-size-body); padding: var(--rf-space-1) var(--rf-space-3); }
+
+/* ---- In chat, and the creatures to tame ------------------------------------- */
+.rf-stable__chat-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--rf-space-1) var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-stable__chat-head .rf-panel__title { margin: 0; font-weight: 800; }
+
+.rf-stable__chat-head span {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-tamegrid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-tametile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-tametile:hover,
+.rf-tametile:focus {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+    outline: none;
+}
+
+.rf-tametile:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-tametile > .rf-petpic { --pic: 4.75rem; }
+
+.rf-tametile__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rf-tametile__body strong {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.rf-tametile__role,
+.rf-tametile__level {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-tametile__role i { color: rgb(var(--pet-role)); width: 1.1em; text-align: center; }
+.rf-tametile__level i { color: var(--rf-gold); width: 1.1em; text-align: center; }
+
+/* Locked: the picture and the name step back; the level it needs stays easy to read. */
+.rf-tametile.is-locked > .rf-petpic img { filter: grayscale(1) brightness(0.55); }
+.rf-tametile.is-locked > .rf-petpic--tint { background: none; }
+.rf-tametile.is-locked .rf-tametile__body strong { color: var(--rf-ink-muted); }
+.rf-tametile.is-locked .rf-tametile__role i { color: var(--rf-ink-faint); }
+.rf-tametile__level.is-needed { color: var(--rf-ink); }
+.rf-tametile__level.is-needed i { color: var(--rf-ink-muted); }
+
+.rf-tametile__pop {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    width: 21rem;
+    max-width: calc(100vw - 2rem);
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow-lg);
+    cursor: default;
+}
+
+.rf-tametile:hover > .rf-tametile__pop,
+.rf-tametile:focus > .rf-tametile__pop,
+.rf-tametile:focus-within > .rf-tametile__pop {
+    display: flex;
+}
+
+.rf-tametile:hover,
+.rf-tametile:focus { z-index: 21; }
+
+.rf-tametile__pop strong { font-size: var(--rf-size-heading); font-weight: 800; color: var(--rf-ink); }
+.rf-tametile__pop p { color: var(--rf-ink-muted); font-size: var(--rf-size-small); line-height: 1.5; }
+.rf-tametile__pop p b { color: var(--rf-ink); }
+.rf-tametile__pop .rf-cmd { align-self: flex-start; }
+
+.rf-tamegrid > :nth-child(5n) > .rf-tametile__pop,
+.rf-tamegrid > :nth-child(5n - 1) > .rf-tametile__pop {
+    left: auto;
+    right: 0;
+}
+
+@media (max-width: 1280px) {
+    .rf-stable__main { grid-template-columns: minmax(0, 1fr); }
+    .rf-stable__side { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); }
+    .rf-tamegrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .rf-tamegrid > :nth-child(n) > .rf-tametile__pop { left: 0; right: auto; }
+    .rf-tamegrid > :nth-child(3n) > .rf-tametile__pop { left: auto; right: 0; }
+}
+
+@media (max-width: 760px) {
+    .rf-stable__side,
+    .rf-stable__main--noneout .rf-stable__side { grid-template-columns: minmax(0, 1fr); }
+    .rf-stable__guide { margin-left: 0; }
+    .rf-stable__starters { grid-template-columns: minmax(0, 1fr); }
+
+    /* One column, and the name comes before the picture: the two halves dissolve and their parts are put in order. */
+    .rf-pethero {
+        display: flex;
+        flex-direction: column;
+        gap: var(--rf-space-3);
+    }
+
+    .rf-pethero__art,
+    .rf-pethero__body { display: contents; }
+    .rf-pethero__name { order: 1; }
+    .rf-pethero__kind { order: 2; }
+    .rf-pethero__portrait { order: 3; aspect-ratio: auto; height: 13rem; }
+    .rf-pethero__body > .rf-petchips { order: 4; }
+    .rf-pethero__blurb { order: 5; }
+    .rf-pethero .rf-petlevel { order: 6; }
+    .rf-pethero .rf-petskills { order: 7; }
+    .rf-pethero__evo { order: 8; }
+    .rf-pethero__portrait .rf-petpic { --pic: 12rem; }
+    .rf-pethero__name h3 { font-size: 1.6rem; }
+    .rf-petevo { grid-template-columns: minmax(0, 1fr); }
+
+    .rf-tamegrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rf-space-2); }
+    .rf-tametile { flex-direction: column; align-items: flex-start; gap: var(--rf-space-2); }
+    .rf-tametile > .rf-petpic { align-self: center; }
+
+    .rf-tamegrid > :nth-child(n) > .rf-tametile__pop { left: 0; right: auto; width: calc(200% + var(--rf-space-2)); }
+    .rf-tamegrid > :nth-child(2n) > .rf-tametile__pop { left: auto; right: 0; }
+
+    .rf-petevo__track { gap: var(--rf-space-1); }
+    .rf-petevo__stage { width: 5.25rem; }
+    .rf-petevo__stage .rf-petpic { --pic: 4.5rem; }
+    .rf-petevo__arrow { padding-top: 1.95rem; }
+}
+
+@media (max-width: 420px) {
+    .rf-stable .rf-panel { padding: var(--rf-space-4); }
+    .rf-petrest { gap: var(--rf-space-3); padding: var(--rf-space-3); }
+    .rf-petrest > .rf-petpic { --pic: 4.5rem; }
+}
+
+/* ==========================================================================
+   The guide (/pets)
+   ========================================================================== */
+
+/* The guide is cards from edge to edge, so it takes the column's whole width instead of the 100px a side that
+   site.css gives a section of prose. */
+.rf-front .page-content .section.rf-petguide {
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+}
+
+/* ---- Hero: the three starters beside the title ------------------------------ */
+.rf-front .top-section.rf-petguide-hero {
+    padding-bottom: var(--rf-space-4);
+}
+
+/* A soft shadow behind the pets and the title, so both stand clear of the scenery. */
+.rf-petguide-hero__inner::before {
+    content: "";
+    position: absolute;
+    inset: -2rem 0;
+    z-index: -1;
+    background: radial-gradient(ellipse at 50% 50%, rgba(18, 21, 28, 0.78), rgba(18, 21, 28, 0.45) 55%, transparent 75%);
+    pointer-events: none;
+}
+
+.rf-petguide-hero__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-4) var(--rf-space-7);
+    width: min(78rem, 100%);
+    margin: 0 auto;
+    position: relative;
+}
+
+.rf-petguide-hero__pets {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.rf-petguide-hero__pets .rf-petpic { --pic: clamp(6rem, 22vw, 11.5rem); }
+.rf-petguide-hero__pets .rf-petpic:nth-child(2) { --pic: clamp(7rem, 26vw, 13.5rem); margin: 0 -0.75rem; z-index: 1; }
+.rf-petguide-hero__pets .rf-petpic img { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.6)); }
+
+.rf-petguide-hero__text { max-width: 34rem; }
+
+.rf-front .rf-petguide-hero__text h1 {
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+}
+
+.rf-front .rf-petguide-hero__text h1::after {
+    content: "";
+    display: block;
+    width: 4.5rem;
+    max-width: none;
+    height: 4px;
+    margin: var(--rf-space-3) 0 var(--rf-space-4);
+    border-radius: 2px;
+    background: var(--rf-gold);
+    filter: none;
+}
+
+.rf-petguide-hero__text p {
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: 1.2rem;
+    line-height: 1.5;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+    text-wrap: balance;
+}
+
+/* ---- Page rhythm ----------------------------------------------------------- */
+.rf-petguide {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+    color: var(--rf-ink);
+}
+
+.rf-front .rf-petguide h2,
+.rf-front .rf-petguide h3,
+.rf-front .rf-petguide h4,
+.rf-petguide p,
+.rf-petguide ul,
+.rf-petguide ol,
+.rf-petguide li {
+    margin: 0;
+}
+
+.rf-front .rf-petguide .rf-petguide__h {
+    margin-top: var(--rf-space-5);
+    color: var(--rf-ink);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.rf-petguide__h:first-child { margin-top: 0; }
+
+.rf-petguide__lead {
+    max-width: 70ch;
+    margin-top: calc(var(--rf-space-2) * -1);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.55;
+}
+
+/* ---- How to get a pet: four even steps -------------------------------------- */
+.rf-petsteps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-petstep {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+}
+
+.rf-petstep__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 2px solid var(--rf-gold);
+    border-radius: 50%;
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+    font-size: 1.25rem;
+}
+
+.rf-front .rf-petguide .rf-petstep h3 {
+    color: var(--rf-ink);
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.rf-petstep p {
+    grid-column: 1 / -1;
+    align-self: start;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.55;
+}
+
+.rf-petstep .rf-cmd {
+    grid-column: 1 / -1;
+    justify-self: start;
+    padding: var(--rf-space-1) var(--rf-space-3);
+}
+
+/* ---- Roles ------------------------------------------------------------------ */
+.rf-petroles {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-petrole {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-left: 3px solid rgb(var(--pet-role));
+    border-radius: var(--rf-radius);
+}
+
+.rf-petrole__icon {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: rgba(var(--pet-role), 0.14);
+    color: rgb(var(--pet-role));
+    font-size: 1.25rem;
+}
+
+.rf-petrole > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.rf-petrole strong { color: var(--rf-ink); font-size: 1.05rem; font-weight: 800; }
+.rf-petrole span { color: var(--rf-ink-muted); font-size: var(--rf-size-small); line-height: 1.4; }
+
+/* ---- How pets grow: the strip ----------------------------------------------- */
+.rf-petgrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-4) var(--rf-space-6);
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+}
+
+.rf-petgrow__text {
+    flex: 1 1 18rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+}
+
+.rf-petgrow__text p {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.55;
+}
+
+.rf-petgrow__text b { color: var(--rf-ink); }
+
+/* The three pictures grow from left to right and stand on one line: each is pushed down by what it is smaller
+   than the last one, so the names under them line up too. */
+.rf-petgrow__strip {
+    --grow-max: 10rem;
+    flex: 2 1 30rem;
+    list-style: none;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    gap: var(--rf-space-2);
+}
+
+.rf-petgrow__stage {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-1);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+    text-align: center;
+}
+
+.rf-petgrow__stage .rf-petpic { margin-top: calc(var(--grow-max) - var(--pic)); margin-bottom: var(--rf-space-1); }
+.rf-petgrow__stage--0 .rf-petpic { --pic: calc(var(--grow-max) * 0.68); }
+.rf-petgrow__stage--1 .rf-petpic { --pic: calc(var(--grow-max) * 0.84); }
+.rf-petgrow__stage--2 .rf-petpic { --pic: var(--grow-max); }
+
+.rf-petgrow__arrow {
+    flex: none;
+    padding-top: calc(var(--grow-max) * 0.55);
+    color: var(--rf-gold);
+    font-size: 1.4rem;
+}
+
+.rf-petgrow__when {
+    padding: 0.05rem 0.7rem;
+    border: 1px solid var(--rf-gold);
+    border-radius: 999px;
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rf-petgrow__needs {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* ---- Facts: evolving, gems, the stable, the Rookery, taming, chat ----------- */
+.rf-petfacts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-petdetails {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-petfact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+}
+
+.rf-petfact--wide { grid-column: span 2; }
+
+.rf-front .rf-petguide .rf-petfact h3 {
+    color: var(--rf-ink);
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.rf-petfact h3 i { color: var(--rf-gold); margin-right: 0.35em; }
+
+.rf-petfact p,
+.rf-petlist li {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    line-height: 1.55;
+}
+
+.rf-petfact p b { color: var(--rf-ink); }
+
+.rf-petgems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-petgem,
+.rf-petperk {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.25rem 0.7rem 0.25rem 0.4rem;
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-petperk { padding-left: 0.7rem; }
+.rf-petgem b, .rf-petperk b { color: var(--rf-ink); }
+.rf-petgem img { width: 1.6rem; height: 1.6rem; object-fit: contain; }
+
+.rf-petlist {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-petlist li {
+    position: relative;
+    padding-left: 1.1rem;
+}
+
+.rf-petlist li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--rf-gold);
+}
+
+.rf-petodds {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-petodds > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+}
+
+.rf-petodds b { color: var(--rf-gold-bright); font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.rf-petodds span { color: var(--rf-ink-muted); font-size: var(--rf-size-small); line-height: 1.4; }
+
+.rf-petfact__note { margin-top: auto; }
+
+/* ---- Filters ---------------------------------------------------------------- */
+.rf-petfilter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3) var(--rf-space-5);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+}
+
+.rf-petfilter__search {
+    position: relative;
+    flex: 1 1 14rem;
+    max-width: 22rem;
+    margin: 0;
+}
+
+.rf-petfilter__search i {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--rf-ink-muted);
+    pointer-events: none;
+}
+
+.rf-petfilter__search .rf-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.3rem;
+    font-size: var(--rf-size-body);
+}
+
+.rf-petfilter__group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-petfilter__label {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-petpill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-petpill i { color: var(--rf-ink-muted); }
+.rf-petpill[class*="is-role-"] i { color: rgb(var(--pet-role)); }
+.rf-petpill[class*="is-el-"] i { color: rgb(var(--pet-tint)); }
+
+.rf-petpill:hover,
+.rf-petpill:focus-visible {
+    background: var(--rf-surface-raised);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-ink);
+}
+
+.rf-petpill:focus-visible { outline: none; box-shadow: var(--rf-focus); }
+
+.rf-petpill.is-on,
+.rf-petpill.is-on:hover {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-petpill.is-on i { color: var(--rf-ink-inverse); }
+
+/* ---- The groups and their cards --------------------------------------------- */
+.rf-petgroup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--rf-space-1) var(--rf-space-4);
+    margin-top: var(--rf-space-4);
+}
+
+.rf-front .rf-petguide .rf-petgroup__title {
+    color: var(--rf-ink);
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+.rf-petgroup__title i { color: var(--rf-gold); margin-right: 0.3em; }
+
+.rf-petgroup__title span {
+    margin-left: 0.4em;
+    padding: 0 0.55em;
+    border-radius: 999px;
+    background: var(--rf-surface-3);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.rf-petgroup__note { color: var(--rf-ink-muted); font-size: var(--rf-size-body); }
+
+.rf-petcards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--rf-space-4);
+}
+
+/* Five parts (picture and name, chips, stages, skills, how to get it); with subgrid each part is as tall as the
+   tallest in its row of cards, so the strips and lists line up across the row. */
+.rf-petcard {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 5;
+    gap: var(--rf-space-3);
+    min-width: 0;
+    padding: var(--rf-space-4);
+    background: linear-gradient(155deg, rgba(var(--pet-tint), 0.12), transparent 42%), var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+}
+
+.rf-petcard__top {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-4);
+}
+
+.rf-petcard__top > .rf-petpic { --pic: 7.25rem; }
+
+.rf-petcard__id {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-front .rf-petguide .rf-petcard h4 {
+    color: var(--rf-ink);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.rf-petcard__blurb {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.5;
+}
+
+.rf-petstages {
+    list-style: none;
+    padding: var(--rf-space-2);
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.16);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+}
+
+.rf-petstages__stage {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.rf-petstages__stage .rf-petpic { --pic: 3.75rem; }
+
+.rf-petstages__stage em {
+    color: var(--rf-gold);
+    font-size: var(--rf-size-small);
+    font-style: normal;
+    font-weight: 600;
+}
+
+.rf-petstages__arrow {
+    flex: none;
+    padding-top: 1.35rem;
+    color: var(--rf-gold);
+}
+
+.rf-petcard > .rf-petchips { align-self: start; }
+.rf-petcard > .rf-petskills { align-self: start; }
+.rf-petcard > .rf-petstages { align-self: stretch; }
+
+.rf-petcard__get {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--rf-space-2);
+    padding-top: var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-petcard__get p {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.5;
+}
+
+.rf-petcard__get p b { color: var(--rf-ink); }
+.rf-petcard__get p > i { color: var(--rf-gold); margin-right: 0.3em; }
+
+.rf-petcard__egg {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-petcard__egg img { flex: none; width: 2.75rem; height: 2.75rem; object-fit: contain; }
+
+.rf-petnone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-7) var(--rf-space-4);
+    border: 2px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius-lg);
+    color: var(--rf-ink-muted);
+    text-align: center;
+}
+
+.rf-petnone i { font-size: 2rem; color: var(--rf-ink-faint); }
+
+@media (max-width: 1100px) {
+    .rf-petsteps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rf-petroles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rf-petfacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rf-petfact--wide { grid-column: span 2; }
+    .rf-petcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+    .rf-petguide-hero__inner { gap: var(--rf-space-3); text-align: center; }
+    .rf-front .rf-petguide-hero__text h1::after { margin-left: auto; margin-right: auto; }
+    .rf-petguide-hero__text p { font-size: 1.05rem; }
+
+    .rf-petsteps,
+    .rf-petfacts,
+    .rf-petdetails,
+    .rf-petcards { grid-template-columns: minmax(0, 1fr); }
+
+    .rf-petfact--wide { grid-column: auto; }
+    .rf-petroles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rf-petstep, .rf-petfact, .rf-petgrow { padding: var(--rf-space-4); }
+    .rf-front .page-content .section.rf-petguide { padding-left: var(--rf-space-4); padding-right: var(--rf-space-4); }
+    .rf-petodds { grid-template-columns: minmax(0, 1fr); }
+    .rf-petodds > div { flex-direction: row; align-items: center; gap: var(--rf-space-3); }
+    .rf-petodds b { flex: none; min-width: 3.2rem; }
+
+    .rf-petgrow__strip { --grow-max: 5.75rem; flex-basis: 100%; gap: 2px; }
+    .rf-petgrow__arrow { font-size: 1rem; }
+    .rf-petfilter__search { max-width: none; flex-basis: 100%; }
+    .rf-petcard__top > .rf-petpic { --pic: 6rem; }
+}
+
+@media (max-width: 420px) {
+    .rf-petroles { grid-template-columns: minmax(0, 1fr); }
+    .rf-petcard__top { gap: var(--rf-space-3); }
+    .rf-petcard__top > .rf-petpic { --pic: 5.25rem; }
+}

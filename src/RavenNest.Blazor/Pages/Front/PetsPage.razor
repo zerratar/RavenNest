@@ -1,93 +1,454 @@
 @page "/pets"
 @using RavenNest.Combat
+@inject RavenNest.BusinessLogic.Data.GameData GameData
 
 @*
     Battle pets (the game's docs/battle-pets-design.md): how they work, and every kind there is: the starters, the
     creatures to tame, the pets that hatch from eggs and the pet items that wake to fight, each with its picture (rendered from the game's own models),
     role, element, how it attacks, stages, skills with their numbers, and how to get one. Read from RavenNest.Combat's
-    species list, the same one the game and the server use.
+    species list, the same one the game and the server use. The look is shared with the Pets tab of a character page
+    (Components/PetStable.razor, PetLook.cs); styling in wwwroot/css/ravenfall-pets.css.
 *@
-<div class="top-section">
-    <div class="hero-text">
-        <h1>Battle pets</h1>
+<div class="top-section rf-petguide-hero">
+    <div class="rf-petguide-hero__inner">
+        <div class="rf-petguide-hero__pets" aria-hidden="true">
+            @foreach (var s in BattlePets.Starters)
+            {
+                @PetLook.Pic(Picture(s, 0))
+            }
+        </div>
+        <div class="rf-petguide-hero__text">
+            <h1>Battle pets</h1>
+            <p>They follow you, fight beside you and grow while you idle.</p>
+        </div>
     </div>
 </div>
 
 <div class="white-section-break"></div>
 <div class="page-content">
-    <div class="section rf-petdex">
-        <p class="rf-lead">
-            A battle pet follows you, joins your fights on your target and uses its skills by itself. Tanks take blows
-            for you, healers keep you standing, damage pets hit hard and support pets make everyone around better; gatherer
-            pets help you find more while you gather instead. While a pet is out, it and your <b>Taming</b> skill share in
-            all the experience you earn, whatever you do, so both grow while you idle.
+    <div class="section rf-petguide">
+
+        <h2 class="rf-petguide__h">How to get a pet</h2>
+        <div class="rf-petsteps">
+            <div class="rf-petstep">
+                <span class="rf-petstep__icon"><i class="fa-solid fa-paw"></i></span>
+                <h3>Pick a starter</h3>
+                <p>A first pet for an empty stable: the fox (damage), the bear (tank) or the fawn (healer).</p>
+                <span class="rf-cmd">!pets starter fox</span>
+            </div>
+            <div class="rf-petstep">
+                <span class="rf-petstep__icon"><i class="fa-solid fa-hand-holding-heart"></i></span>
+                <h3>Tame a creature</h3>
+                <p>Fight a creature on its island. Each one you defeat is a try at taming it.</p>
+                <span class="rf-cmd">!tame bunny</span>
+            </div>
+            <div class="rf-petstep">
+                <span class="rf-petstep__icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <h3>Wake a pet item</h3>
+                <p>Every pet item can fight. It keeps its look and grows a little at each stage.</p>
+                <span class="rf-cmd">!pets wake diamond raven</span>
+            </div>
+            <div class="rf-petstep">
+                <span class="rf-petstep__icon"><i class="fa-solid fa-egg"></i></span>
+                <h3>Hatch an egg</h3>
+                <p>Eggs turn up now and then in dungeons, raids, tower chests, quests, play streaks and island events.</p>
+                <span class="rf-cmd">!pets hatch wolf pup egg</span>
+            </div>
+        </div>
+
+        <h2 class="rf-petguide__h">What a pet does</h2>
+        <p class="rf-petguide__lead">
+            A battle pet follows you, joins your fights on your target and uses its skills by itself. Its role says how it helps.
         </p>
-        <div class="rf-petdex__how">
-            <div class="rf-card"><div><b>!pets starter fox</b>, <b>bear</b> or <b>fawn</b></div><span>A first pet, for an empty stable.</span></div>
-            <div class="rf-card"><b>!tame bunny</b><span>Each one you defeat while you fight is a try, and every try trains Taming: 2% a try at the creature's Taming level, a little more with every level above it (8% at most), and half as much again with a treat it loves. You have to be on an island where the creature lives.</span></div>
-            <div class="rf-card"><b>!pets wake diamond raven</b><span>Every pet item can fight: it keeps its look and grows a little at each stage.</span></div>
-            <div class="rf-card"><b>!pets hatch wolf pup egg</b><span>Eggs turn up now and then in dungeons, raids, tower chests, quests, play streaks and island events. In your stable an egg takes a place and hatches after some minutes of play.</span></div>
-            <div class="rf-card"><b>!pets</b><span>Your pet; then stable, use, away, rename, skills, slot, evolve, release, about. <b>!pet</b> (no s) still picks your cosmetic pet, which shows when no battle pet is out.</span></div>
-        </div>
-        <p class="rf-petdex__rules">
-            A pet's level can never pass your Taming level. It evolves at level @BattlePets.EvolveLevels[0] (Taming @BattlePets.EvolveSkillLevels[0])
-            and @BattlePets.EvolveLevels[1] (Taming @BattlePets.EvolveSkillLevels[1]): a new look, stronger, and one more skill slot.
-            Evolving also takes raw gems of the pet's kind, @PetEvolution.GemsPerStage[0] for the first and @PetEvolution.GemsPerStage[1] for the second:
-            Ruby for fire pets, Sapphire for ice, Topaz for lightning, Emerald for poison, and for the others their role's gem
-            (Diamond for damage, Onyx for tanks and gatherers, Amethyst for healers and support).
-            Your stable holds @BattlePets.StableSize(1) pets to begin with and up to @BattlePets.StableLevels.Length as Taming grows; one is out at a time.
-            Knocked out, a pet gets up again after @BattlePets.KnockoutSeconds seconds. Clans from level @Rookery.RequiredClanLevel train
-            <b>@Rookery.Name</b> while their members have pets out. It is slow, since nobody has to do anything for it: each
-            level takes longer than the last, and many members out at once count for a little more than a few. It makes the
-            members' pets grow faster (up to @Pct(Rookery.ExperienceBonus(999)) more), their stables bigger, their evolutions
-            cheaper (up to @Pct(Rookery.EvolutionDiscount(999)) fewer gems) and their eggs quicker to hatch (up to @Pct(Rookery.HatchSpeedup(999))).
-        </p>
-
-        <h2 class="rf-petdex__group">Starter pets</h2>
-        <div class="rf-petdex__grid">
-            @foreach (var s in BattlePets.Starters) { @Card(s, "!pets starter " + s.NameAt(0).Split(' ')[0].ToLowerInvariant()) }
+        <div class="rf-petroles">
+            @foreach (var role in PetLook.Roles)
+            {
+                <div class="rf-petrole @PetLook.RoleClass(role)">
+                    <span class="rf-petrole__icon"><i class="@PetLook.RoleIcon(role)"></i></span>
+                    <div>
+                        <strong>@PetLook.RoleName(role)</strong>
+                        <span>@PetLook.RoleText(role)</span>
+                    </div>
+                </div>
+            }
         </div>
 
-        <h2 class="rf-petdex__group">Creatures to tame</h2>
-        <div class="rf-petdex__grid">
-            @foreach (var s in BattlePets.Tameable.OrderBy(x => x.TameLevel)) { @Card(s, "Taming " + s.TameLevel + (s.TameRarity < 1 ? ", very rare" : "") + "; loves " + string.Join(" or ", s.Treats)) }
+        <h2 class="rf-petguide__h">How pets grow</h2>
+        <div class="rf-petgrow">
+            <div class="rf-petgrow__text">
+                <p>While a pet is out, it and your <b>Taming</b> skill share in all the experience you earn, whatever you do, so both grow while you idle.</p>
+                <p>A pet's level can never pass your Taming level.</p>
+            </div>
+            <ol class="rf-petgrow__strip">
+                @for (var stage = 0; stage <= BattlePets.MaxStage; ++stage)
+                {
+                    if (stage > 0)
+                    {
+                        <li class="rf-petgrow__arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></li>
+                    }
+                    <li class="rf-petgrow__stage rf-petgrow__stage--@stage @PetLook.ElementClass(example.Element)">
+                        @PetLook.Pic(Picture(example, stage), "rf-petpic--tint", example.NameAt(stage))
+                        <span>@example.NameAt(stage)</span>
+                        @if (stage > 0)
+                        {
+                            <span class="rf-petgrow__when">Level @BattlePets.EvolveLevels[stage - 1]</span>
+                            <span class="rf-petgrow__needs">Taming @BattlePets.EvolveSkillLevels[stage - 1]<br />@PetEvolution.GemsPerStage[stage - 1] gems</span>
+                        }
+                        else
+                        {
+                            <span class="rf-petgrow__needs">Level 1</span>
+                        }
+                    </li>
+                }
+            </ol>
         </div>
 
-        <h2 class="rf-petdex__group">Hatched from eggs</h2>
-        <div class="rf-petdex__grid">
-            @foreach (var s in PetEggs.Species.OrderBy(x => x.TameLevel)) { @Card(s, s.EggName + ": " + s.EggFrom.ToLowerInvariant() + ". Hatches after " + (int)s.HatchMinutes + " minutes of play, at Taming " + s.TameLevel + ".") }
+        <div class="rf-petfacts">
+            <div class="rf-petfact">
+                <h3><i class="fa-solid fa-arrow-up-right-dots"></i> Evolving</h3>
+                <p>
+                    At level @BattlePets.EvolveLevels[0] (Taming @BattlePets.EvolveSkillLevels[0]) and level @BattlePets.EvolveLevels[1] (Taming @BattlePets.EvolveSkillLevels[1]):
+                    a new look, stronger (its numbers go up by @Pct(BattlePets.StageMultipliers[1] - 1), then by @Pct(BattlePets.StageMultipliers[2] - 1)),
+                    and one more skill slot. Type <span class="rf-cmd">!pets evolve</span>.
+                </p>
+                <p>
+                    A pet has @BattlePets.SkillSlots(1, 0) skill slots to begin with@(string.Concat(slotLevels.Select(l => ", " + BattlePets.SkillSlots(l, 0) + " at Taming " + l))),
+                    and learns new skills as it levels. <span class="rf-cmd">!pets slot</span> picks which it uses.
+                </p>
+            </div>
+            <div class="rf-petfact rf-petfact--wide">
+                <h3><i class="fa-regular fa-gem"></i> Gems for evolving</h3>
+                <p>Evolving also takes raw gems of the pet's kind: @PetEvolution.GemsPerStage[0] for the first, @PetEvolution.GemsPerStage[1] for the second.</p>
+                <div class="rf-petgems">
+                    @Gem(GemKind.Ruby, "fire pets")
+                    @Gem(GemKind.Sapphire, "ice pets")
+                    @Gem(GemKind.Topaz, "lightning pets")
+                    @Gem(GemKind.Emerald, "poison pets")
+                </div>
+                <p>Pets with no element take their role's gem:</p>
+                <div class="rf-petgems">
+                    @Gem(GemKind.Diamond, "damage")
+                    @Gem(GemKind.Onyx, "tanks and gatherers")
+                    @Gem(GemKind.Amethyst, "healers and support")
+                </div>
+            </div>
+            <div class="rf-petfact">
+                <h3><i class="fa-solid fa-warehouse"></i> Your stable</h3>
+                <p>
+                    Holds @BattlePets.StableSize(1) pets to begin with and up to @BattlePets.StableLevels.Length as Taming grows
+                    (one more at Taming @string.Join(", ", BattlePets.StableLevels.Where(l => l > 1))). One is out at a time.
+                    An egg takes a place too, and hatches after some minutes of play.
+                </p>
+                <p>Knocked out, a pet gets up again after @BattlePets.KnockoutSeconds seconds.</p>
+            </div>
+            <div class="rf-petfact rf-petfact--wide">
+                <h3><i class="fa-solid fa-feather-pointed"></i> @Rookery.Name, the clan skill</h3>
+                <p>
+                    Clans from level @Rookery.RequiredClanLevel train <b>@Rookery.Name</b> while their members have pets out. It is slow, since
+                    nobody has to do anything for it: each level takes longer than the last, and many members out at once count
+                    for a little more than a few.
+                </p>
+                <div class="rf-petgems">
+                    <span class="rf-petperk"><b>Up to @Pct(Rookery.ExperienceBonus(999)) more</b> pet experience</span>
+                    <span class="rf-petperk"><b>Bigger</b> stables</span>
+                    <span class="rf-petperk"><b>Up to @Pct(Rookery.EvolutionDiscount(999)) fewer</b> gems to evolve</span>
+                    <span class="rf-petperk"><b>Up to @Pct(Rookery.HatchSpeedup(999)) quicker</b> eggs</span>
+                </div>
+            </div>
         </div>
 
-        <h2 class="rf-petdex__group">Pet items that wake</h2>
-        <div class="rf-petdex__grid">
-            @foreach (var s in BattlePets.Companions) { @Card(s, "!pets wake, with one of its pet items") }
+        <div class="rf-petdetails">
+            <div class="rf-petfact">
+                <h3><i class="fa-solid fa-hand-holding-heart"></i> How taming works</h3>
+                <ul class="rf-petlist">
+                    <li><span class="rf-cmd">!tame bunny</span> starts it. You have to be on an island where the creature lives.</li>
+                    <li>Each one you defeat while you fight is a try, and every try trains Taming.</li>
+                    <li>Taming stops when you tame one: type it again for another.</li>
+                    <li>Carry a treat the creature loves and a tame is likelier. One is eaten when it works. Each creature's card names its treats.</li>
+                </ul>
+                <div class="rf-petodds">
+                    <div><b>@Pct(Taming.BaseChance)</b><span>a try, at the creature's Taming level</span></div>
+                    <div><b>@Pct(Taming.MaxChance)</b><span>at most: a little more with every level above it</span></div>
+                    <div><b>x@(Taming.TreatMultiplier.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))</b><span>half as much again with a treat it loves</span></div>
+                </div>
+            </div>
+            <div class="rf-petfact">
+                <h3><i class="fa-solid fa-comment"></i> In chat</h3>
+                <div class="rf-petcmds">
+                    @Command("!pets", "your pet")
+                    @Command("!pets stable", "all your pets")
+                    @Command("!pets use (name)", "send one out")
+                    @Command("!pets away", "rest it")
+                    @Command("!pets rename (name)", "name it")
+                    @Command("!pets skills", "its skills and slots")
+                    @Command("!pets slot (number) (skill)", "change a slot")
+                    @Command("!pets evolve", "evolve it")
+                    @Command("!pets release (name)", "let one go for good")
+                    @Command("!pets about (kind)", "about a kind of pet")
+                </div>
+                <p class="rf-petfact__note"><span class="rf-cmd">!pet</span> (no s) still picks your cosmetic pet, which shows when no battle pet is out.</p>
+            </div>
         </div>
+
+        <h2 class="rf-petguide__h" id="all">Every kind of pet</h2>
+        <div class="rf-petfilter">
+            <label class="rf-petfilter__search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" class="rf-input" placeholder="Search pets..." aria-label="Search pets by name" @bind="search" @bind:event="oninput" />
+            </label>
+            <div class="rf-petfilter__group" role="group" aria-label="Role">
+                <span class="rf-petfilter__label">Role</span>
+                <button type="button" class="rf-petpill @(role == null ? "is-on" : "")" @onclick="() => role = null">All</button>
+                @foreach (var r in PetLook.Roles)
+                {
+                    var value = r;
+                    <button type="button" class="rf-petpill @PetLook.RoleClass(r) @(role == r ? "is-on" : "")" @onclick="() => role = role == value ? (PetRole?)null : value"><i class="@PetLook.RoleIcon(r)"></i> @PetLook.RoleName(r)</button>
+                }
+            </div>
+            <div class="rf-petfilter__group" role="group" aria-label="Element">
+                <span class="rf-petfilter__label">Element</span>
+                <button type="button" class="rf-petpill @(element == null ? "is-on" : "")" @onclick="() => element = null">All</button>
+                @foreach (var e in PetLook.Elements)
+                {
+                    var value = e;
+                    <button type="button" class="rf-petpill @PetLook.ElementClass(e) @(element == e ? "is-on" : "")" @onclick="() => element = element == value ? (Element?)null : value"><i class="@PetLook.ElementIcon(e)"></i> @(e == RavenNest.Combat.Element.Physical ? "None" : PetLook.ElementName(e))</button>
+                }
+            </div>
+            <div class="rf-petfilter__group" role="group" aria-label="How you get it">
+                <span class="rf-petfilter__label">From</span>
+                <button type="button" class="rf-petpill @(group == null ? "is-on" : "")" @onclick="() => group = null">All</button>
+                @foreach (var g in groups)
+                {
+                    var value = g.Key;
+                    <button type="button" class="rf-petpill @(group == g.Key ? "is-on" : "")" @onclick="() => group = group == value ? null : value"><i class="@g.Icon"></i> @g.Short</button>
+                }
+            </div>
+        </div>
+
+        @{
+            var shown = 0;
+            // a search, role or element leaves few in each group: then they are one grid, without the group headings
+            var narrowed = role != null || element != null || !string.IsNullOrWhiteSpace(search);
+        }
+        @if (narrowed)
+        {
+            var found = groups.Where(g => group == null || group == g.Key).SelectMany(g => g.Species.Where(Matches).Select(s => (Group: g.Key, Species: s))).ToList();
+            shown = found.Count;
+            if (found.Count > 0)
+            {
+                <div class="rf-petgroup">
+                    <h3 class="rf-petgroup__title"><i class="fa-solid fa-filter"></i> @found.Count @(found.Count == 1 ? "pet fits" : "pets fit")</h3>
+                    <button type="button" class="rf-petpill" @onclick="Clear"><i class="fa-solid fa-xmark"></i> Show them all</button>
+                </div>
+                <div class="rf-petcards">
+                    @foreach (var f in found)
+                    {
+                        @Card(f.Species, f.Group)
+                    }
+                </div>
+            }
+        }
+        @foreach (var g in groups)
+        {
+            if (narrowed || (group != null && group != g.Key)) continue;
+            var list = g.Species.Where(Matches).ToList();
+            if (list.Count == 0) continue;
+            shown += list.Count;
+            <div class="rf-petgroup">
+                <h3 class="rf-petgroup__title"><i class="@g.Icon"></i> @g.Title <span>@list.Count</span></h3>
+                <p class="rf-petgroup__note">@g.Note</p>
+            </div>
+            <div class="rf-petcards">
+                @foreach (var s in list)
+                {
+                    @Card(s, g.Key)
+                }
+            </div>
+        }
+        @if (shown == 0)
+        {
+            <div class="rf-petnone">
+                <i class="fa-solid fa-paw"></i>
+                <p>No pet fits that. <button type="button" class="rf-petpill" @onclick="Clear">Show them all</button></p>
+            </div>
+        }
     </div>
 </div>
 
 @code {
-    private RenderFragment Card(PetSpecies s, string how) => __builder =>
+    private string search = "";
+    private PetRole? role;
+    private Element? element;
+    private string group;
+
+    private sealed class Group
     {
-        <div class="rf-card rf-petdex__card">
-            <div class="rf-petdex__pics">
-                @for (var stage = 0; stage < (s.StageModels.Length > 1 ? s.StageModels.Length : 1); ++stage)
+        public string Key, Title, Short, Icon, Note;
+        public List<PetSpecies> Species;
+    }
+
+    private List<Group> groups = new List<Group>();
+    private PetSpecies example;
+    // the Taming levels that open another skill slot
+    private List<int> slotLevels = new List<int>();
+    private Dictionary<string, List<string>> petItems = new Dictionary<string, List<string>>();
+
+    protected override void OnInitialized()
+    {
+        example = BattlePets.GetSpecies("wolf-pup") ?? PetEggs.Species.First();
+        for (var level = 2; level <= 999; ++level)
+        {
+            if (BattlePets.SkillSlots(level, 0) > BattlePets.SkillSlots(level - 1, 0)) slotLevels.Add(level);
+        }
+        groups = new List<Group>
+        {
+            new Group { Key = "starter", Title = "Starter pets", Short = "Starters", Icon = "fa-solid fa-paw", Note = "One of the three, for anyone whose stable is empty.", Species = BattlePets.Starters.ToList() },
+            new Group { Key = "tame", Title = "Creatures to tame", Short = "Tameable", Icon = "fa-solid fa-hand-holding-heart", Note = "Tamed on the islands where they live, at the Taming level each needs.", Species = BattlePets.Tameable.OrderBy(x => x.TameLevel).ToList() },
+            new Group { Key = "egg", Title = "Hatched from eggs", Short = "Eggs", Icon = "fa-solid fa-egg", Note = "In your stable an egg takes a place and hatches after some minutes of play.", Species = PetEggs.Species.OrderBy(x => x.TameLevel).ToList() },
+            new Group { Key = "item", Title = "Pet items that wake", Short = "Pet items", Icon = "fa-solid fa-wand-magic-sparkles", Note = "Every pet item can fight: it keeps its look and grows a little at each stage.", Species = BattlePets.Companions.ToList() },
+        };
+        try
+        {
+            // the pet items each companion wakes from, by name, so the card can say which to look for
+            foreach (var item in GameData.GetItems())
+            {
+                if (item == null || item.Category != (int)RavenNest.Models.ItemCategory.Pet || string.IsNullOrEmpty(item.Name)) continue;
+                var species = BattlePets.SpeciesForItem(item.GenericPrefab) ?? BattlePets.SpeciesForItem(item.Name);
+                if (species == null) continue;
+                if (!petItems.TryGetValue(species.Id, out var names)) petItems[species.Id] = names = new List<string>();
+                if (!names.Contains(item.Name)) names.Add(item.Name);
+            }
+        }
+        catch
+        {
+            // the cards then say "one of its pet items"
+            petItems.Clear();
+        }
+    }
+
+    private void Clear()
+    {
+        search = "";
+        role = null;
+        element = null;
+        group = null;
+    }
+
+    private bool Matches(PetSpecies s)
+    {
+        if (role != null && s.Role != role) return false;
+        if (element != null && s.Element != element) return false;
+        var text = (search ?? "").Trim();
+        if (text.Length == 0) return true;
+        return s.StageNames.Any(n => n.Contains(text, StringComparison.OrdinalIgnoreCase))
+            || s.CreatureName.Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (s.EggName ?? "").Contains(text, StringComparison.OrdinalIgnoreCase)
+            || s.Skills.Select(BattlePets.GetSkill).Any(k => k != null && k.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private RenderFragment Gem(GemKind kind, string forWhat) => __builder =>
+    {
+        <span class="rf-petgem"><img src="@PetLook.GemPicture(kind)" alt="" loading="lazy" onerror="this.style.display='none'" /><b>@Gems.RawName(kind)</b> @forWhat</span>
+    };
+
+    private RenderFragment Command(string command, string what) => __builder =>
+    {
+        <span class="rf-petcmd"><span class="rf-cmd">@command</span><span class="rf-petcmd__what">@what</span></span>
+    };
+
+    private RenderFragment Card(PetSpecies s, string groupKey) => __builder =>
+    {
+        var same = PetLook.SameLookEveryStage(s);
+        <article class="rf-petcard @PetLook.ElementClass(s.Element)" @key="s.Id">
+            <div class="rf-petcard__top">
+                @PetLook.Pic(Picture(s, 0), "rf-petpic--tint", s.NameAt(0))
+                <div class="rf-petcard__id">
+                    <h4>@s.NameAt(0)</h4>
+                    @if (!string.IsNullOrEmpty(s.Blurb))
+                    {
+                        <p class="rf-petcard__blurb">@s.Blurb</p>
+                    }
+                </div>
+            </div>
+            <div class="rf-petchips">
+                <span class="rf-petchip @PetLook.RoleClass(s.Role)" title="@PetLook.RoleText(s.Role)"><i class="@PetLook.RoleIcon(s.Role)"></i> @PetLook.RoleName(s.Role)</span>
+                <span class="rf-petchip @PetLook.ElementClass(s.Element)"><i class="@PetLook.ElementIcon(s.Element)"></i> @PetLook.ElementName(s.Element)</span>
+                <span class="rf-petchip"><i class="@PetLook.StrikeIcon(s.Strike)"></i> @PetLook.StrikeName(s.Strike)</span>
+            </div>
+            <ol class="rf-petstages" aria-label="Grows into @s.NameAt(1), then @s.NameAt(2)">
+                @for (var stage = 0; stage <= BattlePets.MaxStage; ++stage)
                 {
-                    <img src="@Picture(s, stage)" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
+                    if (stage > 0)
+                    {
+                        <li class="rf-petstages__arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></li>
+                    }
+                    <li class="rf-petstages__stage @(same ? "is-grow-" + stage : "")">
+                        @PetLook.Pic(Picture(s, stage))
+                        <span>@s.NameAt(stage)</span>
+                        @if (stage > 0)
+                        {
+                            <em>Level @BattlePets.EvolveLevels[stage - 1]</em>
+                        }
+                    </li>
+                }
+            </ol>
+            <ul class="rf-petskills rf-petskills--compact">
+                @foreach (var skill in s.Skills.Select(BattlePets.GetSkill).Where(x => x != null))
+                {
+                    <li class="rf-petskill" title="@skill.Description">
+                        <span class="rf-petskill__icon @PetLook.SkillClass(skill)"><i class="@PetLook.SkillIcon(skill)"></i></span>
+                        <span class="rf-petskill__text">
+                            <strong>@skill.Name @if (skill.LearnLevel > 1) { <em>Level @skill.LearnLevel</em> }</strong>
+                            <span>@PetLook.Cap(SkillLine(skill))</span>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <div class="rf-petcard__get">
+                @if (groupKey == "starter")
+                {
+                    <p><i class="fa-solid fa-paw"></i> A starter, for an empty stable.</p>
+                    <span class="rf-cmd">@PetLook.StarterCommand(s)</span>
+                }
+                else if (s.Source == PetSource.Tamed)
+                {
+                    <p>
+                        <i class="fa-solid fa-hand-holding-heart"></i>
+                        Tame a @s.CreatureName at <b>Taming @s.TameLevel</b>@(s.TameRarity < 1 ? ": very rare" : "").
+                        @if (s.Treats.Length > 0)
+                        {
+                            <span>Loves @string.Join(" or ", s.Treats).</span>
+                        }
+                    </p>
+                    <span class="rf-cmd">@PetLook.TameCommand(s)</span>
+                }
+                else if (s.Hatches)
+                {
+                    <p class="rf-petcard__egg">
+                        <img src="@PetLook.EggPicture(s)" alt="" loading="lazy" onerror="this.style.display='none'" />
+                        <span><b>@s.EggName</b>: @(s.EggFrom.Length > 0 ? char.ToLowerInvariant(s.EggFrom[0]) + s.EggFrom.Substring(1) : ""). Hatches after <b>@((int)s.HatchMinutes) minutes</b> of play, at <b>Taming @s.TameLevel</b>.</span>
+                    </p>
+                    <span class="rf-cmd">@PetLook.HatchCommand(s)</span>
+                }
+                else
+                {
+                    var items = petItems.TryGetValue(s.Id, out var names) ? names : null;
+                    if (items != null && items.Count > 0)
+                    {
+                        <p title="@string.Join(", ", items)">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            Wakes from @(items.Count == 1 ? "the pet item" : "a pet item:") <b>@string.Join(", ", items.Take(3))</b>@(items.Count > 3 ? " and " + (items.Count - 3) + " more" : "").
+                        </p>
+                        <span class="rf-cmd">!pets wake @items[0].ToLowerInvariant()</span>
+                    }
+                    else
+                    {
+                        <p><i class="fa-solid fa-wand-magic-sparkles"></i> Wakes from one of its pet items.</p>
+                        <span class="rf-cmd">!pets wake (pet item)</span>
+                    }
                 }
             </div>
-            <div class="rf-petdex__body">
-                <div class="rf-petdex__name"><b>@s.NameAt(0)</b> <span class="rf-meta">@Role(s.Role), @Element(s.Element), @Strike(s.Strike)</span></div>
-                <div class="rf-meta">Grows into @s.NameAt(1), then @s.NameAt(2).</div>
-                @if (!string.IsNullOrEmpty(s.Blurb)) { <div>@s.Blurb</div> }
-                <ul class="rf-petdex__skills">
-                    @foreach (var skill in s.Skills.Select(BattlePets.GetSkill).Where(x => x != null))
-                    {
-                        <li><b>@skill.Name</b>@(skill.LearnLevel > 1 ? " (level " + skill.LearnLevel + ")" : ""): @SkillLine(skill)</li>
-                    }
-                </ul>
-                <div class="rf-petdex__how-one">@how</div>
-            </div>
-        </div>
+        </article>
     };
 
     /// <summary>The picture rendered from the game's model (tools/website/pet-renders.cs in the game repo); a stage of its own when the model changes.</summary>
@@ -102,8 +463,5 @@
         return SkillTexts.Active(skill.Active) + ", every " + skill.Active.Cooldown + " s";
     }
 
-    public static string Strike(PetStrike s) => s == PetStrike.Bite ? "bites" : s == PetStrike.Pounce ? "pounces" : "fires bolts";
-    public static string Element(Element e) => e == RavenNest.Combat.Element.Physical ? "no element" : e.ToString().ToLowerInvariant();
-    public static string Role(PetRole r) => r.ToString().ToLowerInvariant();
     private static string Pct(double v) => (v * 100).ToString("0") + "%";
 }

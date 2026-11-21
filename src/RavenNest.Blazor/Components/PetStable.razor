@@ -1,0 +1,464 @@
+@using RavenNest.Combat
+
+@*
+    A character's stable (the game's docs/battle-pets-design.md), drawn from what it is given, so the dev preview
+    (/dev/pets-preview) can show every state without a signed-in character: the pet that is out as a large card
+    (level against its cap, health, the skills in its slots, the evolution track), the resting pets, warming eggs and
+    empty places beside it, the chat commands, and the creatures there are to tame. Read only: chat changes pets
+    (!pets, !tame), so where a button would be there is the command to type. Styling: wwwroot/css/ravenfall-pets.css.
+*@
+<div class="rf-stable">
+    <div class="rf-stable__head">
+        <h2 class="rf-stable__title">Battle pets</h2>
+        <span class="rf-stable__taming" title="Your Taming level. A pet's level can never pass it."><i class="fa-solid fa-paw"></i> Taming @taming</span>
+        <div class="rf-stable__places">
+            <span class="rf-stable__places-label">Stable</span>
+            <span class="rf-stable__pips" role="img" aria-label="@taken of @places places taken">
+                @for (var i = 0; i < Math.Max(places, taken); ++i)
+                {
+                    <i class="@(i < taken ? "is-full" : "")"></i>
+                }
+            </span>
+            <span class="rf-stable__places-text">@taken of @places places</span>
+        </div>
+        <a class="rf-stable__guide" href="/pets">Every kind of pet <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+
+    @if (pets.Count == 0)
+    {
+        <div class="rf-panel rf-stable__start">
+            <div class="rf-stable__start-text">
+                <h3>Pick your first pet</h3>
+                <p>Your stable is empty. A battle pet follows you, joins your fights and uses its skills by itself. Type one of these in chat to get a starter:</p>
+            </div>
+            <div class="rf-stable__starters">
+                @foreach (var s in BattlePets.Starters)
+                {
+                    <div class="rf-stable__starter @PetLook.ElementClass(s.Element)">
+                        @PetLook.Pic(PetLook.Picture(s, 0), "rf-petpic--tint")
+                        <strong>@s.NameAt(0)</strong>
+                        <div class="rf-petchips">
+                            @RoleChip(s.Role)
+                            @ElementChip(s.Element)
+                        </div>
+                        <p>@StarterBlurb(s)</p>
+                        <span class="rf-cmd">@PetLook.StarterCommand(s)</span>
+                    </div>
+                }
+            </div>
+            <p class="rf-stable__start-more">
+                Or get one another way: <span class="rf-cmd">!tame (creature)</span> while you fight,
+                <span class="rf-cmd">!pets wake (pet item)</span> for a pet item you have, or
+                <span class="rf-cmd">!pets hatch (egg)</span> for an egg.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="rf-stable__main @(active == null ? "rf-stable__main--noneout" : "")">
+            @if (active != null)
+            {
+                @Hero(active)
+            }
+            else
+            {
+                <div class="rf-panel rf-stable__noneout">
+                    <span class="rf-stable__noneout-icon"><i class="fa-solid fa-paw"></i></span>
+                    <h3>No pet is out</h3>
+                    @if (firstResting != null)
+                    {
+                        <p>Send one out in chat. It fights beside you, and while it is out it and your Taming share in all the experience you earn.</p>
+                        <span class="rf-cmd rf-cmd--lg">!pets use @firstResting.Name.ToLowerInvariant()</span>
+                        <p class="rf-stable__noneout-more"><span class="rf-cmd">!pets away</span> puts it back to rest.</p>
+                    }
+                    else
+                    {
+                        <p>Your eggs are still warming. They hatch while you play, and the first pet to hatch goes straight out.</p>
+                    }
+                </div>
+            }
+
+            <div class="rf-stable__side">
+                @foreach (var pet in pets)
+                {
+                    if (pet == active) continue;
+                    var species = BattlePets.GetSpecies(pet.Species);
+                    if (PetEggs.IsUnhatched(pet.Level))
+                    {
+                        @Egg(pet, species)
+                    }
+                    else
+                    {
+                        @Resting(pet, species)
+                    }
+                }
+                @for (var i = taken; i < places; ++i)
+                {
+                    <div class="rf-petempty"><i class="fa-solid fa-paw"></i> Empty place</div>
+                }
+                @if (nextPlace > 0)
+                {
+                    <div class="rf-petempty is-locked"><i class="fa-solid fa-lock"></i> One more place at Taming @nextPlace</div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="rf-panel rf-stable__chat">
+        <div class="rf-stable__chat-head">
+            <h3 class="rf-panel__title">In chat</h3>
+            <span>Pets are looked after in chat. This page only shows them.</span>
+        </div>
+        <div class="rf-petcmds">
+            @Command("!pets", "your pet")
+            @Command("!pets stable", "all your pets")
+            @Command("!pets use (name)", "send one out")
+            @Command("!pets away", "rest it")
+            @Command("!pets rename (name)", "name it")
+            @Command("!pets skills", "its skills and slots")
+            @Command("!pets slot (number) (skill)", "change a slot")
+            @Command("!pets evolve", "evolve it")
+            @Command("!pets about (kind)", "about a kind of pet")
+            @Command("!pets release (name)", "let one go for good")
+            @Command("!pets starter fox", "or bear, or fawn: a first pet")
+            @Command("!tame (creature)", "tame one while you fight")
+            @Command("!pets wake (pet item)", "a pet item fights too")
+            @Command("!pets hatch (egg)", "warm an egg")
+        </div>
+    </div>
+
+    <div class="rf-panel rf-stable__tame">
+        <div class="rf-stable__chat-head">
+            <h3 class="rf-panel__title">Creatures to tame</h3>
+            <span>@tameable.Count(s => taming >= s.TameLevel) of @tameable.Count open at Taming @taming. Point at one, or tap it, for more.</span>
+        </div>
+        <div class="rf-tamegrid">
+            @foreach (var s in tameable)
+            {
+                var open = taming >= s.TameLevel;
+                <div class="rf-tametile @PetLook.ElementClass(s.Element) @(open ? "" : "is-locked")" tabindex="0">
+                    @PetLook.Pic(PetLook.Picture(s, 0), "rf-petpic--tint")
+                    <div class="rf-tametile__body">
+                        <strong>@s.NameAt(0)</strong>
+                        <span class="rf-tametile__role @PetLook.RoleClass(s.Role)"><i class="@PetLook.RoleIcon(s.Role)"></i> @PetLook.RoleName(s.Role)</span>
+                        @if (open)
+                        {
+                            <span class="rf-tametile__level"><i class="fa-solid fa-paw"></i> Taming @s.TameLevel</span>
+                        }
+                        else
+                        {
+                            <span class="rf-tametile__level is-needed" title="Needs Taming @s.TameLevel"><i class="fa-solid fa-lock"></i> Taming @s.TameLevel</span>
+                        }
+                    </div>
+                    <div class="rf-tametile__pop" role="tooltip">
+                        <strong>@s.NameAt(0)</strong>
+                        <div class="rf-petchips">
+                            @RoleChip(s.Role)
+                            @ElementChip(s.Element)
+                            @StrikeChip(s.Strike)
+                        </div>
+                        <p>@s.Blurb</p>
+                        <p>Grows into <b>@s.NameAt(1)</b>, then <b>@s.NameAt(2)</b>.</p>
+                        <p>
+                            @if (s.Treats.Length > 0)
+                            {
+                                <span>Loves @string.Join(" or ", s.Treats). </span>
+                            }
+                            @if (open)
+                            {
+                                <span>@PetLook.Chance(RavenNest.Combat.Taming.Chance(taming, s)) a try at your Taming level@(s.TameRarity < 1 ? ": very rare" : "").</span>
+                            }
+                            else
+                            {
+                                <span>Needs Taming @s.TameLevel@(s.TameRarity < 1 ? ", and is very rare" : "").</span>
+                            }
+                        </p>
+                        <span class="rf-cmd">@PetLook.TameCommand(s)</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>The character's battle pets and eggs, as BattlePetManager.Stable gives them.</summary>
+    [Parameter] public RavenNest.Models.BattlePet[] Stable { get; set; }
+
+    /// <summary>The character's Taming level: the cap of every pet's level.</summary>
+    [Parameter] public int TamingLevel { get; set; } = 1;
+
+    /// <summary>The stable's places (Taming's and the clan's Rookery's); 0 for what Taming alone gives.</summary>
+    [Parameter] public int Places { get; set; }
+
+    /// <summary>The clan's Rookery level, for cheaper evolutions and quicker eggs; 0 without a clan.</summary>
+    [Parameter] public int RookeryLevel { get; set; }
+
+    private List<RavenNest.Models.BattlePet> pets = new List<RavenNest.Models.BattlePet>();
+    private RavenNest.Models.BattlePet active;
+    private RavenNest.Models.BattlePet firstResting;
+    private List<PetSpecies> tameable = new List<PetSpecies>();
+    private int taming = 1;
+    private int places;
+    private int taken;
+    private int nextPlace;
+
+    protected override void OnParametersSet()
+    {
+        taming = Math.Max(1, TamingLevel);
+        pets = (Stable ?? Array.Empty<RavenNest.Models.BattlePet>()).Where(p => p != null && BattlePets.GetSpecies(p.Species) != null).ToList();
+        active = pets.FirstOrDefault(p => p.Active && !PetEggs.IsUnhatched(p.Level));
+        firstResting = pets.FirstOrDefault(p => !PetEggs.IsUnhatched(p.Level));
+        tameable = BattlePets.Tameable.OrderBy(s => s.TameLevel).ToList();
+        places = Places > 0 ? Places : BattlePets.StableSize(taming);
+        taken = pets.Count;
+        nextPlace = BattlePets.StableLevels.Where(l => l > taming).DefaultIfEmpty(0).Min();
+    }
+
+    private static string StarterBlurb(PetSpecies s)
+    {
+        return PetLook.Cap((s.Blurb ?? "").Replace("A starter pet: ", ""));
+    }
+
+    private RenderFragment RoleChip(PetRole role) => __builder =>
+    {
+        <span class="rf-petchip @PetLook.RoleClass(role)" title="@PetLook.RoleText(role)"><i class="@PetLook.RoleIcon(role)"></i> @PetLook.RoleName(role)</span>
+    };
+
+    private RenderFragment ElementChip(Element element) => __builder =>
+    {
+        <span class="rf-petchip @PetLook.ElementClass(element)"><i class="@PetLook.ElementIcon(element)"></i> @PetLook.ElementName(element)</span>
+    };
+
+    private RenderFragment StrikeChip(PetStrike strike) => __builder =>
+    {
+        <span class="rf-petchip"><i class="@PetLook.StrikeIcon(strike)"></i> @PetLook.StrikeName(strike)</span>
+    };
+
+    private RenderFragment Command(string command, string what) => __builder =>
+    {
+        <span class="rf-petcmd"><span class="rf-cmd">@command</span><span class="rf-petcmd__what">@what</span></span>
+    };
+
+    private RenderFragment LevelBar(int level, int cap) => __builder =>
+    {
+        var share = Math.Max(0, Math.Min(100, level * 100.0 / Math.Max(1, cap)));
+        <div class="rf-petbar @(level >= cap ? "is-full" : "")" role="img" aria-label="Level @level of @cap">
+            <span style="width: @share.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+        </div>
+    };
+
+    private RenderFragment Hero(RavenNest.Models.BattlePet pet) => __builder =>
+    {
+        var species = BattlePets.GetSpecies(pet.Species);
+        var cap = BattlePets.LevelCap(taming);
+        var sheet = species.Sheet(Math.Max(1, pet.Level), pet.Stage);
+        var slotted = (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).ToList();
+        var slots = BattlePets.SkillSlots(taming, pet.Stage);
+        var spare = species.SkillsAt(pet.Level, pet.Stage).Where(s => !slotted.Contains(s)).ToList();
+        var later = species.Skills.Select(BattlePets.GetSkill).Where(s => s != null && (s.LearnLevel > pet.Level || s.Stage > pet.Stage)).ToList();
+        var kind = species.NameAt(pet.Stage);
+        <article class="rf-panel rf-pethero @PetLook.ElementClass(species.Element)">
+            <div class="rf-pethero__art">
+                <div class="rf-pethero__portrait">
+                    @PetLook.Pic(PetLook.Picture(species, pet.Stage), null, kind)
+                </div>
+                @if (!string.IsNullOrEmpty(species.Blurb))
+                {
+                    <p class="rf-pethero__blurb">@species.Blurb</p>
+                }
+                <div class="rf-petlevel">
+                    <div class="rf-petlevel__row">
+                        <span class="rf-petlevel__level">Level <b>@pet.Level</b> <span>/ @cap</span></span>
+                        <span class="rf-petlevel__health"><i class="fa-solid fa-heart"></i> @sheet.MaxHealth.ToString("N0") health</span>
+                    </div>
+                    @LevelBar(pet.Level, cap)
+                    <div class="rf-petlevel__note">
+                        @(pet.Level >= cap ? "At your Taming level. It grows again when Taming does." : "A pet's level can never pass your Taming level.")
+                    </div>
+                </div>
+            </div>
+            <div class="rf-pethero__body">
+                <div class="rf-pethero__name">
+                    <h3>@pet.Name</h3>
+                    <span class="rf-pettag rf-pettag--out">Out</span>
+                </div>
+                <div class="rf-pethero__kind">
+                    @kind@(species.Source == PetSource.Companion ? ", a woken pet item" : "")
+                </div>
+                <div class="rf-petchips">
+                    @RoleChip(species.Role)
+                    @ElementChip(species.Element)
+                    @StrikeChip(species.Strike)
+                </div>
+                <ul class="rf-petskills">
+                    @foreach (var skill in slotted)
+                    {
+                        <li class="rf-petskill">
+                            <span class="rf-petskill__icon @PetLook.SkillClass(skill)"><i class="@PetLook.SkillIcon(skill)"></i></span>
+                            <span class="rf-petskill__text">
+                                <strong>@skill.Name</strong>
+                                <span>@skill.Description</span>
+                                @if (skill.IsActive && PetLook.SkillEffect(skill) != skill.Description)
+                                {
+                                    <span class="rf-petskill__effect">@PetLook.SkillEffect(skill)</span>
+                                }
+                            </span>
+                            @if (PetLook.Cooldown(skill) > 0)
+                            {
+                                <span class="rf-petskill__cooldown" title="Used every @PetLook.Cooldown(skill) seconds"><i class="fa-regular fa-clock"></i> @PetLook.Cooldown(skill) s</span>
+                            }
+                        </li>
+                    }
+                    @if (slotted.Count < slots)
+                    {
+                        var free = slots - slotted.Count;
+                        <li class="rf-petskill is-empty">
+                            <span class="rf-petskill__icon"><i class="fa-solid fa-plus"></i></span>
+                            <span class="rf-petskill__text">
+                                <strong>@free empty skill @(free == 1 ? "slot" : "slots")</strong>
+                                @if (spare.Count > 0)
+                                {
+                                    <span>Put a skill it knows in: <span class="rf-cmd">!pets slot @(slotted.Count + 1) @spare[0].Name.ToLowerInvariant()</span></span>
+                                }
+                                else
+                                {
+                                    <span>It has no other skill to put in @(free == 1 ? "it" : "them") yet.</span>
+                                }
+                            </span>
+                        </li>
+                    }
+                    @foreach (var skill in spare)
+                    {
+                        <li class="rf-petskill is-spare">
+                            <span class="rf-petskill__icon @PetLook.SkillClass(skill)"><i class="@PetLook.SkillIcon(skill)"></i></span>
+                            <span class="rf-petskill__text">
+                                <strong>@skill.Name</strong>
+                                <span>Knows it, but it is not in a slot. @skill.Description</span>
+                            </span>
+                        </li>
+                    }
+                    @foreach (var skill in later)
+                    {
+                        <li class="rf-petskill is-later">
+                            <span class="rf-petskill__icon"><i class="fa-solid fa-lock"></i></span>
+                            <span class="rf-petskill__text">
+                                <strong>@skill.Name</strong>
+                                <span>Learns it at level @skill.LearnLevel@(skill.Stage > pet.Stage ? ", as a " + species.NameAt(skill.Stage) : ""). @skill.Description</span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="rf-pethero__evo">
+                @Evolution(pet, species)
+            </div>
+        </article>
+    };
+
+    private RenderFragment Evolution(RavenNest.Models.BattlePet pet, PetSpecies species) => __builder =>
+    {
+        var same = PetLook.SameLookEveryStage(species);
+        var done = pet.Stage >= BattlePets.MaxStage;
+        <div class="rf-petevo">
+            <div class="rf-petevo__text">
+                <h4>Evolution</h4>
+                @if (done)
+                {
+                    <p><i class="fa-solid fa-crown"></i> Fully evolved.</p>
+                }
+                else
+                {
+                    var needLevel = BattlePets.EvolveLevels[pet.Stage];
+                    var needTaming = BattlePets.EvolveSkillLevels[pet.Stage];
+                    var gem = PetEvolution.GemFor(species);
+                    var ready = pet.Level >= needLevel && taming >= needTaming;
+                    <p>Into <b>@species.NameAt(pet.Stage + 1)</b>: a new look, stronger, and one more skill slot. It needs:</p>
+                    <div class="rf-petevo__needs">
+                        <span class="rf-petneed @(pet.Level >= needLevel ? "is-met" : "")"><i class="fa-solid @(pet.Level >= needLevel ? "fa-check" : "fa-arrow-up")"></i> Level @needLevel</span>
+                        <span class="rf-petneed @(taming >= needTaming ? "is-met" : "")"><i class="fa-solid @(taming >= needTaming ? "fa-check" : "fa-arrow-up")"></i> Taming @needTaming</span>
+                        <span class="rf-petneed"><img src="@PetLook.GemPicture(gem)" alt="" onerror="this.style.display='none'" /> @PetEvolution.Describe(species, pet.Stage, RookeryLevel)</span>
+                    </div>
+                    @if (ready)
+                    {
+                        <p class="rf-petevo__ready">Ready when you have the gems: <span class="rf-cmd">!pets evolve</span></p>
+                    }
+                }
+            </div>
+            <ol class="rf-petevo__track">
+                @for (var stage = 0; stage <= BattlePets.MaxStage; ++stage)
+                {
+                    if (stage > 0)
+                    {
+                        <li class="rf-petevo__arrow @(pet.Stage >= stage ? "is-done" : "")" aria-hidden="true">
+                            <span class="rf-petevo__rail"><i class="fa-solid fa-arrow-right"></i></span>
+                        </li>
+                    }
+                    <li class="rf-petevo__stage @(stage == pet.Stage ? "is-now" : stage < pet.Stage ? "is-done" : "is-next") @(same ? "is-grow-" + stage : "")">
+                        @PetLook.Pic(PetLook.Picture(species, stage))
+                        <span class="rf-petevo__name">@species.NameAt(stage)</span>
+                        @if (stage > 0)
+                        {
+                            <span class="rf-petevo__when">Level @BattlePets.EvolveLevels[stage - 1]</span>
+                        }
+                    </li>
+                }
+            </ol>
+        </div>
+    };
+
+    private RenderFragment Resting(RavenNest.Models.BattlePet pet, PetSpecies species) => __builder =>
+    {
+        var cap = BattlePets.LevelCap(taming);
+        <article class="rf-petrest @PetLook.ElementClass(species.Element)">
+            @PetLook.Pic(PetLook.Picture(species, pet.Stage), "rf-petpic--tint", species.NameAt(pet.Stage))
+            <div class="rf-petrest__body">
+                <div class="rf-petrest__top">
+                    <strong>@pet.Name</strong>
+                    <span class="rf-pettag">Resting</span>
+                </div>
+                <div class="rf-petrest__kind">@species.NameAt(pet.Stage)@(species.Source == PetSource.Companion ? ", a woken pet item" : "")</div>
+                <div class="rf-petchips">
+                    @RoleChip(species.Role)
+                    @ElementChip(species.Element)
+                </div>
+                <div class="rf-petrest__level">
+                    <span>Level <b>@pet.Level</b> / @cap</span>
+                    @LevelBar(pet.Level, cap)
+                </div>
+                <div class="rf-petrest__send">
+                    <span>Send it out:</span>
+                    <span class="rf-cmd">!pets use @pet.Name.ToLowerInvariant()</span>
+                </div>
+            </div>
+        </article>
+    };
+
+    private RenderFragment Egg(RavenNest.Models.BattlePet pet, PetSpecies species) => __builder =>
+    {
+        var needed = PetEggs.HatchMinutes(species, RookeryLevel);
+        var had = Math.Max(0, pet.PlayTime.TotalMinutes);
+        var left = Math.Max(1, (int)Math.Ceiling(needed - had));
+        var share = Math.Max(0, Math.Min(100, had * 100.0 / Math.Max(1, needed)));
+        <article class="rf-petrest rf-petrest--egg @PetLook.ElementClass(species.Element)">
+            @PetLook.Pic(PetLook.EggPicture(species), "rf-petpic--tint", species.EggName)
+            <div class="rf-petrest__body">
+                <div class="rf-petrest__top">
+                    <strong>@pet.Name</strong>
+                    <span class="rf-pettag rf-pettag--warm">Warming</span>
+                </div>
+                <div class="rf-petrest__kind">Hatches into a @species.NameAt(0)</div>
+                <div class="rf-petchips">
+                    @RoleChip(species.Role)
+                    @ElementChip(species.Element)
+                </div>
+                <div class="rf-petrest__level">
+                    <span>About <b>@left</b> more @(left == 1 ? "minute" : "minutes") of play</span>
+                    <div class="rf-petbar rf-petbar--warm" role="img" aria-label="@((int)share)% warmed">
+                        <span style="width: @share.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                    </div>
+                </div>
+            </div>
+        </article>
+    };
+}
