@@ -49,6 +49,12 @@ namespace RavenNest.Models
         public DateTime? Modified { get; set; }
     }
 
+    /// <summary>
+    /// What an item hides or leaves off when worn. The first five are the parts of the head a head item hides (a hood
+    /// hides the hair, a closed helm everything). The rest say which pieces a body item does NOT bring along (class
+    /// gear, v0.9.7): a chest puts on shoulder and elbow pads and gloves put on forearm pieces unless told otherwise,
+    /// and a robe wants none. Games before 0.9.7 never read this, so they are not affected.
+    /// </summary>
     [Flags]
     public enum HeadMask : int
     {
@@ -58,6 +64,15 @@ namespace RavenNest.Models
         Beard = 4,
         Ears = 8,
         Head = 16,
-        All = Hair | Brows | Beard | Ears | Head
+        All = Hair | Brows | Beard | Ears | Head,
+
+        /// <summary>A chest without shoulder pads.</summary>
+        NoShoulderPads = 32,
+        /// <summary>A chest without elbow pads.</summary>
+        NoElbowPads = 64,
+        /// <summary>Gloves without forearm pieces (the bare or sleeved arm shows).</summary>
+        NoForearms = 128,
+        /// <summary>Leggings without knee pads, whatever the item's model ids say.</summary>
+        NoKneePads = 256,
     }
 }

@@ -32,5 +32,53 @@
         ElderEther,
         ElderAncient,
         ElderAtlarus,
+
+        // Class gear (v0.9.7): five lines of eight tiers each, in this order (ItemLines in RavenNest.Models).
+        // Never reorder or insert: the number is what is saved, and the game picks the material by it.
+        // Mage
+        Apprentice,
+        Adept,
+        Conjurer,
+        Sorcerer,
+        Warlock,
+        Archmage,
+        Voidweaver,
+        Starcaller,
+        // Healer
+        Acolyte,
+        Mender,
+        Cleric,
+        Priest,
+        Hierophant,
+        Saint,
+        Seraph,
+        Lightbringer,
+        // Ranger
+        Scout,
+        Tracker,
+        Hunter,
+        Stalker,
+        Pathfinder,
+        Warden,
+        Windrunner,
+        Hawkeye,
+        // Melee
+        Footman,
+        Mercenary,
+        Duelist,
+        Reaver,
+        Champion,
+        Warlord,
+        Bloodsworn,
+        Godslayer,
+        // Tank
+        Guard,
+        Sentinel,
+        Defender,
+        Bastion,
+        Juggernaut,
+        Templar,
+        Ironclad,
+        Aegis,
     }
 }
