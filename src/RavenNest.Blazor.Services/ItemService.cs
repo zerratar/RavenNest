@@ -54,15 +54,17 @@ namespace RavenNest.Blazor.Services
                 return false;
             if (a.Type != b.Type)
             {
-                if ((a.Type == RavenNest.Models.ItemType.Hat && b.Type == RavenNest.Models.ItemType.Helmet) ||
-                    (a.Type == RavenNest.Models.ItemType.Helmet && b.Type == RavenNest.Models.ItemType.Hat))
-                    return true;
-
-                return false;
+                // anything worn on the head can take the look of anything else worn there: a plate helmet can look
+                // like a hood, a cowl or a wizard hat (class gear, v0.9.7; before, only hats and helmets could swap)
+                return IsHeadPiece(a.Type) && IsHeadPiece(b.Type);
             }
 
             return true;
         }
+
+        private static bool IsHeadPiece(RavenNest.Models.ItemType type) =>
+            type == RavenNest.Models.ItemType.Helmet || type == RavenNest.Models.ItemType.Hat ||
+            type == RavenNest.Models.ItemType.Mask || type == RavenNest.Models.ItemType.HeadCovering;
 
         public string GetItemImage(Guid itemId, string itemName)
         {

@@ -63,7 +63,7 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Healer, "boots", ItemType.Boots, "Boots", "11"),
 
             Piece(ItemLine.Ranger, "head1", ItemType.Hat, "Cap", "4"),
-            Piece(ItemLine.Ranger, "head2", ItemType.HeadCovering, "Hood", "12", HeadMask.Hair | HeadMask.Ears),
+            Piece(ItemLine.Ranger, "head2", ItemType.HeadCovering, "Hood", "5", HeadMask.Hair | HeadMask.Ears), // 12 left the nape bare and hung a strap over the beard
             Piece(ItemLine.Ranger, "chest", ItemType.Chest, "Jerkin", "14,20,10,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads),
             Piece(ItemLine.Ranger, "gloves", ItemType.Gloves, "Gloves", "3,3"),
             Piece(ItemLine.Ranger, "leggings", ItemType.Leggings, "Trousers", "6"),

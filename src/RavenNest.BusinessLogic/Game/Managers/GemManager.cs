@@ -348,7 +348,9 @@ namespace RavenNest.BusinessLogic.Game
                 case ItemCategory.Amulet: slot = GemSlot.Jewellery; return true;
                 case ItemCategory.Armor:
                     var type = (ItemType)item.Type;
-                    return type != ItemType.Hat && type != ItemType.Mask && type != ItemType.HeadCovering;
+                    // hats, masks and hoods are looks and take no gems, except class gear's: a mage's hat is their helmet
+                    return RavenNest.Models.ItemLines.IsClassGear((RavenNest.Models.ItemMaterial)item.Material)
+                        || (type != ItemType.Hat && type != ItemType.Mask && type != ItemType.HeadCovering);
             }
             return false;
         }
@@ -364,7 +366,8 @@ namespace RavenNest.BusinessLogic.Game
                 case RavenNest.Models.ItemCategory.Ring:
                 case RavenNest.Models.ItemCategory.Amulet: slot = GemSlot.Jewellery; return true;
                 case RavenNest.Models.ItemCategory.Armor:
-                    return item.Type != RavenNest.Models.ItemType.Hat && item.Type != RavenNest.Models.ItemType.Mask && item.Type != RavenNest.Models.ItemType.HeadCovering;
+                    return RavenNest.Models.ItemLines.IsClassGear(item.Material)
+                        || (item.Type != RavenNest.Models.ItemType.Hat && item.Type != RavenNest.Models.ItemType.Mask && item.Type != RavenNest.Models.ItemType.HeadCovering);
             }
             return false;
         }

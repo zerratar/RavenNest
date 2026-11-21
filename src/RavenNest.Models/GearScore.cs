@@ -92,7 +92,9 @@ namespace RavenNest.Models
             var line = ItemLines.Of(material);
             if (line == ItemLine.Plate) return classic; // a line this version does not know
             if (line == fits)
-                return (int)Math.Round(classic / ItemLines.ArmorFactor(line) * (1 + FitMargin), MidpointRounding.AwayFromZero);
+                // a half rounds up, written without MidpointRounding: the game's runtime cannot load that type from
+                // this library (a TypeLoadException in EquipBestItems, found in the first play test)
+                return (int)Math.Floor(classic / ItemLines.ArmorFactor(line) * (1 + FitMargin) + 0.5);
             if (line == ItemLine.Tank)
                 return Math.Min(classic - 1, (int)Math.Floor(classic * UnfitTankShare));
             return classic;
