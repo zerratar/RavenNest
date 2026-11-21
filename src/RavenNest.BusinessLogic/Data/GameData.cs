@@ -633,6 +633,9 @@ namespace RavenNest.BusinessLogic.Data
 
                 logger.LogInformation($"Post processing dataset.");
 
+                // first: before the known items are looked up by name, and before the stacks are merged
+                MergeDuplicateItems();
+
                 MigrateTwitchUserAccess();
                 RemoveCharactersWithoutSkills();
 
@@ -850,86 +853,9 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            var typed = GetKnownItems();
+            GetKnownItems();
 
-            //// fix for Wanderers Gem that has multiple versions now...
-            //var toKeep = typed.WanderersGem;
-
-            //MergeItemDuplicates(toKeep);
-        }
-
-        private void MergeItemDuplicates(Item toKeep)
-        {
-            var vendor = GetVendorItemByItemId(toKeep.Id);
-            var toRemove = items.Entities.Where(x => x.Name == toKeep.Name && x.Id != toKeep.Id).ToList();
-
-            foreach (var r in toRemove)
-            {
-                foreach (var m in GetMarketItems(r.Id))
-                    ReturnMarketplaceItem(m);
-
-                // merge all vendor items
-                var badVendorItem = GetVendorItemByItemId(r.Id);
-                if (badVendorItem != null)
-                {
-                    if (vendor == null)
-                    {
-                        badVendorItem.ItemId = toKeep.Id;
-                        vendor = badVendorItem;
-                    }
-                    else
-                    {
-                        vendor.Stock += badVendorItem.Stock;
-                        Remove(badVendorItem);
-                    }
-                }
-
-                // remove transaction logs for every item
-                var mt = marketTransactions[nameof(Item), r.Id];
-                foreach (var m in mt) Remove(m);
-
-                var vt = vendorTransaction[nameof(Item), r.Id];
-                foreach (var m in vt) Remove(m);
-
-                var invItems = GetInventoryItemsByItemId(r.Id);
-                foreach (var i in invItems)
-                {
-                    var goodII = GetInventoryItems(i.CharacterId, toKeep.Id);
-                    // check if we have a stack and add to amount, if not, change itemId on this one.
-                    if (goodII == null || goodII.Count == 0)
-                    {
-                        i.ItemId = toKeep.Id;
-                    }
-                    else
-                    {
-                        var gi = goodII.FirstOrDefault();
-                        if (gi != null)
-                        {
-                            gi.Amount += i.Amount;
-                        }
-                        Remove(i);
-                    }
-                }
-
-                // merge all stash items
-                var stashItems = GetUserBankItemsByItemId(r.Id);
-                foreach (var i in stashItems)
-                {
-                    var existing = GetStashItem(i.UserId, toKeep.Id);
-                    if (existing == null)
-                    {
-                        i.ItemId = toKeep.Id;
-                    }
-                    else
-                    {
-                        existing.Amount += i.Amount;
-                        Remove(i);
-                    }
-                }
-
-                // remove item
-                Remove(r);
-            }
+            // items that exist more than once under one name are merged before any of this: GameData.ItemDuplicates.cs
         }
 
         private void EnsureGatheringAndAlchemy()
@@ -2118,17 +2044,36 @@ namespace RavenNest.BusinessLogic.Data
             return GetOrCreateItem(items, name, null, category, type, nameLookup);
         }
 
+        /// <summary>
+        ///     An item's name as it is stored: without apostrophes (EnsureItemNamesWithoutApostrophes takes them out at
+        ///     every start).
+        /// </summary>
+        public static string ItemName(string name)
+        {
+            return string.IsNullOrEmpty(name) || name.IndexOf('\'') < 0 ? name : name.Replace("'", "");
+        }
+
+        /// <summary>Whether two names are the same item name: case and apostrophes do not count.</summary>
+        public static bool IsItemName(string a, string b)
+        {
+            return string.Equals(ItemName(a), ItemName(b), StringComparison.OrdinalIgnoreCase);
+        }
+
         public Item GetOrCreateItem(IReadOnlyList<Item> items, string name, string description, ItemCategory category, ItemType type, params string[] nameLookup)
         {
+            // Asked for with an apostrophe, the item was made with it, renamed without it later in the same start, and
+            // not found at the next one: one more "Woollys Bell" for every start. So the name is taken as it is stored.
+            name = ItemName(name);
+
             var item = items.FirstOrDefault(x =>
             {
-                if (x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return true;
+                if (IsItemName(x.Name, name)) return true;
 
                 if (nameLookup != null && nameLookup.Length > 0)
                 {
                     foreach (var nm in nameLookup)
                     {
-                        if (x.Name.Equals(nm, StringComparison.OrdinalIgnoreCase))
+                        if (IsItemName(x.Name, nm))
                             return true;
                     }
                 }

@@ -323,7 +323,9 @@ namespace RavenNest.BusinessLogic.Data
                         .SetStats(armor: 26, weaponAim: 30, weaponPower: 30, rangedAim: 14, rangedPower: 14),
                     BottledLightning = GetOrCreateItem(i, "Bottled Lightning", "A little storm in a glass jar on a chain, sealed by Tinker Volt. Do not shake it.", ItemCategory.Amulet, ItemType.Amulet)
                         .SetStats(armor: 30, magicAim: 26, magicPower: 26),
-                    WoollysBell = GetOrCreateItem(i, "Woolly's Bell", "The little brass bell from Woolly's collar. Ring it and somewhere above the clouds a sheep goes baa.", ItemCategory.QuestItem, ItemType.None),
+                    // no apostrophe in the name, like every item (EnsureItemNamesWithoutApostrophes): asked for with one,
+                    // the lookup missed the renamed item and every start made one more bell (GameData.ItemDuplicates.cs)
+                    WoollysBell = GetOrCreateItem(i, "Woollys Bell", "The little brass bell from Woolly's collar. Ring it and somewhere above the clouds a sheep goes baa.", ItemCategory.QuestItem, ItemType.None),
 
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
 

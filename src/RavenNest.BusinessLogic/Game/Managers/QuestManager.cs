@@ -728,9 +728,16 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>An item by its name, soulbound, unless the character has one already.</summary>
         private void GiveOnce(Character character, string itemName)
         {
-            var item = gameData.GetItems().FirstOrDefault(i => string.Equals(i.Name, itemName, StringComparison.OrdinalIgnoreCase));
+            // item names hold no apostrophes, whatever the chain calls its reward: "Woolly's Bell" found no item and
+            // the chain gave nothing
+            var item = gameData.GetItems().FirstOrDefault(i => GameData.IsItemName(i.Name, itemName));
             var inventory = inventoryProvider.Get(character.Id);
-            if (item == null || inventory == null) return;
+            if (item == null)
+            {
+                logger.LogError("Quest reward: no item is named '{Item}', nothing was given to {Character}.", itemName, character.Name);
+                return;
+            }
+            if (inventory == null) return;
             if (inventory.GetAllItems().Any(i => i.ItemId == item.Id)) return;
             inventory.AddItem(item.Id, 1, equipped: false, soulbound: true);
         }

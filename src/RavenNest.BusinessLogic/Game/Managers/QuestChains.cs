@@ -248,7 +248,7 @@ namespace RavenNest.BusinessLogic.Game
             // Tessa's sheep floated off on a cloud. She can still hear him. Everyone can still hear him.
             new Chain
             {
-                Key = "woolly", Town = "galewharf", RewardSkill = Skill.Farming, RewardItem = "Woolly's Bell",
+                Key = "woolly", Town = "galewharf", RewardSkill = Skill.Farming, RewardItem = "Woollys Bell",
                 Steps = new[]
                 {
                     TowerKill("squall-duckling", 30),
