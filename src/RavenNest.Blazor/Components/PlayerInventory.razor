@@ -1937,12 +1937,8 @@
 
     public string GetItemImage(Guid itemId, string tag)
     {
-        if (tag != null)
-        {
-            return $"/api/twitch/logo/{tag}";
-        }
-
-        return ItemService.GetItemImage(itemId);
+        // a streamer token shows its streamer; a boat's tag is its look, not a streamer
+        return ItemService.GetInventoryItemImage(itemId, tag);
     }
 
     public string GetItemAmount(InventoryItem item)

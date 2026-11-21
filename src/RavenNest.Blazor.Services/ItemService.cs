@@ -95,6 +95,26 @@ namespace RavenNest.Blazor.Services
             return string.Empty;
         }
 
+        /// <summary>
+        /// The picture of an item a character holds. A streamer token's tag is its streamer, so it shows that
+        /// streamer's picture. Any other tag is not a streamer (a boat keeps its look in the tag): until 2026-11-21
+        /// every tagged item asked for a streamer's picture, and a boat with a look got the logo shown for an
+        /// unknown streamer.
+        /// </summary>
+        public string GetInventoryItemImage(Guid itemId, string tag)
+        {
+            if (!string.IsNullOrEmpty(tag))
+            {
+                var item = gameData.GetItem(itemId);
+                if (item != null && item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                {
+                    return $"/api/twitch/logo/{tag}";
+                }
+            }
+
+            return GetItemImage(itemId);
+        }
+
         public string GetItemImage(Guid itemId)
         {
             var item = gameData.GetItem(itemId);
