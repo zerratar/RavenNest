@@ -15,6 +15,8 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>An egg with the chance given, or null; the egg is in the inventory when one comes back.</summary>
         public static PetSpecies Roll(GameData gameData, PlayerInventoryProvider inventoryProvider, Guid characterId, EggSource source, double chance, Random rng)
         {
+            // widened for the animal eggs, so the eggs a source had before stay as common as the chance says
+            chance = Math.Min(1.0, chance * PetEggs.Widened(source, 0));
             if (chance <= 0 || rng.NextDouble() >= chance) return null;
             var species = PetEggs.Pick(source, 0, rng.NextDouble());
             return species != null && Give(gameData, inventoryProvider, characterId, species) != Guid.Empty ? species : null;

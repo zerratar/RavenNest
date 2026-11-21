@@ -313,5 +313,29 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(0.10, BattlePets.TamingShare(600, 600), 6);
             Assert.Equal(0.10, BattlePets.TamingShare(700, 50), 6);
         }
+
+        [Fact]
+        public void The_old_eggs_stay_as_common_with_the_animals_in_the_tables()
+        {
+            // a raid's Wolf Pup egg: 10 of the 36 the old eggs weigh, at the raid's 2%
+            var table = PetEggs.Table(EggSource.Raid, 0).ToList();
+            var all = table.Sum(t => t.Weight);
+            var wolf = table.Where(t => t.Species.Id == "wolf-pup").Sum(t => t.Weight);
+            var old = table.Where(t => !t.Species.StageModels.Any(m => m.StartsWith(BattlePets.AnimalModels))).Sum(t => t.Weight);
+            Assert.True(all > old);
+            Assert.Equal(PetEggs.RaidChance * wolf / old, PetEggs.Chance(EggSource.Raid, 0) * wolf / all, 10);
+            // every tier of every rolled source: the old kinds together keep the old chance
+            foreach (var source in new[] { EggSource.Dungeon, EggSource.Raid, EggSource.Tower, EggSource.Quest, EggSource.Regatta, EggSource.PirateRaid, EggSource.Ravebridge })
+            {
+                for (var tier = 0; tier <= 4; ++tier)
+                {
+                    var t = PetEggs.Table(source, tier).ToList();
+                    var sum = t.Sum(x => x.Weight);
+                    var before = t.Where(x => !x.Species.StageModels.Any(m => m.StartsWith(BattlePets.AnimalModels))).Sum(x => x.Weight);
+                    if (before <= 0) continue;
+                    Assert.Equal(1.0, PetEggs.Widened(source, tier) * before / sum, 10);
+                }
+            }
+        }
     }
 }

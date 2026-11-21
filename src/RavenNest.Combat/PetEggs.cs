@@ -44,8 +44,40 @@ namespace RavenNest.Combat
         /// <summary>The chance per character of an egg in a tower floor's chest.</summary>
         public const double TowerChance = 0.025;
 
+        /// <summary>
+        /// The chance per character of an egg from a dungeon, a raid or a tower chest, widened for the animal eggs
+        /// (<see cref="Widened"/>): the eggs there were before stay as common as the numbers above say.
+        /// </summary>
         public static double Chance(EggSource source, int tier) =>
-            source == EggSource.Dungeon ? DungeonChance(tier) : source == EggSource.Raid ? RaidChance : TowerChance;
+            Math.Min(1.0, (source == EggSource.Dungeon ? DungeonChance(tier) : source == EggSource.Raid ? RaidChance : TowerChance) * Widened(source, tier));
+
+        /// <summary>
+        /// How much more often a source gives an egg since the animal pack's eggs joined its table (the user,
+        /// 2026-11-21: "raise the eggs chance so the old ones stay common"): the whole table's weight over the weight
+        /// of the eggs that were there before, so each of those is exactly as likely as it was and the animals come on
+        /// top. 1 for a table without animals. A source that always gives an egg (a play streak) cannot give more:
+        /// there the animals share the egg with the old kinds.
+        /// </summary>
+        public static double Widened(EggSource source, int tier)
+        {
+            double all = 0, before = 0;
+            foreach (var (species, weight) in Table(source, tier))
+            {
+                all += weight;
+                if (!IsAnimal(species)) before += weight;
+            }
+            return before > 0 && all > before ? all / before : 1.0;
+        }
+
+        private static bool IsAnimal(PetSpecies species)
+        {
+            if (species == null || species.StageModels == null) return false;
+            foreach (var model in species.StageModels)
+            {
+                if (model != null && model.StartsWith(BattlePets.AnimalModels, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
 
         // ---- quests and events (2026-11-09) -------------------------------------------------------------------
 
