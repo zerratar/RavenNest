@@ -79,6 +79,9 @@
         /// <summary>(Guid characterId) -> bool</summary>
         public const string ToggleHelmet = "equipment.toggle-helmet";
 
+        /// <summary>(Guid characterId) -> bool (whether the cape shows now)</summary>
+        public const string ToggleCape = "equipment.toggle-cape";
+
         // Enchanting
 
         /// <summary>(Guid characterId, Guid inventoryItemId) -> ItemEnchantmentResult</summary>

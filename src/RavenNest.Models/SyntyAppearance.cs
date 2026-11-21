@@ -23,6 +23,11 @@ namespace RavenNest.Models
         public string BeardColor { get; set; }
         public string EyeColor { get; set; }
         public bool HelmetVisible { get; set; }
+        /// <summary>
+        /// The player chose to hide their cape (!toggle cape, v0.9.7), their own or their clan's. The armor's own back
+        /// piece (a cloak, a pack) shows in its place when it has one. False for everyone who never chose.
+        /// </summary>
+        public bool CapeHidden { get; set; }
         /// <summary>The shadow of a shave along the jaw (and over the lip on some faces).</summary>
         public string StubbleColor { get; set; }
 

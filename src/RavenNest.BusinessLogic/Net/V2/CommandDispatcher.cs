@@ -108,6 +108,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.Unequip, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.UnequipItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.UnequipAll, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.UnequipAllItems(c.SessionToken, ch); });
             Add(Commands.ToggleHelmet, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ToggleHelmet(c.SessionToken, ch); });
+            Add(Commands.ToggleCape, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ToggleCape(c.SessionToken, ch); });
 
             // enchanting
             Add(Commands.Enchant, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.EnchantItemInstance(c.SessionToken, ch, inv); });

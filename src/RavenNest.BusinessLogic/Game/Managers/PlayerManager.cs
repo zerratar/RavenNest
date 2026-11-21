@@ -3254,6 +3254,22 @@ namespace RavenNest.BusinessLogic.Game
         }
 
 
+        /// <summary>
+        /// !toggle cape: hides or shows the character's cape, their own or their clan's (the armor's own back piece
+        /// shows in a hidden cape's place). Kept as a user property per character.
+        /// </summary>
+        /// <returns>Whether the cape shows now.</returns>
+        public bool ToggleCape(SessionToken token, Guid characterId)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return true;
+
+            var key = ModelMapper.CapeHiddenKey(character.Id);
+            var hidden = gameData.GetUserProperty(character.UserId, key) == "1";
+            gameData.SetUserProperty(character.UserId, key, hidden ? "" : "1");
+            return hidden;
+        }
+
         public ItemCollection GetEquippedItems(SessionToken token, string userId)
         {
             var itemCollection = new ItemCollection();

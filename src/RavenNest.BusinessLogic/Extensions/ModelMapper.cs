@@ -295,6 +295,17 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>The user property a hidden cape is kept under, per character (no column for it: nothing to migrate).</summary>
+        public static string CapeHiddenKey(Guid characterId) => "cape.hidden." + characterId.ToString("N");
+
+        /// <summary>A character's appearance with what is kept beside it: whether the cape is hidden.</summary>
+        public static RavenNest.Models.SyntyAppearance MapAppearance(GameData gameData, DataModels.Character character)
+        {
+            var appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId));
+            appearance.CapeHidden = gameData.GetUserProperty(character.UserId, CapeHiddenKey(character.Id)) == "1";
+            return appearance;
+        }
+
         public static RavenNest.Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
         {
             if (appearance == null) return new RavenNest.Models.SyntyAppearance();
@@ -433,7 +444,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsRejoin = rejoin,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
-                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Appearance = MapAppearance(gameData, character),
                 Resources = Map(gameData.GetResources(user.Resources.Value)),
                 Skills = Map(gameData.GetCharacterSkills(character.SkillsId)),
                 State = Map(characterState),
@@ -546,7 +557,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Name = character.Name,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
-                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Appearance = MapAppearance(gameData, character),
                 Resources = Map(gameData.GetResources(user)),
                 Skills = MapForWebsite(gameData.GetCharacterSkills(character.SkillsId)),
                 State = Map(gameData.GetCharacterState(character.StateId)),
@@ -604,7 +615,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Name = character.Name,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
-                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Appearance = MapAppearance(gameData, character),
                 Resources = Map(gameData.GetResources(user)),
                 Skills = MapForWebsite(gameData.GetCharacterSkills(character.SkillsId)),
                 State = Map(gameData.GetCharacterState(character.StateId)),
