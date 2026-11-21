@@ -6,7 +6,8 @@ namespace RavenNest.Combat
 {
     /// <summary>
     ///     The battle pet species (the game's docs/battle-pets-design.md, section 9): the creatures that can be tamed on
-    ///     the islands, and a companion species for every pet item, so every pet a player has can fight. Each has a role,
+    ///     the islands, the pets that hatch from eggs (the cute series and the animal pack) and a companion species for
+    ///     every pet item, so every pet a player has can fight. Each has a role,
     ///     an element and a strike style that fits its model: Bite for models with an attack clip, Pounce (a leap done in
     ///     code) for beasts without one, Bolt for small and magical pets that stay back.
     /// </summary>
@@ -158,6 +159,25 @@ namespace RavenNest.Combat
                 more?.Invoke(s);
             });
 
+        /// <summary>Where the animal pack's prefabs are, as a model key: "pet:Pets/Animals/Tiger" is Resources/Pets/Animals/Tiger.</summary>
+        public const string AnimalModels = "pet:Pets/Animals/";
+
+        /// <summary>
+        ///     A pet from the animal pack (polyperfect's Low Poly Animated Animals), hatched from an egg like the cute
+        ///     series. One model means the same animal growing with its stages; three are the pack's color variants or
+        ///     kinds that follow each other (the horse's brown, grey and black; chick, hen and rooster), named as the
+        ///     pack names its prefabs.
+        /// </summary>
+        private static PetSpecies Animal(string id, PetRole role, PetStrike strike, Element element, string[] names, string[] models, string egg, int taming, double hatchMinutes, double[] heights, string from, string blurb, Action<PetSpecies> more = null) =>
+            Hatched(id, role, strike, element, names, egg, taming, hatchMinutes, heights, EnemyFamily.Beast, from, blurb, s =>
+            {
+                s.StageModels = models.Select(m => AnimalModels + m).ToArray();
+                more?.Invoke(s);
+            });
+
+        /// <summary>The species that use the animal pack's models.</summary>
+        public static IEnumerable<PetSpecies> Animals => Species.Where(s => s.StageModels.Any(m => m.StartsWith(AnimalModels, StringComparison.Ordinal)));
+
         private static string[] N(params string[] names) => names;
         private static double[] H(params double[] heights) => heights;
 
@@ -253,6 +273,75 @@ namespace RavenNest.Combat
                 Hatched("dragon-spark", PetRole.Damage, PetStrike.Bite, Element.Fire, N("Dragon Spark", "Dragon Fire", "Dragon Inferno"), "Dragon Spark Egg", 100, 240,
                     H(0.6, 1.0, 1.5), EnemyFamily.Dragon, "Raids and epic or legendary dungeons, quests, all rarely; and the barkeep's speckled egg",
                     "Small, warm and sneezes sparks. Give it time."),
+
+                // ---------------------------------------------------------------- hatched from eggs: the animals (the animal pack)
+                // No bear, wolf, fox, deer, rabbit, cow, snake or gorilla here: those are pets already (the starters, the
+                // Wolf Pup and Snakelet lines, the bunny and the cow, whose models are this pack's, and the Monkey pet,
+                // which is this pack's gorilla).
+                Animal("panda", PetRole.Tank, PetStrike.Bite, Element.Physical, N("Panda Cub", "Panda", "Bamboo Baron"), new[] { "Panda" }, "Panda Egg", 25, 120,
+                    H(0.55, 0.8, 1.05), "Uncommon and harder dungeons, tower floors from the fourth up, and quests",
+                    "Eats, naps and takes hits, in that order. Pandas do not lay eggs. This one never got the memo.",
+                    s => s.Skills = new[] { "guard", "harden", "bamboo-snack", "bodyslam" }),
+                Animal("boar", PetRole.Tank, PetStrike.Bite, Element.Physical, N("Squeaker", "Wild Boar", "Tusk Lord"), new[] { "Boar" }, "Boar Egg", 15, 90,
+                    H(0.45, 0.7, 0.95), "Uncommon and harder dungeons, raids and quests",
+                    "Thick hide, thicker skull. Stands in the way on purpose."),
+                Animal("horse", PetRole.Tank, PetStrike.Bite, Element.Fire, N("Pony", "Warhorse", "Nightmare"), new[] { "Horse_Brown", "Horse_Grey", "Horse_Black" }, "Pony Egg", 60, 180,
+                    H(0.8, 1.05, 1.3), "Raids, tower floors from the seventh up, and quests",
+                    "Brown, then grey, then black as a bad dream. The Nightmare is a pun, and it is not sorry.",
+                    s => s.Skills = new[] { "guard", "harden", "fire-breath" }),
+                Animal("dog", PetRole.Healer, PetStrike.Pounce, Element.Physical, N("Pupper", "Doggo", "Woofer"), new[] { "Dog_Chihuahua", "Dog_GoldenRetriever", "Dog_GreatDane" }, "Pupper Egg", 1, 60,
+                    H(0.35, 0.65, 0.95), "Dungeons, raids, quests and Ravebridge's story quests",
+                    "A pupper, then a doggo, then a woofer. Nobody can explain the breeds. Licks every wound better, asked or not.",
+                    s => s.Skills = new[] { "lick-wounds", "howl", "soothing-aura", "purify" }),
+                Animal("capybara", PetRole.Healer, PetStrike.Bolt, Element.Ice, N("Capybara Pup", "Capybara", "Onsen Master"), new[] { "Capybara" }, "Capybara Egg", 20, 120,
+                    H(0.4, 0.6, 0.8), "Uncommon and harder dungeons, quests and the regatta",
+                    "The chillest animal there is, which is why its element is ice. Everyone near it calms down and heals up. It has no idea."),
+                Animal("sheep", PetRole.Healer, PetStrike.Bolt, Element.Lightning, N("Lamb", "Woolly Sheep", "Thunderfleece"), new[] { "Sheep", "Sheep_Wool", "Sheep_Wool" }, "Lamb Egg", 10, 90,
+                    H(0.45, 0.7, 0.9), "Uncommon and harder dungeons, quests and Ravebridge's story quests",
+                    "Count it when you cannot sleep. Do not pet it in dry weather: all that wool is full of static.",
+                    s => s.Skills = new[] { "lick-wounds", "wool-coat", "soothing-aura", "purify" }),
+                Animal("tiger", PetRole.Damage, PetStrike.Bite, Element.Fire, N("Tiger Cub", "Tiger", "Tyger Burning Bright"), new[] { "Tiger" }, "Tiger Egg", 50, 180,
+                    H(0.5, 0.75, 1.0), "Rare and harder dungeons, raids and quests",
+                    "Tyger, tyger, burning bright. The poem never says what it burns. It burns your enemies."),
+                Animal("eagle", PetRole.Damage, PetStrike.Bite, Element.Lightning, N("Storm Eaglet", "Storm Eagle", "Thunderbird"), new[] { "Eagle" }, "Storm Eagle Egg", 40, 150,
+                    H(0.4, 0.6, 0.85), "Raids, tower floors from the thirteenth up, and quests",
+                    "One of the few pets here that is supposed to come out of an egg. Dives like lightning and, later, with it."),
+                Animal("goose", PetRole.Damage, PetStrike.Bite, Element.Physical, N("Gosling", "Goose", "Horrible Goose"), new[] { "Goose" }, "Goose Egg", 5, 75,
+                    H(0.35, 0.55, 0.75), "Dungeons, raids and quests",
+                    "It is a lovely day in the village, and this is a horrible goose. Peace was never an option.",
+                    s => s.Skills = new[] { "honk", "pounce", "frenzy" }),
+                Animal("parrot", PetRole.Damage, PetStrike.Bolt, Element.Physical, N("Parrot Chick", "Parrot", "First Mate"), new[] { "Parrot" }, "Parrot Egg", 30, 120,
+                    H(0.3, 0.42, 0.55), "The pirate raid, the regatta and quests",
+                    "Left the pirates for better crackers. Repeats everything you say, mostly at the enemy, mostly the rude parts.",
+                    s => s.Skills = new[] { "barrage", "hex", "frenzy" }),
+                Animal("rat", PetRole.Damage, PetStrike.Bite, Element.Poison, N("Rat", "Giant Rat", "Rat King"), new[] { "Rat" }, "Rat Egg", 1, 45,
+                    H(0.3, 0.5, 0.75), "Dungeons, quests and Ravebridge's story quests",
+                    "Every adventurer's first kill, in some other game. This one has not forgotten, and it bites back."),
+                Animal("lion", PetRole.Support, PetStrike.Bite, Element.Physical, N("Lion Cub", "Lioness", "Pride King"), new[] { "Lion_Female", "Lion_Female", "Lion_Male" }, "Lion Egg", 75, 210,
+                    H(0.5, 0.8, 1.05), "Raids, epic and legendary dungeons and quests, all rarely",
+                    "Its roar makes everyone near hit faster. Everything the light touches is its litter box.",
+                    s => s.Skills = new[] { "howl", "pounce", "hex" }),
+                Animal("spider", PetRole.Support, PetStrike.Bite, Element.Poison, N("Spiderling", "Weaver", "Silk Matron"), new[] { "Spider_Green", "Spider_Yellow", "Spider_Red" }, "Spider Egg", 35, 120,
+                    H(0.3, 0.45, 0.6), "Rare and harder dungeons, tower floors from the fourth up, and quests",
+                    "Green, then yellow, then red, like a traffic light that webs you. An enemy that cannot move is easy to hit.",
+                    s => { s.Skills = new[] { "web", "hex", "venom-breath" }; s.Family = EnemyFamily.Insect; }),
+                Animal("penguin", PetRole.Support, PetStrike.Bolt, Element.Ice, N("Penguin Chick", "Penguin", "Emperor Penguin"), new[] { "Penguin" }, "Penguin Egg", 20, 120,
+                    H(0.4, 0.6, 0.85), "Tower floors from the tenth up, the regatta and quests",
+                    "Throws snowballs and waddles away from the consequences. A penguin keeps its egg on its feet; you get to use a stable.",
+                    s => s.Skills = new[] { "snowball", "hex", "frost-breath" }),
+                Animal("reindeer", PetRole.Support, PetStrike.Bite, Element.Lightning, N("Reindeer Calf", "Donner", "Blitzen"), new[] { "Reindeer" }, "Reindeer Egg", 45, 150,
+                    H(0.65, 0.9, 1.15), "Raids, tower floors from the tenth up, and quests",
+                    "Grows up into Donner, then Blitzen: thunder, then lightning. Its nose glows a little in fog. It would rather not discuss it.",
+                    s => s.Skills = new[] { "spark", "howl", "storm-breath" }),
+                Animal("cat", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Void Kitten", "Orange Cat", "Snow Cat"), new[] { "Cat_Black", "Cat_Orange", "Cat_White" }, "Kitten Egg", 1, 60,
+                    H(0.3, 0.4, 0.5), "Dungeons, tower floors and quests",
+                    "Leaves gifts at your feet while you gather. Some of them are even useful. The orange stage shares its one brain cell with every other orange cat."),
+                Animal("pig", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Piglet", "Truffle Pig", "Truffle Baron"), new[] { "Pig" }, "Piglet Egg", 10, 90,
+                    H(0.35, 0.55, 0.75), "Dungeons, tower floors and quests",
+                    "Its nose finds what you miss. It eats half of what it finds, so your share is already after tax."),
+                Animal("chicken", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Chick", "Hen", "Rooster"), new[] { "Chick", "Hen", "Rooster" }, "Chick Egg", 1, 30,
+                    H(0.25, 0.4, 0.55), "Dungeons, quests and Ravebridge's story quests",
+                    "Came first. Or the egg did. The old woman at the well still will not say. Pecks up what you drop while you gather."),
 
                 // ---------------------------------------------------------------- companions: every pet item can fight
                 Companion("companion-raven", PetRole.Support, PetStrike.Bolt, Element.Lightning, N("Raven", "Storm Raven", "Thunder Raven"),

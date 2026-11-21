@@ -494,6 +494,24 @@ namespace RavenNest.Combat
             Add(new PetSkill { Id = "spark", Name = "Spark", Role = PetRole.Support, LearnLevel = 1,
                 Description = "A spark at the target: it takes 10% more damage for 6 s.",
                 Active = Active(16, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 0.8), E(SkillEffectKind.DamageTaken, 0.10, 6)) });
+
+            // the animal pack's own skills (PetSpeciesList.cs, "hatched from eggs: the animals"): one each for what no
+            // pet skill did before (a heal for itself, a shield, a freeze, a root, weakening one target)
+            Add(new PetSkill { Id = "bamboo-snack", Name = "Bamboo Snack", Role = PetRole.Tank, LearnLevel = 25,
+                Description = "Below half health it sits down for a bamboo snack and gets a fifth of its health back.",
+                Active = Active(40, SkillTargeting.Self, SkillUse.SelfHurt, E(SkillEffectKind.HealPercent, 0.2)) });
+            Add(new PetSkill { Id = "wool-coat", Name = "Wool Coat", Role = PetRole.Healer, LearnLevel = 25,
+                Description = "Wraps the most hurt of its owner and allies near in wool: a shield for 8 s.",
+                Active = Active(18, SkillTargeting.LowestAlly, SkillUse.AllyHurt, E(SkillEffectKind.Shield, 1.5, 8)) });
+            Add(new PetSkill { Id = "snowball", Name = "Snowball", Role = PetRole.Support, LearnLevel = 1,
+                Description = "A snowball in the face: it hurts, and the target is frozen for 1.5 s.",
+                Active = Active(16, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 0.8, 0, Element.Ice), E(SkillEffectKind.Freeze, 0, 1.5)) });
+            Add(new PetSkill { Id = "web", Name = "Web", Role = PetRole.Support, LearnLevel = 1,
+                Description = "Webs the target: it is stuck for 3 s and takes 10% more damage for 6 s.",
+                Active = Active(18, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Root, 0, 3), E(SkillEffectKind.DamageTaken, 0.10, 6)) });
+            Add(new PetSkill { Id = "honk", Name = "HONK", Role = PetRole.Damage, LearnLevel = 1,
+                Description = "HONK. A peck, and the target is so rattled that it deals 15% less damage for 5 s.",
+                Active = Active(14, SkillTargeting.Target, SkillUse.InFight, E(SkillEffectKind.Damage, 1.0), E(SkillEffectKind.DamageDealt, -0.15, 5)) });
         }
     }
 }

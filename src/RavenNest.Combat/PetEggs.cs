@@ -103,6 +103,33 @@ namespace RavenNest.Combat
             ("bomb", EggSource.PirateRaid, 0, 6), ("shell", EggSource.PirateRaid, 0, 3), ("snakelet", EggSource.PirateRaid, 0, 1),
             ("shell", EggSource.Regatta, 0, 8), ("sun-blossom", EggSource.Regatta, 0, 2),
             ("practice-dummy", EggSource.Ravebridge, 0, 10), ("wolf-pup", EggSource.Ravebridge, 0, 3),
+
+            // the animals (PetSpeciesList, "the animals"): a little rarer than the cute series where they share a
+            // source, and each where it belongs. Tower tiers are three floors each (0: floors 1 to 3, 4: 13 and up).
+            ("rat", EggSource.Dungeon, 0, 6), ("rat", EggSource.Ravebridge, 0, 6),              // Lumbridge's giant rats
+            ("chicken", EggSource.Dungeon, 0, 5), ("chicken", EggSource.Ravebridge, 0, 5),      // and its chickens
+            ("dog", EggSource.Dungeon, 0, 5), ("dog", EggSource.Raid, 0, 5), ("dog", EggSource.Ravebridge, 0, 4),
+            ("cat", EggSource.Dungeon, 0, 4), ("cat", EggSource.Tower, 0, 5),
+            ("goose", EggSource.Dungeon, 0, 4), ("goose", EggSource.Raid, 0, 4),
+            ("pig", EggSource.Dungeon, 0, 4), ("pig", EggSource.Tower, 0, 4),
+            ("sheep", EggSource.Dungeon, 1, 4), ("sheep", EggSource.Ravebridge, 0, 4),          // and its sheep pen
+            ("boar", EggSource.Dungeon, 1, 4), ("boar", EggSource.Raid, 0, 4),
+            ("capybara", EggSource.Dungeon, 1, 3), ("capybara", EggSource.Regatta, 0, 3),       // a good swimmer
+            ("panda", EggSource.Dungeon, 1, 3), ("panda", EggSource.Tower, 1, 4),
+            ("penguin", EggSource.Tower, 3, 5), ("penguin", EggSource.Regatta, 0, 3),           // the frozen floors
+            ("spider", EggSource.Dungeon, 2, 4), ("spider", EggSource.Tower, 1, 4),
+            ("parrot", EggSource.PirateRaid, 0, 4), ("parrot", EggSource.Regatta, 0, 2),        // it left the pirates
+            ("eagle", EggSource.Raid, 0, 3), ("eagle", EggSource.Tower, 4, 4),                  // the floors in the sky
+            ("reindeer", EggSource.Raid, 0, 3), ("reindeer", EggSource.Tower, 3, 3),
+            ("tiger", EggSource.Dungeon, 2, 3), ("tiger", EggSource.Raid, 0, 3),
+            ("horse", EggSource.Raid, 0, 3), ("horse", EggSource.Tower, 2, 3),
+            ("lion", EggSource.Dungeon, 3, 2), ("lion", EggSource.Raid, 0, 2),
+            // quests: any of them too, the rare ones rarely (the dragon stays the rarest)
+            ("rat", EggSource.Quest, 0, 6), ("chicken", EggSource.Quest, 0, 6), ("dog", EggSource.Quest, 0, 6), ("cat", EggSource.Quest, 0, 6),
+            ("goose", EggSource.Quest, 0, 5), ("pig", EggSource.Quest, 0, 5), ("sheep", EggSource.Quest, 0, 5), ("boar", EggSource.Quest, 0, 4),
+            ("capybara", EggSource.Quest, 0, 4), ("panda", EggSource.Quest, 0, 4), ("penguin", EggSource.Quest, 0, 4), ("spider", EggSource.Quest, 0, 3),
+            ("parrot", EggSource.Quest, 0, 3), ("eagle", EggSource.Quest, 0, 3), ("reindeer", EggSource.Quest, 0, 3), ("tiger", EggSource.Quest, 0, 2),
+            ("horse", EggSource.Quest, 0, 2), ("lion", EggSource.Quest, 0, 2),
         };
 
         /// <summary>The eggs a source can give at a tier, with their weights.</summary>

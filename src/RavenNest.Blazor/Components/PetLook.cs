@@ -75,6 +75,7 @@ namespace RavenNest.Blazor.Components
             ["howl"] = "fa-bullhorn", ["hex"] = "fa-eye", ["wail"] = "fa-ghost", ["binky"] = "fa-carrot", ["spark"] = "fa-bolt",
             ["quack"] = "fa-volume-high", ["banana-toss"] = "fa-lemon", ["barrage"] = "fa-meteor",
             ["forage"] = "fa-leaf", ["keen-nose"] = "fa-magnifying-glass", ["dig"] = "fa-gem",
+            ["bamboo-snack"] = "fa-seedling", ["wool-coat"] = "fa-shield-heart", ["snowball"] = "fa-snowman", ["web"] = "fa-spider", ["honk"] = "fa-kiwi-bird",
         };
 
         public static string SkillIcon(PetSkill skill) =>

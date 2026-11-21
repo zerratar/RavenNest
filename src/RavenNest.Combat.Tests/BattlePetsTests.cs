@@ -126,7 +126,8 @@ namespace RavenNest.Combat.Tests
             // every new source has eggs, and the events' eggs belong there
             foreach (var source in new[] { EggSource.Quest, EggSource.PirateRaid, EggSource.Regatta, EggSource.Ravebridge })
                 Assert.NotEmpty(PetEggs.Table(source, 0));
-            Assert.All(PetEggs.Table(EggSource.Regatta, 0), t => Assert.Contains(t.Species.Id, new[] { "shell", "sun-blossom" }));
+            Assert.All(PetEggs.Table(EggSource.Regatta, 0), t => Assert.Contains(t.Species.Id, new[] { "shell", "sun-blossom", "capybara", "penguin", "parrot" }));
+            Assert.Equal("shell", PetEggs.Table(EggSource.Regatta, 0).OrderByDescending(t => t.Weight).First().Species.Id);
             Assert.Equal("bomb", PetEggs.Table(EggSource.PirateRaid, 0).OrderByDescending(t => t.Weight).First().Species.Id);
             Assert.Equal("practice-dummy", PetEggs.Table(EggSource.Ravebridge, 0).OrderByDescending(t => t.Weight).First().Species.Id);
             // quests can give any egg, the dragon least often
@@ -147,11 +148,14 @@ namespace RavenNest.Combat.Tests
         public void Eggs_hatch_every_cute_chain()
         {
             var eggs = PetEggs.Species.ToList();
-            Assert.Equal(8, eggs.Count);
+            var cute = eggs.Where(s => s.StageModels.All(m => m.StartsWith("pet:Pets/Cute/"))).ToList();
+            Assert.Equal(8, cute.Count);
+            // every egg is a cute series chain or one of the animals
+            Assert.Equal(eggs.Count, cute.Count + BattlePets.Animals.Count());
             // all 24 cute series models, each used once, in three stages per chain
-            var models = eggs.SelectMany(s => s.StageModels).ToList();
+            var models = cute.SelectMany(s => s.StageModels).ToList();
             Assert.Equal(24, models.Distinct().Count());
-            Assert.All(eggs, s => Assert.Equal(3, s.StageModels.Length));
+            Assert.All(cute, s => Assert.Equal(3, s.StageModels.Length));
             Assert.Equal("pet:Pets/Cute/Werewolf", BattlePets.GetSpecies("wolf-pup").ModelAt(2));
             // egg items: fixed, distinct, and found again from the id or a name
             var ids = eggs.Select(s => PetEggs.ItemId(s.Id)).ToList();
@@ -171,6 +175,100 @@ namespace RavenNest.Combat.Tests
             // a roll covers the whole table
             Assert.NotNull(PetEggs.Pick(EggSource.Tower, 0, 0));
             Assert.NotNull(PetEggs.Pick(EggSource.Tower, 0, 1));
+        }
+
+        [Fact]
+        public void Animals_widen_the_roster()
+        {
+            var animals = BattlePets.Animals.ToList();
+            Assert.Equal(18, animals.Count);
+            var others = BattlePets.Species.Except(animals).ToList();
+            var taken = others.SelectMany(s => s.StageNames).ToList();
+            foreach (var s in animals)
+            {
+                // an egg pet like the cute series, with what the website and the chat answers need
+                Assert.True(s.Hatches, s.Id);
+                Assert.Equal(PetSource.Egg, s.Source);
+                Assert.True(s.HatchMinutes >= 30 && s.HatchMinutes <= 240, s.Id);
+                Assert.True(s.TameLevel >= 1 && s.TameLevel <= 100, s.Id);
+                Assert.False(string.IsNullOrWhiteSpace(s.Blurb), s.Id);
+                Assert.False(string.IsNullOrWhiteSpace(s.EggFrom), s.Id);
+                Assert.EndsWith(" Egg", s.EggName);
+                // one model that grows, or three that follow each other; under Resources/Pets/Animals, no spaces
+                Assert.True(s.StageModels.Length == 1 || s.StageModels.Length == 3, s.Id);
+                Assert.All(s.StageModels, m => Assert.StartsWith(BattlePets.AnimalModels, m));
+                Assert.All(s.StageModels, m => Assert.DoesNotContain(" ", m));
+                Assert.Equal(3, s.StageHeights.Length);
+                Assert.True(s.HeightAt(0) < s.HeightAt(1) && s.HeightAt(1) < s.HeightAt(2), s.Id);
+                // names of its own, short enough for a pet's name, and "a Panda Cub", "a Panda Egg" read right in chat
+                Assert.Equal(3, s.StageNames.Distinct().Count());
+                Assert.All(s.StageNames, n => Assert.DoesNotContain(n, taken));
+                Assert.All(s.StageNames, n => Assert.True(n.Length <= BattlePets.MaxNameLength, n));
+                Assert.DoesNotContain(char.ToLowerInvariant(s.NameAt(0)[0]), "aeiou");
+                Assert.DoesNotContain(char.ToLowerInvariant(s.EggName[0]), "aeiou");
+                // found by its id, its egg and its names
+                Assert.Same(s, PetEggs.FindEgg(s.Id));
+                Assert.Same(s, PetEggs.FindEgg(s.EggName));
+                Assert.Same(s, PetEggs.FindEgg(s.NameAt(0)));
+                // in a quest's eggs, and in at least one other place
+                Assert.Contains(PetEggs.Table(EggSource.Quest, 0), t => t.Species == s);
+                Assert.Contains(new[] { EggSource.Dungeon, EggSource.Raid, EggSource.Tower, EggSource.PirateRaid, EggSource.Regatta, EggSource.Ravebridge },
+                    src => PetEggs.Table(src, 4).Any(t => t.Species == s));
+                // a skill of its own from level 1, and more to learn later
+                Assert.True(s.Skills.Length >= 3, s.Id);
+                Assert.Equal(s.Skills.Length, s.Skills.Distinct().Count());
+                Assert.Contains(s.Skills, k => BattlePets.GetSkill(k).LearnLevel > 1);
+            }
+            Assert.Equal(animals.Count, animals.Select(s => s.EggName).Distinct().Count());
+            Assert.DoesNotContain(animals, s => others.Any(o => o.EggName == s.EggName));
+
+            // every role and every element is there
+            foreach (PetRole role in System.Enum.GetValues(typeof(PetRole))) Assert.True(animals.Count(s => s.Role == role) >= 3, role.ToString());
+            foreach (var element in new[] { Element.Fire, Element.Ice, Element.Lightning, Element.Poison }) Assert.True(animals.Count(s => s.Element == element) >= 2, element.ToString());
+            // a bolt pet fights with magic from afar; the others up close
+            Assert.All(animals.Where(s => s.Strike == PetStrike.Bolt), s => Assert.Equal(AttackStyle.Magic, s.Stats.Style));
+
+            // color variants and kinds that follow each other
+            Assert.Equal("pet:Pets/Animals/Horse_Black", BattlePets.GetSpecies("horse").ModelAt(2));
+            Assert.Equal("pet:Pets/Animals/Dog_Chihuahua", BattlePets.GetSpecies("dog").ModelAt(0));
+            Assert.Equal("pet:Pets/Animals/Hen", BattlePets.GetSpecies("chicken").ModelAt(1));
+            Assert.Equal("pet:Pets/Animals/Lion_Male", BattlePets.GetSpecies("lion").ModelAt(2));
+            Assert.Equal("pet:Pets/Animals/Panda", BattlePets.GetSpecies("panda").ModelAt(2));
+            // the same kinds as pet items stay their own species
+            Assert.Equal("companion-cat", BattlePets.SpeciesForItem("Pets/Pspsps Cat")?.Id);
+            Assert.Equal("companion-spider", BattlePets.SpeciesForItem("Pets/Spider")?.Id);
+
+            // their own skills: a heal for itself, a shield, a freeze, a root and a weakened target, in line with the rest
+            var snack = BattlePets.GetSkill("bamboo-snack").Active;
+            Assert.Equal(SkillUse.SelfHurt, snack.Use);
+            Assert.Equal(SkillEffectKind.HealPercent, snack.Effects[0].Kind);
+            Assert.InRange(snack.Effects[0].Amount, 0.1, 0.25);
+            Assert.Equal(SkillEffectKind.Shield, BattlePets.GetSkill("wool-coat").Active.Effects[0].Kind);
+            Assert.Contains(BattlePets.GetSkill("snowball").Active.Effects, e => e.Kind == SkillEffectKind.Freeze && e.Seconds <= 2);
+            Assert.Contains(BattlePets.GetSkill("web").Active.Effects, e => e.Kind == SkillEffectKind.Root && e.Seconds <= 3);
+            Assert.Contains(BattlePets.GetSkill("honk").Active.Effects, e => e.Kind == SkillEffectKind.DamageDealt && e.Amount < 0);
+            Assert.Same(BattlePets.GetSkill("honk"), BattlePets.FindSkill("HONK"));
+            Assert.Contains("bamboo-snack", BattlePets.GetSpecies("panda").Skills);
+            Assert.DoesNotContain(BattlePets.GetSpecies("panda").SkillsAt(24, 0), k => k.Id == "bamboo-snack");
+            Assert.Contains(BattlePets.GetSpecies("panda").SkillsAt(25, 0), k => k.Id == "bamboo-snack");
+
+            // the eggs that were there before stay the most common where they are found
+            Assert.Equal("wolf-pup", PetEggs.Table(EggSource.Dungeon, 0).OrderByDescending(t => t.Weight).First().Species.Id);
+            Assert.Equal("wolf-pup", PetEggs.Table(EggSource.Raid, 0).OrderByDescending(t => t.Weight).First().Species.Id);
+            Assert.Equal("practice-dummy", PetEggs.Table(EggSource.Tower, 4).OrderByDescending(t => t.Weight).First().Species.Id);
+            // and the rarest animals are rare: the lion is under 5% of a raid's eggs, and not in the easy dungeons
+            var raid = PetEggs.Table(EggSource.Raid, 0).ToList();
+            Assert.True(raid.First(t => t.Species.Id == "lion").Weight / raid.Sum(t => t.Weight) < 0.05);
+            Assert.DoesNotContain(PetEggs.Table(EggSource.Dungeon, 2), t => t.Species.Id == "lion");
+            Assert.DoesNotContain(PetEggs.Table(EggSource.Tower, 2), t => t.Species.Id == "penguin");
+            Assert.Contains(PetEggs.Table(EggSource.Tower, 3), t => t.Species.Id == "penguin");
+            // evolving takes the element's gem, or the role's
+            Assert.Equal(GemKind.Ruby, PetEvolution.GemFor(BattlePets.GetSpecies("tiger")));
+            Assert.Equal(GemKind.Sapphire, PetEvolution.GemFor(BattlePets.GetSpecies("capybara")));
+            Assert.Equal(GemKind.Topaz, PetEvolution.GemFor(BattlePets.GetSpecies("sheep")));
+            Assert.Equal(GemKind.Emerald, PetEvolution.GemFor(BattlePets.GetSpecies("rat")));
+            Assert.Equal(GemKind.Onyx, PetEvolution.GemFor(BattlePets.GetSpecies("cat")));
+            Assert.Equal(GemKind.Amethyst, PetEvolution.GemFor(BattlePets.GetSpecies("dog")));
         }
 
         [Fact]
