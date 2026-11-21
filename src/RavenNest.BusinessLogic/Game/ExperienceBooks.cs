@@ -13,8 +13,8 @@ namespace RavenNest.BusinessLogic.Game
     /// skill it is read for, as the quests' own experience rewards are worked out.
     /// </summary>
     /// <remarks>
-    /// Two sizes, set to the quests' reward sizes: a small book is a daily quest's share of a level and a large one a
-    /// finished chain's, so a weekly quest (six dailies) is six small books. The items are made at startup
+    /// Three sizes, each one a quest's whole reward: a small book is a daily quest's share of a level, a medium one a
+    /// finished chain's and a large one a weekly quest's, so a quest pays one book and not a stack. The items are made at startup
     /// (GameData.EnsureExperienceBooks), bound to their owner and worth nothing at the vendor. The game has the same
     /// categories (ExperienceBooks in its QuestCommand.cs) to word its replies; the server decides.
     /// </remarks>
@@ -23,8 +23,16 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>A small book: the share of a level a daily quest pays.</summary>
         public const double SmallShare = 0.15;
 
-        /// <summary>A large book: the share of a level a finished quest chain pays.</summary>
-        public const double LargeShare = 0.5;
+        /// <summary>A medium book: the share of a level a finished quest chain pays.</summary>
+        public const double MediumShare = 0.5;
+
+        /// <summary>A large book: the share of a level a weekly quest pays (six dailies).</summary>
+        public const double LargeShare = 0.9;
+
+        public const int Small = 0, Medium = 1, Large = 2;
+
+        /// <summary>The sizes, smallest first: the word in the item's name and the share of a level.</summary>
+        public static readonly (string Name, double Share)[] Sizes = { ("Small", SmallShare), ("Medium", MediumShare), ("Large", LargeShare) };
 
         /// <summary>The most books one !use reads.</summary>
         public const int MaxPerUse = 100;
@@ -42,7 +50,9 @@ namespace RavenNest.BusinessLogic.Game
         public sealed class Book
         {
             public Category Category;
-            public bool Large;
+
+            /// <summary><see cref="Small"/>, <see cref="Medium"/> or <see cref="Large"/>.</summary>
+            public int Size;
 
             /// <summary>The item's name: "Small Gathering Book".</summary>
             public string Name;
@@ -58,56 +68,66 @@ namespace RavenNest.BusinessLogic.Game
             new Category { Key = "adventure", Name = "Adventure", Skills = new[] { Skill.Slayer, Skill.Sailing, Skill.Taming } },
         };
 
-        public static readonly Book[] All = Categories.SelectMany(c => new[]
-        {
-            new Book { Category = c, Large = false, Name = "Small " + c.Name + " Book", Share = SmallShare },
-            new Book { Category = c, Large = true, Name = "Large " + c.Name + " Book", Share = LargeShare },
-        }).ToArray();
+        public static readonly Book[] All = Categories.SelectMany(c => Sizes.Select((size, i) =>
+            new Book { Category = c, Size = i, Name = size.Name + " " + c.Name + " Book", Share = size.Share })).ToArray();
 
         /// <summary>The book an item is, by the item's name, or null.</summary>
         public static Book Find(string itemName) =>
             itemName == null ? null : All.FirstOrDefault(b => string.Equals(b.Name, itemName, StringComparison.OrdinalIgnoreCase));
 
-        public static Book Get(Category category, bool large) => All.First(b => b.Category == category && b.Large == large);
+        public static Book Get(Category category, int size) => All.First(b => b.Category == category && b.Size == size);
 
         /// <summary>The category a skill's books come from, or null for something that is no skill.</summary>
         public static Category CategoryOf(int skillIndex) => Categories.FirstOrDefault(c => c.Skills.Any(s => (int)s == skillIndex));
 
         /// <summary>
-        /// The books closest to a share of a level: a daily's 15% is one small book, a weekly's 90% six small ones, a
-        /// chain's 50% one large one. What does not come out even goes to the nearest book, a half up (a seasonal
-        /// quest's 22.5% is two small ones); a share under half a small book is no book.
+        /// The books closest to a share of a level, how many of each size (indexed by <see cref="Small"/>,
+        /// <see cref="Medium"/>, <see cref="Large"/>): a daily's 15% is one small book, a chain's 50% one medium one, a
+        /// weekly's 90% one large one, a grand chain's 100% two medium ones. What does not come out even goes to the
+        /// nearest books, a half up (a seasonal quest's 22.5% is two small ones); a share under half a small book is
+        /// no book.
         /// </summary>
-        public static (int Large, int Small) For(double share)
+        public static int[] For(double share)
         {
-            if (share <= 0 || double.IsNaN(share) || double.IsInfinity(share)) return (0, 0);
-            var best = (Large: 0, Small: 0);
+            var best = new int[3];
+            if (share <= 0 || double.IsNaN(share) || double.IsInfinity(share)) return best;
             var bestError = double.MaxValue;
             var mostLarge = (int)Math.Floor(share / LargeShare + 1e-9);
             for (var large = 0; large <= mostLarge; ++large)
             {
-                var rest = Math.Max(0, share - large * LargeShare);
-                var small = (int)Math.Floor(rest / SmallShare + 0.5 + 1e-9);
-                var error = Math.Abs(large * LargeShare + small * SmallShare - share);
-                // as close, in fewer books: the large one
-                if (error < bestError - 1e-9 || (Math.Abs(error - bestError) <= 1e-9 && large + small < best.Large + best.Small))
+                var afterLarge = Math.Max(0, share - large * LargeShare);
+                var mostMedium = (int)Math.Floor(afterLarge / MediumShare + 1e-9);
+                for (var medium = 0; medium <= mostMedium; ++medium)
                 {
-                    best = (large, small);
-                    bestError = error;
+                    var rest = Math.Max(0, afterLarge - medium * MediumShare);
+                    var small = (int)Math.Floor(rest / SmallShare + 0.5 + 1e-9);
+                    var error = Math.Abs(large * LargeShare + medium * MediumShare + small * SmallShare - share);
+                    // as close, in fewer books: the bigger ones
+                    if (error < bestError - 1e-9 || (Math.Abs(error - bestError) <= 1e-9 && large + medium + small < best.Sum()))
+                    {
+                        best = new[] { small, medium, large };
+                        bestError = error;
+                    }
                 }
             }
             return best;
         }
 
+        /// <summary>Whether a count of books (<see cref="For"/>) has any.</summary>
+        public static bool Any(int[] books) => books != null && books.Any(b => b > 0);
+
         /// <summary>
-        /// The books as the game says them after "and a": "Small Gathering Book", "stack of 6 Small Gathering Books",
-        /// "Large Combat Book and a Small Combat Book". Empty for none.
+        /// The books as the game says them after "and a", the biggest first: "Small Gathering Book", "stack of 2 Medium
+        /// Gathering Books", "Large Combat Book and a Small Combat Book". Empty for none.
         /// </summary>
-        public static string Describe(Category category, int large, int small)
+        public static string Describe(Category category, int[] books)
         {
             var parts = new List<string>();
-            if (large > 0) parts.Add(Counted(Get(category, true).Name, large));
-            if (small > 0) parts.Add(Counted(Get(category, false).Name, small));
+            if (books == null) return string.Empty;
+            for (var size = Math.Min(books.Length, Sizes.Length) - 1; size >= 0; --size)
+            {
+                if (books[size] > 0) parts.Add(Counted(Get(category, size).Name, books[size]));
+            }
             return string.Join(" and a ", parts);
         }
 

@@ -180,7 +180,8 @@ namespace RavenNest.BusinessLogic.Game
         private const int StreakBonusDays = 5;
 
         // The experience a quest pays, as a share of the reward skill's next level. A weekly quest pays six dailies, a
-        // seasonal one one and a half; a grand chain twice a chain. ExperienceBooks' sizes are set to these.
+        // seasonal one one and a half; a grand chain twice a chain. ExperienceBooks' sizes are set to these (small a
+        // daily, medium a chain, large a weekly).
         private const double DailyShare = 0.15;
         private const double ChainShare = 0.5;
         private const double WeeklyFactor = 6.0;
@@ -620,17 +621,16 @@ namespace RavenNest.BusinessLogic.Game
             var parts = new List<string>();
             foreach (var group in maxed.GroupBy(s => ExperienceBooks.CategoryOf(s.Skill)))
             {
-                int large = 0, small = 0;
+                var books = new int[ExperienceBooks.Sizes.Length];
                 foreach (var (_, share) in group)
                 {
-                    var (l, s) = ExperienceBooks.For(share);
-                    if (l == 0 && s == 0 && Random.Shared.NextDouble() < share / ExperienceBooks.SmallShare) s = 1;
-                    large += l;
-                    small += s;
+                    var b = ExperienceBooks.For(share);
+                    if (!ExperienceBooks.Any(b) && Random.Shared.NextDouble() < share / ExperienceBooks.SmallShare) b[ExperienceBooks.Small] = 1;
+                    for (var i = 0; i < books.Length; ++i) books[i] += b[i];
                 }
-                if (large == 0 && small == 0) continue;
-                GiveBooks(character, group.Key, large, small);
-                parts.Add(ExperienceBooks.Describe(group.Key, large, small));
+                if (!ExperienceBooks.Any(books)) continue;
+                GiveBooks(character, group.Key, books);
+                parts.Add(ExperienceBooks.Describe(group.Key, books));
             }
             return parts.Count > 0 ? string.Join(" and a ", parts) : null;
         }
@@ -772,6 +772,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             var stats = StatsOf(character);
             var today = DayOf(DateTime.UtcNow);
+            // the daily streak's bonus as the quest showed it until now (Info), before this daily adds to the streak:
+            // what was shown is what is paid. Until 2026-11-21 it was shown and never paid.
+            var bonus = StreakBonus(quest, stats);
             if (quest.Kind == Daily)
             {
                 if (stats.LastDailyDay != today)
@@ -788,15 +791,15 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var resources = gameData.GetResources(character);
-            if (resources != null) resources.Coins += quest.RewardCoins;
+            if (resources != null) resources.Coins += (long)(quest.RewardCoins * bonus);
 
             // a reward skill at the highest level gains nothing more: its experience comes as books of the skill's
             // category (ExperienceBooks), read for another skill of it. Info names them and leaves the experience out,
             // so the game adds none.
             try
             {
-                var books = BooksFor(character, quest);
-                if (books.Category != null) GiveBooks(character, books.Category, books.Large, books.Small);
+                var books = BooksFor(character, quest, bonus);
+                if (books.Category != null) GiveBooks(character, books.Category, books.Books);
             }
             catch (Exception exc)
             {
@@ -827,7 +830,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             gameData.Touch();
-            Tell(character, quest, stepDone, decor, egg);
+            Tell(character, quest, stepDone, decor, egg, bonus);
         }
 
         /// <summary>Weeklies and finished chains give a Tome of Forgetting (a free skill tree respec).</summary>
@@ -851,13 +854,13 @@ namespace RavenNest.BusinessLogic.Game
         /// The books a quest pays in place of its experience, when the character's reward skill is at the highest level
         /// now: the same share of a level, in books of the skill's category. No category when it pays experience.
         /// </summary>
-        private (ExperienceBooks.Category Category, int Large, int Small) BooksFor(Character character, CharacterQuest quest)
+        /// <param name="bonus">The daily streak's bonus on the share (<see cref="StreakBonus"/>), 1 for none.</param>
+        private (ExperienceBooks.Category Category, int[] Books) BooksFor(Character character, CharacterQuest quest, double bonus = 1.0)
         {
             if (character == null || quest.RewardExp <= 0 || quest.RewardSkill < 0 || quest.Kind == Ravebridge) return default;
             var category = ExperienceBooks.CategoryOf(quest.RewardSkill);
             if (category == null || !IsMaxed(character, quest.RewardSkill)) return default;
-            var (large, small) = ExperienceBooks.For(ShareOf(quest));
-            return (category, large, small);
+            return (category, ExperienceBooks.For(ShareOf(quest) * bonus));
         }
 
         private bool IsMaxed(Character character, int skillIndex)
@@ -867,14 +870,16 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>Books into the inventory (bound by their item); the inventory feed tells the game.</summary>
-        private void GiveBooks(Character character, ExperienceBooks.Category category, int large, int small)
+        /// <param name="books">How many of each size (ExperienceBooks.For).</param>
+        private void GiveBooks(Character character, ExperienceBooks.Category category, int[] books)
         {
             var inventory = inventoryProvider.Get(character.Id);
-            if (inventory == null) return;
-            foreach (var (isLarge, count) in new[] { (true, large), (false, small) })
+            if (inventory == null || books == null) return;
+            for (var size = 0; size < books.Length; ++size)
             {
+                var count = books[size];
                 if (count <= 0) continue;
-                var name = ExperienceBooks.Get(category, isLarge).Name;
+                var name = ExperienceBooks.Get(category, size).Name;
                 var item = gameData.GetItems().FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase));
                 if (item == null)
                 {
@@ -886,12 +891,13 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <param name="egg">An egg found with the reward (its name), said with the reward's item.</param>
-        private void Tell(Character character, CharacterQuest quest, int stepDone, string decor, string egg = null)
+        /// <param name="paidBonus">The streak bonus a finished daily was paid with, so the game adds and says the same.</param>
+        private void Tell(Character character, CharacterQuest quest, int stepDone, string decor, string egg = null, double? paidBonus = null)
         {
             var session = gameData.GetSessionByCharacterId(character.Id);
             if (session == null) return;
             var stats = gameData.GetCharacterQuestStats(character.Id);
-            var info = Info(quest);
+            var info = InfoWith(quest, paidBonus);
             // the game says " and a {item}": a second one joins the first the same way
             if (!string.IsNullOrEmpty(egg)) info.RewardItem = string.IsNullOrEmpty(info.RewardItem) ? egg : info.RewardItem + " and a " + egg;
             gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.QuestCompleted, session,
@@ -1011,15 +1017,16 @@ namespace RavenNest.BusinessLogic.Game
 
         // ---- Helpers ---------------------------------------------------------------------------------------
 
-        private QuestInfo Info(CharacterQuest q)
+        private QuestInfo Info(CharacterQuest q) => InfoWith(q, null);
+
+        /// <param name="paidBonus">
+        /// The streak bonus a quest was just paid with (Reward). Without it a daily not finished yet shows the bonus it
+        /// would pay now, and a finished one its plain reward.
+        /// </param>
+        private QuestInfo InfoWith(CharacterQuest q, double? paidBonus)
         {
             // the daily streak adds to what a daily pays out, shown before it is finished as well
-            var bonus = 1.0;
-            if (q.Kind == Daily && q.State != Done)
-            {
-                var stats = gameData.GetCharacterQuestStats(q.CharacterId);
-                bonus += StreakBonusPerDay * Math.Min(StreakBonusDays, CurrentStreak(stats));
-            }
+            var bonus = paidBonus ?? (q.State != Done ? StreakBonus(q, gameData.GetCharacterQuestStats(q.CharacterId)) : 1.0);
 
             var info = new QuestInfo
             {
@@ -1053,17 +1060,24 @@ namespace RavenNest.BusinessLogic.Game
 
             // the reward skill is at the highest level: books in place of the experience (Reward gives them). The game
             // says " and a {item}", so the books join whatever else the quest gives the same way.
-            var books = BooksFor(gameData.GetCharacter(q.CharacterId), q);
+            var books = BooksFor(gameData.GetCharacter(q.CharacterId), q, bonus);
             if (books.Category != null)
             {
                 info.RewardExp = 0;
-                var text = ExperienceBooks.Describe(books.Category, books.Large, books.Small);
+                var text = ExperienceBooks.Describe(books.Category, books.Books);
                 if (text.Length > 0) info.RewardItem = string.IsNullOrEmpty(info.RewardItem) ? text : info.RewardItem + " and a " + text;
             }
             return info;
         }
 
         private static string DecorOf(string chain) => VillageDecorManager.Pieces.FirstOrDefault(p => p.Quest == chain)?.Key;
+
+        /// <summary>
+        /// What a daily quest's coins and experience are multiplied by for the streak: a tenth more for each day of it,
+        /// up to five days (half as much again). 1 for every other kind of quest.
+        /// </summary>
+        private static double StreakBonus(CharacterQuest quest, CharacterQuestStats stats) =>
+            quest.Kind == Daily ? 1.0 + StreakBonusPerDay * Math.Min(StreakBonusDays, CurrentStreak(stats)) : 1.0;
 
         /// <summary>The streak that still counts: a day missed ends it.</summary>
         private static int CurrentStreak(CharacterQuestStats stats)
