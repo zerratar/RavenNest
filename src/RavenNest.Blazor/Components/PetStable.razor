@@ -194,6 +194,9 @@
     /// <summary>The clan's Rookery level, for cheaper evolutions and quicker eggs; 0 without a clan.</summary>
     [Parameter] public int RookeryLevel { get; set; }
 
+    /// <summary>Skill slots on top of Taming's and the stage's: Trick Training in the owner's Beastmaster tree.</summary>
+    [Parameter] public int ExtraSkillSlots { get; set; }
+
     private List<RavenNest.Models.BattlePet> pets = new List<RavenNest.Models.BattlePet>();
     private RavenNest.Models.BattlePet active;
     private RavenNest.Models.BattlePet firstResting;
@@ -254,7 +257,7 @@
         var cap = BattlePets.LevelCap(taming);
         var sheet = species.Sheet(Math.Max(1, pet.Level), pet.Stage);
         var slotted = (pet.Slots ?? "").Split(',').Select(BattlePets.GetSkill).Where(s => s != null).ToList();
-        var slots = BattlePets.SkillSlots(taming, pet.Stage);
+        var slots = BattlePets.SkillSlots(taming, pet.Stage) + ExtraSkillSlots;
         var spare = species.SkillsAt(pet.Level, pet.Stage).Where(s => !slotted.Contains(s)).ToList();
         var later = species.Skills.Select(BattlePets.GetSkill).Where(s => s != null && (s.LearnLevel > pet.Level || s.Stage > pet.Stage)).ToList();
         var kind = species.NameAt(pet.Stage);

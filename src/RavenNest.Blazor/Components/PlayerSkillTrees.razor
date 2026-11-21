@@ -100,7 +100,7 @@ else
     // the planner: a copy of the build with levels of one's choosing
     private bool planner;
     private SkillBuild plan = new SkillBuild();
-    private int[] planLevels = Enumerable.Repeat(1, 8).ToArray();
+    private int[] planLevels = Enumerable.Repeat(1, RavenNest.Combat.SkillTrees.TreeSkills).ToArray();
     private int planEarned;
 
     private string RespecPrice => info.FreeRespecs > 0 ? "free" : info.TomesOfForgetting > 0 ? "a Tome of Forgetting" : info.RespecCost.ToString("N0") + " coins";
@@ -167,7 +167,7 @@ else
         planner = on;
     }
 
-    private void Recount() => planEarned = RavenNest.Combat.SkillTrees.EarnedPoints(planLevels.Sum());
+    private void Recount() => planEarned = RavenNest.Combat.SkillTrees.EarnedPoints(planLevels);
 
     private void SetPlanLevels(int[] next)
     {

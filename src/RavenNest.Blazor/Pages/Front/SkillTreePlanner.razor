@@ -6,7 +6,7 @@
 
 @*
     The skill tree planner (combat v2, the game's docs/combat-skills-design.md): anyone, signed in or not, sets the
-    combat levels they have in mind and tries a build on the same map the character page shows (js/rf-skill-tree.js),
+    levels they have in mind (the eight combat skills, and Taming for Beastmaster) and tries a build on the same map the character page shows (js/rf-skill-tree.js),
     with the same rules (RavenNest.Combat.SkillBuild): points from the levels, nodes opened by their tree's level, the
     loadout. Nothing is saved; the address carries the build and the levels, so a build can be shared as a link.
 *@
@@ -20,7 +20,7 @@
 <div class="page-content">
     <div class="section rf-trees">
         <p class="rf-meta">
-            Set the combat levels you have in mind (Levels, in the map's corner), then tap stars to learn them. Nothing here
+            Set the levels you have in mind (Levels, in the map's corner: the eight combat skills, and Taming for the Beastmaster tree), then tap stars to learn them. Nothing here
             changes a character: Copy link shares the build, Save keeps it in this browser. Signed in, your character page's
             Skill trees tab has the same planner beside your real build.
         </p>
@@ -33,7 +33,7 @@
 
         <div class="rf-panel">
             <h3 class="rf-panel__title">What the build gives</h3>
-            @{ var passives = build.Passives(); }
+            @{ var passives = build.Passives(petOut: true); }
             @if (passives.IsEmpty)
             {
                 <p class="rf-meta">No passives yet.</p>
@@ -59,7 +59,7 @@
     [SupplyParameterFromQuery(Name = "levels")] public string LevelsText { get; set; }
 
     private SkillBuild build = new SkillBuild();
-    private int[] levelValues = Enumerable.Repeat(100, 8).ToArray();
+    private int[] levelValues = Enumerable.Repeat(100, RavenNest.Combat.SkillTrees.TreeSkills).ToArray();
     private int earned;
 
     private int LevelOf(CombatSkill skill) => levelValues[(int)skill];
@@ -70,13 +70,14 @@
         if (!string.IsNullOrEmpty(LevelsText))
         {
             var parts = LevelsText.Split(',');
-            for (var i = 0; i < Math.Min(parts.Length, 8); ++i)
+            // a link from before Beastmaster has eight levels: Taming stays at the planner's 100
+            for (var i = 0; i < Math.Min(parts.Length, levelValues.Length); ++i)
                 if (int.TryParse(parts[i], out var v)) levelValues[i] = Math.Clamp(v, 1, 999);
         }
         Recount();
     }
 
-    private void Recount() => earned = RavenNest.Combat.SkillTrees.EarnedPoints(levelValues.Sum());
+    private void Recount() => earned = RavenNest.Combat.SkillTrees.EarnedPoints(levelValues);
 
     private string Link() => Navigation.GetUriWithQueryParameters(new Dictionary<string, object>
     {

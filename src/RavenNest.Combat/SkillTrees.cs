@@ -4,7 +4,10 @@ using System.Linq;
 
 namespace RavenNest.Combat
 {
-    /// <summary>The eight trees, one per combat skill (the game's docs/combat-skills-design.md, section 2).</summary>
+    /// <summary>
+    ///     The trees: one per combat skill (the game's docs/combat-skills-design.md, section 2), and Beastmaster for
+    ///     Taming ("Beastmaster", the same document): points in the pet instead of in yourself.
+    /// </summary>
     public enum SkillTree
     {
         Bulwark,      // Defense: the tank
@@ -15,10 +18,14 @@ namespace RavenNest.Combat
         Elements,     // Magic: the caster
         Vitality,     // Health: staying alive, for everyone
         Hunter,       // Slayer: bosses and big enemies
+        Beastmaster,  // Taming: the battle pet
     }
 
-    /// <summary>The combat skills whose levels open the trees' tiers.</summary>
-    public enum CombatSkill { Attack, Defense, Strength, Health, Ranged, Magic, Healing, Slayer }
+    /// <summary>
+    ///     The skills whose levels open the trees' tiers: the eight combat skills, and Taming for Beastmaster. Taming
+    ///     is no combat skill (it stays out of the combat level); it earns points of its own (SkillTrees.TamingPoints).
+    /// </summary>
+    public enum CombatSkill { Attack, Defense, Strength, Health, Ranged, Magic, Healing, Slayer, Taming }
 
     /// <summary>When the character uses an active by itself (section 3); the loadout's order is the priority.</summary>
     public enum SkillUse
@@ -39,6 +46,8 @@ namespace RavenNest.Combat
         EnemyOnAlly,
         /// <summary>An ally has a harmful effect (burn, poison, chill, bleed).</summary>
         AllyHarmed,
+        /// <summary>Your battle pet is below half health, or knocked out.</summary>
+        PetHurt,
     }
 
     /// <summary>Who an active reaches.</summary>
@@ -53,6 +62,7 @@ namespace RavenNest.Combat
         AroundTarget,    // enemies around the target
         Chain,           // the target, then jumps to MaxTargets - 1 more
         FarthestEnemy,   // an enemy at range (Leap)
+        Pet,             // your battle pet: damage is its own blow on the target, the rest lands on the pet itself
     }
 
     public enum SkillEffectKind
@@ -113,6 +123,11 @@ namespace RavenNest.Combat
             [GearStat.LootLuck] = ("{0} more loot in raids and dungeons", null),
             [GearStat.GemKeepChance] = ("{0} better chance to keep a gem you take out", null),
             [GearStat.CrowdControlDuration] = ("{0} longer stuns, freezes and roots", null),
+            [GearStat.PetPower] = ("your pet's blows and heals are {0} stronger", null),
+            [GearStat.PetHealth] = ("{0} more health for your pet", null),
+            [GearStat.PetRecovery] = ("your pet gets up {0} sooner after a knockout", null),
+            [GearStat.PetGathering] = ("your pet's gathering skills are {0} stronger", null),
+            [GearStat.PetGuard] = ("a tank pet takes {0} more of the blows meant for you", null),
         };
 
         /// <summary>Only the amounts ("5%", or "10% and 5%" for two stats), for totals beside the full words.</summary>
@@ -147,7 +162,7 @@ namespace RavenNest.Combat
         public static string Active(ActiveSkill a)
         {
             var parts = new List<string>();
-            foreach (var e in a.Effects) parts.Add(Effect(e));
+            foreach (var e in a.Effects) parts.Add(a.Targeting == SkillTargeting.Pet ? PetEffect(e) : Effect(e));
             var who = Targets(a);
             var text = string.Join(", ", parts.Where(p => p.Length > 0));
             return who.Length > 0 ? text + " " + who : text;
@@ -181,6 +196,20 @@ namespace RavenNest.Combat
             }
         }
 
+        // a command for the pet: its own blow on the target, and what it gains itself
+        private static string PetEffect(SkillEffect e)
+        {
+            switch (e.Kind)
+            {
+                case SkillEffectKind.Damage: return "your pet strikes the target for " + Pct(e.Amount) + " of its hit";
+                case SkillEffectKind.HealPercent: return "your pet gets " + Pct(e.Amount) + " of its health back (and back up, if it was knocked out)";
+                case SkillEffectKind.AttackSpeed: return "your pet attacks " + Pct(e.Amount) + " faster for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.DamageDealt: return "your pet deals " + Pct(e.Amount) + " more damage for " + Num(e.Seconds) + " s";
+                case SkillEffectKind.DamageTaken: return "your pet takes " + Pct(Math.Abs(e.Amount)) + (e.Amount < 0 ? " less" : " more") + " damage for " + Num(e.Seconds) + " s";
+                default: return Effect(e);
+            }
+        }
+
         private static string Targets(ActiveSkill a)
         {
             var r = a.Radius > 0 ? " within " + Num(a.Radius) + " m" : "";
@@ -194,6 +223,7 @@ namespace RavenNest.Combat
                 case SkillTargeting.AroundTarget: return "(the target and up to " + Math.Max(0, a.MaxTargets - 1) + " enemies" + r + " of it)";
                 case SkillTargeting.Chain: return "(jumps to " + Math.Max(0, a.MaxTargets - 1) + " more enemies)";
                 case SkillTargeting.FarthestEnemy: return "(an enemy up to " + Num(a.Radius) + " m away)";
+                case SkillTargeting.Pet: return "";
                 default: return "(the target)";
             }
         }
@@ -218,7 +248,12 @@ namespace RavenNest.Combat
     }
 
     /// <summary>What an active needs worn to be used.</summary>
-    public enum SkillGear { None, Shield, MeleeWeapon, Bow, Staff }
+    public enum SkillGear
+    {
+        None, Shield, MeleeWeapon, Bow, Staff,
+        /// <summary>A battle pet out and on its feet (Beastmaster's commands).</summary>
+        Pet,
+    }
 
     /// <summary>An active skill: used automatically on its cooldown when its use rule says so.</summary>
     public sealed class ActiveSkill
@@ -262,6 +297,26 @@ namespace RavenNest.Combat
         /// <summary>Last Stand: once per fight, survive a killing blow with 1 health.</summary>
         public bool LastStand;
 
+        // ---- Beastmaster (the battle pet) ----
+
+        /// <summary>Kinship: the passive's stats count only while a battle pet is out and on its feet.</summary>
+        public bool WhilePetOut;
+
+        /// <summary>
+        ///     Elemental Bond: while a battle pet is out, this share of each of your hits a rank is added as the pet's
+        ///     element; a pet without an element adds half of it as crit chance instead.
+        /// </summary>
+        public double PetElementShare;
+
+        /// <summary>Trick Training: one more skill slot for the battle pet.</summary>
+        public bool ExtraPetSkillSlot;
+
+        /// <summary>Shared Mending: healing you receive heals your pet by the same share, and what quickens or shields you does the same for it.</summary>
+        public bool HealsReachPet;
+
+        /// <summary>Pack Leader: a packmate of the pet's own kind fights beside it at half strength.</summary>
+        public bool PetTwin;
+
         /// <summary>
         ///     The path: one of these (the nodes linked to it in the tier below) must be learned first. Empty on the first
         ///     tier. The map draws these links.
@@ -279,8 +334,11 @@ namespace RavenNest.Combat
         public string EffectText()
         {
             if (Active != null) return SkillTexts.Active(Active);
+            if (PetElementShare > 0)
+                return (PetElementShare * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "% of each of your hits more, as your pet's element (half as much crit chance with a pet that has none)" + (MaxRank > 1 ? ", a rank" : "");
             if (string.IsNullOrEmpty(Passive)) return "";
             var text = SkillTexts.Stats(GearStats.Parse(Passive), 1);
+            if (WhilePetOut) text += " while a battle pet is out";
             return MaxRank > 1 ? text + " a rank" : text;
         }
 
@@ -294,8 +352,9 @@ namespace RavenNest.Combat
     }
 
     /// <summary>
-    ///     The skill trees (docs/combat-skills-design.md): eight trees of actives and passives, one pool of points from
-    ///     combat levels, nodes opened by the tree's skill level, a loadout of four actives (five with Battle Rhythm).
+    ///     The skill trees (docs/combat-skills-design.md): eight trees of actives and passives for the combat skills and
+    ///     Beastmaster for Taming, one pool of points from combat levels and Taming's, nodes opened by the tree's skill
+    ///     level, a loadout of four actives (five with Battle Rhythm).
     ///     The numbers are a starting point; the combat simulator tunes them.
     /// </summary>
     public static class SkillTrees
@@ -320,6 +379,7 @@ namespace RavenNest.Combat
         {
             switch (tree)
             {
+                case SkillTree.Beastmaster: return CombatSkill.Taming;
                 case SkillTree.Bulwark: return CombatSkill.Defense;
                 case SkillTree.Restoration: return CombatSkill.Healing;
                 case SkillTree.Might: return CombatSkill.Strength;
@@ -341,6 +401,35 @@ namespace RavenNest.Combat
             var early = Math.Min(totalCombatLevels, 1000) / 10;
             var late = Math.Max(0, totalCombatLevels - 1000) / 40;
             return early + late;
+        }
+
+        /// <summary>
+        ///     The points Taming's levels add (Beastmaster, 2026-11-21): what one combat skill's levels are worth, one
+        ///     per 10 levels for the first 125 (an eighth of the first 1,000) and one per 40 after. Taming 999 gives 34.
+        ///     Counted apart from the combat levels, so nobody's points from those change.
+        /// </summary>
+        public static int TamingPoints(int tamingLevel)
+        {
+            if (tamingLevel <= 0) return 0;
+            return (int)Math.Floor(Math.Min(tamingLevel, 125) / 10.0 + Math.Max(0, tamingLevel - 125) / 40.0);
+        }
+
+        /// <summary>Every point a character has earned: the combat levels' and Taming's.</summary>
+        public static int EarnedPoints(int totalCombatLevels, int tamingLevel) => EarnedPoints(totalCombatLevels) + TamingPoints(tamingLevel);
+
+        /// <summary>The number of skills that open trees: a planner's list of levels, in <see cref="CombatSkill"/> order.</summary>
+        public const int TreeSkills = (int)CombatSkill.Taming + 1;
+
+        /// <summary>
+        ///     The points for a planner's levels, in <see cref="CombatSkill"/> order: the eight combat skills, then
+        ///     Taming. A list from before Beastmaster (eight levels, in an old shared link) counts Taming as 0.
+        /// </summary>
+        public static int EarnedPoints(int[] levels)
+        {
+            if (levels == null) return 0;
+            var combat = 0;
+            for (var i = 0; i < levels.Length && i < (int)CombatSkill.Taming; ++i) combat += levels[i];
+            return EarnedPoints(combat, levels.Length > (int)CombatSkill.Taming ? levels[(int)CombatSkill.Taming] : 0);
         }
 
         public static int RespecCost(int pointsSpent) => Math.Max(0, pointsSpent) * RespecCostPerPoint;
@@ -404,6 +493,7 @@ namespace RavenNest.Combat
                 case SkillUse.TargetLow: return "when the target is below 20% health";
                 case SkillUse.EnemyOnAlly: return "when an enemy attacks someone else";
                 case SkillUse.AllyHarmed: return "when an ally burns, bleeds or is poisoned";
+                case SkillUse.PetHurt: return "when your pet is below half health or knocked out";
                 default: return "in any fight";
             }
         }
@@ -417,6 +507,7 @@ namespace RavenNest.Combat
                 case SkillGear.MeleeWeapon: return "a melee weapon";
                 case SkillGear.Bow: return "a bow";
                 case SkillGear.Staff: return "a staff";
+                case SkillGear.Pet: return "a battle pet out";
                 default: return "";
             }
         }
@@ -575,6 +666,25 @@ namespace RavenNest.Combat
             Passive(L, 2, "pressure-points", "Pressure Points", "Your stuns, freezes and roots last longer.", "CROWD_CONTROL_DURATION:10%");
             Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:8%", ranks: 1, cost: 10);
 
+            // Taming: Beastmaster, the battle pet (2026-11-21). Points in the pet instead of in yourself: every role of
+            // pet has something here (a tank's guard, a healer's and a damage pet's power, a gatherer's skills).
+            const SkillTree B = SkillTree.Beastmaster;
+            Passive(B, 0, "fang-and-claw", "Fang and Claw", "Your pet hits harder and heals more.", "PET_POWER:4%");
+            Passive(B, 0, "thick-hide", "Thick Hide", "More health for your pet.", "PET_HEALTH:5%");
+            Active(B, 0, "sic-em", "Sic 'Em", "Your pet goes for your target at once with a heavy blow.",
+                new ActiveSkill { Cooldown = 12, Targeting = SkillTargeting.Pet, Use = SkillUse.InFight, Needs = SkillGear.Pet, Effects = new[] { E(SkillEffectKind.Damage, 2.5) } });
+            Passive(B, 1, "back-on-its-feet", "Back on Its Feet", "A knocked out pet gets up sooner.", "PET_RECOVERY:10%");
+            Add(new SkillNode { Tree = B, Tier = 1, Id = "kinship", Name = "Kinship", Description = "You are tougher with your pet at your side.", Passive = "MAX_HEALTH_BONUS:2%", WhilePetOut = true, MaxRank = 5, Cost = PassiveCost[1] });
+            Active(B, 1, "mend-pet", "Mend Pet", "Patches your pet up, and gets it back on its feet when it is knocked out.",
+                new ActiveSkill { Cooldown = 30, Targeting = SkillTargeting.Pet, Use = SkillUse.PetHurt, Effects = new[] { E(SkillEffectKind.HealPercent, 0.3) } });
+            Add(new SkillNode { Tree = B, Tier = 2, Id = "trick-training", Name = "Trick Training", Description = "One more skill slot for your pet.", ExtraPetSkillSlot = true, Cost = 8 });
+            Add(new SkillNode { Tree = B, Tier = 2, Id = "shared-mending", Name = "Shared Mending", Description = "Healing you receive heals your pet by the same share of its health, and what makes you attack faster or take less damage does the same for it.", HealsReachPet = true, Cost = 8 });
+            Passive(B, 2, "keen-senses", "Keen Senses", "A gatherer pet finds more.", "PET_GATHERING:10%", ranks: 3);
+            Add(new SkillNode { Tree = B, Tier = 3, Id = "elemental-bond", Name = "Elemental Bond", Description = "With your pet out, your own hits carry its element.", PetElementShare = 0.03, MaxRank = 5, Cost = PassiveCost[3] });
+            Passive(B, 3, "guardians-oath", "Guardian's Oath", "A tank pet takes more of the blows meant for you.", "PET_GUARD:20%", ranks: 1, cost: 10);
+            Active(B, 3, "call-of-the-wild", "Call of the Wild", "Your pet attacks half again as fast and hits harder for 8 seconds.",
+                new ActiveSkill { Cooldown = 40, Targeting = SkillTargeting.Pet, Use = SkillUse.OnBoss, Needs = SkillGear.Pet, Effects = new[] { E(SkillEffectKind.AttackSpeed, 0.5, 8), E(SkillEffectKind.DamageDealt, 0.3, 8) } });
+
             // the paths (2026-11-08): a node needs one of the nodes linked to it in the tier below; the first tier is open
             Path("shield-wall", "taunt", "thick-skin");
             Path("shield-training", "thick-skin");
@@ -627,6 +737,15 @@ namespace RavenNest.Combat
             Path("pressure-points", "execute", "treasure-hunter");
             Path("gem-salvager", "treasure-hunter");
             Path("apex-predator", "pressure-points");
+            Path("back-on-its-feet", "thick-hide");
+            Path("kinship", "thick-hide", "fang-and-claw");
+            Path("mend-pet", "sic-em", "fang-and-claw");
+            Path("trick-training", "mend-pet", "kinship");
+            Path("shared-mending", "mend-pet", "back-on-its-feet");
+            Path("keen-senses", "kinship", "back-on-its-feet");
+            Path("elemental-bond", "trick-training", "keen-senses");
+            Path("guardians-oath", "shared-mending", "keen-senses");
+            Path("call-of-the-wild", "trick-training", "shared-mending");
 
             Capstones();
         }
@@ -643,6 +762,9 @@ namespace RavenNest.Combat
             Capstone(SkillTree.Elements, "archmage", "Archmage", "The elements answer faster and harder.", "MAGIC_POWER_BONUS:12%;CAST_SPEED:8%", "meteor");
             Capstone(SkillTree.Vitality, "undying", "Undying", "Much more health, and it keeps coming back.", "MAX_HEALTH_BONUS:10%;COMBAT_REGEN:0.6%", "iron-skin");
             Capstone(SkillTree.Hunter, "legend-of-the-hunt", "Legend of the Hunt", "Bosses fear you, and their hoards know it.", "BOSS_DAMAGE:10%;LOOT_LUCK:5%", "apex-predator");
+            // Beastmaster's is no pair of stats: a second animal at the owner's side (the same kind as the pet that is
+            // out; a second pet from the stable is the proposal in the design document)
+            Capstone(SkillTree.Beastmaster, "pack-leader", "Pack Leader", "A packmate of your pet's own kind fights beside it at half strength.", null, "elemental-bond", "guardians-oath", "call-of-the-wild").PetTwin = true;
         }
 
         /// <summary>The nodes whose path goes through this one (the tier above).</summary>
@@ -682,15 +804,54 @@ namespace RavenNest.Combat
 
         public bool HasLastStand => Ranks.Any(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.LastStand ?? false));
 
-        /// <summary>The passives' stats, ranks counted.</summary>
-        public GearStats Passives()
+        // ---- Beastmaster: what the build does for the battle pet ----
+
+        /// <summary>Trick Training: skill slots for the pet on top of BattlePets.SkillSlots.</summary>
+        public int ExtraPetSkillSlots => Ranks.Count(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.ExtraPetSkillSlot ?? false));
+
+        public bool HealsReachPet => Ranks.Any(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.HealsReachPet ?? false));
+
+        public bool HasPetTwin => Ranks.Any(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.PetTwin ?? false));
+
+        /// <summary>Whether the owner's own stats depend on a pet being out (Kinship, Elemental Bond): they are worked out again when it comes, goes, falls or gets up.</summary>
+        public bool FollowsPet => Ranks.Any(r => r.Value > 0 && SkillTrees.Get(r.Key) is SkillNode n && (n.WhilePetOut || n.PetElementShare > 0));
+
+        /// <summary>Elemental Bond: the share of each of the owner's hits added as the pet's element, ranks counted.</summary>
+        public double PetElementShare()
+        {
+            var total = 0d;
+            foreach (var r in Ranks)
+            {
+                var node = SkillTrees.Get(r.Key);
+                if (node != null && node.PetElementShare > 0 && r.Value > 0) total += node.PetElementShare * Math.Min(r.Value, node.MaxRank);
+            }
+            return total;
+        }
+
+        /// <summary>
+        ///     What Elemental Bond adds to its owner's hits with this pet out: its element's damage, or half the share as
+        ///     crit chance for a pet without one. Empty without the node.
+        /// </summary>
+        public GearStats PetElementBonus(Element petElement)
+        {
+            var stats = new GearStats();
+            var share = PetElementShare();
+            if (share <= 0) return stats;
+            if (petElement == Element.Physical) stats[GearStat.CritChance] = share / 2;
+            else stats[GearStats.DamageOf(petElement)] = share;
+            return stats;
+        }
+
+        /// <summary>The passives' stats, ranks counted; those that need a battle pet out (Kinship) only with one.</summary>
+        public GearStats Passives(bool petOut = false)
         {
             var total = new GearStats();
-            foreach (var (id, rank) in Ranks)
+            foreach (var r in Ranks)
             {
-                var node = SkillTrees.Get(id);
-                if (node?.Passive == null || rank <= 0) continue;
-                total.Add(GearStats.Parse(node.Passive), Math.Min(rank, node.MaxRank));
+                var node = SkillTrees.Get(r.Key);
+                if (node?.Passive == null || r.Value <= 0) continue;
+                if (node.WhilePetOut && !petOut) continue;
+                total.Add(GearStats.Parse(node.Passive), Math.Min(r.Value, node.MaxRank));
             }
             return total;
         }

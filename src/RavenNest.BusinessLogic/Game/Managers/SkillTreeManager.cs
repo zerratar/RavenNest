@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     /// <summary>
     ///     The skill trees on the server (combat v2, the game's docs/combat-skills-design.md): learning nodes with points
-    ///     from combat levels, the loadout, and respecs (coins, a free one, or a Tome of Forgetting). The rules live in
+    ///     from combat levels and Taming's, the loadout, and respecs (coins, a free one, or a Tome of Forgetting). The rules live in
     ///     RavenNest.Combat.SkillBuild, shared with the game and the website; the server is the one that saves.
     /// </summary>
     public class SkillTreeManager
@@ -32,6 +32,12 @@ namespace RavenNest.BusinessLogic.Game
         public static int TotalCombatLevels(DataModels.Skills s) =>
             s == null ? 0 : s.AttackLevel + s.DefenseLevel + s.StrengthLevel + s.HealthLevel + s.RangedLevel + s.MagicLevel + s.HealingLevel + s.SlayerLevel;
 
+        /// <summary>
+        ///     Every point a character has earned: the combat levels', and Taming's on top (Beastmaster). Worked out from
+        ///     the levels each time, so a character that already has Taming levels has its points without a migration.
+        /// </summary>
+        public static int EarnedPoints(DataModels.Skills s) => SkillTrees.EarnedPoints(TotalCombatLevels(s), s?.TamingLevel ?? 0);
+
         public static Func<CombatSkill, int> LevelOf(DataModels.Skills s) => skill =>
         {
             if (s == null) return 1;
@@ -44,6 +50,7 @@ namespace RavenNest.BusinessLogic.Game
                 case CombatSkill.Ranged: return s.RangedLevel;
                 case CombatSkill.Magic: return s.MagicLevel;
                 case CombatSkill.Healing: return s.HealingLevel;
+                case CombatSkill.Taming: return s.TamingLevel;
                 default: return s.SlayerLevel;
             }
         };
@@ -91,7 +98,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var node = SkillTrees.Find(nodeText);
                 if (node == null) return SkillTrees.NotFoundText(nodeText);
-                var reason = build.Raise(node.Id, LevelOf(skills), SkillTrees.EarnedPoints(TotalCombatLevels(skills)));
+                var reason = build.Raise(node.Id, LevelOf(skills), EarnedPoints(skills));
                 if (reason != null) return reason;
                 // a new active goes into the first free slot, so it is used at once
                 if (node.IsActive && build.Rank(node.Id) == 1 && !build.Loadout.Contains(node.Id, StringComparer.OrdinalIgnoreCase))
@@ -220,7 +227,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 CharacterId = character.Id,
                 Build = build.ToString(),
-                Earned = SkillTrees.EarnedPoints(TotalCombatLevels(skills)),
+                Earned = EarnedPoints(skills),
                 Spent = build.Spent,
                 FreeRespecs = row?.FreeRespecs ?? 1,
                 RespecCost = SkillTrees.RespecCost(build.Spent),

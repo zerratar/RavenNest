@@ -68,8 +68,8 @@ namespace RavenNest.Combat.Tests
                 // its path: a node of the tier below, in the same tree
                 Assert.NotEmpty(c.Requires);
                 Assert.All(c.Requires, r => { var n = SkillTrees.Get(r); Assert.NotNull(n); Assert.Equal(tree, n.Tree); Assert.Equal(3, n.Tier); });
-                // stats the game knows
-                Assert.False(GearStats.Parse(c.Passive).IsEmpty);
+                // stats the game knows, or Beastmaster's packmate
+                Assert.True(c.PetTwin || !GearStats.Parse(c.Passive).IsEmpty, c.Id);
             }
         }
 
@@ -196,9 +196,140 @@ namespace RavenNest.Combat.Tests
             Assert.Equal("taunted for 4 s (up to 8 enemies within 6 m)", SkillTrees.Get("taunt").EffectText());
             foreach (var node in SkillTrees.All)
             {
-                if (node.ExtraLoadoutSlot || node.LastStand) continue;
+                if (node.ExtraLoadoutSlot || node.LastStand || node.ExtraPetSkillSlot || node.HealsReachPet || node.PetTwin) continue;
                 Assert.False(string.IsNullOrEmpty(node.EffectText()), node.Id);
             }
+        }
+
+        // ---------------------------------------------------------------- Beastmaster (Taming)
+
+        [Fact]
+        public void Taming_earns_points_like_one_combat_skill_and_stays_out_of_the_rest()
+        {
+            Assert.Equal(0, SkillTrees.TamingPoints(0));
+            Assert.Equal(0, SkillTrees.TamingPoints(9));
+            Assert.Equal(1, SkillTrees.TamingPoints(10));
+            Assert.Equal(7, SkillTrees.TamingPoints(76));
+            Assert.Equal(12, SkillTrees.TamingPoints(125));
+            Assert.Equal(16, SkillTrees.TamingPoints(300));
+            Assert.Equal(34, SkillTrees.TamingPoints(999));
+            // on top of the combat levels' points, which stay what they were
+            Assert.Equal(274, SkillTrees.EarnedPoints(8 * 999));
+            Assert.Equal(274, SkillTrees.EarnedPoints(8 * 999, 1));
+            Assert.Equal(281, SkillTrees.EarnedPoints(8 * 999, 76));
+            Assert.Equal(308, SkillTrees.EarnedPoints(8 * 999, 999));
+            // never fewer points for a higher level
+            for (var level = 1; level < 999; ++level) Assert.True(SkillTrees.TamingPoints(level + 1) >= SkillTrees.TamingPoints(level));
+            // and still nobody fills every tree
+            Assert.True(SkillTrees.TotalCost > SkillTrees.EarnedPoints(8 * 999, 999) * 1.4, "the trees cost " + SkillTrees.TotalCost);
+        }
+
+        [Fact]
+        public void Beastmaster_is_a_tree_like_the_others_gated_by_Taming()
+        {
+            Assert.Equal(CombatSkill.Taming, SkillTrees.SkillOf(SkillTree.Beastmaster));
+            Assert.Equal("Taming", SkillTrees.SkillName(CombatSkill.Taming));
+            var nodes = SkillTrees.Of(SkillTree.Beastmaster).ToList();
+            // the size and the price of the other trees
+            var sizes = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Where(t => t != SkillTree.Beastmaster).Select(t => SkillTrees.Of(t).Count()).ToList();
+            var costs = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Where(t => t != SkillTree.Beastmaster).Select(t => SkillTrees.Of(t).Sum(n => n.Cost * n.MaxRank)).ToList();
+            Assert.InRange(nodes.Count, sizes.Min(), sizes.Max() + 1);
+            Assert.InRange(nodes.Sum(n => n.Cost * n.MaxRank), costs.Min(), (int)(costs.Max() * 1.1));
+            // three nodes a tier and the capstone, an active for the loadout from the first tier
+            for (var tier = 0; tier < 4; ++tier) Assert.Equal(3, nodes.Count(n => n.Tier == tier));
+            Assert.Equal(3, nodes.Count(n => n.IsActive));
+            Assert.Contains(nodes, n => n.IsActive && n.Tier == 0);
+            // gated by Taming, whatever the combat levels
+            Func<CombatSkill, int> fighter = skill => skill == CombatSkill.Taming ? 76 : 999;
+            var build = new SkillBuild();
+            Assert.Null(build.Raise("fang-and-claw", fighter, 300));
+            Assert.Null(build.Raise("sic-em", fighter, 300));
+            Assert.Contains("needs Taming 100", build.CanRaise("mend-pet", fighter, 300));
+            Assert.Contains("needs Taming 999", build.CanRaise("pack-leader", fighter, 300));
+            Func<CombatSkill, int> tamer = skill => skill == CombatSkill.Taming ? 999 : 1;
+            Assert.Contains("needs Strength 100", build.CanRaise("crushing-blow", tamer, 300));
+            Assert.Null(build.Raise("mend-pet", tamer, 300));
+            // found from chat by its names
+            Assert.Equal("sic-em", SkillTrees.Find("sic 'em").Id);
+            Assert.Equal("sic-em", SkillTrees.Find("sic").Id);
+            Assert.Equal("guardians-oath", SkillTrees.Find("guardian").Id);
+            Assert.Equal("pack-leader", SkillTrees.Find("pack leader").Id);
+        }
+
+        [Fact]
+        public void Beastmaster_nodes_say_what_they_do_for_the_pet()
+        {
+            Assert.Equal("your pet's blows and heals are 4% stronger a rank", SkillTrees.Get("fang-and-claw").EffectText());
+            Assert.Equal("5% more health for your pet a rank", SkillTrees.Get("thick-hide").EffectText());
+            Assert.Equal("your pet strikes the target for 250% of its hit", SkillTrees.Get("sic-em").EffectText());
+            Assert.Equal("your pet gets up 10% sooner after a knockout a rank", SkillTrees.Get("back-on-its-feet").EffectText());
+            Assert.Equal("2% more health while a battle pet is out a rank", SkillTrees.Get("kinship").EffectText());
+            Assert.Equal("your pet gets 30% of its health back (and back up, if it was knocked out)", SkillTrees.Get("mend-pet").EffectText());
+            Assert.Equal("your pet's gathering skills are 10% stronger a rank", SkillTrees.Get("keen-senses").EffectText());
+            Assert.StartsWith("3% of each of your hits more, as your pet's element", SkillTrees.Get("elemental-bond").EffectText());
+            Assert.Equal("a tank pet takes 20% more of the blows meant for you", SkillTrees.Get("guardians-oath").EffectText());
+            Assert.Equal("your pet attacks 50% faster for 8 s, your pet deals 30% more damage for 8 s", SkillTrees.Get("call-of-the-wild").EffectText());
+            Assert.Equal("a battle pet out", SkillTrees.NeedsText(SkillGear.Pet));
+            Assert.Equal("when your pet is below half health or knocked out", SkillTrees.UseText(SkillUse.PetHurt));
+            Assert.Equal(SkillGear.Pet, SkillTrees.Get("sic-em").Active.Needs);
+            Assert.Equal(SkillGear.None, SkillTrees.Get("mend-pet").Active.Needs); // a knocked out pet is what it is for
+        }
+
+        [Fact]
+        public void A_build_carries_what_it_does_for_the_pet()
+        {
+            Func<CombatSkill, int> all = skill => 999;
+            var build = new SkillBuild();
+            Assert.Equal(0, build.ExtraPetSkillSlots);
+            Assert.False(build.HealsReachPet);
+            Assert.False(build.HasPetTwin);
+            Assert.True(build.PetElementBonus(Element.Fire).IsEmpty);
+            foreach (var id in new[] { "fang-and-claw", "fang-and-claw", "thick-hide", "sic-em", "back-on-its-feet", "kinship", "kinship", "mend-pet", "trick-training", "shared-mending",
+                         "keen-senses", "elemental-bond", "elemental-bond", "guardians-oath", "call-of-the-wild", "pack-leader" })
+                Assert.Null(build.Raise(id, all, 400));
+            var stats = build.Passives();
+            Assert.Equal(0.08, stats[GearStat.PetPower], 6);
+            Assert.Equal(0.05, stats[GearStat.PetHealth], 6);
+            Assert.Equal(0.10, stats[GearStat.PetRecovery], 6);
+            Assert.Equal(0.10, stats[GearStat.PetGathering], 6);
+            Assert.Equal(0.20, stats[GearStat.PetGuard], 6);
+            // Kinship only with a pet out
+            Assert.Equal(0, stats[GearStat.MaxHealthBonus], 6);
+            Assert.Equal(0.04, build.Passives(petOut: true)[GearStat.MaxHealthBonus], 6);
+            Assert.Equal(1, build.ExtraPetSkillSlots);
+            Assert.True(build.HealsReachPet);
+            Assert.True(build.HasPetTwin);
+            // Elemental Bond: the pet's element on the owner's hits, crit for a pet without one
+            Assert.Equal(0.06, build.PetElementBonus(Element.Fire)[GearStat.FireDamage], 6);
+            Assert.Equal(0.06, build.PetElementBonus(Element.Poison)[GearStat.PoisonDamage], 6);
+            Assert.Equal(0.03, build.PetElementBonus(Element.Physical)[GearStat.CritChance], 6);
+            // the actives went into the loadout's text and come back, the pet's use rule too
+            build.SetLoadout(0, "sic-em");
+            build.SetLoadout(1, "mend-pet");
+            Assert.Null(build.SetRule("sic-em", SkillUse.PetHurt));
+            var again = SkillBuild.Parse(build.ToString());
+            Assert.Equal(build.ToString(), again.ToString());
+            Assert.Equal(SkillUse.PetHurt, again.RuleOf(SkillTrees.Get("sic-em")));
+            Assert.Equal(SkillUse.PetHurt, again.RuleOf(SkillTrees.Get("mend-pet")));
+            Assert.Equal(build.Spent, again.Spent);
+            // a respec gives every point back, Beastmaster's too
+            build.Reset();
+            Assert.Equal(0, build.Spent);
+            Assert.False(build.HasPetTwin);
+            // the new stats read and write like the others
+            Assert.Null(GearStats.Parse("PET_POWER:4%;PET_HEALTH:5%;PET_RECOVERY:10%;PET_GATHERING:10%;PET_GUARD:20%").Unknown);
+        }
+
+        [Fact]
+        public void A_reader_that_does_not_know_a_node_drops_it_and_keeps_the_rest()
+        {
+            // what a game from before a tree does with a build that has its nodes: they are not there, nothing else moves
+            var build = SkillBuild.Parse("cleave:1;some-future-node:3;brute-force:2|cleave,some-future-active|some-future-active:PetHurt,cleave:OnBoss");
+            Assert.Equal(1, build.Rank("cleave"));
+            Assert.Equal(2, build.Rank("brute-force"));
+            Assert.Equal(0, build.Rank("some-future-node"));
+            Assert.Equal(new[] { "cleave" }, build.Loadout);
+            Assert.Equal(SkillUse.OnBoss, build.RuleOf(SkillTrees.Get("cleave")));
         }
     }
 }

@@ -124,7 +124,7 @@
             var skill = RavenNest.Combat.SkillTrees.SkillOf(node.Tree);
             var reason = Build.CanRaise(node.Id, Levels, Earned);
             <div class="rf-stage__pop-head">
-                @if (node.IsActive || node.ExtraLoadoutSlot || node.LastStand)
+                @if (node.IsActive || node.ExtraLoadoutSlot || node.LastStand || node.ExtraPetSkillSlot || node.HealsReachPet)
                 {
                     <img src="/imgs/skills/@(node.Id).webp" alt="" />
                 }
@@ -266,7 +266,7 @@
 
 @code {
     /// <summary>The trees' colours on the map, in SkillTree order.</summary>
-    public static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b" };
+    public static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b", "#3fd0c9" };
 
     [Parameter] public SkillBuild Build { get; set; } = new SkillBuild();
     [Parameter] public Func<CombatSkill, int> Levels { get; set; } = _ => 1;
@@ -390,7 +390,7 @@
             return new
             {
                 id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
-                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone) ? "special" : "passive", capstone = n.Capstone,
+                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone || n.ExtraPetSkillSlot || n.HealsReachPet) ? "special" : "passive", capstone = n.Capstone,
                 rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = n.Requires,
             };
         }).ToList();
@@ -471,7 +471,7 @@
         if (!string.IsNullOrEmpty(plan.Levels) && OnLevels.HasDelegate)
         {
             var parts = plan.Levels.Split(',');
-            var levels = Enumerable.Range(0, 8).Select(k => k < parts.Length && int.TryParse(parts[k], out var v) ? Math.Clamp(v, 1, 999) : 100).ToArray();
+            var levels = Enumerable.Range(0, RavenNest.Combat.SkillTrees.TreeSkills).Select(k => k < parts.Length && int.TryParse(parts[k], out var v) ? Math.Clamp(v, 1, 999) : 100).ToArray();
             await OnLevels.InvokeAsync(levels);
         }
         await OnLoadPlan.InvokeAsync(plan.Build ?? "");
@@ -497,6 +497,7 @@
             case SkillUse.TargetLow: return "The target below 20% health";
             case SkillUse.EnemyOnAlly: return "An enemy attacks someone else";
             case SkillUse.AllyHarmed: return "An ally burns, bleeds or is poisoned";
+            case SkillUse.PetHurt: return "My pet below half health or knocked out";
             default: return use.ToString();
         }
     }

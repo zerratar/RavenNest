@@ -1,4 +1,4 @@
-// The skill trees as a map (combat v2, the game's docs/combat-skills-design.md): the eight trees as wedges around a
+// The skill trees as a map (combat v2, the game's docs/combat-skills-design.md): the trees (nine with Beastmaster) as wedges around a
 // centre, their tiers as rings, every skill a node to tap. Drag (or one finger) pans, the wheel or a pinch zooms, a
 // tap picks a node and tells the page (PlayerSkillTrees.razor), which shows it with its Learn button.
 //
@@ -873,7 +873,7 @@ function drawLabels(g, view) {
     // the trees' names past their crowns, readable at every zoom
     const size = titleSize(zoom);
     const crown = NODE_RADIUS.capstone * u * CROWN_RAYS;
-    for (const hub of map.hubs) {
+    const titles = map.hubs.map(hub => {
         const box = titleBox(g, hub, size);
         const [ox, oy] = cam.toScreen(hub.cos * OUTER_RING, hub.sin * OUTER_RING, w, h);
         const away = crown + 8 + box.hw * Math.abs(hub.cos) + box.hh * Math.abs(hub.sin);
@@ -883,6 +883,20 @@ function drawLabels(g, view) {
             x = Math.min(w - box.hw - 4, Math.max(box.hw + 4, x));
             if (Math.abs(x - ox) < box.hw + crown * 0.7 && Math.abs(y - oy) < box.hh + crown * 0.7) y = oy + (hub.sin > 0.3 ? 1 : -1) * (crown * 0.8 + box.hh + 4);
         }
+        return { hub, box, x, y };
+    });
+    // Nine trees on a narrow view: the names by the top (or the bottom) meet once they are kept inside it. The side
+    // trees keep their places; a name nearer the pole steps outwards, past the ones it would lie on.
+    const settled = [];
+    for (const title of titles.slice().sort((a, b) => Math.abs(a.hub.sin) - Math.abs(b.hub.sin))) {
+        for (let pass = 0; pass < 4; pass++) {
+            const hit = settled.find(o => Math.abs(o.x - title.x) < o.box.hw + title.box.hw - 2 && Math.abs(o.y - title.y) < o.box.hh + title.box.hh);
+            if (!hit) break;
+            title.y = hit.y + (title.hub.sin < 0 ? -1 : 1) * (hit.box.hh + title.box.hh + 2);
+        }
+        settled.push(title);
+    }
+    for (const { hub, box, x, y } of titles) {
         drawPlate(g, x, y - size * 0.45, box.nameWidth + size * 1.6, size * 1.5);
         g.font = `800 ${size}px ${TITLE_FONT}`;
         shadowText(g, hub.name.toUpperCase(), x, y - size * 0.42, '#fbe7b8');

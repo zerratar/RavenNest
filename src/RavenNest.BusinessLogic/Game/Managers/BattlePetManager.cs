@@ -59,8 +59,21 @@ namespace RavenNest.BusinessLogic.Game
         public PetResult List(SessionToken token, Guid characterId)
         {
             var character = GetCharacter(token, characterId);
-            return character == null ? PetResult.Fail(PetResultStatus.Error) : Ok(character, null);
+            if (character == null) return PetResult.Fail(PetResultStatus.Error);
+            // the slots follow the owner's skill tree (Trick Training): a new one is filled, one taken back is emptied.
+            // The game asks for the list when its character's build changes.
+            lock (mutex)
+            {
+                foreach (var pet in gameData.GetPets(characterId).Where(p => IsBattlePet(p) && !PetEggs.IsUnhatched(p.Level)))
+                    FillSlots(pet, BattlePets.GetSpecies(pet.Species), SlotCount(character, pet));
+            }
+            return Ok(character, null);
         }
+
+        /// <summary>A pet's skill slots: Taming's and its stage's, and Trick Training's from its owner's skill tree (Beastmaster).</summary>
+        private int SlotCount(Character character, Pet pet) => BattlePets.SkillSlots(TamingLevel(character), pet.Stage) + Build(gameData, character.Id).ExtraPetSkillSlots;
+
+        private static SkillBuild Build(GameData gameData, Guid characterId) => SkillBuild.Parse(gameData.GetCharacterSkillBuild(characterId)?.Build);
 
         /// <summary>The stable of any character, for the website.</summary>
         public BattlePet[] Stable(Guid characterId) => gameData.GetPets(characterId).Where(IsBattlePet).OrderByDescending(p => p.Active).ThenByDescending(p => p.Level).Select(Map).ToArray();
@@ -173,7 +186,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (pet == null) return PetResult.Fail(PetResultStatus.NoSuchPet);
                 var species = BattlePets.GetSpecies(pet.Species);
                 if (species == null) return PetResult.Fail(PetResultStatus.NoSuchSpecies);
-                var count = BattlePets.SkillSlots(TamingLevel(character), pet.Stage);
+                var count = SlotCount(character, pet);
                 if (slot < 0 || slot >= count) return PetResult.Fail(PetResultStatus.NoSuchSlot, count.ToString());
 
                 var slots = Slots(pet, count);
@@ -233,7 +246,7 @@ namespace RavenNest.BusinessLogic.Game
                 pet.Stage++;
                 // a pet still called by its kind's name takes the new one
                 if (species != null && string.Equals(pet.Name, oldName, StringComparison.OrdinalIgnoreCase)) pet.Name = species.NameAt(pet.Stage);
-                FillSlots(pet, species, TamingLevel(character));
+                FillSlots(pet, species, SlotCount(character, pet));
                 return Ok(character, pet);
             }
         }
@@ -308,7 +321,7 @@ namespace RavenNest.BusinessLogic.Game
                     egg.Name = species.NameAt(0);
                     egg.DateOfBirth = now;
                     egg.Active = !gameData.GetPets(characterId).Any(p => IsBattlePet(p) && p.Active);
-                    FillSlots(egg, species, TamingLevel(character));
+                    FillSlots(egg, species, SlotCount(character, egg));
                     hatched ??= egg;
                 }
                 return Ok(character, hatched);
@@ -367,7 +380,7 @@ namespace RavenNest.BusinessLogic.Game
                 // at the cap, the experience is kept and spent once Taming is higher: the game saves Taming's level a
                 // little after it reports the pet's experience, so a pet at the cap would otherwise lose some every time
                 pet.Experience = Math.Max(0, exp);
-                if (gained > 0) FillSlots(pet, BattlePets.GetSpecies(pet.Species), TamingLevel(character));
+                if (gained > 0) FillSlots(pet, BattlePets.GetSpecies(pet.Species), SlotCount(character, pet));
                 return new PetResult { Status = PetResultStatus.Ok, Pet = Map(pet), LevelsGained = gained, StableSize = StableSize(character) };
             }
         }
@@ -439,15 +452,20 @@ namespace RavenNest.BusinessLogic.Game
             var pet = gameData.GetActivePet(characterId);
             if (pet == null || string.IsNullOrEmpty(pet.Species) || ItemGone(gameData, pet)) return default;
             var bonus = new PetGatherBonus();
-            foreach (var id in (pet.Slots ?? "").Split(','))
+            // its owner's skill tree (Beastmaster): Trick Training's slot counts, and Keen Senses makes the skills stronger
+            var build = Build(gameData, characterId);
+            var taming = Math.Max(1, gameData.GetCharacterSkills(gameData.GetCharacter(characterId)?.SkillsId ?? Guid.Empty)?.TamingLevel ?? 1);
+            var count = BattlePets.SkillSlots(taming, pet.Stage) + build.ExtraPetSkillSlots;
+            var stronger = 1 + Math.Max(0, build.Passives()[GearStat.PetGathering]);
+            foreach (var id in (pet.Slots ?? "").Split(',').Take(count))
             {
                 var skill = BattlePets.GetSkill(id);
                 if (skill == null) continue;
                 switch (skill.Gather)
                 {
-                    case RavenNest.Combat.PetGatherBonus.ExtraResource: bonus.ExtraResource += skill.GatherAmount; break;
-                    case RavenNest.Combat.PetGatherBonus.RareDrop: bonus.RareDrop += skill.GatherAmount; break;
-                    case RavenNest.Combat.PetGatherBonus.BonusItem: bonus.BonusItem += skill.GatherAmount; break;
+                    case RavenNest.Combat.PetGatherBonus.ExtraResource: bonus.ExtraResource += skill.GatherAmount * stronger; break;
+                    case RavenNest.Combat.PetGatherBonus.RareDrop: bonus.RareDrop += skill.GatherAmount * stronger; break;
+                    case RavenNest.Combat.PetGatherBonus.BonusItem: bonus.BonusItem += skill.GatherAmount * stronger; break;
                 }
             }
             return bonus;
@@ -475,16 +493,15 @@ namespace RavenNest.BusinessLogic.Game
                 // the first pet goes straight out
                 Active = !gameData.GetPets(character.Id).Any(p => IsBattlePet(p) && p.Active),
             };
-            FillSlots(pet, species, TamingLevel(character));
+            FillSlots(pet, species, SlotCount(character, pet));
             gameData.Add(pet);
             return pet;
         }
 
         /// <summary>Learned skills not in a slot go into the empty ones, in learning order.</summary>
-        private static void FillSlots(Pet pet, PetSpecies species, int taming)
+        private static void FillSlots(Pet pet, PetSpecies species, int count)
         {
             if (species == null) return;
-            var count = BattlePets.SkillSlots(taming, pet.Stage);
             var slots = Slots(pet, count);
             foreach (var skill in species.SkillsAt(pet.Level, pet.Stage))
             {
@@ -493,7 +510,8 @@ namespace RavenNest.BusinessLogic.Game
                 if (free < 0) break;
                 slots[free] = skill.Id;
             }
-            pet.Slots = string.Join(",", slots);
+            var filled = string.Join(",", slots);
+            if (pet.Slots != filled) pet.Slots = filled;
         }
 
         private static string[] Slots(Pet pet, int count)

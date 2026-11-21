@@ -105,6 +105,19 @@ namespace RavenNest.Combat
         // skill trees (2026-11-10)
         /// <summary>A share more chance to keep a gem taken out of its socket (Gem Salvager; the server rolls it).</summary>
         GemKeepChance,
+
+        // Beastmaster (2026-11-21): what its owner's skill tree does for a battle pet. The pet reads them from its
+        // owner's build; on the owner's own sheet they do nothing.
+        /// <summary>A share stronger blows and heals for the battle pet.</summary>
+        PetPower,
+        /// <summary>A share more health for the battle pet.</summary>
+        PetHealth,
+        /// <summary>A share off the time a knocked out pet lies down.</summary>
+        PetRecovery,
+        /// <summary>A share stronger gathering skills for a gatherer pet (the server counts it).</summary>
+        PetGathering,
+        /// <summary>A share more of the blows meant for its owner for a tank pet to take (on top of its half).</summary>
+        PetGuard,
     }
 
     /// <summary>
@@ -116,7 +129,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.GemKeepChance + 1;
+        public const int Count = (int)GearStat.PetGuard + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
