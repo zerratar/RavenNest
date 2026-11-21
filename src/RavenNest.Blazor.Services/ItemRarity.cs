@@ -42,6 +42,17 @@ namespace RavenNest.Blazor.Services
             return ItemRarityBand.Mythic;
         }
 
+        // the metal of each class gear tier's level (RavenNest.Models.ItemLines.TierLevels): Bronze, Mithril, Rune,
+        // Abraxas, Lionsbane, Atlarus, Elder Mithril, Elder Ether
+        private static readonly int[] ClassGearMetal = { 1, 5, 7, 9, 11, 14, 19, 26 };
+
+        /// <summary>A class gear tier (1 to 8) is as rare as the metal of its level, whatever its own material's index.</summary>
+        public static ItemRarityBand FromClassGearTier(int tier)
+        {
+            if (tier < 1) return ItemRarityBand.Common;
+            return FromMaterialIndex(ClassGearMetal[System.Math.Min(tier, ClassGearMetal.Length) - 1]);
+        }
+
         public static string CssClass(ItemRarityBand band)
         {
             return "rf-rarity-" + band.ToString().ToLowerInvariant();

@@ -266,6 +266,7 @@ namespace RavenNest.Blazor.Services
             FishingTaskProcessor.Drops.ForceReloadDrops(gameData);
             MiningTaskProcessor.Drops.ForceReloadDrops(gameData);
             FarmingTaskProcessor.Drops.ForceReloadDrops(gameData);
+            FightingTaskProcessor.Drops.ForceReloadDrops(gameData); // the Slayer drops (Hide)
         }
 
         public async Task<bool> AddResourceDropAsync(RavenNest.DataModels.ResourceItemDrop dropToAdd)
@@ -360,6 +361,12 @@ namespace RavenNest.Blazor.Services
                     default: return ItemRarityBand.Rare;
                 }
             }
+
+            // class gear's materials come after the Elder ones, which made an Apprentice Robe "mythic": a tier is as
+            // rare as the metal of its level
+            var classGearTier = RavenNest.Models.ItemLines.TierOf(item.Material);
+            if (classGearTier > 0)
+                return ItemRarity.FromClassGearTier(classGearTier);
 
             return ItemRarity.FromMaterialIndex(GetMaterialIndex(item));
         }

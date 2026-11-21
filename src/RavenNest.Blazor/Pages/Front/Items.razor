@@ -167,10 +167,10 @@
                                                 {
                                                     <span class="rf-chip" title="Armor, takes a share off physical damage (and half that share off elements)"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
                                                 }
-                                                @{ var extraStats = RavenNest.BusinessLogic.Extensions.ItemGearStats.ExtrasOf(item.Stats); }
-                                                @if (!string.IsNullOrEmpty(extraStats))
+                                                @* said for people ("+1.2% Magic Power"), one chip a stat: class gear has three or four *@
+                                                @foreach (var extraStat in RavenNest.BusinessLogic.Extensions.ItemGearStats.DescribeExtras(item.Stats))
                                                 {
-                                                    <span class="rf-chip" title="Element damage, resistances and other combat stats"><i class="fas fa-fire" aria-hidden="true"></i>@extraStats.Replace(";", ", ")</span>
+                                                    <span class="rf-chip" title="Element damage, resistances and other combat stats">@extraStat</span>
                                                 }
                                             </div>
                                         </td>
@@ -221,7 +221,15 @@
                                                 <div class="rf-source">
                                                     <span class="rf-source__label">Dropped by</span>
                                                     <span class="rf-chips">
-                                                        <span class="rf-chip">@source.Drop.RequiredSkill level <b>@source.Drop.LevelRequirement</b></span>
+                                                        @if (source.Drop.RequiredSkill == RavenNest.Models.Skill.Slayer)
+                                                        {
+                                                            @* the Slayer drops come while a combat skill is trained (Hide) *@
+                                                            <span class="rf-chip" title="Found now and then while training a combat skill">Fighting, Slayer level <b>@source.Drop.LevelRequirement</b></span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="rf-chip">@source.Drop.RequiredSkill level <b>@source.Drop.LevelRequirement</b></span>
+                                                        }
                                                         @if (source.Drop.DropChance > 0)
                                                         {
                                                             <span class="rf-chip" title="Chance per gathering attempt">@DropChance(source.Drop.DropChance)</span>

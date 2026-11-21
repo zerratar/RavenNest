@@ -669,6 +669,7 @@ namespace RavenNest.BusinessLogic.Data
                 //MergeVillages();
 
                 MergeInventoryItems();
+                EnsureClassGear(); // before the prices: a piece is worth what it is made of
                 ApplyVendorPrices();
                 //ConvertUserResources();
 
