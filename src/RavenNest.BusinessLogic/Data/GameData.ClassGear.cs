@@ -124,61 +124,54 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Tank, "leggings", ItemType.Leggings, "Greaves", "20,7").From(3, "20,6"),
             Piece(ItemLine.Tank, "boots", ItemType.Boots, "Sabatons", "13"),
 
-            // ---------------------------------------------------------------------------------------------------------
-            // PLACEHOLDER LOOKS from here on (the seven lines of 2026-11-21). The lines, keys, types, stats, requirements
-            // and recipes are decided; the model ids and masks are first candidates from the unused parts (valid
-            // indices, nothing looked at on a character), there are no per-tier attachments yet, and the names of
-            // the pieces may still change (an item's id is made from line, tier and key, so a rename is safe).
-            // The game-side work replaces the model ids, masks and .From(...) looks in these rows.
-            // ---------------------------------------------------------------------------------------------------------
-            Piece(ItemLine.Rogue, "head1", ItemType.HeadCovering, "Hood", "12", HeadMask.Hair | HeadMask.Ears),             // PLACEHOLDER: leather hood (12, or 5)
-            Piece(ItemLine.Rogue, "head2", ItemType.Mask, "Mask", "3", HeadMask.Beard),                                      // PLACEHOLDER: face scarf
-            Piece(ItemLine.Rogue, "chest", ItemType.Chest, "Tunic", "7,20,10,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 7
-            Piece(ItemLine.Rogue, "gloves", ItemType.Gloves, "Gloves", "3,8"),                                               // PLACEHOLDER: lower arm 8
-            Piece(ItemLine.Rogue, "leggings", ItemType.Leggings, "Breeches", "24"),                                          // PLACEHOLDER: hips 24
-            Piece(ItemLine.Rogue, "boots", ItemType.Boots, "Boots", "18"),                                                   // PLACEHOLDER
+            Piece(ItemLine.Rogue, "head1", ItemType.HeadCovering, "Hood", "12", HeadMask.Hair | HeadMask.Ears),
+            Piece(ItemLine.Rogue, "head2", ItemType.Mask, "Mask", "3", HeadMask.Beard),
+            Piece(ItemLine.Rogue, "chest", ItemType.Chest, "Tunic", "7,20,2,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "7,20,2,0,5"),
+            Piece(ItemLine.Rogue, "gloves", ItemType.Gloves, "Gloves", "4,8"),
+            Piece(ItemLine.Rogue, "leggings", ItemType.Leggings, "Breeches", "24").From(2, "24,10,5", HeadMask.NoKneePads).From(3, "24,2,5").From(4, "24,2,5,9"),
+            Piece(ItemLine.Rogue, "boots", ItemType.Boots, "Boots", "18"),
 
-            Piece(ItemLine.Barbarian, "head1", ItemType.HeadCovering, "Bear Hood", "8", HeadMask.Hair | HeadMask.Ears),      // PLACEHOLDER: bear head hood
-            Piece(ItemLine.Barbarian, "head2", ItemType.HeadCovering, "Wolf Hood", "9", HeadMask.Hair | HeadMask.Ears),      // PLACEHOLDER: wolf pelt hood
-            Piece(ItemLine.Barbarian, "chest", ItemType.Chest, "Harness", "2,5,3,0", HeadMask.NoElbowPads),                  // PLACEHOLDER: torso 2 shows skin (needs the player's skin color on armor parts), fur shoulders 5
-            Piece(ItemLine.Barbarian, "gloves", ItemType.Gloves, "Bracers", "8,9"),                                          // PLACEHOLDER: both show skin
-            Piece(ItemLine.Barbarian, "leggings", ItemType.Leggings, "Kilt", "28"),                                          // PLACEHOLDER: hips 28
-            Piece(ItemLine.Barbarian, "boots", ItemType.Boots, "Fur Boots", "9"),                                            // PLACEHOLDER: legs 9
+            Piece(ItemLine.Barbarian, "head1", ItemType.HeadCovering, "Bear Hood", "8", HeadMask.Hair | HeadMask.Ears).From(6, "8,6"),
+            Piece(ItemLine.Barbarian, "head2", ItemType.HeadCovering, "Wolf Hood", "9", HeadMask.Hair | HeadMask.Ears).From(6, "9,6"),
+            Piece(ItemLine.Barbarian, "chest", ItemType.Chest, "Harness", "2,5,3,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "2,5,3,0", HeadMask.NoElbowPads).From(6, "2,5,3,0,3", HeadMask.NoElbowPads),
+            Piece(ItemLine.Barbarian, "gloves", ItemType.Gloves, "Bracers", "16,2"),
+            Piece(ItemLine.Barbarian, "leggings", ItemType.Leggings, "Kilt", "1").From(2, "1,10,11", HeadMask.NoKneePads).From(4, "1,10,0,11", HeadMask.NoKneePads),
+            Piece(ItemLine.Barbarian, "boots", ItemType.Boots, "Fur Boots", "9"),
 
-            Piece(ItemLine.Samurai, "head1", ItemType.Helmet, "Kabuto", "12", HeadMask.All),                                 // PLACEHOLDER: helmet 12 (neck guard)
-            Piece(ItemLine.Samurai, "head2", ItemType.HeadCovering, "Jingasa", "2", HeadMask.Hair),                          // PLACEHOLDER: wide-brim kettle hat
-            Piece(ItemLine.Samurai, "chest", ItemType.Chest, "Yoroi", "26,15,19,0", HeadMask.NoElbowPads),                   // PLACEHOLDER: torso 26, layered shoulders 15
-            Piece(ItemLine.Samurai, "gloves", ItemType.Gloves, "Kote", "5,14"),                                              // PLACEHOLDER
-            Piece(ItemLine.Samurai, "leggings", ItemType.Leggings, "Haidate", "26"),                                         // PLACEHOLDER: striped long skirt
-            Piece(ItemLine.Samurai, "boots", ItemType.Boots, "Suneate", "1"),                                                // PLACEHOLDER: boot with shin plate
+            Piece(ItemLine.Samurai, "head1", ItemType.Helmet, "Kabuto", "12", HeadMask.All).From(3, "12,5").From(6, "12,3"),
+            Piece(ItemLine.Samurai, "head2", ItemType.HeadCovering, "Jingasa", "2", HeadMask.Hair | HeadMask.Ears).From(6, "2,9"),
+            Piece(ItemLine.Samurai, "chest", ItemType.Chest, "Yoroi", "26,15,9,0", HeadMask.NoElbowPads).From(3, "26,16,9,0"),
+            Piece(ItemLine.Samurai, "gloves", ItemType.Gloves, "Kote", "11,10"),
+            Piece(ItemLine.Samurai, "leggings", ItemType.Leggings, "Haidate", "26").From(2, "26,10,9", HeadMask.NoKneePads).From(4, "26,5,4,9"),
+            Piece(ItemLine.Samurai, "boots", ItemType.Boots, "Suneate", "10"),
 
-            Piece(ItemLine.Paladin, "head1", ItemType.Helmet, "Crested Helm", "7,10", HeadMask.All),                         // PLACEHOLDER: closed armet with the cross crest
-            Piece(ItemLine.Paladin, "head2", ItemType.Helmet, "Winged Helm", "2,2", HeadMask.All),                           // PLACEHOLDER: rounded helm with wings
-            Piece(ItemLine.Paladin, "chest", ItemType.Chest, "Breastplate", "24,11,14,3"),                                   // PLACEHOLDER: torso 24, shoulders 11
-            Piece(ItemLine.Paladin, "gloves", ItemType.Gloves, "Gauntlets", "12,4"),                                         // PLACEHOLDER
-            Piece(ItemLine.Paladin, "leggings", ItemType.Leggings, "Cuisses", "15,6"),                                       // PLACEHOLDER: hips 15
-            Piece(ItemLine.Paladin, "boots", ItemType.Boots, "Sabatons", "14"),                                              // PLACEHOLDER: legs 14 (winged knee)
+            Piece(ItemLine.Paladin, "head1", ItemType.HeadCovering, "Helm", "3", HeadMask.Hair | HeadMask.Ears).From(3, "3,1").From(6, "3,2"),
+            Piece(ItemLine.Paladin, "head2", ItemType.Helmet, "Armet", "7", HeadMask.All).From(3, "7,1").From(6, "7,2"),
+            Piece(ItemLine.Paladin, "chest", ItemType.Chest, "Breastplate", "24,1,6,1").From(3, "24,3,6,1").From(6, "24,3,6,1,8"),
+            Piece(ItemLine.Paladin, "gloves", ItemType.Gloves, "Gauntlets", "1,7"),
+            Piece(ItemLine.Paladin, "leggings", ItemType.Leggings, "Cuisses", "22,3").From(2, "22,3,7"),
+            Piece(ItemLine.Paladin, "boots", ItemType.Boots, "Sabatons", "14"),
 
-            Piece(ItemLine.DarkKnight, "head1", ItemType.Helmet, "Dread Helm", "3", HeadMask.All),                           // PLACEHOLDER: helmet 3 (visor slit)
-            Piece(ItemLine.DarkKnight, "head2", ItemType.Helmet, "Barbute", "8,1", HeadMask.All),                            // PLACEHOLDER: barbute with a dark plume
-            Piece(ItemLine.DarkKnight, "chest", ItemType.Chest, "Chestplate", "22,7,4,1"),                                   // PLACEHOLDER: spiked shoulders 7 (or 4)
-            Piece(ItemLine.DarkKnight, "gloves", ItemType.Gloves, "Gauntlets", "12,14"),                                     // PLACEHOLDER
-            Piece(ItemLine.DarkKnight, "leggings", ItemType.Leggings, "Legplates", "21,5"),                                  // PLACEHOLDER
-            Piece(ItemLine.DarkKnight, "boots", ItemType.Boots, "Warboots", "12"),                                           // PLACEHOLDER: legs 12
+            Piece(ItemLine.DarkKnight, "head1", ItemType.Helmet, "Dread Helm", "3", HeadMask.All).From(3, "3,1").From(6, "3,6"),
+            Piece(ItemLine.DarkKnight, "head2", ItemType.HeadCovering, "Horned Helm", "10", HeadMask.Hair | HeadMask.Ears).From(6, "10,7"),
+            Piece(ItemLine.DarkKnight, "chest", ItemType.Chest, "Chestplate", "21,2,15,5").From(3, "21,7,15,5").From(6, "21,4,15,5,2"),
+            Piece(ItemLine.DarkKnight, "gloves", ItemType.Gloves, "Gauntlets", "1,12"),
+            Piece(ItemLine.DarkKnight, "leggings", ItemType.Leggings, "Legplates", "13,1").From(3, "13,2"),
+            Piece(ItemLine.DarkKnight, "boots", ItemType.Boots, "Warboots", "12"),
 
-            Piece(ItemLine.WitchHunter, "head1", ItemType.Hat, "Buckle Hat", "8"),                                           // PLACEHOLDER: hats 8
-            Piece(ItemLine.WitchHunter, "head2", ItemType.Hat, "Tricorne", "6"),                                             // PLACEHOLDER: hats 6
-            Piece(ItemLine.WitchHunter, "chest", ItemType.Chest, "Coat", "4,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 4
-            Piece(ItemLine.WitchHunter, "gloves", ItemType.Gloves, "Gloves", "6,16"),                                        // PLACEHOLDER
-            Piece(ItemLine.WitchHunter, "leggings", ItemType.Leggings, "Coat Skirt", "5"),                                   // PLACEHOLDER: hips 5
-            Piece(ItemLine.WitchHunter, "boots", ItemType.Boots, "Boots", "2"),                                              // PLACEHOLDER
+            Piece(ItemLine.WitchHunter, "head1", ItemType.Hat, "Buckle Hat", "8").From(3, "8,12").From(6, "8,9"),
+            Piece(ItemLine.WitchHunter, "head2", ItemType.Helmet, "Plague Mask", "0", HeadMask.All),
+            Piece(ItemLine.WitchHunter, "chest", ItemType.Chest, "Coat", "4,20,18,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "4,20,18,0,8"),
+            Piece(ItemLine.WitchHunter, "gloves", ItemType.Gloves, "Gloves", "1,14"),
+            Piece(ItemLine.WitchHunter, "leggings", ItemType.Leggings, "Coat Skirt", "5").From(2, "5,10,1", HeadMask.NoKneePads).From(4, "5,10,1,10", HeadMask.NoKneePads),
+            Piece(ItemLine.WitchHunter, "boots", ItemType.Boots, "Boots", "4"),
 
-            Piece(ItemLine.Monk, "head1", ItemType.Hat, "Headband", "0"),                                                    // PLACEHOLDER: hats 0 (headband with knot)
-            Piece(ItemLine.Monk, "head2", ItemType.HeadCovering, "Cap", "0", HeadMask.Hair | HeadMask.Ears),                 // PLACEHOLDER: cap with band
-            Piece(ItemLine.Monk, "chest", ItemType.Chest, "Wrap", "8,20,18,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads), // PLACEHOLDER: torso 8 (one-shoulder wrap)
-            Piece(ItemLine.Monk, "gloves", ItemType.Gloves, "Handwraps", "8,18"),                                            // PLACEHOLDER: hands 8 shows skin
-            Piece(ItemLine.Monk, "leggings", ItemType.Leggings, "Leg Wraps", "23"),                                          // PLACEHOLDER: hips 23 (or 22)
-            Piece(ItemLine.Monk, "boots", ItemType.Boots, "Sandals", "6"),                                                   // PLACEHOLDER: legs 6
+            Piece(ItemLine.Monk, "head1", ItemType.Hat, "Headband", "0").From(6, "0,7"),
+            Piece(ItemLine.Monk, "head2", ItemType.HeadCovering, "Hood", "7", HeadMask.Hair | HeadMask.Ears).From(6, "7,7"),
+            Piece(ItemLine.Monk, "chest", ItemType.Chest, "Wrap", "8,20,0,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "8,20,3,0"),
+            Piece(ItemLine.Monk, "gloves", ItemType.Gloves, "Handwraps", "8,14"),
+            Piece(ItemLine.Monk, "leggings", ItemType.Leggings, "Leg Wraps", "23").From(2, "23,10,4", HeadMask.NoKneePads),
+            Piece(ItemLine.Monk, "boots", ItemType.Boots, "Footwraps", "3").From(6, "17"),
         };
 
         private enum ClassGearSkill { Magic, Ranged, Attack, Defense }

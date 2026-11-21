@@ -135,8 +135,12 @@ namespace RavenNest.Combat
         /// <summary>The health a piece's base armour gives (enchantments and bonuses to armour do not count).</summary>
         public static int ArmorHealth(int armor) => armor <= 0 ? 0 : (int)Math.Round(armor * HealthPerArmor);
 
-        /// <summary>Whether an item type (RavenNest.Models.ItemType) is an armour piece whose armour gives health: Helmet (8) to RightShoulder (15).</summary>
-        public static bool IsArmorPiece(int itemType) => itemType >= 8 && itemType <= 15;
+        /// <summary>
+        /// Whether an item type (RavenNest.Models.ItemType) is an armour piece whose armour gives health: Helmet (8) to
+        /// RightShoulder (15), and the head pieces that are not helmets, Hat (30), Mask (31) and HeadCovering (32):
+        /// class gear's hats, hoods and coifs carry armour like a helmet (a cosmetic hat has none, so it gives nothing).
+        /// </summary>
+        public static bool IsArmorPiece(int itemType) => (itemType >= 8 && itemType <= 15) || (itemType >= 30 && itemType <= 32);
 
         /// <summary>
         ///     The biggest normal hit: today's MaxHit (Core/GameMath.cs) times ten, without its rounding, so progress
