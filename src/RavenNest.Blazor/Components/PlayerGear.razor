@@ -178,9 +178,6 @@ else
                                         <button type="button" class="rf-btn" title="Every slot that is not pinned gets your best piece for @outfitName. Nothing you wear changes." @onclick="FillOutfitBest">
                                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Refill with best
                                         </button>
-                                        <button type="button" class="rf-btn rf-btn--primary" title="Wear the @outfitName outfit now, whatever you train" @onclick="WearOutfit">
-                                            <i class="fa-solid fa-shirt" aria-hidden="true"></i> Put it on now
-                                        </button>
                                     }
                                 </div>
                             </div>
@@ -340,9 +337,9 @@ else
                         }
                         else if (CanAct && OutfitView)
                         {
-                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" @onclick="WearOutfit">
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" title="Wear the @GearRules.SkillName(OutfitSkill) outfit now, whatever you train" @onclick="WearOutfit">
                                 <i class="fa-solid fa-shirt" aria-hidden="true"></i>
-                                Put the @GearRules.SkillName(OutfitSkill) outfit on
+                                Put the @GearRules.SkillName(OutfitSkill) outfit on now
                             </button>
                         }
                         else if (CanAct && NoOutfitYet)

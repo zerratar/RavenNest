@@ -237,7 +237,7 @@ namespace RavenNest.Blazor.Components
             }
             Say(skill == WornOutfitSkill
                 ? "The " + name + " outfit has your best gear for " + name + ", and it is on."
-                : "The " + name + " outfit has your best gear for " + name + ". What you wear did not change: it goes on when you train " + name + ", or press Put it on.");
+                : "The " + name + " outfit has your best gear for " + name + ". What you wear did not change: it goes on when you train " + name + ", or with the button below.");
             ClearPick();
         }
 
