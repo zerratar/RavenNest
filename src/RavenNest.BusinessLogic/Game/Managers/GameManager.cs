@@ -351,6 +351,9 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>A character's loot luck from its skill tree (the build is kept parsed).</summary>
+        private double LootLuckOf(Guid characterId) => RavenNest.Combat.LootLuck.Of(SkillTreeManager.BuildOf(gameData, characterId));
+
         private ConcurrentDictionary<Guid, DateTime> lastDungeonReward = new ConcurrentDictionary<Guid, DateTime>();
         private ConcurrentDictionary<Guid, DateTime> lastRaidReward = new ConcurrentDictionary<Guid, DateTime>();
         public EventItemReward[] GetDungeonRewardsAsync(SessionToken session, int tier, Guid[] characters)
@@ -418,10 +421,13 @@ namespace RavenNest.BusinessLogic.Game
 
                     // pick an item at random based on highest drop rate
                     var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
-                    var item = dropRates.Weighted(x => x.DropRate, rng);
 
-                    if (rng.NextDouble() <= dropChance)
+                    // loot luck (Treasure Hunter, Legend of the Hunt, Fortune's Favorite): that share more items, so
+                    // where the item is already sure, a chance of a second one
+                    var items = RavenNest.Combat.LootLuck.Items(dropChance, LootLuckOf(character.Id), rng.NextDouble(), rng.NextDouble());
+                    for (var n = 0; n < items; ++n)
                     {
+                        var item = dropRates.Weighted(x => x.DropRate, rng);
                         var inv = inventoryProvider.Get(character.Id);
                         var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
 
@@ -694,11 +700,12 @@ namespace RavenNest.BusinessLogic.Game
                     // pick an item at random based on highest drop rate
 
                     var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
-                    var item = dropRates.Weighted(x => x.DropRate, rng);
 
-                    var rngVal = rng.NextDouble();
-                    if (rngVal <= dropChance)
+                    // loot luck: that share more items (LootLuck)
+                    var items = RavenNest.Combat.LootLuck.Items(dropChance, LootLuckOf(character.Id), rng.NextDouble(), rng.NextDouble());
+                    for (var n = 0; n < items; ++n)
                     {
+                        var item = dropRates.Weighted(x => x.DropRate, rng);
 
                         var inv = inventoryProvider.Get(character.Id);
                         var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();

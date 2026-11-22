@@ -575,6 +575,41 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void Loot_luck_is_that_share_more_items_also_where_the_item_was_sure()
+        {
+            // a raid's item: half the time, 22% more often with Treasure Hunter's five ranks and Fortune's Favorite
+            var build = With("treasure-hunter", "fortunes-favorite");
+            build.Ranks["treasure-hunter"] = 5;
+            Assert.Equal(0.22, LootLuck.Of(build), 6);
+            LootLuck.Chances(0.5, 0.22, out var first, out var second);
+            Assert.Equal(0.61, first, 6);
+            Assert.Equal(0, second, 6);
+            // a dungeon's sure item: still sure, and a 22% chance of one more
+            LootLuck.Chances(1, 0.22, out first, out second);
+            Assert.Equal(1, first, 6);
+            Assert.Equal(0.22, second, 6);
+            LootLuck.Chances(0.8, 0.5, out first, out second);
+            Assert.Equal(1, first, 6);
+            Assert.Equal(0.2, second, 6);
+            // without luck nothing changes, and no stack of it doubles the loot
+            LootLuck.Chances(0.8, 0, out first, out second);
+            Assert.Equal(0.8, first, 6);
+            Assert.Equal(0, second, 6);
+            LootLuck.Chances(1, 3, out first, out second);
+            Assert.Equal(LootLuck.Max, second, 6);
+            Assert.Equal(0, LootLuck.Of(new SkillBuild()), 6);
+            Assert.Equal(0, LootLuck.Items(0.5, 0.22, 0.62, 0));
+            Assert.Equal(1, LootLuck.Items(0.5, 0.22, 0.60, 0));
+            Assert.Equal(2, LootLuck.Items(1, 0.22, 0.99, 0.21));
+            Assert.Equal(1, LootLuck.Items(1, 0.22, 0.99, 0.23));
+            // on average: the share more
+            var random = new SeededCombatRandom(11);
+            var plain = Enumerable.Range(0, 40000).Sum(_ => LootLuck.Items(0.9, 0, random.Next(), random.Next()));
+            var lucky = Enumerable.Range(0, 40000).Sum(_ => LootLuck.Items(0.9, 0.22, random.Next(), random.Next()));
+            Assert.InRange(lucky / (double)plain, 1.20, 1.24);
+        }
+
+        [Fact]
         public void Alpha_one_bigger_stronger_pet_and_Trailblazer_a_better_gatherer()
         {
             var alpha = With("fang-and-claw", "guardians-oath", "alpha");
