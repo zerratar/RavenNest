@@ -24,6 +24,12 @@ namespace RavenNest.Combat
         /// <summary>Blocked a blow: the next hit is stronger (Retribution).</summary>
         public bool Retort;
 
+        /// <summary>When the last basic attack landed, on the caller's clock in seconds (<see cref="PathRules.Rest"/>).</summary>
+        public double LastHit;
+
+        /// <summary>When Guardian Angel last saved someone, on the caller's clock; ready again <see cref="PathRules.AngelSeconds"/> later.</summary>
+        public double AngelAt = double.NegativeInfinity;
+
         /// <summary>The target died or went away: the next enemy is a new target, also when it is the same one come back.</summary>
         public void Forget(object target)
         {
@@ -94,6 +100,30 @@ namespace RavenNest.Combat
         /// <summary>Wildfire: a burn jumps to an enemy at most this far from the one that died.</summary>
         public const double BurnJumpRadius = 6;
 
+        /// <summary>
+        ///     Without a hit for this long the target is forgotten: the next enemy (the same one too, come back after
+        ///     it fell to someone else) is a new target, and the hits in a row start again.
+        /// </summary>
+        public const double RestSeconds = 6;
+
+        /// <summary>Guardian Angel saves one ally, then not again for this long.</summary>
+        public const double AngelSeconds = 60;
+
+        /// <summary>Call before a blow with the caller's clock: forgets the target after <see cref="RestSeconds"/> without a hit.</summary>
+        public static void Rest(PathState state, double now)
+        {
+            if (state == null) return;
+            if (state.Target != null && now - state.LastHit > RestSeconds) state.Forget(null);
+        }
+
+        /// <summary>Guardian Angel: true when this fighter's angel is ready, and then it is used.</summary>
+        public static bool UseAngel(PathState state, double now)
+        {
+            if (state == null || now - state.AngelAt < AngelSeconds) return false;
+            state.AngelAt = now;
+            return true;
+        }
+
         /// <summary>Blood Rage: the share of its power at a share of health left (0 at full health, 1 at 30% and below).</summary>
         public static double Rage(double healthShare)
         {
@@ -131,7 +161,7 @@ namespace RavenNest.Combat
         ///     After a blow: the path's memory moves on, and what the blow set off comes back. A miss changes nothing
         ///     (the first hit and the answer to a block wait for a blow that lands).
         /// </summary>
-        public static PathBlow After(PathState state, CombatSheet attacker, AttackStyle style, object target, AttackResult result, bool basic)
+        public static PathBlow After(PathState state, CombatSheet attacker, AttackStyle style, object target, AttackResult result, bool basic, double now = 0)
         {
             var blow = new PathBlow();
             if (state == null || attacker == null || result == null || !result.Hit) return blow;
@@ -144,6 +174,7 @@ namespace RavenNest.Combat
 
             if (!basic) return blow;
 
+            state.LastHit = now;
             if (!ReferenceEquals(state.Target, target))
             {
                 blow.First = attacker.FirstStrike > 0;

@@ -138,7 +138,7 @@ namespace RavenNest.Combat
         BlockRetort,
         /// <summary>Holy Fire: every heal also strikes an enemy for this share of the amount healed.</summary>
         HealStrike,
-        /// <summary>Guardian Angel: once a fight an ally near who would die is left at 1 health and healed this share of its health.</summary>
+        /// <summary>Guardian Angel: once a minute an ally near who would die is left at 1 health and healed this share of its health.</summary>
         GuardianAngel,
         /// <summary>Clean Kill: a share more damage to enemies above 80% health.</summary>
         HealthyDamage,
