@@ -22,6 +22,14 @@ namespace RavenNest.UnitTests
             Assert.AreEqual(Skill.Healing, GearOutfit.Parse("healing").Skill);
             Assert.AreEqual(Skill.Healing, GearOutfit.Parse("healer").Skill);
 
+            // the short forms !train knows, and the other spelling of defense
+            Assert.AreEqual(Skill.Attack, GearOutfit.Parse("atk").Skill);
+            Assert.AreEqual(Skill.Strength, GearOutfit.Parse("str").Skill);
+            Assert.AreEqual(Skill.Defense, GearOutfit.Parse("def").Skill);
+            Assert.AreEqual(Skill.Defense, GearOutfit.Parse("defence").Skill);
+            Assert.AreEqual(Skill.Ranged, GearOutfit.Parse("range").Skill);
+            Assert.AreEqual(Skill.Healing, GearOutfit.Parse("heal").Skill);
+
             // a role is never one line only, and its lines are the skill's
             var tank = GearOutfit.Parse("tank");
             Assert.IsFalse(tank.OnlyLine);
