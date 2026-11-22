@@ -174,11 +174,12 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Monk, "boots", ItemType.Boots, "Footwraps", "3").From(6, "17"),
 
             // the Taming line (2026-11-22, the game's docs/taming-gear-design.md): furs, hides, feathers and bone
-            Piece(ItemLine.Beastmaster, "head1", ItemType.Hat, "Feathered Hat", "7").From(3, "7,12").From(6, "7,3"),
-            Piece(ItemLine.Beastmaster, "head2", ItemType.HeadCovering, "Pelt Hood", "9", HeadMask.Hair | HeadMask.Ears).From(3, "9,12").From(6, "9,3"),
+            Piece(ItemLine.Beastmaster, "head1", ItemType.Hat, "Feathered Hat", "7").From(3, "7,11").From(6, "7,4"),
+            // a wolf pelt worn as a hood (the Barbarian's Wolf Hood is the same part): never plain, so the two differ
+            Piece(ItemLine.Beastmaster, "head2", ItemType.HeadCovering, "Pelt Hood", "9,12", HeadMask.Hair | HeadMask.Ears).From(3, "9,11").From(6, "9,3"),
             Piece(ItemLine.Beastmaster, "chest", ItemType.Chest, "Hide Vest", "12,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "12,0,5,0", HeadMask.NoElbowPads).From(6, "12,8,5,0,3", HeadMask.NoElbowPads),
             Piece(ItemLine.Beastmaster, "gloves", ItemType.Gloves, "Handler Gloves", "6,16"),
-            Piece(ItemLine.Beastmaster, "leggings", ItemType.Leggings, "Hide Breeches", "18").From(2, "18,10,11", HeadMask.NoKneePads).From(4, "18,10,11,2", HeadMask.NoKneePads),
+            Piece(ItemLine.Beastmaster, "leggings", ItemType.Leggings, "Hide Breeches", "27").From(2, "27,10,11", HeadMask.NoKneePads).From(4, "27,10,11,2", HeadMask.NoKneePads),
             Piece(ItemLine.Beastmaster, "boots", ItemType.Boots, "Tracking Boots", "7"),
         };
 
