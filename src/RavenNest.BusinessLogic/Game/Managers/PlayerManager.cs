@@ -1685,11 +1685,18 @@ namespace RavenNest.BusinessLogic.Game
 
             var tmpList = new List<ItemProductionResultItem>();
 
+            // the Artisan skill tree (the game's docs/trade-skills-design.md): Steady Hands, Thrifty and Second Helping,
+            // counted in the skill the recipe is made with, by that skill's own level (gear aside)
+            var tradeSkill = requiredSkill == RavenNest.Models.Skill.Cooking ? RavenNest.Combat.CombatSkill.Cooking
+                : requiredSkill == RavenNest.Models.Skill.Alchemy ? RavenNest.Combat.CombatSkill.Alchemy : RavenNest.Combat.CombatSkill.Crafting;
+            var ownLevel = tradeSkill == RavenNest.Combat.CombatSkill.Cooking ? skills.CookingLevel : tradeSkill == RavenNest.Combat.CombatSkill.Alchemy ? skills.AlchemyLevel : skills.CraftingLevel;
+            var making = RavenNest.Combat.TradeSkills.Making(SkillTreeManager.BuildOf(gameData, character.Id), tradeSkill, ownLevel);
+
             for (var i = 0; i < amount; ++i)
             {
                 // try crafting one item at a time.
                 // if it was successful, it will be added to inventory there.
-                var producedItem = ProduceItem(skillLevel, inventory, recipe, ingredients);
+                var producedItem = ProduceItem(skillLevel, inventory, recipe, ingredients, making);
 
                 // if this is null, we did not have enough resources to produce the item.
                 if (producedItem == null)
@@ -1722,11 +1729,13 @@ namespace RavenNest.BusinessLogic.Game
                 });
             }
 
-            QuestTracker.Made(character, requiredSkill, tmpList.Where(x => x.Success).Sum(x => (long)x.Amount));
+            // the quests count what was made by hand: one for each successful make, not Second Helping's extra one
+            QuestTracker.Made(character, requiredSkill, tmpList.Count(x => x.Success));
             return result;
         }
 
-        private ItemProductionResultItem ProduceItem(int skillLevel, PlayerInventory inventory, DataModels.ItemRecipe recipe, IReadOnlyList<DataModels.ItemRecipeIngredient> ingredients)
+        private ItemProductionResultItem ProduceItem(int skillLevel, PlayerInventory inventory, DataModels.ItemRecipe recipe, IReadOnlyList<DataModels.ItemRecipeIngredient> ingredients,
+            RavenNest.Combat.MakeBonus making = default)
         {
             // go through all ingredients and make sure we can remove it from the player inventory.
             var result = new ItemProductionResultItem();
@@ -1750,7 +1759,11 @@ namespace RavenNest.BusinessLogic.Game
                 removedItems.Clear();
             }
 
-            foreach (var ingredient in ingredients)
+            // Thrifty (the Artisan skill tree): now and then a make uses up nothing. The ingredients were checked above
+            // and must be owned; they are only left where they are, so nothing is ever made from nothing.
+            var thrifty = making.KeepIngredients > 0 && System.Random.Shared.NextDouble() < making.KeepIngredients;
+
+            foreach (var ingredient in thrifty ? Array.Empty<DataModels.ItemRecipeIngredient>() : ingredients)
             {
                 // we should not have multiple stacks of the same item. so lets just get THE item.
                 var i = inventory.GetByItemId(ingredient.ItemId);
@@ -1795,15 +1808,25 @@ namespace RavenNest.BusinessLogic.Game
             else
             {
                 // if we can fail, we need to determine whether or not this was a success.
+                // Steady Hands (the Artisan skill tree) adds its points to the chance, never past certain.
                 var rng = System.Random.Shared.NextDouble();
-                var isSuccess = rng <= System.Math.Max(recipe.MinSuccessRate, recipe.MaxSuccessRate);
+                var isSuccess = rng <= RavenNest.Combat.TradeSkills.SuccessChance(System.Math.Max(recipe.MinSuccessRate, recipe.MaxSuccessRate), making);
 
                 if (!recipe.FixedSuccessRate)
                 {
-                    isSuccess = rng <= GameMath.CalculateSuccessRate(skillLevel, recipe.RequiredLevel, recipe.MinSuccessRate, recipe.MaxSuccessRate);
+                    isSuccess = rng <= RavenNest.Combat.TradeSkills.SuccessChance(GameMath.CalculateSuccessRate(skillLevel, recipe.RequiredLevel, recipe.MinSuccessRate, recipe.MaxSuccessRate), making);
                 }
 
                 added = AddItem(isSuccess ? recipe.ItemId : recipe.FailedItemId.Value, isSuccess);
+            }
+
+            // Second Helping (the Artisan skill tree, Cooking and Alchemy): now and then one more of what was made.
+            // Only of a make that worked; a refused add leaves the one that was made.
+            if (added && result.Success && making.ExtraPortion > 0 && System.Random.Shared.NextDouble() < making.ExtraPortion
+                && inventory.TryAddItem(recipe.ItemId, 1, out var more) && more.Count > 0 && more[0] != null)
+            {
+                result.Amount += 1;
+                result.StackAmount = more[0].Amount ?? result.StackAmount;
             }
 
             return added ? result : null;

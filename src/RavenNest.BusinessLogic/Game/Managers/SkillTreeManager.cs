@@ -10,9 +10,10 @@ using RavenNest.Models;
 namespace RavenNest.BusinessLogic.Game
 {
     /// <summary>
-    ///     The skill trees on the server (combat v2, the game's docs/combat-skills-design.md): learning nodes with points
-    ///     from combat levels and Taming's, the loadout, and respecs (coins, a free one, or a Tome of Forgetting). The rules live in
-    ///     RavenNest.Combat.SkillBuild, shared with the game and the website; the server is the one that saves.
+    ///     The skill trees on the server (combat v2, the game's docs/combat-skills-design.md and trade-skills-design.md):
+    ///     learning nodes with points from combat levels, Taming's and the trade skills' (one pool), the loadout, and
+    ///     respecs (coins, a free one, or a Tome of Forgetting). The rules live in RavenNest.Combat.SkillBuild, shared
+    ///     with the game and the website; the server is the one that saves.
     /// </summary>
     public class SkillTreeManager
     {
@@ -33,10 +34,39 @@ namespace RavenNest.BusinessLogic.Game
             s == null ? 0 : s.AttackLevel + s.DefenseLevel + s.StrengthLevel + s.HealthLevel + s.RangedLevel + s.MagicLevel + s.HealingLevel + s.SlayerLevel;
 
         /// <summary>
-        ///     Every point a character has earned: the combat levels', and Taming's on top (Beastmaster). Worked out from
-        ///     the levels each time, so a character that already has Taming levels has its points without a migration.
+        ///     Every point a character has earned: the combat levels', Taming's (Beastmaster) and the nine trade skills'
+        ///     on top, all into one pool (RavenNest.Combat.SkillPoints). Worked out from the levels each time, so a
+        ///     character that already has those levels has its points without a migration.
         /// </summary>
-        public static int EarnedPoints(DataModels.Skills s) => SkillTrees.EarnedPoints(TotalCombatLevels(s), s?.TamingLevel ?? 0);
+        public static int EarnedPoints(DataModels.Skills s) => s == null ? 0 : SkillTrees.EarnedPoints(LevelOf(s));
+
+        // ---- reading a build cheaply ----
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, (string Text, SkillBuild Build)> parsed =
+            new System.Collections.Concurrent.ConcurrentDictionary<Guid, (string, SkillBuild)>();
+        private static readonly SkillBuild NoBuild = new SkillBuild();
+
+        /// <summary>
+        ///     A character's build for reading (never change what comes back): parsed once and kept until its text
+        ///     changes. The gathering rounds ask every ten seconds for every gathering character, the kitchens for
+        ///     every item made; parsing the text each time would be most of the work.
+        /// </summary>
+        public static SkillBuild BuildOf(GameData gameData, Guid characterId)
+        {
+            var text = gameData.GetCharacterSkillBuild(characterId)?.Build;
+            if (string.IsNullOrEmpty(text)) return NoBuild;
+            if (parsed.TryGetValue(characterId, out var kept) && string.Equals(kept.Text, text, StringComparison.Ordinal)) return kept.Build;
+            var build = SkillBuild.Parse(text);
+            parsed[characterId] = (text, build);
+            return build;
+        }
+
+        /// <summary>A skill's own level (without gear), as the trade trees count it.</summary>
+        public static int OwnLevel(GameData gameData, Character character, CombatSkill skill)
+        {
+            var skills = character != null ? gameData.GetCharacterSkills(character.SkillsId) : null;
+            return skills == null ? 1 : LevelOf(skills)(skill);
+        }
 
         public static Func<CombatSkill, int> LevelOf(DataModels.Skills s) => skill =>
         {
@@ -51,11 +81,20 @@ namespace RavenNest.BusinessLogic.Game
                 case CombatSkill.Magic: return s.MagicLevel;
                 case CombatSkill.Healing: return s.HealingLevel;
                 case CombatSkill.Taming: return s.TamingLevel;
+                case CombatSkill.Woodcutting: return s.WoodcuttingLevel;
+                case CombatSkill.Mining: return s.MiningLevel;
+                case CombatSkill.Fishing: return s.FishingLevel;
+                case CombatSkill.Farming: return s.FarmingLevel;
+                case CombatSkill.Gathering: return s.GatheringLevel;
+                case CombatSkill.Crafting: return s.CraftingLevel;
+                case CombatSkill.Cooking: return s.CookingLevel;
+                case CombatSkill.Alchemy: return s.AlchemyLevel;
+                case CombatSkill.Sailing: return s.SailingLevel;
                 default: return s.SlayerLevel;
             }
         };
 
-        /// <summary>The character's combat levels, for which nodes are open (the website's skill tree page).</summary>
+        /// <summary>The character's levels, for which nodes are open (the website's skill tree page).</summary>
         public Func<CombatSkill, int> LevelsOf(Guid characterId)
         {
             var character = gameData.GetCharacter(characterId);
@@ -98,7 +137,8 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var node = SkillTrees.Find(nodeText);
                 if (node == null) return SkillTrees.NotFoundText(nodeText);
-                var reason = build.Raise(node.Id, LevelOf(skills), EarnedPoints(skills));
+                // the points come from the levels, by the pool that pays for the node's tree (one pool today)
+                var reason = build.Raise(node.Id, LevelOf(skills));
                 if (reason != null) return reason;
                 // a new active goes into the first free slot, so it is used at once
                 if (node.IsActive && build.Rank(node.Id) == 1 && !build.Loadout.Contains(node.Id, StringComparer.OrdinalIgnoreCase))

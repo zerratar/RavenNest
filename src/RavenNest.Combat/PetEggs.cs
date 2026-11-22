@@ -20,6 +20,8 @@ namespace RavenNest.Combat
         Regatta = 5,
         /// <summary>Ravebridge's story quests: its training dummies have been busy.</summary>
         Ravebridge = 6,
+        /// <summary>Gathering with the Nest Finder node (the Gathering skill tree): the eggs of pets that gather.</summary>
+        Gathering = 7,
     }
 
     /// <summary>
@@ -162,6 +164,10 @@ namespace RavenNest.Combat
             ("capybara", EggSource.Quest, 0, 4), ("panda", EggSource.Quest, 0, 4), ("penguin", EggSource.Quest, 0, 4), ("spider", EggSource.Quest, 0, 3),
             ("parrot", EggSource.Quest, 0, 3), ("eagle", EggSource.Quest, 0, 3), ("reindeer", EggSource.Quest, 0, 3), ("tiger", EggSource.Quest, 0, 2),
             ("horse", EggSource.Quest, 0, 2), ("lion", EggSource.Quest, 0, 2),
+
+            // gathering with Nest Finder (2026-11-22, Zerratar: "if its a suitable egg"): the eggs of the three
+            // hatched kinds whose role is gathering, the easiest to raise the most common
+            ("chicken", EggSource.Gathering, 0, 10), ("cat", EggSource.Gathering, 0, 8), ("pig", EggSource.Gathering, 0, 6),
         };
 
         /// <summary>The eggs a source can give at a tier, with their weights.</summary>

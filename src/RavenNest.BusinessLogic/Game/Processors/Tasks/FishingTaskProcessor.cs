@@ -43,12 +43,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (string.Equals(state.Island, AtSea, StringComparison.OrdinalIgnoreCase))
                 {
                     var seaLevel = skills.FishingLevel + inventory.GetFishingBonus();
-                    var village = GetVillageResources(gameData, session);
-                    if (village != null) ++village.Fish;
                     session.Updated = DateTime.UtcNow;
-                    QuestTracker.Gathered(character, RavenNest.Models.Skill.Fishing);
-                    // a guest aboard someone's boat: their catch may bring the owner one too (the captain's cut)
-                    if (Drops.TryDropItem(this, logger, gameData, inventory, session, character, seaLevel, state.TaskArgument))
+                    // a guest aboard someone's boat: their catch may bring the owner one too (the captain's cut; once a
+                    // round, whatever the guest's skill tree made of the round)
+                    if (GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Fishing, Drops, skills.FishingLevel, seaLevel, state.TaskArgument,
+                            (v, amount) => v.Fish += amount))
                         Boats?.GuestCaught(this, logger, session, character);
                     return;
                 }
@@ -66,17 +65,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > level)
                     return;
 
-                var villageResources = GetVillageResources(gameData, session);
-                if (villageResources != null)
-                {
-                    ++villageResources.Fish;
-                }
-
                 session.Updated = DateTime.UtcNow;
-
-
-                QuestTracker.Gathered(character, RavenNest.Models.Skill.Fishing);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument, d => !SeaOnly.Contains(d.Name ?? ""));
+                GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Fishing, Drops, skills.FishingLevel, level, state.TaskArgument,
+                    (village, amount) => village.Fish += amount, d => !SeaOnly.Contains(d.Name ?? ""));
             });
         }
     }

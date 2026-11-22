@@ -134,6 +134,8 @@ namespace RavenNest.BusinessLogic.Game
                 var targetAttributeCount = 0;
                 var rng = random.NextDouble();
                 var cooldownFactor = Math.Min(1d, 1d / success);
+                // Enchanter's Patience (the Artisan skill tree): the wait before the next enchant is up to 15% shorter
+                var patience = RavenNest.Combat.TradeSkills.EnchantWaitFactor(SkillTreeManager.BuildOf(gameData, character.Id));
 
                 if (rng <= success)
                 {
@@ -175,7 +177,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (targetAttributeCount == 0)
                 {
                     cd.CooldownStart = DateTime.UtcNow;
-                    cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor * 0.1d);
+                    cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor * 0.1d, patience);
                     return ItemEnchantmentResult.Failed(cd.CooldownEnd);
                 }
 
@@ -238,7 +240,7 @@ namespace RavenNest.BusinessLogic.Game
                 // Fail: Add 10% of n Hours based on what type of item
 
                 cd.CooldownStart = DateTime.UtcNow;
-                cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor);
+                cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor, patience);
 
                 return new ItemEnchantmentResult()
                 {
@@ -290,19 +292,19 @@ namespace RavenNest.BusinessLogic.Game
             return outputName;
         }
 
-        private static DateTime GetCooldown(int clanSkillLevel, DataModels.User user, double scale = 1d)
+        /// <param name="patience">What is left of the wait with Enchanter's Patience (1 without, 0.85 at five ranks); the shortest wait stays what it is.</param>
+        private static DateTime GetCooldown(int clanSkillLevel, DataModels.User user, double scale = 1d, double patience = 1d)
         {
 #if DEBUG
             if (user != null && (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault()))
             {
                 //random *= 0.f;
                 scale *= 0.5f;
-                return DateTime.UtcNow.AddSeconds(EnchantmentInterval * scale);
+                return DateTime.UtcNow.AddSeconds(EnchantmentInterval * scale * patience);
             }
 #endif
-            var time = DateTime.UtcNow.AddMinutes(EnchantmentInterval * scale).AddSeconds(-clanSkillLevel);
-            if (time < DateTime.UtcNow.AddSeconds(MinEnchantmentTime)) return DateTime.UtcNow.AddSeconds(MinEnchantmentTime);
-            return time;
+            var seconds = (EnchantmentInterval * scale * 60 - clanSkillLevel) * patience;
+            return DateTime.UtcNow.AddSeconds(Math.Max(MinEnchantmentTime, seconds));
         }
 
         private static string FormatEnchantment(List<MagicItemAttribute> magicItemAttributes)

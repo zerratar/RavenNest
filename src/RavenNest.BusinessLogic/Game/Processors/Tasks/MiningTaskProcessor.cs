@@ -44,14 +44,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 session.Updated = DateTime.UtcNow;
-                var villageResources = GetVillageResources(gameData, session);
-                if (villageResources != null)
-                {
-                    ++villageResources.Ore;
-                }
-
-                QuestTracker.Gathered(character, RavenNest.Models.Skill.Mining);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
+                GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Mining, Drops, skills.MiningLevel, level, state.TaskArgument,
+                    (village, amount) => village.Ore += amount);
             });
         }
     }

@@ -5,8 +5,9 @@ using System.Linq;
 namespace RavenNest.Combat
 {
     /// <summary>
-    ///     The trees: one per combat skill (the game's docs/combat-skills-design.md, section 2), and Beastmaster for
-    ///     Taming ("Beastmaster", the same document): points in the pet instead of in yourself.
+    ///     The trees: one per combat skill (the game's docs/combat-skills-design.md, section 2), Beastmaster for
+    ///     Taming ("Beastmaster", the same document): points in the pet instead of in yourself, and the two trade trees
+    ///     (the game's docs/trade-skills-design.md): Gathering and Artisan, passives only, rolled by the server.
     /// </summary>
     public enum SkillTree
     {
@@ -19,13 +20,54 @@ namespace RavenNest.Combat
         Vitality,     // Health: staying alive, for everyone
         Hunter,       // Slayer: bosses and big enemies
         Beastmaster,  // Taming: the battle pet
+        Gathering,    // trade: Woodcutting, Mining, Fishing, Farming and Gathering
+        Artisan,      // trade: Crafting, Cooking and Alchemy
     }
 
     /// <summary>
-    ///     The skills whose levels open the trees' tiers: the eight combat skills, and Taming for Beastmaster. Taming
-    ///     is no combat skill (it stays out of the combat level); it earns points of its own (SkillTrees.TamingPoints).
+    ///     The skills whose levels open the trees' tiers and earn the points: the eight combat skills, Taming for
+    ///     Beastmaster, and the nine trade skills for the trade trees (2026-11-22). Only the first eight are combat
+    ///     skills (the name is from when there were no others): Taming and the trade skills stay out of the combat
+    ///     level and earn points of their own (SkillTrees.TamingPoints, SkillTrees.TradePoints). New ones go at the
+    ///     end: a planner's list of levels is in this order.
     /// </summary>
-    public enum CombatSkill { Attack, Defense, Strength, Health, Ranged, Magic, Healing, Slayer, Taming }
+    public enum CombatSkill
+    {
+        Attack, Defense, Strength, Health, Ranged, Magic, Healing, Slayer, Taming,
+        Woodcutting, Mining, Fishing, Farming, Gathering, Crafting, Cooking, Alchemy, Sailing,
+    }
+
+    /// <summary>What a trade tree's node turns (the server rolls each where the thing is already rolled).</summary>
+    public enum TradeEffect
+    {
+        None,
+        /// <summary>Sure Hands: added to the chance of every find.</summary>
+        FindChance,
+        /// <summary>Village's Share: the chance that a round gives the village one more of its resource.</summary>
+        VillageShare,
+        /// <summary>Bountiful: the chance that a find is two.</summary>
+        DoubleFind,
+        /// <summary>Tireless: the chance that a round counts twice.</summary>
+        DoubleRound,
+        /// <summary>Quick Return: the share taken off every find's wait.</summary>
+        FindWait,
+        /// <summary>Nest Finder: pet eggs while gathering.</summary>
+        Eggs,
+        /// <summary>Master of the Trade: in a skill at 999, two for the village a round and Tireless twice as often.</summary>
+        GatheringMaster,
+        /// <summary>Steady Hands: added to the success chance of a recipe that can fail.</summary>
+        CraftSuccess,
+        /// <summary>Thrifty: the chance that making something uses up no ingredients.</summary>
+        KeepIngredients,
+        /// <summary>Second Helping: the chance of one more meal or potion.</summary>
+        ExtraPortion,
+        /// <summary>Gem Cutter: the share taken off the fee for combining gems.</summary>
+        CombineDiscount,
+        /// <summary>Enchanter's Patience: the share taken off the wait between two enchants.</summary>
+        EnchantWait,
+        /// <summary>Master Artisan: in a skill at 999, Thrifty and Second Helping are worth this much more.</summary>
+        ArtisanMaster,
+    }
 
     /// <summary>When the character uses an active by itself (section 3); the loadout's order is the priority.</summary>
     public enum SkillUse
@@ -89,6 +131,9 @@ namespace RavenNest.Combat
     {
         private static string Pct(double v) => (v * 100).ToString(Math.Abs(v * 100) < 10 && Math.Abs(v * 100 - Math.Round(v * 100)) > 0.001 ? "0.#" : "0", System.Globalization.CultureInfo.InvariantCulture) + "%";
         private static string Num(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>A share as a percentage ("6%").</summary>
+        public static string Share(double v) => Pct(v);
 
         // a stat in plain words: {0} is the amount; "less" ones turn round when negative
         private static readonly Dictionary<GearStat, (string More, string Less)> Phrases = new Dictionary<GearStat, (string, string)>
@@ -317,6 +362,21 @@ namespace RavenNest.Combat
         /// <summary>Pack Leader: a packmate of the pet's own kind fights beside it at half strength.</summary>
         public bool PetTwin;
 
+        // ---- the trade trees (Gathering and Artisan) ----
+
+        /// <summary>What a trade node turns, and by how much a rank (a share: 0.02 is 2%). The server rolls it (TradeSkills).</summary>
+        public TradeEffect Trade;
+        public double TradeAmount;
+
+        /// <summary>A trade node's numbers in words, {0} the amount ("{0} more chance on every find").</summary>
+        public string TradeText;
+
+        /// <summary>
+        ///     A trade node opened by one skill of its tree only (the gem and enchanting nodes: Crafting). Null: any of
+        ///     the tree's skills opens it, and it works in each of them that is at its level.
+        /// </summary>
+        public CombatSkill? Skill;
+
         /// <summary>
         ///     The path: one of these (the nodes linked to it in the tier below) must be learned first. Empty on the first
         ///     tier. The map draws these links.
@@ -334,6 +394,8 @@ namespace RavenNest.Combat
         public string EffectText()
         {
             if (Active != null) return SkillTexts.Active(Active);
+            if (Trade != TradeEffect.None)
+                return string.Format(TradeText ?? "", SkillTexts.Share(TradeAmount)) + (MaxRank > 1 ? " a rank" : "");
             if (PetElementShare > 0)
                 return (PetElementShare * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "% of each of your hits more, as your pet's element (half as much crit chance with a pet that has none)" + (MaxRank > 1 ? ", a rank" : "");
             if (string.IsNullOrEmpty(Passive)) return "";
@@ -345,7 +407,10 @@ namespace RavenNest.Combat
         /// <summary>A ranked passive's total now and at its last rank ("2% now, 5% at 5/5"); empty otherwise.</summary>
         public string TotalText(int rank)
         {
-            if (Active != null || string.IsNullOrEmpty(Passive) || MaxRank <= 1) return "";
+            if (Active != null || MaxRank <= 1) return "";
+            if (Trade != TradeEffect.None)
+                return (rank > 0 ? SkillTexts.Share(TradeAmount * Math.Min(rank, MaxRank)) + " now, " : "") + SkillTexts.Share(TradeAmount * MaxRank) + " at " + MaxRank + "/" + MaxRank;
+            if (string.IsNullOrEmpty(Passive)) return "";
             var stats = GearStats.Parse(Passive);
             return (rank > 0 ? SkillTexts.Amounts(stats, rank) + " now, " : "") + SkillTexts.Amounts(stats, MaxRank) + " at " + MaxRank + "/" + MaxRank;
         }
@@ -375,10 +440,78 @@ namespace RavenNest.Combat
         /// <summary>The pause between two actives of one character, so it does not fire everything at once.</summary>
         public const double SharedPause = 1.5;
 
+        /// <summary>The eight combat skills: their levels added up are the combat points' total.</summary>
+        public static readonly CombatSkill[] CombatSkills =
+            { CombatSkill.Attack, CombatSkill.Defense, CombatSkill.Strength, CombatSkill.Health, CombatSkill.Ranged, CombatSkill.Magic, CombatSkill.Healing, CombatSkill.Slayer };
+
+        /// <summary>The nine trade skills: their levels added up are the trade points' total. Sailing has no tree yet, its levels earn points.</summary>
+        public static readonly CombatSkill[] TradeSkills =
+        {
+            CombatSkill.Woodcutting, CombatSkill.Mining, CombatSkill.Fishing, CombatSkill.Farming, CombatSkill.Gathering,
+            CombatSkill.Crafting, CombatSkill.Cooking, CombatSkill.Alchemy, CombatSkill.Sailing,
+        };
+
+        private static readonly CombatSkill[] GatheringSkills = { CombatSkill.Woodcutting, CombatSkill.Mining, CombatSkill.Fishing, CombatSkill.Farming, CombatSkill.Gathering };
+        private static readonly CombatSkill[] ArtisanSkills = { CombatSkill.Crafting, CombatSkill.Cooking, CombatSkill.Alchemy };
+
+        /// <summary>The trade trees (Gathering, Artisan): shown on their own tab, passives only, several skills each.</summary>
+        public static bool IsTrade(SkillTree tree) => tree == SkillTree.Gathering || tree == SkillTree.Artisan;
+
+        public static bool IsTradeSkill(CombatSkill skill) => skill >= CombatSkill.Woodcutting;
+
+        /// <summary>The trees of a tab, in order: the nine combat-side ones, or the trade ones.</summary>
+        public static IEnumerable<SkillTree> Trees(bool trade) => Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Where(t => IsTrade(t) == trade);
+
+        /// <summary>
+        ///     The skills that open a tree: its one skill, or for a trade tree all of its skills (a node can be
+        ///     learned once one of them is at the tier's level, and works in each of them that is).
+        /// </summary>
+        public static IReadOnlyList<CombatSkill> SkillsOf(SkillTree tree)
+        {
+            switch (tree)
+            {
+                case SkillTree.Gathering: return GatheringSkills;
+                case SkillTree.Artisan: return ArtisanSkills;
+                default: return new[] { SkillOf(tree) };
+            }
+        }
+
+        /// <summary>The skills that open a node: its tree's, or the one it names (the gem and enchanting nodes: Crafting).</summary>
+        public static IReadOnlyList<CombatSkill> SkillsOf(SkillNode node) => node.Skill.HasValue ? new[] { node.Skill.Value } : SkillsOf(node.Tree);
+
+        /// <summary>The level that counts for learning a node: the best of the skills that open it.</summary>
+        public static int GateLevel(SkillNode node, Func<CombatSkill, int> levelOf) => SkillsOf(node).Max(levelOf);
+
+        /// <summary>The level a tree has reached: its skill's, or the best of a trade tree's skills.</summary>
+        public static int GateLevel(SkillTree tree, Func<CombatSkill, int> levelOf) => SkillsOf(tree).Max(levelOf);
+
+        /// <summary>The best of a tree's skills (the first when they are level): the one whose level opens its tiers.</summary>
+        public static CombatSkill BestSkill(SkillTree tree, Func<CombatSkill, int> levelOf)
+        {
+            var skills = SkillsOf(tree);
+            var best = skills[0];
+            foreach (var skill in skills) if (levelOf(skill) > levelOf(best)) best = skill;
+            return best;
+        }
+
+        /// <summary>The skills that open a node, in words: "Strength", "Crafting, Cooking or Alchemy".</summary>
+        public static string GateName(SkillNode node) => Names(SkillsOf(node));
+
+        public static string GateName(SkillTree tree) => Names(SkillsOf(tree));
+
+        private static string Names(IReadOnlyList<CombatSkill> skills)
+        {
+            if (skills.Count == 1) return SkillName(skills[0]);
+            return string.Join(", ", skills.Take(skills.Count - 1).Select(SkillName)) + " or " + SkillName(skills[skills.Count - 1]);
+        }
+
+        /// <summary>A tree's one skill; for a trade tree the first of its skills (see <see cref="SkillsOf(SkillTree)"/>).</summary>
         public static CombatSkill SkillOf(SkillTree tree)
         {
             switch (tree)
             {
+                case SkillTree.Gathering: return CombatSkill.Woodcutting;
+                case SkillTree.Artisan: return CombatSkill.Crafting;
                 case SkillTree.Beastmaster: return CombatSkill.Taming;
                 case SkillTree.Bulwark: return CombatSkill.Defense;
                 case SkillTree.Restoration: return CombatSkill.Healing;
@@ -414,23 +547,40 @@ namespace RavenNest.Combat
             return (int)Math.Floor(Math.Min(tamingLevel, 125) / 10.0 + Math.Max(0, tamingLevel - 125) / 40.0);
         }
 
-        /// <summary>Every point a character has earned: the combat levels' and Taming's.</summary>
+        /// <summary>
+        ///     The points the nine trade skills' levels add (2026-11-22), all nine added up: one per 10 levels up to
+        ///     400, then one per 150. Fast at the start so a new gatherer has something to pick in the first hour, slow
+        ///     after so that being high in everything does not buy every node. All nine at 999 give 97. Counted apart
+        ///     from the combat levels and Taming, so nobody's points from those change.
+        /// </summary>
+        public static int TradePoints(int totalTradeLevels)
+        {
+            if (totalTradeLevels <= 0) return 0;
+            return (int)Math.Floor(Math.Min(totalTradeLevels, 400) / 10.0 + Math.Max(0, totalTradeLevels - 400) / 150.0);
+        }
+
+        /// <summary>The combat levels' points and Taming's, without the trade skills'.</summary>
         public static int EarnedPoints(int totalCombatLevels, int tamingLevel) => EarnedPoints(totalCombatLevels) + TamingPoints(tamingLevel);
 
-        /// <summary>The number of skills that open trees: a planner's list of levels, in <see cref="CombatSkill"/> order.</summary>
-        public const int TreeSkills = (int)CombatSkill.Taming + 1;
+        /// <summary>Every point a character has earned: the combat levels', Taming's and the trade skills'.</summary>
+        public static int EarnedPoints(int totalCombatLevels, int tamingLevel, int totalTradeLevels) =>
+            EarnedPoints(totalCombatLevels) + TamingPoints(tamingLevel) + TradePoints(totalTradeLevels);
+
+        /// <summary>Every point a character with these levels has earned (the one pool, <see cref="SkillPoints"/>).</summary>
+        public static int EarnedPoints(Func<CombatSkill, int> levelOf) => SkillPoints.Earned(SkillPoints.Shared, levelOf);
+
+        /// <summary>The number of skills that open trees or earn points: a planner's list of levels, in <see cref="CombatSkill"/> order.</summary>
+        public const int TreeSkills = (int)CombatSkill.Sailing + 1;
 
         /// <summary>
-        ///     The points for a planner's levels, in <see cref="CombatSkill"/> order: the eight combat skills, then
-        ///     Taming. A list from before Beastmaster (eight levels, in an old shared link) counts Taming as 0.
+        ///     A planner's levels as a level of each skill, in <see cref="CombatSkill"/> order: the eight combat skills,
+        ///     Taming, the nine trade skills. A shorter list (an old shared link: eight levels before Beastmaster,
+        ///     nine before the trade trees) counts the missing skills as nothing.
         /// </summary>
-        public static int EarnedPoints(int[] levels)
-        {
-            if (levels == null) return 0;
-            var combat = 0;
-            for (var i = 0; i < levels.Length && i < (int)CombatSkill.Taming; ++i) combat += levels[i];
-            return EarnedPoints(combat, levels.Length > (int)CombatSkill.Taming ? levels[(int)CombatSkill.Taming] : 0);
-        }
+        public static Func<CombatSkill, int> LevelsFrom(int[] levels) => skill => levels != null && (int)skill < levels.Length ? levels[(int)skill] : 0;
+
+        /// <summary>The points for a planner's levels (<see cref="LevelsFrom"/>).</summary>
+        public static int EarnedPoints(int[] levels) => levels == null ? 0 : EarnedPoints(LevelsFrom(levels));
 
         public static int RespecCost(int pointsSpent) => Math.Max(0, pointsSpent) * RespecCostPerPoint;
 
@@ -475,7 +625,7 @@ namespace RavenNest.Combat
                 var list = names.Count == 2 ? names[0] + " or " + names[1] : string.Join(", ", names.Take(names.Count - 1)) + " or " + names[names.Count - 1];
                 return (text ?? "").Trim() + " could mean " + list + ". Type the full name.";
             }
-            return "There is no skill called " + (text ?? "").Trim() + ". !tree Might (or another tree) lists the skills.";
+            return "There is no skill called " + (text ?? "").Trim() + ". !tree Might (or another tree, like !tree Gathering) lists the skills.";
         }
 
         /// <summary>A combat skill's name as players see it: Health is shown as Vitality since 0.9.7.</summary>
@@ -534,6 +684,9 @@ namespace RavenNest.Combat
 
         private static SkillNode Passive(SkillTree tree, int tier, string id, string name, string description, string perRank, int ranks = 5, int cost = 0) =>
             Add(new SkillNode { Tree = tree, Tier = tier, Id = id, Name = name, Description = description, Passive = perRank, MaxRank = ranks, Cost = cost > 0 ? cost : PassiveCost[tier] });
+
+        private static SkillNode Trade(SkillTree tree, int tier, string id, string name, string description, TradeEffect effect, double perRank, string text, int ranks = 5, int cost = 0) =>
+            Add(new SkillNode { Tree = tree, Tier = tier, Id = id, Name = name, Description = description, Trade = effect, TradeAmount = perRank, TradeText = text, MaxRank = ranks, Cost = cost > 0 ? cost : PassiveCost[tier] });
 
         private static SkillNode Active(SkillTree tree, int tier, string id, string name, string description, ActiveSkill active, int cost = 0) =>
             Add(new SkillNode { Tree = tree, Tier = tier, Id = id, Name = name, Description = description, Active = active, Cost = cost > 0 ? cost : ActiveCost[tier] });
@@ -662,7 +815,7 @@ namespace RavenNest.Combat
             Active(L, 1, "execute", "Execute", "A huge hit on an enemy below 20% health.",
                 new ActiveSkill { Cooldown = 15, Targeting = SkillTargeting.Target, Use = SkillUse.TargetLow, Effects = new[] { E(SkillEffectKind.Damage, 3.0) } });
             Passive(L, 1, "treasure-hunter", "Treasure Hunter", "More loot in raids and dungeons.", "LOOT_LUCK:2%");
-            Passive(L, 2, "gem-salvager", "Gem Salvager", "A better chance to keep a gem you take out of its socket.", "GEM_KEEP_CHANCE:5%", ranks: 3);
+            // (Gem Salvager was here until 2026-11-22: it moved to Artisan, below, with its id, ranks and cost)
             Passive(L, 2, "pressure-points", "Pressure Points", "Your stuns, freezes and roots last longer.", "CROWD_CONTROL_DURATION:10%");
             Passive(L, 3, "apex-predator", "Apex Predator", "Much more damage to bosses.", "BOSS_DAMAGE:8%", ranks: 1, cost: 10);
 
@@ -684,6 +837,26 @@ namespace RavenNest.Combat
             Passive(B, 3, "guardians-oath", "Guardian's Oath", "A tank pet takes more of the blows meant for you.", "PET_GUARD:20%", ranks: 1, cost: 10);
             Active(B, 3, "call-of-the-wild", "Call of the Wild", "Your pet attacks half again as fast and hits harder for 8 seconds.",
                 new ActiveSkill { Cooldown = 40, Targeting = SkillTargeting.Pet, Use = SkillUse.OnBoss, Needs = SkillGear.Pet, Effects = new[] { E(SkillEffectKind.AttackSpeed, 0.5, 8), E(SkillEffectKind.DamageDealt, 0.3, 8) } });
+
+            // The trade trees (2026-11-22, the game's docs/trade-skills-design.md): passives only, each rolled by the
+            // server where the find, the make or the gem is already rolled (TradeSkills says how much). A node opens
+            // once one of its tree's skills is at the tier's level and works in each of them that is.
+            const SkillTree G = SkillTree.Gathering, T = SkillTree.Artisan;
+            Trade(G, 0, "sure-hands", "Sure Hands", "A better chance at every find.", TradeEffect.FindChance, 0.02, "{0} more chance on every find");
+            Trade(G, 0, "villages-share", "Village's Share", "Now and then a round brings the village one more of its resource.", TradeEffect.VillageShare, 0.06, "{0} chance that a round gives the village one more");
+            Trade(G, 1, "bountiful", "Bountiful", "Sometimes a find is two.", TradeEffect.DoubleFind, 0.02, "{0} chance that a find is two");
+            Trade(G, 1, "tireless", "Tireless", "Now and then a round counts twice: one more for the village and one more try at a find.", TradeEffect.DoubleRound, 0.02, "{0} chance that a round counts twice");
+            Trade(G, 2, "quick-return", "Quick Return", "Every find comes round again sooner.", TradeEffect.FindWait, 0.02, "every find's wait is {0} shorter");
+            Trade(G, 3, "nest-finder", "Nest Finder", "Now and then you come across a pet egg while gathering.", TradeEffect.Eggs, 0,
+                "about one egg in 20 hours of gathering: a Chick, Kitten or Piglet Egg, pets that gather", ranks: 1, cost: 10);
+
+            Trade(T, 0, "steady-hands", "Steady Hands", "Fewer failures where a recipe can fail.", TradeEffect.CraftSuccess, 0.03, "{0} more chance of success where a recipe can fail");
+            Trade(T, 1, "thrifty", "Thrifty", "Sometimes making something uses up no ingredients.", TradeEffect.KeepIngredients, 0.02, "{0} chance that making something uses up nothing");
+            Trade(T, 1, "second-helping", "Second Helping", "Sometimes one more meal or potion than you made (Cooking and Alchemy).", TradeEffect.ExtraPortion, 0.02, "{0} chance of one more meal or potion");
+            // from Hunter (2026-11-22): the same id, ranks and cost, so a build that has it keeps it; Crafting 300 opens it now
+            Passive(T, 2, "gem-salvager", "Gem Salvager", "A better chance to keep a gem you take out of its socket.", "GEM_KEEP_CHANCE:5%", ranks: 3).Skill = CombatSkill.Crafting;
+            Trade(T, 2, "gem-cutter", "Gem Cutter", "Combining gems costs fewer coins.", TradeEffect.CombineDiscount, 0.06, "combining gems costs {0} less").Skill = CombatSkill.Crafting;
+            Trade(T, 3, "enchanters-patience", "Enchanter's Patience", "A shorter wait between two enchants.", TradeEffect.EnchantWait, 0.03, "the wait between two enchants is {0} shorter").Skill = CombatSkill.Crafting;
 
             // the paths (2026-11-08): a node needs one of the nodes linked to it in the tier below; the first tier is open
             Path("shield-wall", "taunt", "thick-skin");
@@ -735,7 +908,6 @@ namespace RavenNest.Combat
             Path("execute", "mark-prey");
             Path("treasure-hunter", "big-game");
             Path("pressure-points", "execute", "treasure-hunter");
-            Path("gem-salvager", "treasure-hunter");
             Path("apex-predator", "pressure-points");
             Path("back-on-its-feet", "thick-hide");
             Path("kinship", "thick-hide", "fang-and-claw");
@@ -746,9 +918,25 @@ namespace RavenNest.Combat
             Path("elemental-bond", "trick-training", "keen-senses");
             Path("guardians-oath", "shared-mending", "keen-senses");
             Path("call-of-the-wild", "trick-training", "shared-mending");
+            // the trade trees
+            Path("bountiful", "sure-hands");
+            Path("tireless", "villages-share", "sure-hands");
+            Path("quick-return", "bountiful", "tireless");
+            Path("nest-finder", "quick-return");
+            Path("thrifty", "steady-hands");
+            Path("second-helping", "steady-hands");
+            Path("gem-salvager", "thrifty", "second-helping");
+            Path("gem-cutter", "thrifty", "second-helping");
+            Path("enchanters-patience", "gem-salvager", "gem-cutter");
 
             Capstones();
+            foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree))) nodesOf[tree] = all.Where(n => n.Tree == tree).ToArray();
         }
+
+        private static readonly Dictionary<SkillTree, SkillNode[]> nodesOf = new Dictionary<SkillTree, SkillNode[]>();
+
+        /// <summary>A tree's nodes as a kept list (<see cref="Of"/> filters them all each time; the server asks every gathering round).</summary>
+        public static IReadOnlyList<SkillNode> TradeNodes(SkillTree tree) => nodesOf.TryGetValue(tree, out var nodes) ? nodes : Array.Empty<SkillNode>();
 
         private static void Path(string id, params string[] requires) => byId[id].Requires = requires;
 
@@ -765,10 +953,63 @@ namespace RavenNest.Combat
             // Beastmaster's is no pair of stats: a second animal at the owner's side (the same kind as the pet that is
             // out; a second pet from the stable is the proposal in the design document)
             Capstone(SkillTree.Beastmaster, "pack-leader", "Pack Leader", "A packmate of your pet's own kind fights beside it at half strength.", null, "elemental-bond", "guardians-oath", "call-of-the-wild").PetTwin = true;
+            // The trade trees' capstones make what is below them better in a skill at 999, so their paths come from
+            // those nodes too, not only from the tier below: a cook at 999 with no Crafting cannot learn the Crafting
+            // nodes between, and a gatherer should not have to buy eggs to master the trade.
+            var master = Capstone(SkillTree.Gathering, "master-of-the-trade", "Master of the Trade", "In a gathering skill at 999, every round is worth two to the village and Tireless comes twice as often.", null, "nest-finder", "tireless");
+            master.Trade = TradeEffect.GatheringMaster;
+            master.TradeText = "in a skill at 999: every round counts twice for the village, and Tireless's chance is doubled";
+            var artisan = Capstone(SkillTree.Artisan, "master-artisan", "Master Artisan", "In a skill at 999, Thrifty and Second Helping come more often.", null, "enchanters-patience", "thrifty", "second-helping");
+            artisan.Trade = TradeEffect.ArtisanMaster;
+            artisan.TradeAmount = 0.05;
+            artisan.TradeText = "in a skill at 999: Thrifty and Second Helping are each worth {0} more";
         }
 
         /// <summary>The nodes whose path goes through this one (the tier above).</summary>
         public static IEnumerable<SkillNode> Dependents(string id) => all.Where(n => n.Requires.Any(r => string.Equals(r, id, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>
+    ///     The pool rule, in one place. There is ONE pool of skill points (Zerratar, 2026-11-22, on the trade trees:
+    ///     "i think it can contribute to combat skill points, but it doesnt have to raise the combat level"): the
+    ///     combat levels, Taming and the nine trade skills all earn into it, each by its own rate, and every tree's
+    ///     nodes are paid from it.
+    ///     To give the trade trees a pool of their own later: add a second pool, return it from <see cref="PoolOf"/>
+    ///     for SkillTrees.IsTrade, and give it the trade points in <see cref="Earned"/>. SkillBuild.CanRaise(id,
+    ///     levelOf) already asks per pool; what shows the points (SkillBuildInfo, the pages, !tree) would then show two.
+    /// </summary>
+    public static class SkillPoints
+    {
+        /// <summary>The one pool.</summary>
+        public const int Shared = 0;
+
+        /// <summary>The pool that pays for a tree's nodes.</summary>
+        public static int PoolOf(SkillTree tree) => Shared;
+
+        public static int CombatLevels(Func<CombatSkill, int> levelOf) => SkillTrees.CombatSkills.Sum(s => Math.Max(0, levelOf(s)));
+
+        public static int TradeLevels(Func<CombatSkill, int> levelOf) => SkillTrees.TradeSkills.Sum(s => Math.Max(0, levelOf(s)));
+
+        /// <summary>The points of each source, for telling a player where theirs come from.</summary>
+        public static int FromCombat(Func<CombatSkill, int> levelOf) => SkillTrees.EarnedPoints(CombatLevels(levelOf));
+        public static int FromTaming(Func<CombatSkill, int> levelOf) => SkillTrees.TamingPoints(levelOf(CombatSkill.Taming));
+        public static int FromTrade(Func<CombatSkill, int> levelOf) => SkillTrees.TradePoints(TradeLevels(levelOf));
+
+        /// <summary>What a character with these levels has earned into a pool.</summary>
+        public static int Earned(int pool, Func<CombatSkill, int> levelOf) =>
+            levelOf == null || pool != Shared ? 0 : FromCombat(levelOf) + FromTaming(levelOf) + FromTrade(levelOf);
+
+        /// <summary>What a build has spent from a pool.</summary>
+        public static int Spent(int pool, SkillBuild build)
+        {
+            var spent = 0;
+            foreach (var r in build.Ranks)
+            {
+                var node = SkillTrees.Get(r.Key);
+                if (node != null && PoolOf(node.Tree) == pool) spent += node.Cost * r.Value;
+            }
+            return spent;
+        }
     }
 
     /// <summary>
@@ -865,8 +1106,9 @@ namespace RavenNest.Combat
             var node = SkillTrees.Get(id);
             if (node == null) return "There is no such skill.";
             if (Rank(id) >= node.MaxRank) return node.Name + " is already at its highest rank.";
-            var level = levelOf(SkillTrees.SkillOf(node.Tree));
-            if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.SkillName(SkillTrees.SkillOf(node.Tree)) + " " + node.RequiredLevel + ".";
+            // the level: the tree's skill, or for a trade tree the best of its skills ("needs Crafting, Cooking or Alchemy 100")
+            var level = SkillTrees.GateLevel(node, levelOf);
+            if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.GateName(node) + " " + node.RequiredLevel + ".";
             // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path)
             if (Rank(id) == 0 && node.Requires.Length > 0 && !node.Requires.Any(Has))
                 return node.Name + " needs " + string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r)) + " first.";
@@ -874,6 +1116,34 @@ namespace RavenNest.Combat
             if (left < node.Cost) return node.Name + " costs " + node.Cost + " point" + (node.Cost == 1 ? "" : "s") + "; you have " + Math.Max(0, left) + ".";
             return null;
         }
+
+        /// <summary>
+        ///     The same with the points worked out from the levels, by the pool that pays for the node's tree
+        ///     (<see cref="SkillPoints"/>): what the server, the website and the planner ask.
+        /// </summary>
+        public string CanRaise(string id, Func<CombatSkill, int> levelOf)
+        {
+            var node = SkillTrees.Get(id);
+            if (node == null) return "There is no such skill.";
+            var pool = SkillPoints.PoolOf(node.Tree);
+            // the points left in the node's pool, as the points CanRaise takes Spent from
+            return CanRaise(id, levelOf, SkillPoints.Earned(pool, levelOf) - SkillPoints.Spent(pool, this) + Spent);
+        }
+
+        public string Raise(string id, Func<CombatSkill, int> levelOf)
+        {
+            var reason = CanRaise(id, levelOf);
+            if (reason != null) return reason;
+            var node = SkillTrees.Get(id);
+            Ranks[node.Id] = Rank(node.Id) + 1;
+            return null;
+        }
+
+        /// <summary>
+        ///     A trade node's rank as it counts in one skill: the rank learned once that skill is at the node's level,
+        ///     otherwise nothing ("works in each of the tree's skills that is at that level").
+        /// </summary>
+        public int RankIn(SkillNode node, int skillLevel) => node != null && skillLevel >= node.RequiredLevel ? Math.Min(Rank(node.Id), node.MaxRank) : 0;
 
         public string Raise(string id, Func<CombatSkill, int> levelOf, int earnedPoints)
         {

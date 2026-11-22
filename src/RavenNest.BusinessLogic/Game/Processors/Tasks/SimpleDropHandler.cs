@@ -135,7 +135,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             int skillLevel,
             string taskArgument,
-            Func<ResourceDrop, bool> canDrop = null)
+            Func<ResourceDrop, bool> canDrop = null,
+            RavenNest.Combat.GatherBonus trade = default)
         {
             ResourceDrop drop = null;
             try
@@ -147,7 +148,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 {
                     // Dig: now and then a find anyway
                     return pet.BonusItem > 0 && resProcessor.Random.NextDouble() < pet.BonusItem &&
-                        TryDropAny(logger, gameData, inventory, session, resProcessor, character, skillLevel, canDrop);
+                        TryDropAny(logger, gameData, inventory, session, resProcessor, character, skillLevel, canDrop, trade);
                 }
 
                 LoadDropsIfRequired(gameData);
@@ -192,7 +193,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (target != null)
                 {
                     drop = target;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop, pet))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop, pet, trade))
                     {
                         return true;
                     }
@@ -209,7 +210,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
 
                     drop = res;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop, pet))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop, pet, trade))
                     {
                         return true;
                     }
@@ -233,14 +234,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         /// <summary>Dig: one of the drops this skill can give at this level, ignoring the odds (cooldowns still count).</summary>
         private bool TryDropAny(ILogger logger, GameData gameData, PlayerInventory inventory, GameSession session, ResourceTaskProcessor resProcessor,
-            Character character, int skillLevel, Func<ResourceDrop, bool> canDrop)
+            Character character, int skillLevel, Func<ResourceDrop, bool> canDrop, RavenNest.Combat.GatherBonus trade)
         {
             LoadDropsIfRequired(gameData);
             List<ResourceDrop> dr;
             lock (dropsMutex) dr = drops.Where(d => d != null && d.ItemId != Guid.Empty && skillLevel >= d.SkillLevel).ToList();
             if (dr.Count == 0) return false;
             var pick = dr[resProcessor.Random.Next(dr.Count)];
-            return TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, pick, canDrop, new PetGatherBonus { RareDrop = double.MaxValue });
+            return TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, pick, canDrop, new PetGatherBonus { RareDrop = double.MaxValue }, trade);
         }
 
         private bool TryDrop(
@@ -252,7 +253,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             int skillLevel, ResourceDrop targetDrop,
             Func<ResourceDrop, bool> canDrop = null,
-            PetGatherBonus pet = default)
+            PetGatherBonus pet = default,
+            RavenNest.Combat.GatherBonus trade = default)
         {
             var now = DateTime.UtcNow;
 
@@ -274,7 +276,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (targetDrop.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
                 {
                     var timeSinceLastDrop = now - lastDrop;
-                    if (timeSinceLastDrop < TimeSpan.FromSeconds(targetDrop.Cooldown))
+                    // Quick Return (the Gathering skill tree): every find's wait a little shorter
+                    if (timeSinceLastDrop < TimeSpan.FromSeconds(RavenNest.Combat.TradeSkills.FindWait(targetDrop.Cooldown, trade)))
                     {
                         return false;
                     }
@@ -301,8 +304,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             try
             {
                 var chance = resProcessor.Random.NextDouble();
-                // Keen Nose: better odds (Dig passes the most there is, so its pick always lands)
-                var dropChance = pet.RareDrop >= double.MaxValue ? 1 : targetDrop.GetDropChance(skillLevel) * (1 + pet.RareDrop);
+                // Sure Hands (the Gathering skill tree): a few points more on every find. Keen Nose: better odds (Dig
+                // passes the most there is, so its pick always lands)
+                var dropChance = pet.RareDrop >= double.MaxValue ? 1 : RavenNest.Combat.TradeSkills.FindChance(targetDrop.GetDropChance(skillLevel), trade) * (1 + pet.RareDrop);
                 if (skillLevel >= targetDrop.SkillLevel && (chance <= dropChance))
                 {
                     if (canDrop == null || canDrop(targetDrop))
@@ -312,8 +316,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         // the stream's story may want it delivered: then it goes to the village instead
                         if (QuestTracker.ItemFound(character, targetDrop.ItemId)) return true;
                         resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
-                        // Forage: sometimes one more
-                        if (pet.ExtraResource > 0 && resProcessor.Random.NextDouble() < pet.ExtraResource)
+                        // Forage, and Bountiful (the Gathering skill tree) on top of it: sometimes one more. The second
+                        // goes straight to the bag: the story above is asked about a find, not about what a node adds.
+                        var oneMore = pet.ExtraResource + trade.DoubleFind;
+                        if (oneMore > 0 && resProcessor.Random.NextDouble() < oneMore)
                             resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
                         return true;
                     }

@@ -453,7 +453,7 @@ namespace RavenNest.BusinessLogic.Game
             if (pet == null || string.IsNullOrEmpty(pet.Species) || ItemGone(gameData, pet)) return default;
             var bonus = new PetGatherBonus();
             // its owner's skill tree (Beastmaster): Trick Training's slot counts, and Keen Senses makes the skills stronger
-            var build = Build(gameData, characterId);
+            var build = SkillTreeManager.BuildOf(gameData, characterId); // kept parsed: this runs every gathering round
             var taming = Math.Max(1, gameData.GetCharacterSkills(gameData.GetCharacter(characterId)?.SkillsId ?? Guid.Empty)?.TamingLevel ?? 1);
             var count = BattlePets.SkillSlots(taming, pet.Stage) + build.ExtraPetSkillSlots;
             var stronger = 1 + Math.Max(0, build.Passives()[GearStat.PetGathering]);

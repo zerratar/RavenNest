@@ -53,9 +53,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 session.Updated = DateTime.UtcNow;
-                QuestTracker.Gathered(character, RavenNest.Models.Skill.Gathering);
                 var onMangrove = island == RavenNest.Models.Island.Mangrove;
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument, d => onMangrove || !MangroveOnly.Contains(d.Name ?? ""));
+                // the Gathering skill gives the village no resource of its own: nothing for Village's Share to add to
+                GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Gathering, Drops, skills.GatheringLevel, level, state.TaskArgument,
+                    null, d => onMangrove || !MangroveOnly.Contains(d.Name ?? ""));
             });
         }
     }

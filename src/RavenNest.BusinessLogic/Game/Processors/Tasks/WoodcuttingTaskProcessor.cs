@@ -41,14 +41,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     return;
 
                 session.Updated = DateTime.UtcNow;
-                var villageResources = GetVillageResources(gameData, session);
-                if (villageResources != null)
-                {
-                    ++villageResources.Wood;
-                }
-
-                QuestTracker.Gathered(character, RavenNest.Models.Skill.Woodcutting);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
+                GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Woodcutting, Drops, skills.WoodcuttingLevel, level, state.TaskArgument,
+                    (village, amount) => village.Wood += amount);
             });
         }
     }

@@ -336,13 +336,13 @@ namespace RavenNest.Combat
                     "Grows up into Donner, then Blitzen: thunder, then lightning. Its nose glows a little in fog. It would rather not discuss it.",
                     s => s.Skills = new[] { "spark", "howl", "storm-breath" }),
                 Animal("cat", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Void Kitten", "Orange Cat", "Snow Cat"), new[] { "Cat_Black", "Cat_Orange", "Cat_White" }, "Kitten Egg", 1, 60,
-                    H(0.4, 0.5, 0.62), "Dungeons, tower floors and quests",
+                    H(0.4, 0.5, 0.62), "Dungeons, tower floors, quests and gathering with Nest Finder",
                     "Leaves gifts at your feet while you gather. Some of them are even useful. The orange stage shares its one brain cell with every other orange cat."),
                 Animal("pig", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Piglet", "Truffle Pig", "Truffle Baron"), new[] { "Pig" }, "Piglet Egg", 10, 90,
-                    H(0.35, 0.55, 0.75), "Dungeons, tower floors and quests",
+                    H(0.35, 0.55, 0.75), "Dungeons, tower floors, quests and gathering with Nest Finder",
                     "Its nose finds what you miss. It eats half of what it finds, so your share is already after tax."),
                 Animal("chicken", PetRole.Gatherer, PetStrike.Bite, Element.Physical, N("Chick", "Hen", "Rooster"), new[] { "Chick", "Hen", "Rooster" }, "Chick Egg", 1, 30,
-                    H(0.3, 0.45, 0.6), "Dungeons, quests and Ravebridge's story quests",
+                    H(0.3, 0.45, 0.6), "Dungeons, quests, Ravebridge's story quests and gathering with Nest Finder",
                     "Came first. Or the egg did. The old woman at the well still will not say. Pecks up what you drop while you gather."),
 
                 // ---------------------------------------------------------------- companions: every pet item can fight

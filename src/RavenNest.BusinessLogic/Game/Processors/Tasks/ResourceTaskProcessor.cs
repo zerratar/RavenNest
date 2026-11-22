@@ -12,6 +12,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public static int ResourceGatherInterval = 10;
         public static double DropChanceIncrement = 0.005;
         public static double InitDropChance = 0.5;
+
+        /// <summary>Nest Finder (the Gathering skill tree): the chance of a pet egg in one gathering round, about one in 20 hours.</summary>
+        public static double NestEggChance = RavenNest.Combat.TradeSkills.EggChancePerRound;
     }
 
     public abstract class ResourceTaskProcessor : PlayerTaskProcessor
@@ -151,6 +154,73 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                 onUpdate?.Invoke(resources);
             }
+        }
+
+
+        /// <summary>
+        ///     One gathering round: the village's resource, the try at a find, and what the character's Gathering tree
+        ///     adds (the game's docs/trade-skills-design.md, RavenNest.Combat.TradeSkills). Village's Share: sometimes
+        ///     one more for the village. Tireless: sometimes the round counts twice (one more for the village and one
+        ///     more try at a find; the finds' waits still count). Master of the Trade: two for the village a round in a
+        ///     skill at 999. Sure Hands, Bountiful and Quick Return go to the find itself (SimpleDropHandler). Nest
+        ///     Finder: a small chance of a gatherer pet's egg, once a round whatever Tireless did.
+        ///     The quests' count of rounds (QuestTracker.Gathered) stays one a round: it counts the time gathered, not
+        ///     what a node adds.
+        /// </summary>
+        /// <param name="ownLevel">The skill's own level: a node counts once the skill is at its level, gear aside.</param>
+        /// <param name="level">The level finds are rolled with (gear counted).</param>
+        /// <param name="addToVillage">Adds this many of the skill's resource to the village; null when the skill has none (Gathering).</param>
+        /// <returns>Whether something was found.</returns>
+        protected bool GatherRound(
+            Microsoft.Extensions.Logging.ILogger logger,
+            GameData gameData,
+            PlayerInventory inventory,
+            DataModels.GameSession session,
+            DataModels.Character character,
+            Skill skill,
+            SimpleDropHandler drops,
+            int ownLevel,
+            int level,
+            string taskArgument,
+            Action<DataModels.Resources, int> addToVillage,
+            Func<ResourceDrop, bool> canDrop = null)
+        {
+            var bonus = RavenNest.Combat.TradeSkills.Gathering(SkillTreeManager.BuildOf(gameData, character.Id), ownLevel);
+            var rounds = bonus.DoubleRound > 0 && Random.NextDouble() < bonus.DoubleRound ? 2 : 1;
+            var village = addToVillage != null ? GetVillageResources(gameData, session) : null;
+            var found = false;
+            for (var round = 0; round < rounds; ++round)
+            {
+                if (village != null)
+                {
+                    var amount = bonus.VillagePerRound;
+                    if (bonus.VillageShare > 0 && Random.NextDouble() < bonus.VillageShare) ++amount;
+                    addToVillage(village, amount);
+                }
+
+                if (round == 0) QuestTracker.Gathered(character, skill);
+                found |= drops.TryDropItem(this, logger, gameData, inventory, session, character, level, taskArgument, canDrop, bonus);
+            }
+
+            if (bonus.Eggs && Random.NextDouble() < ItemDropRateSettings.NestEggChance)
+                GiveNestEgg(gameData, inventory, session, character);
+
+            return found;
+        }
+
+        /// <summary>
+        ///     Nest Finder's egg: one from the gathering table (the eggs of pets that gather), into the inventory, and
+        ///     the game is told so it can say it in chat (the play streak's event, with no days).
+        /// </summary>
+        private void GiveNestEgg(GameData gameData, PlayerInventory inventory, DataModels.GameSession session, DataModels.Character character)
+        {
+            var species = RavenNest.Combat.PetEggs.Pick(RavenNest.Combat.EggSource.Gathering, 0, Random.NextDouble());
+            if (species == null) return;
+            var itemId = RavenNest.Combat.PetEggs.ItemId(species.Id);
+            if (gameData.GetItem(itemId) == null) return;
+            IncrementItemStack(gameData, inventory, session, character, itemId);
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayStreakEgg, session,
+                new PlayStreakEgg { CharacterId = character.Id, Days = 0, Egg = species.EggName }));
         }
 
         protected DataModels.Resources GetVillageResources(GameData gameData, DataModels.GameSession session)

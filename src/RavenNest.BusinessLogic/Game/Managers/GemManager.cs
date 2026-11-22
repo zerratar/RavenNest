@@ -96,7 +96,8 @@ namespace RavenNest.BusinessLogic.Game
             var inventory = inventories.Get(character.Id);
             var gemId = Gems.ItemId((GemKind)kind, (GemTier)tier);
             var have = inventory.GetAllItems().Where(x => x.ItemId == gemId && !x.Equipped).Sum(x => x.Amount);
-            var fee = Gems.CombineFee[tier];
+            // Gem Cutter (the Artisan skill tree) takes up to 30% off the fee
+            var fee = RavenNest.Combat.TradeSkills.CombineFee(Gems.CombineFee[tier], SkillTreeManager.BuildOf(gameData, character.Id));
             var possible = (int)Math.Min(have / 3, Math.Clamp(times, 1, MaxPerCommand));
             if (possible <= 0) return new GemResult { Status = GemResultStatus.NotEnoughGems, Kind = kind, Tier = tier };
             possible = (int)Math.Min(possible, (long)(resources.Coins / fee));
@@ -272,8 +273,9 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The chance this character has to keep a gem taken out: the clan's Enchanting and the Gem Salvager node.</summary>
         public double KeepChance(Character character)
         {
-            var build = character != null ? gameData.GetCharacterSkillBuild(character.Id) : null;
-            var salvager = build != null ? RavenNest.Combat.SkillBuild.Parse(build.Build).Rank("gem-salvager") : 0;
+            // a rank held counts whatever the levels: the node moved from Hunter to Artisan (2026-11-22), and a build
+            // that learned it there keeps what it paid for
+            var salvager = character != null ? SkillTreeManager.BuildOf(gameData, character.Id).Rank("gem-salvager") : 0;
             return Gems.KeepChance(ClanEnchantingLevel(character), salvager);
         }
 

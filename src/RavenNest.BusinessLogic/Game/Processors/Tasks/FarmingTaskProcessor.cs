@@ -42,14 +42,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     return;
 
                 session.Updated = DateTime.UtcNow;
-                var villageResources = GetVillageResources(gameData, session);
-                if (villageResources != null)
-                {
-                    ++villageResources.Wheat;
-                }
-
-                QuestTracker.Gathered(character, RavenNest.Models.Skill.Farming);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
+                GatherRound(logger, gameData, inventory, session, character, RavenNest.Models.Skill.Farming, Drops, skills.FarmingLevel, level, state.TaskArgument,
+                    (village, amount) => village.Wheat += amount);
             });
         }
     }
