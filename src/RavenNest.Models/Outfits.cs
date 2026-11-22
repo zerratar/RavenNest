@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 
 namespace RavenNest.Models
@@ -100,7 +99,9 @@ namespace RavenNest.Models
     /// outfit is on. The server keeps it as one short text per character (<see cref="ToString"/>) and sends that text
     /// to the game, which reads it with the same code.
     ///
-    /// The game loads this library on its own runtime: plain types only (see <see cref="GearScore"/>).
+    /// The game loads this library on its own runtime: plain types only (see <see cref="GearScore"/>). Numbers are
+    /// written and read by hand here: CultureInfo is one of the types that runtime does not find in this library
+    /// (a TypeLoadException when the first character joined, in the first play test).
     /// </summary>
     public sealed class CharacterOutfits
     {
@@ -234,7 +235,7 @@ namespace RavenNest.Models
                         {
                             var values = entry.Split(new[] { ':' });
                             if (values.Length < 3) continue;
-                            if (!int.TryParse(values[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var slotNumber)) continue;
+                            if (!TryNumber(values[0], out var slotNumber)) continue;
                             var slot = (EquipmentSlot)slotNumber;
                             var itemId = IdOf(values[2]);
                             if (!OutfitRules.IsOutfitSlot(slot) || itemId == Guid.Empty || outfit.Get(slot) != null) continue;
@@ -252,7 +253,26 @@ namespace RavenNest.Models
             return result;
         }
 
-        private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+        // whole numbers from 0 up, in plain digits whatever the language of the machine
+        private static string Number(int value)
+        {
+            if (value <= 0) return "0";
+            var digits = new StringBuilder(4);
+            for (var rest = value; rest > 0; rest /= 10) digits.Insert(0, (char)('0' + rest % 10));
+            return digits.ToString();
+        }
+
+        private static bool TryNumber(string text, out int value)
+        {
+            value = 0;
+            if (string.IsNullOrEmpty(text) || text.Length > 6) return false;
+            foreach (var c in text)
+            {
+                if (c < '0' || c > '9') return false;
+                value = value * 10 + (c - '0');
+            }
+            return true;
+        }
 
         private static string Id(Guid id) => id == Guid.Empty ? string.Empty : id.ToString("N");
 
@@ -260,8 +280,7 @@ namespace RavenNest.Models
 
         private static Skill SkillOf(string text)
         {
-            if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number)) return Skill.None;
-            return OutfitRules.Normalize((Skill)number);
+            return TryNumber(text, out var number) ? OutfitRules.Normalize((Skill)number) : Skill.None;
         }
 
         private static string CleanWord(string word)

@@ -37,6 +37,10 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The first game that knows outfits: an older one is told of gear changes the old way.</summary>
         public static readonly Version FirstGameVersion = new Version(0, 9, 7, 0);
 
+        // the sessions whose game has asked anything about outfits: such a game knows them, whatever version it
+        // says it is (a build made before the version was raised)
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> askingSessions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, bool>();
+
         // one change to a character's outfits at a time; shared by every instance (PlayerManager has its own)
         private static readonly object[] locks = Enumerable.Range(0, 64).Select(_ => new object()).ToArray();
 
@@ -557,7 +561,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByUserId(character.UserIdLock.Value);
             if (session == null) return null;
             var version = gameData.GetSessionState(session.Id)?.ClientVersion;
-            knowsOutfits = GameVersion.TryParse(version, out var parsed) && parsed >= FirstGameVersion;
+            knowsOutfits = askingSessions.ContainsKey(session.Id) || (GameVersion.TryParse(version, out var parsed) && parsed >= FirstGameVersion);
             return session;
         }
 
@@ -566,6 +570,7 @@ namespace RavenNest.BusinessLogic.Game
             if (token == null) return null;
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
+            askingSessions[session.Id] = true;
             return gameData.GetActiveSessionCharacters(session)?.FirstOrDefault(x => x.Id == characterId);
         }
     }
