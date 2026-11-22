@@ -372,6 +372,9 @@ class Stage {
         }
         this.target.lerp(this.wanted.target, k);
         this.distance += (this.wanted.distance - this.distance) * k;
+        // the figure itself turns for a stance (the rig faces the camera at half a turn)
+        const facing = Math.PI + (this.turn || 0);
+        if (Math.abs(this.rig.rotation.y - facing) > 0.0005) this.rig.rotation.y += (facing - this.rig.rotation.y) * (this.options.still ? 1 : k);
         if (!this.dragging && !this.options.still && this.options.spin) this.yaw += dt * 0.15;
         this.place();
         this.renderer.render(this.scene, this.camera);
@@ -458,9 +461,12 @@ class Stage {
     /**
      * How the character stands: a stance (an animation in the export's layout, as the idle with a weapon in hand) in
      * place of the idle, or nothing for the idle itself. The bored fidget is the empty hands' own and waits meanwhile.
+     * A weapon's stance stands side-on: turn (degrees the chest faces to the character's right) turns the figure back,
+     * so its front still shows.
      */
-    stand(name, animation) {
+    stand(name, animation, turn) {
         const wanted = name && animation ? name : null;
+        this.turn = wanted ? (turn || 0) * Math.PI / 180 : 0;
         if ((this.stance || null) === wanted) return;
         this.stances ??= new Map();
         if (wanted && !this.stances.has(wanted)) this.stances.set(wanted, clipFrom(animation, 'stance-' + wanted, i => 'b' + i));

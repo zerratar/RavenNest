@@ -369,6 +369,7 @@ export async function figure(host, designerUrl, gearUrl, look, outfit) {
             view.wanted.distance = 4.2;
             view.distance = 4.2;
         }
+        evenLight(view);
         const body = view.show(look);
         let dressed = false;
         if (view.mode === '3d' && gearUrl) {
@@ -397,6 +398,21 @@ export async function figure(host, designerUrl, gearUrl, look, outfit) {
     }
 }
 
+/* stage light */
+/**
+ * The customizer's stage is lit for mood (a warm key, deep shade). Here the figure is looked at for what it wears, so
+ * the light is evener and whiter: a tier's colors read as they do in the game.
+ */
+function evenLight(view) {
+    if (!view.scene) return;
+    view.scene.traverse(o => {
+        if (o.isHemisphereLight) { o.color.setHex(0xe4eaf4); o.groundColor.setHex(0x8c867c); o.intensity = 1.9; }
+        else if (o.isDirectionalLight && o.position.z > 0 && o.position.y > 2) { o.color.setHex(0xfff3e2); o.intensity = 2.2; }
+        else if (o.isDirectionalLight && o.position.z < 0) o.intensity = 1.4;
+        else if (o.isDirectionalLight) { o.color.setHex(0xffe9d2); o.intensity = 0.9; }
+    });
+}
+/* end stage light */
 /** What the character wears changed (the server has answered): the figure follows. */
 export function dressFigure(outfit) {
     return wardrobe ? wardrobe.set(outfit || { pieces: [] }) : null;

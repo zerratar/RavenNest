@@ -615,6 +615,7 @@ export async function attach(designer, stage, onBusy) {
 
     // with a weapon in hand the character stands as the game's does (the animation pack's idle for that weapon)
     const stances = new Map();
+    let roomy = null;
     const stand = async (props, token) => {
         if (typeof stage.stand !== 'function') return;
         let name = null;
@@ -622,8 +623,11 @@ export async function attach(designer, stage, onBusy) {
             const s = STANCE[p.type];
             if (s && (s !== 'shield' || !name)) name = s;
         }
-        const file = name && g.stances ? g.stances[name] : null;
-        if (!file) { stage.stand(null); return; }
+        const stance = name && g.stances ? g.stances[name] : null;
+        const file = stance ? stance.file : null;
+        // a stance stands wide: the camera steps back a little for it
+        const far = on => { if (stage.wanted && typeof stage.wanted.distance === 'number') { roomy ??= stage.wanted.distance; stage.wanted.distance = roomy * (on ? 1.12 : 1); } };
+        if (!file) { far(false); stage.stand(null); return; }
         if (!stances.has(name)) {
             stances.set(name, fetch(BASE + file + '?v=' + g.version).then(r => {
                 if (!r.ok) throw new Error('no stance ' + name);
@@ -634,7 +638,8 @@ export async function attach(designer, stage, onBusy) {
         let animation;
         try { animation = await stances.get(name); } catch { return; }
         if (token !== propToken || stage.disposed) return;
-        stage.stand(name, animation);
+        far(true);
+        stage.stand(name, animation, stance.turn);
     };
 
     // the customizer asks this each time it dresses the character: the body parts armor takes the place of go, and
