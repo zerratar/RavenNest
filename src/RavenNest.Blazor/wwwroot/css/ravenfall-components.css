@@ -5784,6 +5784,17 @@ a.rf-badge:hover {
 .rf-stage__slot-number { position: absolute; top: -7px; left: -7px; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #e8a33d; color: #10131a; font-weight: 800; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
 .rf-stage__slot.is-empty { border-style: dashed; background: rgba(10,12,32,0.7); }
 .rf-stage__slot-plus { font-size: 1.6rem; color: rgba(233,184,92,0.65); line-height: 1; }
+/* the fifth slot while Battle Rhythm is not learned: grayed out with a lock; its tip says what to learn */
+.rf-stage__slot.is-locked { border: 1px dashed rgba(150,160,200,0.55); background: rgba(8,10,26,0.72); color: rgba(176,186,222,0.8); }
+.rf-stage__slot.is-locked .rf-stage__slot-number { background: #5a6388; color: #e6eaf8; }
+.rf-stage__slot.is-locked:hover, .rf-stage__slot.is-locked:focus-visible { border-color: #f6d590; border-style: solid; color: #fbe7b8; outline: none; }
+.rf-stage__slot-lock { width: 30px; height: 30px; }
+.rf-stage__slot-tip { position: absolute; bottom: calc(100% + 14px); right: -6px; width: max-content; max-width: min(300px, calc(100vw - 44px)); padding: 9px 12px; border-radius: 9px; z-index: 6;
+    background: rgba(10,12,32,0.97); border: 1px solid rgba(233,184,92,0.65); box-shadow: 0 6px 20px rgba(0,0,0,0.5); color: #f3e6cc; font-size: 0.9rem; font-weight: 700; line-height: 1.35; text-align: left; white-space: normal;
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.12s ease; }
+.rf-stage__slot-tip strong { display: block; color: #fbe7b8; font-size: 0.95rem; font-weight: 800; margin-bottom: 2px; }
+.rf-stage__slot-tip em { font-style: normal; color: #ffd98a; font-weight: 800; }
+.rf-stage__slot.is-locked:hover .rf-stage__slot-tip, .rf-stage__slot.is-locked:focus-visible .rf-stage__slot-tip { opacity: 1; visibility: visible; }
 .rf-stage__slotmenu { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: min(320px, calc(100vw - 32px)); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .rf-stage__slotmenu-head { display: flex; justify-content: space-between; align-items: center; color: #fbe7b8; }
 .rf-stage__slotmenu-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
@@ -5806,6 +5817,7 @@ a.rf-badge:hover {
     .rf-stage__loadout-title { display: none; }
     .rf-stage__slot { width: 60px; height: 64px; }
     .rf-stage__slot img { width: 36px; height: 36px; }
+    .rf-stage__slot-lock { width: 26px; height: 26px; }
     .rf-stage__pop { width: calc(100% - 16px); }
 }
 

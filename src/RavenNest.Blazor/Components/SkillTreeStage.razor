@@ -216,6 +216,21 @@
                     }
                 </button>
             }
+            @* the fifth slot while it is not there yet: locked, and it shows on the map what opens it *@
+            @if (Build.LoadoutSlots == RavenNest.Combat.SkillTrees.BaseLoadoutSlots && ExtraSlotNode != null)
+            {
+                var unlock = ExtraSlotNode;
+                <button type="button" class="rf-stage__slot is-locked" aria-label="Locked slot: learn @unlock.Name to open it"
+                        @onclick="() => ShowUnlock(unlock)" @onmouseenter="() => Highlight(unlock.Id)" @onmouseleave="() => Highlight(null)"
+                        @onfocus="() => Highlight(unlock.Id)" @onblur="() => Highlight(null)">
+                    <span class="rf-stage__slot-number">@(Build.LoadoutSlots + 1)</span>
+                    <svg class="rf-stage__slot-lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7.5a5 5 0 0 1 10 0V10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><rect x="4.5" y="10" width="15" height="11" rx="2.4" fill="currentColor" /><circle cx="12" cy="15" r="1.7" fill="#0c1230" /><rect x="11.2" y="15.4" width="1.6" height="3" rx="0.6" fill="#0c1230" /></svg>
+                    <span class="rf-stage__slot-tip" role="tooltip">
+                        <strong>Locked slot</strong>
+                        Learn <em>@unlock.Name</em> in the @unlock.Tree tree to open it (@RavenNest.Combat.SkillTrees.GateName(unlock) @unlock.RequiredLevel, @unlock.Cost points). Click or tap to see it on the map.
+                    </span>
+                </button>
+            }
         </div>
         @if (slotMenu >= 0)
         {
@@ -398,6 +413,21 @@
     }
 
     private int SlotOf(string id) => Build.Loadout.FindIndex(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The skill that adds a loadout slot (Battle Rhythm), found by what it does.</summary>
+    private static readonly SkillNode ExtraSlotNode = RavenNest.Combat.SkillTrees.All.FirstOrDefault(n => n.ExtraLoadoutSlot);
+
+    /// <summary>A pulsing ring on a skill of the map (the locked slot points at what opens it); null takes it away.</summary>
+    private Task Highlight(string id) => Map("highlight", id);
+
+    /// <summary>The locked slot was pressed: the skill that opens it, picked and in the middle of the map.</summary>
+    private async Task ShowUnlock(SkillNode node)
+    {
+        slotMenu = -1;
+        selected = node;
+        await Map("focus", node.Id);
+        await Map("highlight", node.Id);
+    }
 
     private List<SkillNode> LearnedActives() => Build.Ranks.Where(r => r.Value > 0).Select(r => RavenNest.Combat.SkillTrees.Get(r.Key)).Where(n => n != null && n.IsActive).OrderBy(n => n.Name).ToList();
 

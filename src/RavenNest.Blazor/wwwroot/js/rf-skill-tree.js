@@ -774,6 +774,50 @@ function drawMap(g, view, icons) {
         g.setLineDash([]);
         g.lineDashOffset = 0;
     }
+
+    // a skill the page points at (the locked loadout slot's unlock): a gold ring with a halo and rings spreading from
+    // it, and when it is out of view an arrow at the edge towards it
+    const mark = view.highlight ? map.byId.get(view.highlight) : null;
+    if (mark) {
+        const [x, y] = cam.toScreen(mark.x, mark.y, w, h);
+        const base = Math.max(13, (mark.outer + 12) * u);
+        g.globalCompositeOperation = 'lighter';
+        stampGlow(g, GOLD, x, y, base * 5.5, 0.75);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1;
+        g.strokeStyle = GOLD_BRIGHT;
+        g.beginPath();
+        g.arc(x, y, base, 0, Math.PI * 2);
+        g.lineWidth = Math.max(3, 4.5 * u);
+        g.stroke();
+        for (const offset of [0, 0.5]) {
+            const p = (time * 0.75 + offset) % 1;
+            g.globalAlpha = 0.9 * (1 - p) * (1 - p);
+            g.beginPath();
+            g.arc(x, y, base + (10 + 44 * p) * Math.max(0.55, u), 0, Math.PI * 2);
+            g.lineWidth = Math.max(2, 3 * u);
+            g.stroke();
+        }
+        g.globalAlpha = 1;
+        const pad = 30;
+        if (x < pad || y < pad || x > w - pad || y > h - pad) {
+            const dx = x - w / 2, dy = y - h / 2;
+            const k = Math.min((w / 2 - pad) / Math.max(1, Math.abs(dx)), (h / 2 - pad) / Math.max(1, Math.abs(dy)));
+            const ex = w / 2 + dx * k, ey = h / 2 + dy * k, a = Math.atan2(dy, dx), bob = 4 * Math.sin(time * 5);
+            g.save();
+            g.translate(ex + Math.cos(a) * bob, ey + Math.sin(a) * bob);
+            g.rotate(a);
+            g.beginPath();
+            g.moveTo(14, 0); g.lineTo(-10, -12); g.lineTo(-4, 0); g.lineTo(-10, 12);
+            g.closePath();
+            g.fillStyle = GOLD_BRIGHT;
+            g.fill();
+            g.lineWidth = 2;
+            g.strokeStyle = 'rgba(6,8,18,0.9)';
+            g.stroke();
+            g.restore();
+        }
+    }
 }
 
 // ---- drawing: the names and numbers --------------------------------------------------------------------------------
@@ -1387,6 +1431,7 @@ class SkillTreeView {
             n.picture = n.kind === 'passive' || n.capstone ? 'tree:' + n.tree : n.id;
         }
         if (this.hover && !this.map.byId.has(this.hover)) this.hover = null;
+        if (this.highlighted && !this.map.byId.has(this.highlighted)) this.highlighted = null;
         this.gl?.build(this.map);
         if (fit) this.fit();
         this.dirty = true;
@@ -1456,6 +1501,12 @@ class SkillTreeView {
         this.selected = id;
         this.dirty = true;
         if (notify && this.dotnet) this.dotnet.invokeMethodAsync('OnNodeSelected', id || '');
+    }
+
+    /** A pulsing gold ring on a skill, so the page can point at it (the locked loadout slot's unlock); null clears it. */
+    highlight(id) {
+        this.highlighted = id && this.map.byId.has(id) ? id : null;
+        this.dirty = true;
     }
 
     /** Centres the camera on a node (from the page's list or search). */
@@ -1594,7 +1645,7 @@ class SkillTreeView {
 
         // how often to draw: at once after a change; while something pulses or turns, every frame (the plain canvas
         // every other); otherwise only the WebGL sky's slow drift, ten times a second; and never for a still map
-        const lively = this.map.lively || !!this.selected;
+        const lively = this.map.lively || !!this.selected || !!this.highlighted;
         const wait = this.dirty ? 0 : this.reduced ? Infinity : lively ? (this.useGl ? 0 : 30) : (this.useGl ? 100 : Infinity);
         if (now - this.lastDraw < wait) return;
         this.lastDraw = now;
@@ -1609,7 +1660,7 @@ class SkillTreeView {
             return true;
         };
         sized(this.canvas);
-        const view = { w, h, cam: this.cam, map: this.map, selected: this.selected, hover: this.hover, time };
+        const view = { w, h, cam: this.cam, map: this.map, selected: this.selected, hover: this.hover, highlight: this.highlighted, time };
         if (this.useGl) {
             this.gl.render(view);
         } else {
