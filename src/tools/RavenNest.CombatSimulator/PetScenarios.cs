@@ -21,7 +21,7 @@ namespace RavenNest.CombatSimulator
         private const double OwnerSwing = 1.5;
         private const double EnemySwing = 1.5;
 
-        private sealed class Result
+        internal sealed class Result
         {
             public double OwnerDamage, PetDamage, OwnerTaken, PetTaken, Healed, OwnerFalls;
             public int EnemyHits, HitsOnPet, Knockouts;
@@ -58,7 +58,7 @@ namespace RavenNest.CombatSimulator
             Console.WriteLine("Gatherer pets do not fight; their skills: " + string.Join(", ", BattlePets.Skills.Where(s => s.Role == PetRole.Gatherer).Select(s => s.Name + " (" + s.Description + ")")));
         }
 
-        private static Result Average(List<Result> runs) => new Result
+        internal static Result Average(List<Result> runs) => new Result
         {
             OwnerDamage = runs.Average(r => r.OwnerDamage),
             PetDamage = runs.Average(r => r.PetDamage),
@@ -89,7 +89,22 @@ namespace RavenNest.CombatSimulator
             enemy.Melee.Power = (int)(kit.WeaponPower * offenceShare);
             enemy.Melee.Accuracy = (int)(kit.WeaponAim * offenceShare);
 
+            return Fight(owner, AttackStyle.Melee, enemy, level, species, stage, null, random);
+        }
+
+        /// <summary>
+        ///     One fight of <see cref="Seconds"/>: an owner (any style) and its pet against an enemy that never falls.
+        ///     <paramref name="bond"/> is what the owner gives the pet, as the game reads it from the owner's Beastmaster
+        ///     tree and worn gear (BattlePetController.Refresh): PET_POWER on its blows, heals and damage over time,
+        ///     PET_HEALTH on its health, PET_RECOVERY off its knockout. Null for none.
+        /// </summary>
+        internal static Result Fight(CombatSheet owner, AttackStyle ownerStyle, CombatSheet enemy, int level, PetSpecies species, int stage, GearStats bond, ICombatRandom random)
+        {
+            var power = 1 + Math.Max(0, bond?[GearStat.PetPower] ?? 0);
+            var recovery = Math.Min(0.75, Math.Max(0, bond?[GearStat.PetRecovery] ?? 0));
             var pet = species?.Sheet(level, stage);
+            if (pet != null) pet.MaxHealth = Math.Max(1, (int)Math.Round(pet.MaxHealth * (1 + Math.Max(0, bond?[GearStat.PetHealth] ?? 0))));
+            var ownerSwing = ownerStyle == AttackStyle.Magic ? OwnerSwing / Math.Max(0.1, owner.CastSpeed) : OwnerSwing / Math.Max(0.1, owner.AttackSpeed);
             var interval = species?.Stats.AttackInterval ?? 2;
             var petSkills = species == null ? new List<PetSkill>() :
                 species.SkillsAt(level, stage).Where(s => s.IsActive).Take(BattlePets.SkillSlots(level, stage)).ToList();
@@ -125,10 +140,10 @@ namespace RavenNest.CombatSimulator
 
                 if (time == nextOwner)
                 {
-                    var hit = CombatMath.Attack(owner, AttackStyle.Melee, enemy, random).Total;
+                    var hit = CombatMath.Attack(owner, ownerStyle, enemy, random).Total;
                     result.OwnerDamage += hit;
                     threat.AddDamage(ownerKey, hit, owner.ThreatMultiplier);
-                    nextOwner = time + OwnerSwing / (owner.AttackSpeed * (time < ownerSpeedUntil ? 1 + ownerSpeed : 1));
+                    nextOwner = time + ownerSwing / (time < ownerSpeedUntil ? 1 + ownerSpeed : 1);
                 }
                 else if (pet != null && time == nextPet)
                 {
@@ -155,21 +170,21 @@ namespace RavenNest.CombatSimulator
                                 switch (e.Kind)
                                 {
                                     case SkillEffectKind.Damage:
-                                        var d = CombatMath.Attack(pet, species.Stats.Style, enemy, random, new AttackOptions { Multiplier = e.Amount, Element = e.Element }).Total;
+                                        var d = CombatMath.Attack(pet, species.Stats.Style, enemy, random, new AttackOptions { Multiplier = e.Amount * power, Element = e.Element }).Total;
                                         result.PetDamage += d; threat.AddDamage(petKey, d, pet.ThreatMultiplier);
                                         break;
                                     case SkillEffectKind.DamageOverTime:
                                         var s = pet.Style(species.Stats.Style);
-                                        dots.Add((CombatMath.MaxHit(s.DamageLevel, s.EffectivePower) * 0.7 * e.Amount / e.Seconds, time + e.Seconds));
+                                        dots.Add((CombatMath.MaxHit(s.DamageLevel, s.EffectivePower) * 0.7 * e.Amount * power / e.Seconds, time + e.Seconds));
                                         break;
                                     case SkillEffectKind.Heal:
-                                        var amount = CombatMath.Heal(pet, random, e.Amount).Amount;
+                                        var amount = CombatMath.Heal(pet, random, e.Amount * power).Amount;
                                         if (petHealth / pet.MaxHealth < ownerHealth / owner.MaxHealth) petHealth = Math.Min(pet.MaxHealth, petHealth + amount);
                                         else result.Healed += Heal(ref ownerHealth, owner.MaxHealth, amount);
                                         threat.Add(petKey, ThreatTable<object>.HealingThreat(amount, 1));
                                         break;
                                     case SkillEffectKind.HealOverTime:
-                                        var total = CombatMath.Heal(pet, random, e.Amount).Amount;
+                                        var total = CombatMath.Heal(pet, random, e.Amount * power).Amount;
                                         heals.Add((total / e.Seconds, time + e.Seconds));
                                         petHealth = Math.Min(pet.MaxHealth, petHealth + total);
                                         threat.Add(petKey, ThreatTable<object>.HealingThreat(total, 1));
@@ -203,7 +218,7 @@ namespace RavenNest.CombatSimulator
 
                     if (!used)
                     {
-                        var hit = CombatMath.Attack(pet, species.Stats.Style, enemy, random).Total;
+                        var hit = CombatMath.Attack(pet, species.Stats.Style, enemy, random, new AttackOptions { Multiplier = power }).Total;
                         result.PetDamage += hit;
                         threat.AddDamage(petKey, hit, pet.ThreatMultiplier);
                     }
@@ -226,7 +241,7 @@ namespace RavenNest.CombatSimulator
                         if (petHealth <= 0)
                         {
                             result.Knockouts++;
-                            knockedOutUntil = time + BattlePets.KnockoutSeconds;
+                            knockedOutUntil = time + BattlePets.KnockoutSeconds * (1 - recovery);
                             threat.Remove(petKey);
                             target = ownerKey;
                         }

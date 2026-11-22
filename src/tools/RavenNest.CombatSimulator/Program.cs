@@ -78,6 +78,11 @@ namespace RavenNest.CombatSimulator
                 case "tower":
                     TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
                     return 0;
+                case "taminggear":
+                    // the Beastmaster line against each style's damage line, with a damage pet and without (the game's
+                    // docs/taming-gear-design.md); "taminggear 200 PET_POWER=3:40" tries other numbers
+                    TamingGearScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tg) ? tg : 200, args.Skip(2).ToArray());
+                    return 0;
                 default:
                     Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], paths [runs] [tree], pets [runs] [armour share] [offence share], tower [attempts]");
                     return 1;
