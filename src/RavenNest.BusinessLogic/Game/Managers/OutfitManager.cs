@@ -322,6 +322,7 @@ namespace RavenNest.BusinessLogic.Game
                     result.Outfits = state.ToString();
                     return result;
                 }
+                Tidy(state, outfit);
                 return Done(character, state, result, tellGame: true);
             }
         }
@@ -355,6 +356,7 @@ namespace RavenNest.BusinessLogic.Game
                 var outfit = state.GetOrAdd(skill);
                 outfit.Pet = petId;
                 if (state.Worn == skill) SendOutPet(character, outfit, result);
+                Tidy(state, outfit);
                 return Done(character, state, result, tellGame: true);
             }
         }
@@ -404,14 +406,7 @@ namespace RavenNest.BusinessLogic.Game
             lock (LockOf(character.Id))
             {
                 var state = Load(character);
-                if (follow != null && follow.Value && !state.Follow)
-                {
-                    // on again: what is worn is the outfit of what is trained now (nothing changed while it was off)
-                    var task = gameData.GetCharacterState(character.StateId);
-                    var trained = OutfitRules.SkillOf(task?.Task, task?.TaskArgument);
-                    if (trained != Skill.None) state.Worn = trained;
-                    state.Back = Skill.None;
-                }
+                // (turned on again, the game looks at once at what is trained and asks for that outfit: Follow)
                 if (follow != null) state.Follow = follow.Value;
                 if (upgrade != null) state.Upgrade = upgrade.Value;
                 return Done(character, state, new OutfitResult { Skill = (int)state.Worn }, tellGame);
@@ -461,6 +456,15 @@ namespace RavenNest.BusinessLogic.Game
                 var item = inventory.Get(pieces[index].Id);
                 if (item.IsNull()) continue;
                 if (inventory.EquipItem(item) && result != null) result.Changed = true;
+            }
+        }
+
+        // an outfit with nothing in it is no outfit: the skill keeps what is worn, as before it had one
+        private static void Tidy(CharacterOutfits state, Outfit outfit)
+        {
+            if (outfit.Slots.Count == 0 && outfit.Pet == Guid.Empty && string.IsNullOrEmpty(outfit.Word) && outfit.Skill != state.Worn)
+            {
+                state.Remove(outfit.Skill);
             }
         }
 
