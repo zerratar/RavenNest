@@ -278,7 +278,7 @@ else
                     }
                     else
                     {
-                        <div class="rf-gear-grid">
+                        <div class="rf-gear-grid" @onpointerdown="p => lastPointer = p.PointerType">
                             @foreach (var e in pieces)
                             {
                                 @Tile(e, true)
@@ -460,6 +460,27 @@ else
             </div>
         }
     </div>
+
+    @*
+        The cards shown beside a piece or a slot under the mouse (js/rf-gear.js copies them into a layer of its
+        own): every worn piece and every piece of the bag that can be worn has one, drawn here with the same
+        numbers as the item panel, so the two never disagree. A bag piece's card marks what would change against
+        the piece worn in its slot, and the script puts that worn piece's card next to it.
+    *@
+    @if (ActiveView == "equipment")
+    {
+        <div class="rf-gear-tips" hidden aria-hidden="true">
+            @foreach (var e in entries)
+            {
+                if (e.Slot == EquipmentSlot.None) continue;
+                Entry against = null;
+                if (!e.Stack.Equipped) worn.TryGetValue(e.Slot, out against);
+                <div data-tip-card="@e.Stack.Id" data-tip-slot="@GearRules.Get(e.Slot)?.Key" data-tip-with="@against?.Stack.Id">
+                    @TipCard(e, against)
+                </div>
+            }
+        </div>
+    }
 
     @* The Equipment tab opens the item panel over the page: a drawer on a wide screen, a sheet on a phone. *@
     @if (ActiveView == "equipment" && detailOpen && PickedEntry != null)
@@ -821,8 +842,10 @@ else
                 class="rf-gear-slot @(e == null ? "is-empty" : e.RarityClass) @(picked ? "is-picked" : "")"
                 data-slot="@slot.Key" data-gear-drop="@slot.Key"
                 data-gear-drag="@(e != null && CanAct ? e.Stack.Id.ToString() : null)" data-gear-from="worn"
+                data-tip="@(e != null ? e.Stack.Id.ToString() : null)"
                 aria-pressed="@picked"
-                title="@(e == null ? slot.Label + ": empty" : slot.Label + ": " + e.Name)"
+                aria-label="@(e == null ? slot.Label + ": empty" : slot.Label + ": " + e.Name)"
+                title="@(e == null ? slot.Label + ": empty" : null)"
                 @onclick="() => ClickSlot(slot)">
             <span class="rf-gear-slot__pic">
                 @if (e != null)
@@ -864,8 +887,10 @@ else
                 class="rf-gear-tile @e.RarityClass @(isPicked ? "is-picked" : "") @(isChosen ? "is-chosen" : "") @(e.Stack.Equipped ? "is-worn" : "") @(several && !e.CanMove ? "is-locked" : "") @(wearView && !e.CanWear ? "is-barred" : "")"
                 data-slot="@slotKey"
                 data-gear-drag="@(wearView && CanAct && e.CanWear ? e.Stack.Id.ToString() : null)" data-gear-from="bag"
+                data-tip="@(wearView ? e.Stack.Id.ToString() : null)"
                 aria-pressed="@(isPicked || isChosen)"
-                title="@TileTitle(e)"
+                aria-label="@TileTitle(e)"
+                title="@(wearView ? null : TileTitle(e))"
                 @onclick="() => ClickTile(e, wearView)"
                 @ondblclick="() => DoubleClickTile(e, wearView)">
             <span class="rf-gear-tile__pic">@Picture(e)</span>
@@ -985,6 +1010,133 @@ else
         }
     };
 
+    // One piece as a card for the mouse: what it is, its numbers, gems, enchantments and requirements. With a worn
+    // piece to compare against, every number carries what would change (the rows are the item panel's own).
+    private RenderFragment TipCard(Entry e, Entry against) => __builder =>
+    {
+        var item = e.Item;
+        var line = GearRules.LineOf(item);
+        var rows = against != null ? Compare(e, against) : null;
+        var stats = against == null ? StatsOf(e) : null;
+        var armorHealth = RavenNest.Combat.CombatMath.IsArmorPiece((int)item.Type) ? RavenNest.Combat.CombatMath.ArmorHealth(item.ArmorPower) : 0;
+        var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
+        var skin = e.Stack.TransmogrificationId != null ? ItemService.GetItem(e.Stack.TransmogrificationId.Value) : null;
+        <div class="rf-gear-tipcard @(e.Stack.Equipped ? "is-worn" : "is-bag")">
+            <div class="rf-gear-tipcard__label">@(e.Stack.Equipped ? "Worn now" : "In your bag")</div>
+            <div class="rf-gear-tipcard__head">
+                <span class="rf-gear-tipcard__pic @e.RarityClass">@Picture(e)</span>
+                <span class="rf-gear-tipcard__title">
+                    <b class="rf-gear-tipcard__name @e.RarityClass">@e.Name</b>
+                    <span class="rf-gear-tipcard__what"><em class="@e.RarityClass">@ItemService.GetRarityName(item)</em> @What(e)@(line != null ? ". " + line : "")</span>
+                </span>
+            </div>
+
+            <div class="rf-gear-tipcard__rows">
+                @if (rows != null)
+                {
+                    foreach (var row in rows)
+                    {
+                        <div class="rf-gear-tipcard__row">
+                            <span>@row.Label</span>
+                            <b>
+                                @row.This
+                                @if (row.Delta != 0)
+                                {
+                                    <em class="@(row.Delta > 0 ? "is-good" : "is-bad")">@row.Change</em>
+                                }
+                            </b>
+                        </div>
+                    }
+                }
+                else
+                {
+                    foreach (var stat in stats)
+                    {
+                        <div class="rf-gear-tipcard__row">
+                            <span>@stat.Label</span>
+                            <b>@stat.Text(stat.Total)</b>
+                        </div>
+                    }
+                    if (armorHealth > 0)
+                    {
+                        <div class="rf-gear-tipcard__row">
+                            <span>Health</span>
+                            <b>@armorHealth.ToString("N0")</b>
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (e.Sockets.Count > 0 || enchantments != null || skin != null)
+            {
+                <div class="rf-gear-tipcard__more">
+                    @foreach (var socket in e.Sockets)
+                    {
+                        <div class="rf-gear-tipcard__gem">
+                            <i class="rf-gear-dot @(socket.Empty ? "" : "is-gem-" + socket.Kind.ToString().ToLowerInvariant())"></i>
+                            @if (socket.Empty)
+                            {
+                                <span>Empty socket</span>
+                            }
+                            else
+                            {
+                                <span><b>@socket.Name</b> <em class="is-good">@socket.Bonus</em></span>
+                            }
+                        </div>
+                    }
+                    @if (enchantments != null)
+                    {
+                        foreach (var enchantment in enchantments)
+                        {
+                            <div class="rf-gear-tipcard__gem">
+                                <i class="fa-solid fa-sparkles" aria-hidden="true"></i>
+                                <span><b>@EnchantmentName(enchantment)</b> <em class="is-good">+@EnchantmentValue(enchantment)</em></span>
+                            </div>
+                        }
+                    }
+                    @if (skin != null)
+                    {
+                        <div class="rf-gear-tipcard__gem">
+                            <i class="fa-solid fa-mask" aria-hidden="true"></i>
+                            <span>Looks like <b>@skin.Name</b></span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @{
+                var requirements = Requirements(item);
+            }
+            @if (requirements.Count > 0)
+            {
+                <div class="rf-gear-tipcard__needs">
+                    @foreach (var requirement in requirements)
+                    {
+                        <span class="@(requirement.Met ? "" : "is-bad")">
+                            @if (!requirement.Met)
+                            {
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            }
+                            Requires @requirement.Skill @requirement.Level
+                        </span>
+                    }
+                </div>
+            }
+
+            @if (!e.Stack.Equipped)
+            {
+                if (e.Upgrade)
+                {
+                    <div class="rf-gear-tipcard__verdict is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Equip best would wear this@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "")</div>
+                }
+                else if (against == null && e.CanWear)
+                {
+                    <div class="rf-gear-tipcard__verdict">Nothing is worn in the @GearRules.Get(e.Slot)?.Label.ToLowerInvariant() slot</div>
+                }
+            }
+        </div>
+    };
+
     // Everything about one item: what it is, how it compares, its gems and enchantments, and what can be done.
     private RenderFragment ItemPanel(Entry e) => __builder =>
     {
@@ -1060,7 +1212,7 @@ else
                             <b class="@(row.Delta > 0 ? "is-good" : row.Delta < 0 ? "is-bad" : "is-same")">@row.Change</b>
                         </div>
                     }
-                    <p class="rf-gear-compare__with">Compared with the worn @wornNow.Name.</p>
+                    <p class="rf-gear-compare__with">Compared with the worn @wornNow.Name@(WornExtras(wornNow)).</p>
                     @if (e.Upgrade)
                     {
                         <p class="rf-gear-compare__verdict"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> "Equip best" would wear this instead@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "").</p>

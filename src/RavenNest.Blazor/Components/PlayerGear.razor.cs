@@ -617,6 +617,9 @@ namespace RavenNest.Blazor.Components
             ResetGemState();
         }
 
+        // What the last press on the Equipment tab's bag was made with: "mouse", "pen" or "touch".
+        private string lastPointer;
+
         private void ClickTile(Entry e, bool wearView)
         {
             if (several)
@@ -627,6 +630,17 @@ namespace RavenNest.Blazor.Components
             }
 
             ResetGemState();
+
+            // A finger has no hover, so there is no card beside the piece: a tap opens the same information as a
+            // sheet, with the comparison and the Equip button.
+            if (wearView && lastPointer == "touch")
+            {
+                pickedId = e.Stack.Id;
+                pickedSlot = e.Slot;
+                detailOpen = true;
+                return;
+            }
+
             if (pickedId == e.Stack.Id)
             {
                 ClearPick();
@@ -635,6 +649,26 @@ namespace RavenNest.Blazor.Components
 
             pickedId = e.Stack.Id;
             pickedSlot = wearView ? e.Slot : EquipmentSlot.None;
+        }
+
+        /// <summary>The gems, enchantment and skin of the worn piece a comparison is against, in a few words; empty when it has none.</summary>
+        private string WornExtras(Entry wornNow)
+        {
+            var parts = new List<string>();
+            foreach (var socket in wornNow.Sockets)
+            {
+                if (!socket.Empty) parts.Add(socket.Name + " (" + socket.Bonus + ")");
+            }
+
+            if (wornNow.Enchanted)
+            {
+                foreach (var enchantment in ItemService.GetItemEnchantments(wornNow.Stack))
+                {
+                    parts.Add(EnchantmentName(enchantment) + " +" + EnchantmentValue(enchantment));
+                }
+            }
+
+            return parts.Count == 0 ? string.Empty : ", which has " + string.Join(", ", parts);
         }
 
         private void DoubleClickTile(Entry e, bool wearView)
@@ -799,7 +833,12 @@ namespace RavenNest.Blazor.Components
 
             // the worn piece can be a new stack (one taken from a stack of several): follow it
             pickedId = worn.TryGetValue(slot, out var now) ? now.Stack.Id : null;
-            if (ActiveView == "equipment") pickedSlot = slot;
+            if (ActiveView == "equipment")
+            {
+                pickedSlot = slot;
+                // put on from the sheet or the drawer: it closes, so the figure and the slot it went into show
+                detailOpen = false;
+            }
         }
 
         private void Unequip(Entry e)

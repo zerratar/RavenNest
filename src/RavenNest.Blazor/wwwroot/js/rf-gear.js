@@ -4,6 +4,11 @@
 // Everything here is a convenience on top of the page, which works by click and tap alone: a piece is put on with
 // the Equip button too. So this only listens to a mouse or a pen. A finger scrolls the page as usual.
 //
+// It also shows the card of a piece or a worn slot beside it while the mouse is over it. The page draws every card
+// (hidden, in .rf-gear-tips) with the same numbers as its item panel; this copies the one asked for into a layer of
+// its own, and for a piece of the bag puts the card of the piece worn in its slot next to it. Nothing is asked of
+// the server for a hover.
+//
 // The script never changes what is worn. A drop only tells the page (DropOnSlot, DropOnBag); the page asks the server
 // and draws what the server answers. While dragging, the marks are attributes on the page's root (data-drag-slot and
 // so on), which the stylesheet reads: Blazor does not render those, so a re-render in the middle leaves them alone.
@@ -35,7 +40,148 @@ export function attach(root, dotnet) {
         if (target) target.setAttribute('data-gear-over', '1');
     };
 
+    // ---- The cards ---------------------------------------------------------------------------------------------
+    const tip = { layer: null, anchor: null, showTimer: 0, hideTimer: 0 };
+    const cardOf = id => (id ? document.querySelector('.rf-gear-tips [data-tip-card="' + id + '"]') : null);
+
+    const hideTip = () => {
+        clearTimeout(tip.showTimer);
+        clearTimeout(tip.hideTimer);
+        tip.anchor = null;
+        tip.waiting = null;
+        if (tip.layer) tip.layer.classList.remove('is-on');
+    };
+
+    // Where the card goes: beside what it is about, inside the window, and never over the slot the piece would go
+    // in. A pair is laid side by side where that fits and one over the other where it does not.
+    const placeTip = (pair, slotKey, fromBag) => {
+        const layer = tip.layer;
+        const a = tip.anchor.getBoundingClientRect();
+        const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+        const pad = 8, gap = 10;
+        const slotEl = fromBag && slotKey ? root.querySelector('.rf-gear-slot[data-slot="' + slotKey + '"]') : null;
+        const avoid = slotEl ? slotEl.getBoundingClientRect() : null;
+        const hits = (x, y, w, h, r) => r && x < r.right && x + w > r.left && y < r.bottom && y + h > r.top;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+        let order = ['below', 'above', 'left', 'right'];
+        if (!fromBag) {
+            // a worn slot: toward the middle of the figure, which keeps the other slots of its column in sight
+            const figure = tip.anchor.closest('.rf-gear-figure');
+            const f = figure ? figure.getBoundingClientRect() : null;
+            const rightHalf = f && a.left + a.width / 2 > f.left + f.width / 2 + 4;
+            order = rightHalf ? ['left', 'right', 'below', 'above'] : ['right', 'left', 'below', 'above'];
+        }
+
+        let best = null;
+        for (const layout of pair ? ['is-row', 'is-stack'] : ['is-row']) {
+            layer.classList.remove('is-row', 'is-stack');
+            layer.classList.add(layout);
+            const w = layer.offsetWidth, h = layer.offsetHeight;
+            const cx = clamp(a.left + a.width / 2 - w / 2, pad, Math.max(pad, vw - w - pad));
+            const cy = clamp(a.top - 12, pad, Math.max(pad, vh - h - pad));
+            const spots = {
+                below: [cx, a.bottom + gap],
+                above: [cx, a.top - gap - h],
+                left: [a.left - gap - w, cy],
+                right: [a.right + gap, cy],
+            };
+            for (const side of order) {
+                const [x, y] = spots[side];
+                const over = Math.max(0, pad - x) + Math.max(0, pad - y) + Math.max(0, x + w - (vw - pad)) + Math.max(0, y + h - (vh - pad));
+                const clear = !hits(x, y, w, h, avoid);
+                if (over === 0 && clear) {
+                    layer.style.left = Math.round(x) + 'px';
+                    layer.style.top = Math.round(y) + 'px';
+                    return;
+                }
+                const score = over + (clear ? 0 : 5000);
+                if (!best || score < best.score) best = { score, layout, x, y, w, h };
+            }
+        }
+
+        // nowhere is perfect (a very small window): the least bad, pulled inside
+        layer.classList.remove('is-row', 'is-stack');
+        layer.classList.add(best.layout);
+        layer.style.left = Math.round(clamp(best.x, pad, Math.max(pad, vw - best.w - pad))) + 'px';
+        layer.style.top = Math.round(clamp(best.y, pad, Math.max(pad, vh - best.h - pad))) + 'px';
+    };
+
+    const showTip = anchor => {
+        clearTimeout(tip.showTimer);
+        const card = anchor.isConnected ? cardOf(anchor.dataset.tip) : null;
+        if (!card || s.drag) {
+            hideTip();
+            return;
+        }
+        if (!tip.layer) {
+            tip.layer = document.createElement('div');
+            tip.layer.className = 'rf-gear-tip';
+            document.body.appendChild(tip.layer);
+        }
+        const other = cardOf(card.dataset.tipWith);
+        tip.layer.innerHTML = card.innerHTML + (other ? other.innerHTML : '');
+        tip.layer.querySelectorAll('img').forEach(img => { img.loading = 'eager'; });
+        tip.layer.classList.toggle('is-pair', !!other);
+        tip.anchor = anchor;
+        placeTip(!!other, card.dataset.tipSlot, anchor.classList.contains('rf-gear-tile'));
+        tip.layer.classList.add('is-on');
+    };
+
+    // after something was done the page draws its cards again: the one on show follows, or goes with its piece
+    const refreshTip = () => {
+        if (!tip.anchor) return;
+        if (tip.anchor.isConnected && tip.anchor.dataset.tip && tip.anchor.matches(':hover')) showTip(tip.anchor);
+        else hideTip();
+    };
+
+    s.tipOver = e => {
+        if (e.pointerType === 'touch' || s.drag) return;
+        const anchor = e.target.closest ? e.target.closest('[data-tip]') : null;
+        if (!anchor || !root.contains(anchor)) return;
+        clearTimeout(tip.hideTimer);
+        if (tip.anchor === anchor) return;
+        clearTimeout(tip.showTimer);
+        // the first card waits a moment, so crossing the page does not flash cards; from one piece to the next
+        // it changes at once, without going away in between
+        if (tip.anchor) showTip(anchor);
+        else tip.showTimer = setTimeout(() => showTip(anchor), 150);
+    };
+
+    // a scroll takes the card away; the mouse moving again over the same piece brings it back
+    s.tipMove = e => {
+        if (tip.anchor || s.drag || s.start || e.pointerType === 'touch') return;
+        const anchor = e.target.closest ? e.target.closest('[data-tip]') : null;
+        if (!anchor || !root.contains(anchor) || tip.waiting === anchor) return;
+        tip.waiting = anchor;
+        clearTimeout(tip.showTimer);
+        tip.showTimer = setTimeout(() => { tip.waiting = null; showTip(anchor); }, 150);
+    };
+
+    s.tipOut = e => {
+        const anchor = e.target.closest ? e.target.closest('[data-tip]') : null;
+        if (!anchor) return;
+        const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('[data-tip]') : null;
+        if (to === anchor) return;
+        clearTimeout(tip.showTimer);
+        clearTimeout(tip.hideTimer);
+        tip.hideTimer = setTimeout(hideTip, 110);
+    };
+
+    s.tipClick = () => {
+        setTimeout(refreshTip, 350);
+        setTimeout(refreshTip, 1000);
+    };
+
+    s.hideTip = hideTip;
+    s.dropTip = () => {
+        hideTip();
+        if (tip.layer) tip.layer.remove();
+        tip.layer = null;
+    };
+
     const begin = e => {
+        hideTip();
         const src = s.start.src;
         const img = src.querySelector('img');
         const ghost = document.createElement('div');
@@ -107,10 +253,15 @@ export function attach(root, dotnet) {
         if (!key) return;
         if (from === 'worn') s.dotnet.invokeMethodAsync('DropOnBag', id);
         else s.dotnet.invokeMethodAsync('DropOnSlot', id, key);
+        s.tipClick();
     };
 
     s.cancel = () => end();
-    s.key = e => { if (e.key === 'Escape' && s.drag) end(); };
+    s.key = e => {
+        if (e.key !== 'Escape') return;
+        if (s.drag) end();
+        hideTip();
+    };
 
     // With nothing picked, the mouse over a slot lights up what goes in it, and over a piece the slot it goes in.
     s.over = e => {
@@ -130,6 +281,11 @@ export function attach(root, dotnet) {
     root.addEventListener('pointerdown', s.down);
     root.addEventListener('mouseover', s.over);
     root.addEventListener('mouseleave', s.out);
+    root.addEventListener('pointerover', s.tipOver);
+    root.addEventListener('pointerout', s.tipOut);
+    root.addEventListener('pointermove', s.tipMove);
+    root.addEventListener('click', s.tipClick);
+    window.addEventListener('scroll', s.hideTip, true);
     window.addEventListener('pointermove', s.move, { passive: false });
     window.addEventListener('pointerup', s.up);
     window.addEventListener('pointercancel', s.cancel);
@@ -144,6 +300,12 @@ export function detach(root) {
         root.removeEventListener('pointerdown', s.down);
         root.removeEventListener('mouseover', s.over);
         root.removeEventListener('mouseleave', s.out);
+        root.removeEventListener('pointerover', s.tipOver);
+        root.removeEventListener('pointerout', s.tipOut);
+        root.removeEventListener('pointermove', s.tipMove);
+        root.removeEventListener('click', s.tipClick);
+        window.removeEventListener('scroll', s.hideTip, true);
+        s.dropTip();
         window.removeEventListener('pointermove', s.move);
         window.removeEventListener('pointerup', s.up);
         window.removeEventListener('pointercancel', s.cancel);

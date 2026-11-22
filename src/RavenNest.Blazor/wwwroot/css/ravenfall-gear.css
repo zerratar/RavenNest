@@ -22,15 +22,17 @@
 .rf-gear,
 .rf-gear *,
 .rf-gear-drawer,
-.rf-gear-drawer * {
+.rf-gear-drawer *,
+.rf-gear-tip,
+.rf-gear-tip * {
     box-sizing: border-box;
 }
 
 /* site.css paints every Font Awesome icon white. Here an icon takes the color of what it sits in (:where keeps
    this no stronger than site.css's rule, so every "x i" rule below wins). */
-:where(.rf-gear, .rf-gear-drawer) .fa-solid,
-:where(.rf-gear, .rf-gear-drawer) .fa-regular,
-:where(.rf-gear, .rf-gear-drawer) .fa-sharp {
+:where(.rf-gear, .rf-gear-drawer, .rf-gear-tip) .fa-solid,
+:where(.rf-gear, .rf-gear-drawer, .rf-gear-tip) .fa-regular,
+:where(.rf-gear, .rf-gear-drawer, .rf-gear-tip) .fa-sharp {
     color: inherit;
 }
 
@@ -64,11 +66,14 @@
 }
 
 .rf-gear .is-good,
-.rf-gear-drawer .is-good { color: var(--rf-good); }
+.rf-gear-drawer .is-good,
+.rf-gear-tip .is-good { color: var(--rf-good); }
 .rf-gear .is-bad,
-.rf-gear-drawer .is-bad { color: var(--rf-bad); }
+.rf-gear-drawer .is-bad,
+.rf-gear-tip .is-bad { color: var(--rf-bad); }
 .rf-gear .is-same,
-.rf-gear-drawer .is-same { color: var(--rf-ink-muted); }
+.rf-gear-drawer .is-same,
+.rf-gear-tip .is-same { color: var(--rf-ink-muted); }
 
 /* ---- What the last action did ------------------------------------------- */
 .rf-gear-notice {
@@ -1168,6 +1173,224 @@ body.rf-gear-dragging * {
 .rf-gear[data-drag-from="worn"] .rf-gear-bag[data-gear-over] {
     border-color: var(--rf-gold);
     box-shadow: var(--rf-shadow), 0 0 0 3px var(--rf-gold);
+}
+
+/* ==========================================================================
+   The cards beside a piece or a worn slot under the mouse
+   --------------------------------------------------------------------------
+   The script (js/rf-gear.js) copies the cards the page drew into this layer and places it. It never takes the
+   mouse, so it cannot get between the pointer and a tile.
+   ========================================================================== */
+
+.rf-gear-tips {
+    display: none;
+}
+
+.rf-gear-tip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 85;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--rf-space-2);
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    color: var(--rf-ink);
+    font-family: var(--rf-font);
+}
+
+.rf-gear-tip.is-on {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 90ms ease;
+}
+
+.rf-gear-tip.is-stack {
+    flex-direction: column;
+}
+
+.rf-gear-tipcard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    width: 19rem;
+    max-width: calc(100vw - 16px);
+    padding: var(--rf-space-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-1);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+}
+
+/* the piece under the mouse is the one the card is about; the worn one beside it sits back a little */
+.rf-gear-tip.is-pair .rf-gear-tipcard.is-bag {
+    border-color: var(--rf-line-gold);
+}
+
+.rf-gear-tip.is-pair .rf-gear-tipcard.is-worn {
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-tipcard__label {
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.rf-gear-tipcard.is-bag .rf-gear-tipcard__label { color: var(--rf-gold); }
+.rf-gear-tipcard.is-worn .rf-gear-tipcard__label { color: var(--rf-good); }
+
+.rf-gear-tipcard__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-gear-tipcard__pic {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--rf-radius);
+    border: 2px solid color-mix(in srgb, currentColor 70%, transparent);
+    background:
+        radial-gradient(circle at 50% 40%, color-mix(in srgb, currentColor 22%, transparent), transparent 72%),
+        var(--rf-surface-3);
+}
+
+.rf-gear-tipcard__pic > img {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+}
+
+.rf-gear-tipcard__title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* an item's name is never cut short: it wraps */
+.rf-gear-tipcard__name {
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+}
+
+.rf-gear-tipcard__what {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.rf-gear-tipcard__what em {
+    font-style: normal;
+    font-weight: 800;
+    margin-right: 0.15em;
+}
+
+.rf-gear-tipcard__rows {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--rf-line);
+    padding-top: var(--rf-space-2);
+}
+
+.rf-gear-tipcard__rows:empty {
+    display: none;
+}
+
+.rf-gear-tipcard__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--rf-space-3);
+    padding: 1px 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-tipcard__row b {
+    color: var(--rf-ink);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.rf-gear-tipcard__row em {
+    display: inline-block;
+    min-width: 3.4rem;
+    margin-left: 0.4em;
+    font-style: normal;
+    text-align: right;
+}
+
+.rf-gear-tipcard__more {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid var(--rf-line);
+    padding-top: var(--rf-space-2);
+}
+
+.rf-gear-tipcard__gem {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.rf-gear-tipcard__gem > i {
+    flex: none;
+    width: 0.9rem;
+    text-align: center;
+    color: var(--rf-gold-bright);
+}
+
+.rf-gear-tipcard__gem > i.rf-gear-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    align-self: center;
+}
+
+.rf-gear-tipcard__gem b { color: var(--rf-ink); font-weight: 800; }
+.rf-gear-tipcard__gem em { font-style: normal; font-weight: 800; }
+
+.rf-gear-tipcard__needs {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-top: 1px solid var(--rf-line);
+    padding-top: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-tipcard__needs .is-bad { font-weight: 800; }
+
+.rf-gear-tipcard__verdict {
+    border-top: 1px solid var(--rf-line);
+    padding-top: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
 }
 
 /* ==========================================================================
