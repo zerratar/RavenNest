@@ -3223,12 +3223,17 @@ namespace RavenNest.BusinessLogic.Game
             inventory.EquipBestItems();
             return true;
         }
-        public bool EquipBestItems(SessionToken token, Guid characterId)
+        /// <summary>
+        ///     Wears the best of everything. <paramref name="outfit"/> is the word of "!equip tank" or "!equip rogue"
+        ///     (RavenNest.Models.GearOutfit, v0.9.7): dressed for that role or in that line, whatever is trained.
+        ///     Nothing, or a word this server does not know, is the plain "equip best" of every game before.
+        /// </summary>
+        public bool EquipBestItems(SessionToken token, Guid characterId, string outfit = null)
         {
             var character = GetCharacter(token, characterId);
             if (character == null) return false;
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.EquipBestItems();
+            inventory.EquipBestItems(RavenNest.Models.GearOutfit.Parse(outfit));
             return true;
         }
 

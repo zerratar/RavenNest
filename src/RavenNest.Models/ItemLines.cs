@@ -91,6 +91,12 @@ namespace RavenNest.Models
 
         public static bool IsClassGear(ItemMaterial material) => (int)material >= (int)ItemMaterial.Apprentice;
 
+        /// <summary>Is the material of this line; for <see cref="ItemLine.Plate"/>, anything that is not class gear.</summary>
+        public static bool IsOf(ItemLine line, ItemMaterial material)
+        {
+            return line == ItemLine.Plate ? !IsClassGear(material) : IsClassGear(material) && Of(material) == line;
+        }
+
         public static ItemLine Of(ItemMaterial material)
         {
             var index = (int)material - (int)ItemMaterial.Apprentice;

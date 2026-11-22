@@ -289,11 +289,33 @@ namespace RavenNest.BusinessLogic.Game
 
         public void EquipBestItems()
         {
+            EquipBestItems(null);
+        }
+
+        /// <summary>
+        ///     Wears the best of everything. With an <paramref name="outfit"/> ("!equip tank", "!equip rogue": v0.9.7)
+        ///     the armor is chosen for that role or line instead of for the task the character has. A role is
+        ///     "equip best" as if its skill were trained, and then the class gear of that skill is worn whatever
+        ///     other armor is worth; a line by name is <see cref="EquipLine"/> alone, and nothing else changes.
+        ///     Null is what every game before 0.9.7 asks for.
+        /// </summary>
+        public void EquipBestItems(RavenNest.Models.GearOutfit outfit)
+        {
+            if (outfit != null && outfit.OnlyLine)
+            {
+                EquipLine(outfit.Line, null);
+                return;
+            }
+
             try
             {
                 lock (mutex)
                 {
                     var character = gameData.GetCharacter(characterId);
+
+                    // what is worn now, by item: everything is taken off first, and between equal sets or pieces the
+                    // one that was worn stays, as in the game (GearScore.OneLine, GearScore.PickOfLine)
+                    var wornBefore = new HashSet<Guid>(GetEquippedItems().Select(x => x.ItemId));
 
                     UnequipAllItems(ItemCategory.Pet);
 
@@ -333,16 +355,20 @@ namespace RavenNest.BusinessLogic.Game
                     // class gear is ranked by what the character trains (RavenNest.Models.GearScore, the game's rule too)
                     var state = gameData.GetCharacterState(character.StateId);
                     // the lines that fit it, as a set: several can (Attack: Melee, Rogue, Samurai)
-                    var trainedFits = RavenNest.Models.GearScore.FitsFor(state?.Task, state?.TaskArgument);
+                    // (or the role that was asked for, whatever is trained)
+                    var trainedFits = outfit != null ? outfit.Fits : RavenNest.Models.GearScore.FitsFor(state?.Task, state?.TaskArgument);
                     // one line for the whole outfit: the fitting line whose pieces are worth the most together
                     {
-                        var armor = inventoryItems.Select(x => (Item: x, Worn: false))
-                            .Concat(GetEquippedItems().Select(x => (Item: x, Worn: true)))
-                            .Where(x => x.Item.IsNotNull() && x.Item.Item != null && RavenNest.Models.ItemLines.IsClassGear(MaterialOf(x.Item)))
+                        // (one stack of an item counts as the one that was worn)
+                        var wornLeft = new HashSet<Guid>(wornBefore);
+                        var armor = inventoryItems
+                            .Where(x => x.IsNotNull() && x.Item != null && RavenNest.Models.ItemLines.IsClassGear(MaterialOf(x)))
+                            .Select(x => (Item: x, Worn: wornLeft.Remove(x.ItemId)))
                             .ToList();
                         if (armor.Count > 0)
                         {
                             trainedFits = RavenNest.Models.GearScore.OneLine(trainedFits,
+                                outfit != null ? outfit.Line : RavenNest.Models.ItemLine.Plate,
                                 armor.Select(x => MaterialOf(x.Item)).ToArray(),
                                 armor.Select(x => GetItemValue(x.Item)).ToArray(),
                                 armor.Select(x => (int)ReadOnlyInventoryItem.GetEquipmentSlot((DataModels.ItemType)x.Item.Item.Type)).ToArray(),
@@ -400,6 +426,13 @@ namespace RavenNest.BusinessLogic.Game
                         }
 
                     }
+
+                    // a role that was asked for: its line is worn whatever other armor is worth
+                    if (outfit != null)
+                    {
+                        var lines = RavenNest.Models.ItemLines.In(trainedFits);
+                        if (lines.Length == 1) EquipLine(lines[0], wornBefore);
+                    }
                 }
             }
             catch (Exception exc)
@@ -416,6 +449,80 @@ namespace RavenNest.BusinessLogic.Game
             {
                 ValidateInventory();
             }
+        }
+
+        /// <summary>
+        ///     One class gear line ("!equip rogue", "!equip plate", and the line of a role that was asked for): the
+        ///     best piece of that line in each armor slot, among what is worn and what the character could wear, even
+        ///     when other armor is worth more. Slots the line has nothing for stay as they are, and so does
+        ///     everything that is not armor. The pick is RavenNest.Models.GearScore.PickOfLine, the game's rule too.
+        /// </summary>
+        /// <param name="wornBefore">The items that count as worn for the pick, when what is equipped now is not
+        /// what the character wore (after "equip best" took everything off); null for what is equipped now.</param>
+        /// <returns>How many pieces of the line are worn afterwards.</returns>
+        public int EquipLine(RavenNest.Models.ItemLine line, HashSet<Guid> wornBefore)
+        {
+            var wornOfLine = 0;
+            try
+            {
+                lock (mutex)
+                {
+                    var character = gameData.GetCharacter(characterId);
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+                    foreach (var slot in new[] { EquipmentSlot.Head, EquipmentSlot.Chest, EquipmentSlot.Gloves, EquipmentSlot.Leggings, EquipmentSlot.Boots })
+                    {
+                        var pieces = new List<ReadOnlyInventoryItem>();
+                        var worn = new List<bool>();
+                        var equippedItem = GetEquippedItem(slot);
+                        if (equippedItem.IsNotNull() && IsPieceOfLine(equippedItem, line))
+                        {
+                            pieces.Add(equippedItem);
+                            worn.Add(wornBefore == null || wornBefore.Contains(equippedItem.ItemId));
+                        }
+                        foreach (var item in GetUnequippedItems())
+                        {
+                            if (item.IsNull() || item.Item == null) continue;
+                            if (ReadOnlyInventoryItem.GetEquipmentSlot((DataModels.ItemType)item.Item.Type) != slot) continue;
+                            if (!IsPieceOfLine(item, line) || !CanEquipItem(item.Item, skills)) continue;
+                            pieces.Add(item);
+                            worn.Add(wornBefore != null && wornBefore.Contains(item.ItemId));
+                        }
+
+                        var pick = RavenNest.Models.GearScore.PickOfLine(
+                            pieces.Select(x => GetItemValue(x)).ToArray(),
+                            worn.ToArray(),
+                            pieces.Select(x => x.Item.Name).ToArray());
+                        if (pick < 0) continue;
+                        if ((equippedItem.IsNotNull() && pieces[pick].Id == equippedItem.Id) || EquipItem(pieces[pick])) wornOfLine++;
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                MessageBus.Shared.Send("OnUnhandledException", new UnhandledExceptionMessage
+                {
+                    CharacterId = characterId,
+                    Exception = exc,
+                    Message = "Error while equipping a class gear line",
+                    StackTrace = exc.StackTrace,
+                });
+            }
+            finally
+            {
+                ValidateInventory();
+            }
+            return wornOfLine;
+        }
+
+        // armor of a line: class gear of that line, or for plate any armor that is not class gear
+        // (hats and masks that are not class gear are looks, as for "equip best")
+        private bool IsPieceOfLine(ReadOnlyInventoryItem i, RavenNest.Models.ItemLine line)
+        {
+            var item = i.Item ?? gameData.GetItem(i.ItemId);
+            if (item == null || item.Category != (int)ItemCategory.Armor) return false;
+            var material = (RavenNest.Models.ItemMaterial)item.Material;
+            if (!RavenNest.Models.ItemLines.IsOf(line, material)) return false;
+            return RavenNest.Models.ItemLines.IsClassGear(material) || (item.Type != (int)ItemType.Hat && item.Type != (int)ItemType.Mask);
         }
 
         internal bool ContainsItem(Guid itemId, int minAmount = 1)
@@ -1811,46 +1918,48 @@ namespace RavenNest.BusinessLogic.Game
                 return 0;
             }
 
-            double eqStats = item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
+            var eqStats = item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
 
-            // items with enchantments should be valued higher.
+            // An enchanted item is worth its own stats and what a Power, Aim or Armor enchantment adds to them: what
+            // the game counts (ItemExtension.GetItemStats). Before v0.9.7 this was the enchantment's part ALONE, so
+            // an enchanted piece ranked far below a plain one, and a ring with a skill enchantment was worth nothing:
+            // "equip best" took a Phantom Ring of Woodcutting off for a plain Archers Ring III, the game put it back
+            // on, and the two disagreed from then on (seen in the first play test of "!equip tank", 2026-11-22).
             if (!string.IsNullOrEmpty(i.Enchantment))
             {
                 var availableAttributes = gameData.GetItemAttributes();
                 var enchantments = i.GetItemEnchantments(availableAttributes);
-                var totalWeaponPower = 0.0;
-                var totalRangedPower = 0.0;
-                var totalMagicPower = 0.0;
-                var totalWeaponAim = 0.0;
-                var totalRangedAim = 0.0;
-                var totalMagicAim = 0.0;
-                var totalArmorPower = 0.0;
+                var powerBonus = 0;
+                var aimBonus = 0;
+                var armorBonus = 0;
                 foreach (var e in enchantments)
                 {
-                    if (e.Name.ToLower().Contains("power"))
+                    var key = (e.Name ?? string.Empty).ToUpperInvariant();
+                    var percent = e.ValueType == RavenNest.Models.AttributeValueType.Percent;
+                    // a percentage is a share here (17% is 0.17); the game reads a value of 1 or more as percent too
+                    var share = percent && e.Value >= 1 ? e.Value / 100d : e.Value;
+                    if (key == "POWER")
                     {
-                        totalWeaponPower += (item.WeaponPower * e.Value);
-                        totalRangedPower += (item.RangedPower * e.Value);
-                        totalMagicPower += (item.MagicPower + e.Value);
+                        powerBonus = percent
+                            ? (int)(item.WeaponPower * share) + (int)(item.MagicPower * share) + (int)(item.RangedPower * share)
+                            : (int)e.Value;
                     }
-
-                    if (e.Name.ToLower().Contains("aim"))
+                    else if (key == "AIM")
                     {
-                        totalWeaponAim += (item.WeaponAim * e.Value);
-                        totalRangedAim += (item.RangedAim * e.Value);
-                        totalMagicAim += (item.MagicAim + e.Value);
+                        aimBonus = percent
+                            ? (int)(item.WeaponAim * share) + (int)(item.MagicAim * share) + (int)(item.RangedAim * share)
+                            : (int)e.Value;
                     }
-
-                    if (e.Name.ToLower().Contains("armor") || e.Name.ToLower().Contains("armour"))
+                    else if (key == "ARMOUR" || key == "ARMOR")
                     {
-                        totalArmorPower += (item.ArmorPower * e.Value);
+                        armorBonus = percent ? (int)(item.ArmorPower * share) : (int)e.Value;
                     }
                 }
 
-                eqStats = totalWeaponAim + totalWeaponPower + totalArmorPower + totalMagicAim + totalMagicPower + totalRangedAim + totalRangedPower;
+                eqStats += powerBonus + aimBonus + armorBonus;
             }
 
-            return (int)eqStats;
+            return eqStats;
         }
 
         /// <summary>

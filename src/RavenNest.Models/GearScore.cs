@@ -118,6 +118,16 @@ namespace RavenNest.Models
         /// slot), <paramref name="worn"/> whether it is worn now.</param>
         public static int OneLine(int fits, ItemMaterial[] materials, int[] classics, int[] slots, bool[] worn)
         {
+            return OneLine(fits, ItemLine.Plate, materials, classics, slots, worn);
+        }
+
+        /// <summary>
+        /// <see cref="OneLine(int, ItemMaterial[], int[], int[], bool[])"/> with a line that is asked for by name
+        /// ("!equip tank": <see cref="GearOutfit.Line"/>): between lines within a hundredth of each other that one wins,
+        /// whatever is worn. A line that is clearly worth more still beats it. <see cref="ItemLine.Plate"/> for none.
+        /// </summary>
+        public static int OneLine(int fits, ItemLine prefer, ItemMaterial[] materials, int[] classics, int[] slots, bool[] worn)
+        {
             var lines = ItemLines.In(fits);
             if (lines.Length < 2 || materials == null || classics == null || slots == null) return fits;
             var best = ItemLine.Plate;
@@ -141,7 +151,7 @@ namespace RavenNest.Models
                 // tank's 100%): within a hundredth they are equal, and the one worn more or named first stays
                 var clearlyMore = total * 100 > bestTotal * 101;
                 var aboutEqual = !clearlyMore && total * 100 >= bestTotal * 99;
-                if (best == ItemLine.Plate || clearlyMore || (aboutEqual && wornCount > bestWorn))
+                if (best == ItemLine.Plate || clearlyMore || (aboutEqual && best != prefer && (line == prefer || wornCount > bestWorn)))
                 {
                     best = line;
                     bestTotal = total;
@@ -149,6 +159,39 @@ namespace RavenNest.Models
                 }
             }
             return best == ItemLine.Plate ? fits : ItemLines.Bit(best);
+        }
+
+        /// <summary>
+        /// The piece to wear in one slot when a line is asked for by name (<see cref="GearOutfit.OnlyLine"/>), out of
+        /// the pieces of that line for the slot that the character wears or could wear: the one worth the most by the
+        /// old rule, then the one worn, then the first by name, so the game and the server pick the same of two equal
+        /// pieces (a line's two head pieces). The index of it, or -1 when there is none worth anything.
+        /// </summary>
+        public static int PickOfLine(int[] classics, bool[] worn, string[] names)
+        {
+            var pick = -1;
+            if (classics == null) return pick;
+            for (var i = 0; i < classics.Length; ++i)
+            {
+                if (classics[i] <= 0) continue;
+                if (pick < 0) { pick = i; continue; }
+                if (classics[i] != classics[pick])
+                {
+                    if (classics[i] > classics[pick]) pick = i;
+                    continue;
+                }
+                var isWorn = worn != null && i < worn.Length && worn[i];
+                var pickWorn = worn != null && pick < worn.Length && worn[pick];
+                if (isWorn != pickWorn)
+                {
+                    if (isWorn) pick = i;
+                    continue;
+                }
+                var name = names != null && i < names.Length ? names[i] : null;
+                var pickName = names != null && pick < names.Length ? names[pick] : null;
+                if (string.CompareOrdinal(name, pickName) < 0) pick = i;
+            }
+            return pick;
         }
 
         /// <summary>

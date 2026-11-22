@@ -104,7 +104,8 @@ namespace RavenNest.BusinessLogic.Net.V2
             // equipment
             Add(Commands.Equip, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.EquipItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.EquipItem, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); c.Watch(ch); return p.EquipItem(c.SessionToken, ch, item); });
-            Add(Commands.EquipBest, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.EquipBestItems(c.SessionToken, ch); });
+            // the outfit is optional (v0.9.7, "!equip tank"): a game that sends only the character gets the plain equip best
+            Add(Commands.EquipBest, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string outfit); c.Watch(ch); return p.EquipBestItems(c.SessionToken, ch, outfit); });
             Add(Commands.Unequip, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.UnequipItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.UnequipAll, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.UnequipAllItems(c.SessionToken, ch); });
             Add(Commands.ToggleHelmet, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ToggleHelmet(c.SessionToken, ch); });

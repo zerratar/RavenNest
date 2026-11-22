@@ -540,6 +540,14 @@ namespace RavenNest.Controllers
             return playerManager.EquipBestItems(AssertGetSessionToken(), characterId);
         }
 
+        // "!equip tank", "!equip rogue" (v0.9.7): the outfit's word, see RavenNest.Models.GearOutfit
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("v2/{characterId}/equipall/{outfit}")]
+        public bool EquipBestItems(Guid characterId, string outfit)
+        {
+            return playerManager.EquipBestItems(AssertGetSessionToken(), characterId, outfit);
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("v2/{characterId}/gift/{receiverId}/{itemId}/{amount}")]
         public long GiftItemInstance(Guid characterId, Guid receiverId, Guid itemId, long amount)
