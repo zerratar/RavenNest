@@ -2010,65 +2010,68 @@ body.rf-gear-dragging * {
    its line in the four lists below.
    ========================================================================== */
 
-.rf-gear[data-sel-slot="head"] .rf-gear-bag .rf-gear-tile:not([data-slot="head"]),
+/* what does not go in the picked (or pointed at) slot steps back; not while something is being dragged */
+.rf-gear[data-sel-slot="head"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="head"]),
 .rf-gear[data-hover-slot="head"] .rf-gear-bag .rf-gear-tile:not([data-slot="head"]),
-.rf-gear[data-sel-slot="amulet"] .rf-gear-bag .rf-gear-tile:not([data-slot="amulet"]),
+.rf-gear[data-sel-slot="amulet"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="amulet"]),
 .rf-gear[data-hover-slot="amulet"] .rf-gear-bag .rf-gear-tile:not([data-slot="amulet"]),
-.rf-gear[data-sel-slot="chest"] .rf-gear-bag .rf-gear-tile:not([data-slot="chest"]),
+.rf-gear[data-sel-slot="chest"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="chest"]),
 .rf-gear[data-hover-slot="chest"] .rf-gear-bag .rf-gear-tile:not([data-slot="chest"]),
-.rf-gear[data-sel-slot="gloves"] .rf-gear-bag .rf-gear-tile:not([data-slot="gloves"]),
+.rf-gear[data-sel-slot="gloves"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="gloves"]),
 .rf-gear[data-hover-slot="gloves"] .rf-gear-bag .rf-gear-tile:not([data-slot="gloves"]),
-.rf-gear[data-sel-slot="leggings"] .rf-gear-bag .rf-gear-tile:not([data-slot="leggings"]),
+.rf-gear[data-sel-slot="leggings"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="leggings"]),
 .rf-gear[data-hover-slot="leggings"] .rf-gear-bag .rf-gear-tile:not([data-slot="leggings"]),
-.rf-gear[data-sel-slot="boots"] .rf-gear-bag .rf-gear-tile:not([data-slot="boots"]),
+.rf-gear[data-sel-slot="boots"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="boots"]),
 .rf-gear[data-hover-slot="boots"] .rf-gear-bag .rf-gear-tile:not([data-slot="boots"]),
-.rf-gear[data-sel-slot="melee"] .rf-gear-bag .rf-gear-tile:not([data-slot="melee"]),
+.rf-gear[data-sel-slot="melee"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="melee"]),
 .rf-gear[data-hover-slot="melee"] .rf-gear-bag .rf-gear-tile:not([data-slot="melee"]),
-.rf-gear[data-sel-slot="ranged"] .rf-gear-bag .rf-gear-tile:not([data-slot="ranged"]),
+.rf-gear[data-sel-slot="ranged"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="ranged"]),
 .rf-gear[data-hover-slot="ranged"] .rf-gear-bag .rf-gear-tile:not([data-slot="ranged"]),
-.rf-gear[data-sel-slot="magic"] .rf-gear-bag .rf-gear-tile:not([data-slot="magic"]),
+.rf-gear[data-sel-slot="magic"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="magic"]),
 .rf-gear[data-hover-slot="magic"] .rf-gear-bag .rf-gear-tile:not([data-slot="magic"]),
-.rf-gear[data-sel-slot="shield"] .rf-gear-bag .rf-gear-tile:not([data-slot="shield"]),
+.rf-gear[data-sel-slot="shield"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="shield"]),
 .rf-gear[data-hover-slot="shield"] .rf-gear-bag .rf-gear-tile:not([data-slot="shield"]),
-.rf-gear[data-sel-slot="ring"] .rf-gear-bag .rf-gear-tile:not([data-slot="ring"]),
+.rf-gear[data-sel-slot="ring"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="ring"]),
 .rf-gear[data-hover-slot="ring"] .rf-gear-bag .rf-gear-tile:not([data-slot="ring"]),
-.rf-gear[data-sel-slot="pet"] .rf-gear-bag .rf-gear-tile:not([data-slot="pet"]),
+.rf-gear[data-sel-slot="pet"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="pet"]),
 .rf-gear[data-hover-slot="pet"] .rf-gear-bag .rf-gear-tile:not([data-slot="pet"]),
-.rf-gear[data-sel-slot="boat"] .rf-gear-bag .rf-gear-tile:not([data-slot="boat"]),
+.rf-gear[data-sel-slot="boat"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile:not([data-slot="boat"]),
 .rf-gear[data-hover-slot="boat"] .rf-gear-bag .rf-gear-tile:not([data-slot="boat"]) {
     opacity: 0.25;
     filter: saturate(0.5);
 }
 
-.rf-gear[data-sel-slot="head"] .rf-gear-bag .rf-gear-tile[data-slot="head"],
+/* what goes in it is outlined */
+.rf-gear[data-sel-slot="head"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="head"],
 .rf-gear[data-hover-slot="head"] .rf-gear-bag .rf-gear-tile[data-slot="head"],
-.rf-gear[data-sel-slot="amulet"] .rf-gear-bag .rf-gear-tile[data-slot="amulet"],
+.rf-gear[data-sel-slot="amulet"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="amulet"],
 .rf-gear[data-hover-slot="amulet"] .rf-gear-bag .rf-gear-tile[data-slot="amulet"],
-.rf-gear[data-sel-slot="chest"] .rf-gear-bag .rf-gear-tile[data-slot="chest"],
+.rf-gear[data-sel-slot="chest"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="chest"],
 .rf-gear[data-hover-slot="chest"] .rf-gear-bag .rf-gear-tile[data-slot="chest"],
-.rf-gear[data-sel-slot="gloves"] .rf-gear-bag .rf-gear-tile[data-slot="gloves"],
+.rf-gear[data-sel-slot="gloves"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="gloves"],
 .rf-gear[data-hover-slot="gloves"] .rf-gear-bag .rf-gear-tile[data-slot="gloves"],
-.rf-gear[data-sel-slot="leggings"] .rf-gear-bag .rf-gear-tile[data-slot="leggings"],
+.rf-gear[data-sel-slot="leggings"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="leggings"],
 .rf-gear[data-hover-slot="leggings"] .rf-gear-bag .rf-gear-tile[data-slot="leggings"],
-.rf-gear[data-sel-slot="boots"] .rf-gear-bag .rf-gear-tile[data-slot="boots"],
+.rf-gear[data-sel-slot="boots"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="boots"],
 .rf-gear[data-hover-slot="boots"] .rf-gear-bag .rf-gear-tile[data-slot="boots"],
-.rf-gear[data-sel-slot="melee"] .rf-gear-bag .rf-gear-tile[data-slot="melee"],
+.rf-gear[data-sel-slot="melee"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="melee"],
 .rf-gear[data-hover-slot="melee"] .rf-gear-bag .rf-gear-tile[data-slot="melee"],
-.rf-gear[data-sel-slot="ranged"] .rf-gear-bag .rf-gear-tile[data-slot="ranged"],
+.rf-gear[data-sel-slot="ranged"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="ranged"],
 .rf-gear[data-hover-slot="ranged"] .rf-gear-bag .rf-gear-tile[data-slot="ranged"],
-.rf-gear[data-sel-slot="magic"] .rf-gear-bag .rf-gear-tile[data-slot="magic"],
+.rf-gear[data-sel-slot="magic"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="magic"],
 .rf-gear[data-hover-slot="magic"] .rf-gear-bag .rf-gear-tile[data-slot="magic"],
-.rf-gear[data-sel-slot="shield"] .rf-gear-bag .rf-gear-tile[data-slot="shield"],
+.rf-gear[data-sel-slot="shield"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="shield"],
 .rf-gear[data-hover-slot="shield"] .rf-gear-bag .rf-gear-tile[data-slot="shield"],
-.rf-gear[data-sel-slot="ring"] .rf-gear-bag .rf-gear-tile[data-slot="ring"],
+.rf-gear[data-sel-slot="ring"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="ring"],
 .rf-gear[data-hover-slot="ring"] .rf-gear-bag .rf-gear-tile[data-slot="ring"],
-.rf-gear[data-sel-slot="pet"] .rf-gear-bag .rf-gear-tile[data-slot="pet"],
+.rf-gear[data-sel-slot="pet"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="pet"],
 .rf-gear[data-hover-slot="pet"] .rf-gear-bag .rf-gear-tile[data-slot="pet"],
-.rf-gear[data-sel-slot="boat"] .rf-gear-bag .rf-gear-tile[data-slot="boat"],
+.rf-gear[data-sel-slot="boat"]:not([data-drag-from]) .rf-gear-bag .rf-gear-tile[data-slot="boat"],
 .rf-gear[data-hover-slot="boat"] .rf-gear-bag .rf-gear-tile[data-slot="boat"] {
     box-shadow: 0 0 0 2px var(--rf-bg), 0 0 0 4px var(--rf-gold);
 }
 
+/* a piece is being dragged: the slots it does not go in step back */
 .rf-gear[data-drag-from="bag"][data-drag-slot="head"] .rf-gear-slot:not([data-slot="head"]),
 .rf-gear[data-drag-from="bag"][data-drag-slot="amulet"] .rf-gear-slot:not([data-slot="amulet"]),
 .rf-gear[data-drag-from="bag"][data-drag-slot="chest"] .rf-gear-slot:not([data-slot="chest"]),
@@ -2085,6 +2088,7 @@ body.rf-gear-dragging * {
     opacity: 0.3;
 }
 
+/* and its own slot lights up, as it does with the mouse over the piece */
 .rf-gear[data-drag-from="bag"][data-drag-slot="head"] .rf-gear-slot[data-slot="head"],
 .rf-gear[data-hover-piece="head"] .rf-gear-slot[data-slot="head"],
 .rf-gear[data-drag-from="bag"][data-drag-slot="amulet"] .rf-gear-slot[data-slot="amulet"],
