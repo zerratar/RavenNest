@@ -76,7 +76,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly Dictionary<string, Handler> handlers = new Dictionary<string, Handler>(StringComparer.Ordinal);
         private readonly PlayerInventoryProvider inventories;
 
-        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed, Game.GemManager gems, Game.BattlePetManager pets)
+        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed, Game.GemManager gems, Game.BattlePetManager pets, Game.OutfitManager outfits)
         {
             this.inventories = inventories;
             var p = players;
@@ -105,11 +105,27 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.Equip, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.EquipItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.EquipItem, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); c.Watch(ch); return p.EquipItem(c.SessionToken, ch, item); });
             // the outfit is optional (v0.9.7, "!equip tank"): a game that sends only the character gets the plain equip best
-            Add(Commands.EquipBest, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string outfit); c.Watch(ch); return p.EquipBestItems(c.SessionToken, ch, outfit); });
+            // (the word is kept with the outfit that is on, whose pinned pieces go back on: Game.OutfitManager)
+            Add(Commands.EquipBest, (c, a) =>
+            {
+                CommandArgs.Unpack(a, out Guid ch, out string outfit);
+                c.Watch(ch);
+                var done = p.EquipBestItems(c.SessionToken, ch, outfit);
+                if (done) outfits.EquippedBest(c.SessionToken, ch, outfit);
+                return done;
+            });
             Add(Commands.Unequip, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.UnequipItemInstance(c.SessionToken, ch, inv); });
             Add(Commands.UnequipAll, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.UnequipAllItems(c.SessionToken, ch); });
             Add(Commands.ToggleHelmet, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ToggleHelmet(c.SessionToken, ch); });
             Add(Commands.ToggleCape, (c, a) => { CommandArgs.Unpack(a, out Guid ch); c.Watch(ch); return p.ToggleCape(c.SessionToken, ch); });
+
+            // outfits per skill: gear that follows what is trained (the changes to what is worn come with the result)
+            Add(Commands.OutfitGet, (c, a) => { CommandArgs.Unpack(a, out Guid ch); return outfits.Get(c.SessionToken, ch); });
+            Add(Commands.OutfitFollow, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int trained, out bool fighting, out int from); c.Watch(ch); return outfits.Follow(c.SessionToken, ch, trained, fighting, from); });
+            Add(Commands.OutfitWear, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int skill); c.Watch(ch); return outfits.Wear(c.SessionToken, ch, skill); });
+            Add(Commands.OutfitSave, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int skill, out int mode); return outfits.Save(c.SessionToken, ch, skill, mode); });
+            Add(Commands.OutfitSwitches, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out int follow, out int upgrade); return outfits.Switches(c.SessionToken, ch, follow, upgrade); });
+            Add(Commands.OutfitOffer, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out Guid item); return outfits.Offer(c.SessionToken, ch, inv, item); });
 
             // enchanting
             Add(Commands.Enchant, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv); c.Watch(ch); return p.EnchantItemInstance(c.SessionToken, ch, inv); });

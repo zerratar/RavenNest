@@ -41,7 +41,8 @@ namespace RavenNest.BusinessLogic.Game
         private readonly PlayerInventoryProvider inventories;
         private readonly ILogger<BattlePetManager> logger;
         private readonly ConcurrentDictionary<Guid, DateTime> lastTame = new ConcurrentDictionary<Guid, DateTime>();
-        private readonly object mutex = new object();
+        // one for the whole server (there is one manager): the outfits' own way to send a pet out (SendOut) shares it
+        private static readonly object mutex = new object();
 
         /// <summary>When each clan's members last reported pet experience: the members out at once, and the minutes each report covers.</summary>
         private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> rookeryReports = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
@@ -76,7 +77,40 @@ namespace RavenNest.BusinessLogic.Game
         private static SkillBuild Build(GameData gameData, Guid characterId) => SkillBuild.Parse(gameData.GetCharacterSkillBuild(characterId)?.Build);
 
         /// <summary>The stable of any character, for the website.</summary>
-        public BattlePet[] Stable(Guid characterId) => gameData.GetPets(characterId).Where(IsBattlePet).OrderByDescending(p => p.Active).ThenByDescending(p => p.Level).Select(Map).ToArray();
+        public BattlePet[] Stable(Guid characterId) => StableOf(gameData, characterId);
+
+        public static BattlePet[] StableOf(GameData gameData, Guid characterId) => gameData.GetPets(characterId).Where(IsBattlePet).OrderByDescending(p => p.Active).ThenByDescending(p => p.Level).Select(Map).ToArray();
+
+        /// <summary>The battle pet a character has out; an empty id for none.</summary>
+        public static Guid ActiveOf(GameData gameData, Guid characterId)
+        {
+            foreach (var p in gameData.GetPets(characterId))
+            {
+                if (IsBattlePet(p) && p.Active && !PetEggs.IsUnhatched(p.Level)) return p.Id;
+            }
+            return Guid.Empty;
+        }
+
+        /// <summary>
+        ///     Sends a character's pet out with its outfit (docs/outfits-design.md in the game): what <see cref="Use"/>
+        ///     does, by the same rules (one pet out; not an egg, not a pet whose item is gone), for a caller that has
+        ///     already checked whose character it is.
+        /// </summary>
+        public static PetResultStatus SendOut(GameData gameData, PlayerInventoryProvider inventories, Guid characterId, Guid petId)
+        {
+            lock (mutex)
+            {
+                var chosen = gameData.GetPet(petId);
+                if (chosen == null || chosen.CharacterId != characterId || !IsBattlePet(chosen)) return PetResultStatus.NoSuchPet;
+                if (chosen.ItemId != null && !inventories.Get(characterId).GetAllItems().Any(x => x.ItemId == chosen.ItemId.Value && x.Amount > 0)) return PetResultStatus.ItemMissing;
+                if (PetEggs.IsUnhatched(chosen.Level)) return PetResultStatus.NotHatched;
+                foreach (var p in gameData.GetPets(characterId))
+                {
+                    if (IsBattlePet(p)) p.Active = p == chosen;
+                }
+                return PetResultStatus.Ok;
+            }
+        }
 
         public PetResult Tame(SessionToken token, Guid characterId, string speciesId, Guid treatItemId = default)
         {

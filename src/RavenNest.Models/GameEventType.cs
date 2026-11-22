@@ -114,5 +114,8 @@
 
         /// <summary>A character's days played in a row reached a pet egg (PlayStreakEgg).</summary>
         PlayStreakEgg = 59,
+
+        /// <summary>A character's outfits per skill were changed somewhere else (the website): the outfits, and the stable when a pet went out (OutfitsChanged).</summary>
+        OutfitsChanged = 60,
     }
 }

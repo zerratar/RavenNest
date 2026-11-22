@@ -64,7 +64,11 @@ namespace RavenNest.BusinessLogic.Game
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
             this.marketPrices = marketPrices;
             this.AutoJoinSpending = new AutoJoinSpending(gameData);
+            this.outfits = new OutfitManager(gameData, inventoryProvider);
         }
+
+        // outfits per skill: only to take a fight's outfit off a character that joins or leaves a game (ComeBack)
+        private readonly OutfitManager outfits;
 
         /// <summary>What each account pays for auto joins per day, its patron perk for them and its own limit.</summary>
         public AutoJoinSpending AutoJoinSpending { get; }
@@ -670,6 +674,10 @@ namespace RavenNest.BusinessLogic.Game
 
                 gameData.ResetCharacterSessionState(session.Id, character.Id);
 
+                // a fight's outfit that was left on (the player left in the middle of a raid, the stream ended) comes
+                // off before the game gets the character, so it gets it as it is
+                outfits.ComeBack(character);
+
                 return character.Map(gameData, user, rejoin, true);
             }
             catch (Exception exc)
@@ -717,6 +725,9 @@ namespace RavenNest.BusinessLogic.Game
             if (character.UserIdLock != null)
                 character.PrevUserIdLock = character.UserIdLock;
             character.UserIdLock = null;
+
+            // left in the middle of a raid, dungeon or tower floor: back into the outfit of what is trained
+            outfits.ComeBack(character);
 
 #if DEBUG
             logger.LogDebug(character.Name + " removed from " + sessionOwner.UserName + "'s session.");

@@ -582,6 +582,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<UserService>();
             services.AddSingleton<ServerService>();
             services.AddSingleton<BotService>();
+            services.AddSingleton<OutfitService>();
             services.AddSingleton<AIAssistanceService>();
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<TownService>();

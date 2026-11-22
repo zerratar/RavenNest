@@ -35,6 +35,9 @@ namespace RavenNest.Models
 
         /// <summary>The skill trees (combat v2): RavenNest.Combat.SkillBuild's text form, null without one.</summary>
         public string SkillBuild { get; set; }
+
+        /// <summary>The outfits per skill (v0.9.7): RavenNest.Models.CharacterOutfits' text form, null or empty without any.</summary>
+        public string Outfits { get; set; }
         public IReadOnlyList<AuthServiceConnection> Connections { get; set; }
         public AuthServiceConnection Twitch => Connections.FirstOrDefault(x => x.Platform.Equals("twitch", StringComparison.OrdinalIgnoreCase));
         public AuthServiceConnection Discord => Connections.FirstOrDefault(x => x.Platform.Equals("discord", StringComparison.OrdinalIgnoreCase));

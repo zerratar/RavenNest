@@ -298,6 +298,12 @@ namespace RavenNest.BusinessLogic.Extensions
         /// <summary>The user property a hidden cape is kept under, per character (no column for it: nothing to migrate).</summary>
         public static string CapeHiddenKey(Guid characterId) => "cape.hidden." + characterId.ToString("N");
 
+        /// <summary>
+        ///     The user property a character's outfits per skill are kept under (v0.9.7): one short text,
+        ///     RavenNest.Models.CharacterOutfits. No table for it: nothing to migrate.
+        /// </summary>
+        public static string OutfitsKey(Guid characterId) => "outfits." + characterId.ToString("N");
+
         /// <summary>A character's appearance with what is kept beside it: whether the cape is hidden.</summary>
         public static RavenNest.Models.SyntyAppearance MapAppearance(GameData gameData, DataModels.Character character)
         {
@@ -460,7 +466,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 CharacterIndex = character.CharacterIndex,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
                 IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
-                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build,
+                Outfits = gameData.GetUserProperty(character.UserId, OutfitsKey(character.Id))
             };
         }
 
@@ -574,7 +581,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 SessionName = sessionName,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
                 IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
-                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build,
+                Outfits = gameData.GetUserProperty(character.UserId, OutfitsKey(character.Id))
             };
         }
 
@@ -631,7 +639,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 SessionInfo = sessionInfo,
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
                 IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault(),
-                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build
+                SkillBuild = gameData.GetCharacterSkillBuild(character.Id)?.Build,
+                Outfits = gameData.GetUserProperty(character.UserId, OutfitsKey(character.Id))
             };
         }
         public static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Guid characterId)
