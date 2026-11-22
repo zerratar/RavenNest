@@ -519,7 +519,9 @@
 /* ---- The character and its slots ----------------------------------------- */
 .rf-gear-figure {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(11rem, 13rem) minmax(0, 1fr);
+    /* the slots keep the room their names need, and the figure in the middle takes what is left over: on a wide
+       page the rows had space to spare while the character stood in a narrow strip */
+    grid-template-columns: minmax(13.5rem, 1fr) minmax(13rem, 1.6fr) minmax(13.5rem, 1fr);
     gap: var(--rf-space-3);
     align-items: stretch;
 }
@@ -680,7 +682,11 @@ i.rf-gear-slot__glyph {
 
 .rf-gear-stage__canvas {
     position: absolute;
-    inset: 3.2rem 0 5.6rem 0;
+    inset: 3.2rem 0 5.2rem 0;
+}
+
+.rf-gear-stage:has(.rf-gear-stage__tools) .rf-gear-stage__canvas {
+    bottom: 7.4rem;
 }
 
 .rf-gear-stage__canvas canvas {
@@ -780,6 +786,76 @@ i.rf-gear-slot__glyph {
 .rf-gear-stage__boat .rf-gear-slot__pic {
     width: 2.75rem;
     height: 2.75rem;
+}
+
+/* the figure's stance (the viewer's own) and the helmet and cape switches (the character's), at the stage's top */
+.rf-gear-stage__tools {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--rf-space-1);
+    padding: 0;
+}
+
+.rf-gear-stage__tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--rf-surface-1) 82%, transparent);
+    color: var(--rf-ink-muted);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-gear-stage__tool:hover {
+    border-color: var(--rf-gold);
+    color: var(--rf-ink);
+}
+
+.rf-gear-stage__tool.is-on {
+    border-color: color-mix(in srgb, var(--rf-gold) 70%, transparent);
+    background: var(--rf-gold-wash);
+    color: var(--rf-ink);
+}
+
+.rf-gear-stage__tool i {
+    font-size: 0.85rem;
+}
+
+/* a narrow stage (a middling window, a phone) keeps the three on one row: pictures only, the words in the tooltip */
+.rf-gear-stage {
+    container: rf-gear-stage / inline-size;
+}
+
+@container rf-gear-stage (max-width: 19rem) {
+    .rf-gear-stage__tool {
+        padding: 0.3rem 0.55rem;
+    }
+
+    .rf-gear-stage__tool span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .rf-gear-stage__tool i {
+        font-size: 0.95rem;
+    }
+}
+
+.rf-gear-stage__tool.is-on i {
+    color: var(--rf-gold);
 }
 
 /* ---- What is picked ------------------------------------------------------- */

@@ -277,7 +277,7 @@ namespace RavenNest.Blazor.Pages.Dev
                     SkinColor = "#E8C0A8", HairColor = "#A0461E", BeardColor = "#A0461E", EyeColor = "#3D8A4A",
                     StubbleColor = "#E8C0A8", ScarColor = "#E8C0A8", WarPaintColor = "#000000",
                     // no cape of her own, and the helmet shows (both as the game's toggles leave them by default)
-                    Cape = Number("cape", -1), HelmetVisible = Option("helmet") != "0", CapeHidden = Option("capehidden") != null,
+                    Cape = Number("cape", -1), HelmetVisible = helmetVisible ?? Option("helmet") != "0", CapeHidden = capeHidden ?? Option("capehidden") != null,
                 },
                 // copies, so the page cannot change the "server's" stacks by accident
                 InventoryItems = bag.Select(Copy).ToList(),
@@ -287,6 +287,17 @@ namespace RavenNest.Blazor.Pages.Dev
         }
 
         private int Number(string option, int otherwise) => int.TryParse(Option(option), out var value) ? value : otherwise;
+
+        // the helmet and cape switches, once used on the page (until then the options say)
+        private bool? helmetVisible, capeHidden;
+
+        public GearResult SetHelmetAndCape(Guid characterId, bool? helmet, bool? cape)
+        {
+            if (!owner && !administrator) return new GearResult { Refused = "You need to be signed in to do that.", Player = GetPlayer(CharacterId), Coins = coins };
+            if (helmet != null) helmetVisible = helmet;
+            if (cape != null) capeHidden = cape;
+            return Result(1);
+        }
 
         private static InventoryItem Copy(InventoryItem x) => new InventoryItem
         {

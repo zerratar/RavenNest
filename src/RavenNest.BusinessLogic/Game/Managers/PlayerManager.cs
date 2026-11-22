@@ -3309,6 +3309,37 @@ namespace RavenNest.BusinessLogic.Game
             return hidden;
         }
 
+        /// <summary>
+        /// The website's helmet and cape switches (Equipment tab): sets, rather than flips, whether the helmet shows
+        /// and whether the cape is hidden; null leaves one as it is. A running game the character plays in gets the
+        /// appearance again, as when it is saved on the website, so the stream shows the change. The caller checks
+        /// that the character is the signed-in user's own (or that an administrator asks).
+        /// </summary>
+        public bool SetHelmetAndCape(Guid characterId, bool? helmetVisible, bool? capeHidden)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+
+            var appearance = gameData.GetAppearance(character.SyntyAppearanceId);
+            if (appearance == null) return false;
+
+            if (helmetVisible != null) appearance.HelmetVisible = helmetVisible.Value;
+            if (capeHidden != null) gameData.SetUserProperty(character.UserId, ModelMapper.CapeHiddenKey(character.Id), capeHidden.Value ? "1" : "");
+
+            var gameSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
+            if (gameSession != null)
+            {
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAppearance, gameSession, new SyntyAppearanceUpdate
+                {
+                    PlayerId = character.Id,
+                    Value = ModelMapper.MapAppearance(gameData, character)
+                });
+                gameData.EnqueueGameEvent(gameEvent);
+            }
+
+            return true;
+        }
+
         public ItemCollection GetEquippedItems(SessionToken token, string userId)
         {
             var itemCollection = new ItemCollection();

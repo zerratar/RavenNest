@@ -199,6 +199,39 @@ else
                                 <span class="rf-gear-stage__level">Combat level @player.CombatLevel</span>
                             </div>
                             <div class="rf-gear-stage__boat">
+                                @if (figureDressed || CanAct)
+                                {
+                                    @* how the figure stands is the viewer's own; the helmet and cape are the character's, as in the game *@
+                                    <div class="rf-gear-stage__tools">
+                                        @if (figureDressed)
+                                        {
+                                            <button type="button" class="rf-gear-stage__tool @(relaxed ? "" : "is-on")" aria-pressed="@(!relaxed)"
+                                                    title="@(relaxed ? "Standing at ease. Press to stand in the stance of the weapon, as in a fight." : "In the stance of the weapon, as in a fight. Press to stand at ease with empty hands.")"
+                                                    @onclick="() => SetRelaxed(!relaxed)">
+                                                <i class="fa-solid @(relaxed ? "fa-person" : "fa-khanda")" aria-hidden="true"></i>
+                                                <span>@(relaxed ? "At ease" : "Combat")</span>
+                                            </button>
+                                        }
+                                        @if (CanAct)
+                                        {
+                                            <button type="button" class="rf-gear-stage__tool @(HelmetShown ? "is-on" : "")" aria-pressed="@HelmetShown"
+                                                    title="@(HelmetShown ? "Your helmet shows, here and in the game. Press to hide it (the same as !toggle helmet)." : "Your helmet is hidden, here and in the game. Press to show it (the same as !toggle helmet).")"
+                                                    @onclick="() => SetHelmet(!HelmetShown)">
+                                                <i class="fa-solid @(HelmetShown ? "fa-helmet-un" : "fa-eye-slash")" aria-hidden="true"></i>
+                                                <span>Helmet</span>
+                                            </button>
+                                            @if (HasCape)
+                                            {
+                                                <button type="button" class="rf-gear-stage__tool @(CapeShown ? "is-on" : "")" aria-pressed="@CapeShown"
+                                                        title="@(CapeShown ? "Your cape shows, here and in the game. Press to hide it (the same as !toggle cape)." : "Your cape is hidden, here and in the game. Press to show it (the same as !toggle cape).")"
+                                                        @onclick="() => SetCape(!CapeShown)">
+                                                    <i class="fa-solid @(CapeShown ? "fa-flag" : "fa-eye-slash")" aria-hidden="true"></i>
+                                                    <span>Cape</span>
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                }
                                 @if (!figureDressed && (figureState == "is-3d" || figureState == "is-flat"))
                                 {
                                     <span class="rf-gear-stage__note" title="The character's own look, from the Customize tab. What it wears is in the slots around it.">Shown without gear</span>

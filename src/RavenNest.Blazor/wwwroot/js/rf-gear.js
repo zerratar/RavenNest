@@ -365,10 +365,13 @@ export async function figure(host, designerUrl, gearUrl, look, outfit) {
             return 'none';
         }
         figureNow = view;
-        // a little nearer than the customizer stands: this stage is narrower, and the figure should fill it
+        // a little nearer than the customizer stands, so the figure fills the stage; a stage much taller than it is
+        // wide (a middling window, a phone) steps back, or a weapon held out in a fighting stance is cut off at its side
         if (view.wanted && typeof view.wanted.distance === 'number') {
-            view.wanted.distance = 4.2;
-            view.distance = 4.2;
+            const aspect = host.clientHeight > 0 ? host.clientWidth / host.clientHeight : 1;
+            const distance = 4.2 * Math.min(1.6, Math.max(1, 0.8 / aspect));
+            view.wanted.distance = distance;
+            view.distance = distance;
         }
         evenLight(view);
         const body = view.show(look);
@@ -422,6 +425,15 @@ export function dressFigure(outfit) {
 /** What the gear's files cost so far: for measuring. */
 export function figureStats() {
     return wardrobe ? wardrobe.stats() : null;
+}
+
+/** A viewer's own choice on this page (the figure's stance), kept in the browser; null when none or not readable. */
+export function pref(name) {
+    try { return localStorage.getItem('rf.' + name); } catch { return null; }
+}
+
+export function setPref(name, value) {
+    try { localStorage.setItem('rf.' + name, value); } catch { /* a private window: it lasts for this visit only */ }
 }
 
 export function dropFigure() {

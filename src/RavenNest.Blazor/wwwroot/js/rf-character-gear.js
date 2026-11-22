@@ -52,6 +52,7 @@ const STANCE = {
 };
 const MELEE = new Set([Type.TwoHandedSword, Type.OneHandedSword, Type.TwoHandedAxe, Type.OneHandedAxe, Type.TwoHandedSpear]);
 const ONE_HANDED = new Set([Type.OneHandedSword, Type.OneHandedAxe]);
+const HEAD_TYPES = new Set([Type.Helmet, Type.Mask, Type.Hat, Type.HeadCovering]);
 
 // the body's own parts, by what they are: a piece of armor takes the place of the ones of its kind
 const BODY_KIND = /^Chr_(Torso|ArmUpperRight|ArmUpperLeft|ArmLowerRight|ArmLowerLeft|HandRight|HandLeft|Hips|LegLeft|LegRight)_/;
@@ -486,7 +487,7 @@ function unityEuler(THREE, x, y, z) {
  * Puts what a character wears on a stage of the customizer (the 3D one; the flat one shows the character as it is).
  * outfit: { pieces: [{ slot, armor, type, slotType, mat, male, female, mask, prefab, prefabMale, prefabFemale }],
  *           style: 'melee' | 'ranged' | 'magic' | 'healing', helmet: bool, cape: index or -1, capeHidden: bool,
- *           capeImage: address or null }
+ *           capeImage: address or null, relaxed: bool (stands at ease with nothing in the hands) }
  * Answers { set(outfit), preview(piece or null), stats(), dispose() }, or null where there is no gear to show.
  */
 export async function attach(designer, stage, onBusy) {
@@ -549,7 +550,7 @@ export async function attach(designer, stage, onBusy) {
         if (onBusy) onBusy(pending > 0);
     };
 
-    let worn = { pieces: [], style: 'melee', helmet: true, cape: -1, capeHidden: false, capeImage: null };
+    let worn = { pieces: [], style: 'melee', helmet: true, cape: -1, capeHidden: false, capeImage: null, relaxed: false };
     let look = null;       // a piece being looked at, in place of the one worn in its slot
     const shownProps = new Map(); // path|bone -> Object3D
     let propToken = 0;
@@ -564,7 +565,11 @@ export async function attach(designer, stage, onBusy) {
         if (MELEE.has(look.slotType) || look.slotType === Type.Shield) style = 'melee';
         else if (look.slotType === Type.TwoHandedBow) style = 'ranged';
         else if (look.slotType === Type.TwoHandedStaff && style !== 'healing') style = 'magic';
-        return { ...worn, pieces, style };
+        // a head piece looked at shows whatever the helmet switch says (it hides the worn one only: the one tried on
+        // is what the player wants to see), and a weapon looked at is held, also when the figure stands at ease
+        const head = HEAD_TYPES.has(look.type);
+        const held = !!STANCE[look.slotType];
+        return { ...worn, pieces, style, helmet: head ? true : worn.helmet, relaxed: held ? false : worn.relaxed };
     };
 
     const showProps = async props => {
@@ -679,8 +684,10 @@ export async function attach(designer, stage, onBusy) {
                 catch { return null; }
             }))).filter(Boolean);
         } finally { busy(false); }
-        showProps(d.props);
-        wearing = { parts: wanted.map(w => w.key.slice(2)), props: d.props.map(p => p.path + ' on ' + p.bone) };
+        // at ease the hands are empty: no weapon and no shield, so no fighting stance either
+        const props = outfit.relaxed ? d.props.filter(p => !STANCE[p.type]) : d.props;
+        showProps(props);
+        wearing = { parts: wanted.map(w => w.key.slice(2)), props: props.map(p => p.path + ' on ' + p.bone) };
         return { meshes };
     };
 

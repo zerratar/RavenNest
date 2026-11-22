@@ -217,6 +217,7 @@ namespace RavenNest.Blazor.Components
 
                 if (ActiveView == "equipment")
                 {
+                    await ReadStanceAsync();
                     var wears = FigureKey();
                     if (figureOf != player.Id)
                     {

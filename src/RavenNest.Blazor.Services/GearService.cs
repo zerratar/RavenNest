@@ -80,6 +80,12 @@ namespace RavenNest.Blazor.Services
         GemChange SocketGem(Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, Guid? confirmedGem);
         GemChange UnsocketGem(Guid characterId, Guid inventoryItemId, int socket, Guid? confirmedGem);
 
+        /// <summary>
+        ///     Whether the worn helmet shows and whether the cape is hidden (the game's "!toggle helmet" and "!toggle
+        ///     cape", set rather than flipped); null leaves one as it is. A running game follows.
+        /// </summary>
+        GearResult SetHelmetAndCape(Guid characterId, bool? helmetVisible, bool? capeHidden);
+
         // ---- Outfits (an outfit per skill; the rules are OutfitService's and OutfitManager's) ------------------------
 
         /// <summary>The character's outfits and the two switches. Refused for anyone but the owner or an administrator.</summary>
@@ -216,6 +222,11 @@ namespace RavenNest.Blazor.Services
                 inventoryProvider.Get(characterId).EquipBestItems(GearOutfit.Parse(skill));
                 return 1;
             });
+        }
+
+        public GearResult SetHelmetAndCape(Guid characterId, bool? helmetVisible, bool? capeHidden)
+        {
+            return Act(characterId, 1, () => playerManager.SetHelmetAndCape(characterId, helmetVisible, capeHidden) ? 1 : 0);
         }
 
         // Outfits: OutfitService checks every call itself (signed in, the owner or an administrator). The two slot
