@@ -184,9 +184,11 @@ namespace RavenNest.Blazor.Components
                 selected.Clear();
                 dialog = Dialog.None;
                 notice = null;
+                moreSkills = false;
                 ResetGemState();
             }
 
+            LoadOutfits();
             Rebuild();
             if (otherCharacter && pickedId.HasValue && byId.TryGetValue(pickedId.Value, out var first)) pickedSlot = first.Slot;
 
@@ -345,8 +347,25 @@ namespace RavenNest.Blazor.Components
         private void Judge()
         {
             var skill = EffectiveSkill;
-            sheet = GearSheet.Build(player, GearRules.StyleOf(skill), Server.GetSkillBuild(player.Id), id => ItemService.GetItem(id),
-                stack => string.IsNullOrEmpty(stack.Enchantment) ? null : ItemService.GetItemEnchantments(stack));
+            // an outfit that is looked at but not on: its numbers. The sheet reads what is marked worn, so the marks
+            // are set for the count and put back (these stacks are the page's own copy of the server's answer).
+            List<(InventoryItem Stack, bool Was)> marks = null;
+            if (OutfitView)
+            {
+                var shown = new HashSet<Guid>(ShownPieces().Select(x => x.Stack.Id));
+                marks = entries.Where(x => x.Slot != EquipmentSlot.None).Select(x => (x.Stack, x.Stack.Equipped)).ToList();
+                foreach (var e in entries.Where(x => x.Slot != EquipmentSlot.None)) e.Stack.Equipped = shown.Contains(e.Stack.Id);
+            }
+
+            try
+            {
+                sheet = GearSheet.Build(player, GearRules.StyleOf(skill), Server.GetSkillBuild(player.Id), id => ItemService.GetItem(id),
+                    stack => string.IsNullOrEmpty(stack.Enchantment) ? null : ItemService.GetItemEnchantments(stack));
+            }
+            finally
+            {
+                if (marks != null) foreach (var mark in marks) mark.Stack.Equipped = mark.Was;
+            }
 
             foreach (var e in entries)
             {
@@ -384,6 +403,8 @@ namespace RavenNest.Blazor.Components
             Add("Ranged", item.RequiredRangedLevel, skills.RangedLevel);
             Add("Magic or Healing", item.RequiredMagicLevel, Math.Max(skills.MagicLevel, skills.HealingLevel));
             Add("Slayer", item.RequiredSlayerLevel, skills.SlayerLevel);
+            // the Beastmaster line needs Taming: no column of its own on the item, the line and the tier give it
+            Add("Taming", ItemLines.TamingLevelFor(item.Material, item.Level), skills.TamingLevel);
             return list;
         }
 
@@ -599,6 +620,8 @@ namespace RavenNest.Blazor.Components
         private void PickSkill(Skill skill)
         {
             dressFor = dressFor == skill ? null : skill;
+            // the slots may show another outfit now: what was picked in them is no longer what is there
+            if (OutfitsKnown) ClearPick();
             Judge();
         }
 
@@ -615,9 +638,10 @@ namespace RavenNest.Blazor.Components
             var picked = PickedEntry;
 
             // a piece is picked and this is where it goes: put it on
-            if (CanAct && picked != null && !picked.Stack.Equipped && picked.Slot == slot.Slot && picked.CanWear)
+            if (CanAct && picked != null && !picked.Stack.Equipped && picked.Slot == slot.Slot && picked.CanWear && Shown(slot.Slot) != picked)
             {
-                Equip(picked);
+                // into the outfit that is looked at, or onto the body
+                if (OutfitView) AddToOutfit(picked); else Equip(picked);
                 return;
             }
 
@@ -628,7 +652,7 @@ namespace RavenNest.Blazor.Components
             }
 
             pickedSlot = slot.Slot;
-            pickedId = worn.TryGetValue(slot.Slot, out var e) ? e.Stack.Id : null;
+            pickedId = Shown(slot.Slot)?.Stack.Id;
             ResetGemState();
         }
 
@@ -698,10 +722,15 @@ namespace RavenNest.Blazor.Components
         {
             if (!CanAct || !Guid.TryParse(stackId, out var id) || !byId.TryGetValue(id, out var e)) return;
             var slot = GearRules.Get(e.Slot);
-            if (slot == null || slot.Key != slotKey || e.Stack.Equipped) return;
+            if (slot == null || slot.Key != slotKey || (e.Stack.Equipped && !OutfitView)) return;
             if (!e.CanWear)
             {
                 Say(e.Blocked, true);
+            }
+            else if (OutfitView)
+            {
+                // an outfit that is not on is looked at: the piece goes into it, not onto the body
+                if (IsOutfitSlot(e.Slot)) AddToOutfit(e); else Say("The " + slot.Label.ToLowerInvariant() + " is not part of an outfit.", true);
             }
             else
             {
@@ -878,7 +907,8 @@ namespace RavenNest.Blazor.Components
         private void EquipBest()
         {
             var before = worn.ToDictionary(x => x.Key, x => x.Value.Stack.ItemId);
-            var word = dressFor?.ToString().ToLowerInvariant();
+            // "all" and the gathering skills have no word of their own for the server's rule: what is trained decides
+            var word = dressFor.HasValue && GearRules.DressFor.Contains(dressFor.Value) ? dressFor.Value.ToString().ToLowerInvariant() : null;
             if (!Take(Server.EquipBest(player.Id, word), "Equip best did not run. Try again in a moment.")) return;
 
             var changed = GearRules.All.Count(s =>
@@ -887,7 +917,7 @@ namespace RavenNest.Blazor.Components
                 var isNow = worn.TryGetValue(s.Slot, out var e) ? e.Stack.ItemId : Guid.Empty;
                 return was != isNow;
             });
-            var forWhat = dressFor.HasValue ? " for " + dressFor : Trained != Skill.None ? " for " + Trained : "";
+            var forWhat = word != null ? " for " + dressFor : Trained != Skill.None ? " for " + Trained : "";
             Say(changed == 0 ? "Already wearing the best" + forWhat + "." : "Equip best changed " + Plural(changed, "slot") + forWhat + ".");
             ClearPick();
         }

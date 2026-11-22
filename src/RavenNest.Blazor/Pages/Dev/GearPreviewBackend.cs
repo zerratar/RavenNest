@@ -44,7 +44,8 @@ namespace RavenNest.Blazor.Pages.Dev
         /// <param name="options">
         ///     For looking at the dressed figure: wear (ItemMaterial names, comma separated: the armor of those
         ///     materials is worn instead of the usual set), headpiece (a word of the head piece's name to prefer),
-        ///     bare (nothing else is worn), gender, hair, head, beard, cape (0 to 4), capehidden, helmet (0 hides it).
+        ///     bare (nothing else is worn), gender, hair, head, beard, cape (0 to 4), capehidden, helmet (0 hides it),
+        ///     outfits (0: the character has no outfits yet).
         /// </param>
         public GearPreviewBackend(ItemService items, string state, IReadOnlyDictionary<string, string> options = null)
         {
@@ -58,7 +59,11 @@ namespace RavenNest.Blazor.Pages.Dev
 
             owner = state != "visitor";
             administrator = state == "admin";
-            if (state != "empty") Fill();
+            if (state != "empty")
+            {
+                Fill();
+                if (Option("outfits") != "0") FillOutfits();
+            }
         }
 
         /// <summary>The stack of an item by name, for opening the page on it (&amp;pick=).</summary>
@@ -156,6 +161,9 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Phantom Amulet");
             Add("Emerald Amulet");
             Add("Santa Hat");
+            // the Beastmaster line needs Taming: one piece within reach, one far above it
+            Add("Fledgling Feathered Hat");
+            Add("Wyrmkin Hide Vest");
             Add("Fox Pet");
             Add("Black Cat");
             Add("Fishing Boat");
@@ -273,6 +281,8 @@ namespace RavenNest.Blazor.Pages.Dev
                 },
                 // copies, so the page cannot change the "server's" stacks by accident
                 InventoryItems = bag.Select(Copy).ToList(),
+                BattlePets = pets,
+                ActiveBattlePet = petOut == Guid.Empty ? (Guid?)null : petOut,
             };
         }
 
@@ -331,6 +341,128 @@ namespace RavenNest.Blazor.Pages.Dev
         }
 
         public GearResult Equip(Guid characterId, InventoryItem item) => Result(Wear(Find(item)) ? 1 : 0);
+
+        // ---- Outfits: the same answers OutfitService gives, kept in memory ---------------------------------------------
+
+        private readonly CharacterOutfits outfits = new CharacterOutfits();
+        private readonly BattlePet[] pets =
+        {
+            new BattlePet { Id = Guid.NewGuid(), Name = "Bramble", Level = 14 },
+            new BattlePet { Id = Guid.NewGuid(), Name = "Moss", Level = 6 },
+        };
+        private Guid petOut;
+
+        // what a player who has trained two things has: the healing outfit that is on (one piece pinned), and a magic
+        // one kept from the last time magic was trained
+        private void FillOutfits()
+        {
+            outfits.Worn = Skill.Healing;
+            outfits.Fight = Skill.Healing;
+            var healing = outfits.GetOrAdd(Skill.Healing);
+            foreach (var stack in bag.Where(x => x.Equipped))
+            {
+                var slot = (RavenNest.Models.EquipmentSlot)(int)SlotOf(stack);
+                if (!OutfitRules.IsOutfitSlot(slot)) continue;
+                healing.Set(slot, stack.Id, stack.ItemId, slot == RavenNest.Models.EquipmentSlot.Head);
+            }
+            healing.Pet = pets[0].Id;
+            petOut = pets[0].Id;
+
+            var magic = outfits.GetOrAdd(Skill.Magic);
+            foreach (var name in new[] { "Conjurer Hood", "Phantom Chest", "Dragon Staff", "Phantom Amulet" })
+            {
+                var stack = byName.TryGetValue(name, out var item) ? bag.FirstOrDefault(x => x.ItemId == item.Id && !x.Equipped) : null;
+                if (stack == null) continue;
+                magic.Set((RavenNest.Models.EquipmentSlot)(int)SlotOf(stack), stack.Id, stack.ItemId, name == "Dragon Staff");
+            }
+            if (magic.Slots.Count == 0) outfits.Remove(Skill.Magic);
+        }
+
+        private OutfitChange Outfit(OutfitStatus status, Skill skill, bool changed = false)
+        {
+            if (!owner && !administrator) return new OutfitChange { Refused = "You need to be signed in to do that." };
+            return new OutfitChange
+            {
+                Result = new OutfitResult { Status = status, Skill = (int)skill, Changed = changed, Outfits = outfits.ToString() },
+                Outfits = CharacterOutfits.Parse(outfits.ToString()),
+            };
+        }
+
+        private InventoryItem PieceOf(OutfitSlot entry)
+        {
+            return bag.FirstOrDefault(x => x.Id == entry.Item)
+                ?? bag.Where(x => x.ItemId == entry.ItemId).OrderByDescending(x => x.Equipped).FirstOrDefault();
+        }
+
+        public OutfitChange GetOutfits(Guid characterId) => Outfit(OutfitStatus.Ok, Skill.None);
+
+        public OutfitChange SetOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot, Guid inventoryItemId, bool pinned)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            if (skill == Skill.None) return Outfit(OutfitStatus.UnknownSkill, skill);
+            var stack = bag.FirstOrDefault(x => x.Id == inventoryItemId);
+            if (stack == null || SlotOf(stack) != slot || !OutfitRules.IsOutfitSlot((RavenNest.Models.EquipmentSlot)(int)slot) || !CanWear(stack)) return Outfit(OutfitStatus.BadItem, skill);
+            var changed = false;
+            if (outfits.Worn == skill && !stack.Equipped)
+            {
+                changed = Wear(stack);
+                stack = bag.FirstOrDefault(x => x.Equipped && SlotOf(x) == slot) ?? stack;
+            }
+            outfits.GetOrAdd(skill).Set((RavenNest.Models.EquipmentSlot)(int)slot, stack.Id, stack.ItemId, pinned);
+            return Outfit(OutfitStatus.Ok, skill, changed);
+        }
+
+        public OutfitChange ClearOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            var outfit = outfits.Find(skill);
+            if (outfit == null) return Outfit(OutfitStatus.NoOutfit, skill);
+            outfit.Clear((RavenNest.Models.EquipmentSlot)(int)slot);
+            if (outfit.Slots.Count == 0 && outfit.Pet == Guid.Empty) outfits.Remove(skill);
+            return Outfit(OutfitStatus.Ok, skill);
+        }
+
+        public OutfitChange SetOutfitPet(Guid characterId, Skill skill, Guid petId)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            if (skill == Skill.None) return Outfit(OutfitStatus.UnknownSkill, skill);
+            if (petId != Guid.Empty && !pets.Any(x => x.Id == petId)) return Outfit(OutfitStatus.BadPet, skill);
+            outfits.GetOrAdd(skill).Pet = petId;
+            if (outfits.Worn == skill && petId != Guid.Empty) petOut = petId;
+            return Outfit(OutfitStatus.Ok, skill);
+        }
+
+        public OutfitChange WearOutfit(Guid characterId, Skill skill)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            var outfit = outfits.Find(skill);
+            if (outfit == null) return Outfit(OutfitStatus.NoOutfit, skill);
+            foreach (var entry in outfit.Slots)
+            {
+                var stack = PieceOf(entry);
+                if (stack == null || stack.Equipped) continue;
+                if (Wear(stack))
+                {
+                    var now = bag.FirstOrDefault(x => x.Equipped && x.ItemId == entry.ItemId);
+                    if (now != null) entry.Item = now.Id;
+                }
+            }
+            if (outfit.Pet != Guid.Empty) petOut = outfit.Pet;
+            outfits.Worn = skill;
+            return Outfit(OutfitStatus.Ok, skill, true);
+        }
+
+        public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
+        {
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, Skill.None);
+            if (changeWithTraining.HasValue) outfits.Follow = changeWithTraining.Value;
+            if (upgradeAutomatically.HasValue) outfits.Upgrade = upgradeAutomatically.Value;
+            return Outfit(OutfitStatus.Ok, Skill.None);
+        }
 
         public GearResult Unequip(Guid characterId, InventoryItem item)
         {

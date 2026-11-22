@@ -80,6 +80,26 @@ namespace RavenNest.Blazor.Services
         GemChange SocketGem(Guid characterId, Guid inventoryItemId, int kind, int tier, int socket, Guid? confirmedGem);
         GemChange UnsocketGem(Guid characterId, Guid inventoryItemId, int socket, Guid? confirmedGem);
 
+        // ---- Outfits (an outfit per skill; the rules are OutfitService's and OutfitManager's) ------------------------
+
+        /// <summary>The character's outfits and the two switches. Refused for anyone but the owner or an administrator.</summary>
+        OutfitChange GetOutfits(Guid characterId);
+
+        /// <summary>Puts one of the character's pieces into a slot of a skill's outfit, pinned or best.</summary>
+        OutfitChange SetOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot, Guid inventoryItemId, bool pinned);
+
+        /// <summary>Takes a slot out of a skill's outfit: what is worn there stays when the outfit goes on.</summary>
+        OutfitChange ClearOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot);
+
+        /// <summary>The battle pet that goes out with a skill's outfit; an empty id for none.</summary>
+        OutfitChange SetOutfitPet(Guid characterId, Skill skill, Guid petId);
+
+        /// <summary>Puts a skill's outfit on now.</summary>
+        OutfitChange WearOutfit(Guid characterId, Skill skill);
+
+        /// <summary>"Change outfit when I switch training" and "Upgrade to better gear automatically"; null leaves one as it is.</summary>
+        OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically);
+
         /// <summary>Administrators: puts an item in the inventory.</summary>
         GearResult AddItem(Guid characterId, Item item, int amount);
 
@@ -119,6 +139,7 @@ namespace RavenNest.Blazor.Services
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly PlayerService playerService;
         private readonly UserService userService;
+        private readonly OutfitService outfitService;
 
         public GearService(
             GameData gameData,
@@ -126,10 +147,12 @@ namespace RavenNest.Blazor.Services
             PlayerInventoryProvider inventoryProvider,
             PlayerService playerService,
             UserService userService,
+            OutfitService outfitService,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
+            this.outfitService = outfitService;
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.inventoryProvider = inventoryProvider;
@@ -194,6 +217,23 @@ namespace RavenNest.Blazor.Services
                 return 1;
             });
         }
+
+        // Outfits: OutfitService checks every call itself (signed in, the owner or an administrator). The two slot
+        // enums are the same list under two names.
+        public OutfitChange GetOutfits(Guid characterId) => outfitService.Get(characterId);
+
+        public OutfitChange SetOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot, Guid inventoryItemId, bool pinned)
+            => outfitService.SetSlot(characterId, skill, (RavenNest.Models.EquipmentSlot)(int)slot, inventoryItemId, pinned);
+
+        public OutfitChange ClearOutfitSlot(Guid characterId, Skill skill, EquipmentSlot slot)
+            => outfitService.ClearSlot(characterId, skill, (RavenNest.Models.EquipmentSlot)(int)slot);
+
+        public OutfitChange SetOutfitPet(Guid characterId, Skill skill, Guid petId) => outfitService.SetPet(characterId, skill, petId);
+
+        public OutfitChange WearOutfit(Guid characterId, Skill skill) => outfitService.Wear(characterId, skill);
+
+        public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
+            => outfitService.SetSwitches(characterId, changeWithTraining, upgradeAutomatically);
 
         public GearResult SendToStash(Guid characterId, IReadOnlyList<InventoryItem> items)
         {
@@ -609,6 +649,23 @@ namespace RavenNest.Blazor.Services
         /// <summary>The combat skills a character can be dressed for, in the game's order.</summary>
         public static readonly Skill[] DressFor = { Skill.Attack, Skill.Defense, Skill.Strength, Skill.Ranged, Skill.Magic, Skill.Healing };
 
+        /// <summary>
+        ///     Every skill that can have an outfit of its own, the fighting ones first ("All" is training all, which
+        ///     the server keeps as Health); Taming has none.
+        /// </summary>
+        public static readonly Skill[] OutfitSkills =
+        {
+            Skill.Health, Skill.Attack, Skill.Defense, Skill.Strength, Skill.Ranged, Skill.Magic, Skill.Healing,
+            Skill.Woodcutting, Skill.Mining, Skill.Fishing, Skill.Farming, Skill.Gathering, Skill.Crafting, Skill.Cooking,
+            Skill.Alchemy, Skill.Slayer, Skill.Sailing,
+        };
+
+        /// <summary>The skills the game has no picture for among these: an icon instead; null where there is a picture.</summary>
+        public static string SkillIcon(Skill skill) => skill == Skill.Gathering ? "fa-solid fa-leaf" : skill == Skill.Alchemy ? "fa-solid fa-flask" : null;
+
+        /// <summary>A skill as the outfit picker names it.</summary>
+        public static string SkillName(Skill skill) => skill == Skill.Health || skill == Skill.Melee ? "All" : skill.ToString();
+
         public static string SkillPicture(Skill skill)
         {
             switch (skill)
@@ -619,6 +676,14 @@ namespace RavenNest.Blazor.Services
                 case Skill.Ranged: return "/imgs/icons/skills/ranged.png";
                 case Skill.Magic: return "/imgs/icons/skills/Magic.png";
                 case Skill.Healing: return "/imgs/icons/skills/healing.png";
+                case Skill.Woodcutting: return "/imgs/icons/skills/woodcutting.png";
+                case Skill.Mining: return "/imgs/icons/skills/Mining.png";
+                case Skill.Fishing: return "/imgs/icons/skills/Fishing.png";
+                case Skill.Farming: return "/imgs/icons/skills/farming.png";
+                case Skill.Crafting: return "/imgs/icons/skills/Crafting.png";
+                case Skill.Cooking: return "/imgs/icons/skills/Cooking.png";
+                case Skill.Slayer: return "/imgs/icons/skills/slayer.png";
+                case Skill.Sailing: return "/imgs/icons/skills/sailing.png";
                 default: return "/imgs/icons/skills/CombatLevel.png";
             }
         }

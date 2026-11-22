@@ -98,7 +98,8 @@ namespace RavenNest.Blazor.Components
 
             return new
             {
-                pieces = entries.Where(x => x.Stack.Equipped).Select(FigureOf).Where(x => x != null).ToList(),
+                // what shows as worn: the gear that is on, or the outfit that is looked at
+                pieces = ShownPieces().Select(FigureOf).Where(x => x != null).ToList(),
                 style = style == RavenNest.Combat.AttackStyle.Ranged ? "ranged" : style == RavenNest.Combat.AttackStyle.Magic ? "magic" : style == RavenNest.Combat.AttackStyle.Healing ? "healing" : "melee",
                 helmet = appearance == null || appearance.HelmetVisible,
                 cape,
@@ -111,7 +112,7 @@ namespace RavenNest.Blazor.Components
         private string FigureKey()
         {
             var appearance = player.Appearance;
-            var worn = entries.Where(x => x.Stack.Equipped && x.Slot != EquipmentSlot.None)
+            var worn = ShownPieces().Where(x => x.Slot != EquipmentSlot.None)
                 .Select(x => x.Stack.ItemId.ToString("N") + ":" + (x.Stack.TransmogrificationId?.ToString("N") ?? ""))
                 .OrderBy(x => x, StringComparer.Ordinal);
             return string.Join(",", worn) + "|" + GearRules.StyleOf(EffectiveSkill) + "|" + appearance?.HelmetVisible + "|" + appearance?.CapeHidden + "|" + appearance?.Cape;
