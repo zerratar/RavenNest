@@ -129,6 +129,9 @@ namespace RavenNest.Blazor.Components
         private bool attached;
         private Guid? figureOf;
         private string figureState = "is-loading";
+        // the figure wears the character's gear (the 3D view with the gear export; the flat view shows the look alone)
+        private bool figureDressed;
+        private string figureWears;
 
         private string ActiveView => View ?? ownView;
         private bool CanAct => CanManage && player != null;
@@ -212,17 +215,29 @@ namespace RavenNest.Blazor.Components
 
                 if (ActiveView == "equipment")
                 {
+                    var wears = FigureKey();
                     if (figureOf != player.Id)
                     {
                         figureOf = player.Id;
-                        var mode = await module.InvokeAsync<string>("figure", stageHost, Environment.Versioned("js/rf-character-designer.js"), player.Appearance);
-                        figureState = mode == "3d" ? "is-3d" : mode == "2d" ? "is-flat" : "is-none";
+                        figureWears = wears;
+                        var mode = await module.InvokeAsync<string>("figure", stageHost, Environment.Versioned("js/rf-character-designer.js"),
+                            Environment.Versioned("js/rf-character-gear.js"), player.Appearance, FigureOutfit());
+                        figureDressed = mode == "3d+gear";
+                        figureState = mode.StartsWith("3d") ? "is-3d" : mode == "2d" ? "is-flat" : "is-none";
                         StateHasChanged();
+                    }
+                    else if (figureDressed && figureWears != wears)
+                    {
+                        // something was put on or taken off, or another skill is dressed for: the server has
+                        // answered and the page shows it, and now the figure does
+                        figureWears = wears;
+                        await module.InvokeVoidAsync("dressFigure", FigureOutfit());
                     }
                 }
                 else if (figureOf != null)
                 {
                     figureOf = null;
+                    figureDressed = false;
                     figureState = "is-loading";
                     await module.InvokeVoidAsync("dropFigure");
                 }

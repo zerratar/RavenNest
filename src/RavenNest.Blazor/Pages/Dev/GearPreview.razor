@@ -15,6 +15,9 @@
              admin             an administrator: Add item and Set coins too
              empty             a character that owns nothing
     &pick=   an item's name, to open the page with it picked (&worn=1 for the worn one)
+    &wear=   ItemMaterial names (ElderAtlarus, Apprentice ...): the armor of those materials is worn, for looking at
+             the dressed figure; with &headpiece=Hood (a word of the head piece to prefer), &bare=1 (nothing else
+             worn), &gender=male, &hair=12, &head=3, &beard=4, &cape=0, &capehidden=1, &helmet=0
 
     The character carries real items of the game, so the pictures, stats, sockets and comparisons are the real
     ones. Every click changes this page's own made up character (GearPreviewBackend): nothing is saved or sent
@@ -59,7 +62,7 @@ else
         if (query.TryGetValue("tab", out var t) && (t == "inventory" || t == "both")) tab = t;
         if (query.TryGetValue("state", out var s)) state = s;
 
-        backend = new GearPreviewBackend(ItemService, state);
+        backend = new GearPreviewBackend(ItemService, state, query);
         player = backend.GetPlayer(backend.CharacterId);
         if (query.TryGetValue("pick", out var name)) pick = backend.StackOf(name, query.ContainsKey("worn"));
     }

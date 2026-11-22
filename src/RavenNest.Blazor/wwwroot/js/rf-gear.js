@@ -15,6 +15,8 @@
 
 const attachedRoots = new WeakMap();
 let figureNow = null;
+// what the figure wears (rf-character-gear.js); null where it shows the character's look alone
+let wardrobe = null;
 
 /** Starts listening on the gear page's root element. */
 export function attach(root, dotnet) {
@@ -44,12 +46,24 @@ export function attach(root, dotnet) {
     const tip = { layer: null, anchor: null, showTimer: 0, hideTimer: 0 };
     const cardOf = id => (id ? document.querySelector('.rf-gear-tips [data-tip-card="' + id + '"]') : null);
 
-    const hideTip = () => {
+    // The figure tries on the piece the mouse is over (or the one being dragged): its model is fetched then, the
+    // first time, and the figure goes back to what is worn when the mouse leaves.
+    const tryOn = look => {
+        if (!wardrobe) return;
+        let piece = null;
+        if (look) {
+            try { piece = JSON.parse(look); } catch { piece = null; }
+        }
+        Promise.resolve(wardrobe.preview(piece)).catch(() => { });
+    };
+
+    const hideTip = keepOn => {
         clearTimeout(tip.showTimer);
         clearTimeout(tip.hideTimer);
         tip.anchor = null;
         tip.waiting = null;
         if (tip.layer) tip.layer.classList.remove('is-on');
+        if (keepOn !== true) tryOn(null);
     };
 
     // Where the card goes: beside what it is about, inside the window, and never over the slot the piece would go
@@ -124,6 +138,7 @@ export function attach(root, dotnet) {
         tip.layer.querySelectorAll('img').forEach(img => { img.loading = 'eager'; });
         tip.layer.classList.toggle('is-pair', !!other);
         tip.anchor = anchor;
+        tryOn(card.dataset.look);
         placeTip(!!other, card.dataset.tipSlot, anchor.classList.contains('rf-gear-tile'));
         tip.layer.classList.add('is-on');
     };
@@ -165,7 +180,7 @@ export function attach(root, dotnet) {
         if (to === anchor) return;
         clearTimeout(tip.showTimer);
         clearTimeout(tip.hideTimer);
-        tip.hideTimer = setTimeout(hideTip, 110);
+        tip.hideTimer = setTimeout(() => hideTip(), 110);
     };
 
     s.tipClick = () => {
@@ -173,7 +188,7 @@ export function attach(root, dotnet) {
         setTimeout(refreshTip, 1000);
     };
 
-    s.hideTip = hideTip;
+    s.hideTip = () => hideTip();
     s.dropTip = () => {
         hideTip();
         if (tip.layer) tip.layer.remove();
@@ -181,7 +196,10 @@ export function attach(root, dotnet) {
     };
 
     const begin = e => {
-        hideTip();
+        // the card goes; the figure keeps the dragged piece on until it is dropped
+        hideTip(true);
+        const dragged = cardOf(s.start.src.dataset.tip);
+        if (s.start.from !== 'worn') tryOn(dragged ? dragged.dataset.look : null);
         const src = s.start.src;
         const img = src.querySelector('img');
         const ghost = document.createElement('div');
@@ -202,7 +220,7 @@ export function attach(root, dotnet) {
         document.body.classList.add('rf-gear-dragging');
     };
 
-    const end = () => {
+    const end = dropped => {
         if (s.drag) {
             setOver(null);
             s.drag.ghost.remove();
@@ -211,6 +229,10 @@ export function attach(root, dotnet) {
             root.removeAttribute('data-drag-slot');
             document.body.classList.remove('rf-gear-dragging');
         }
+        // dropped on its slot: the figure keeps the piece on until the server has answered (the page then says what
+        // is worn, and this is forgotten); anywhere else it comes off at once
+        if (s.drag && dropped !== true) tryOn(null);
+        else if (s.drag) setTimeout(() => tryOn(null), 1500);
         s.drag = null;
         s.start = null;
     };
@@ -245,7 +267,7 @@ export function attach(root, dotnet) {
         const target = dropUnder(e.clientX, e.clientY);
         const { id, from } = s.drag;
         const key = target ? target.dataset.gearDrop : null;
-        end();
+        end(!!key && from !== 'worn');
         // the mouse button coming up after a drag is not a click on whatever lies under it
         const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); };
         window.addEventListener('click', swallow, true);
@@ -319,15 +341,22 @@ export function detach(root) {
 
 /**
  * Stands the character in the middle of the Equipment tab: the customizer's own view (3D where the browser can,
- * the flat pictures where it cannot). Answers '3d', '2d', or 'none' when there is nothing to show; the page then
- * shows a still figure instead. The character wears its look (face, hair, colors), not its gear: the worn pieces
- * are the slots around it.
+ * the flat pictures where it cannot), wearing what the character wears (rf-character-gear.js) in the 3D view.
+ * The body shows first; the worn pieces' models are fetched then, and any other piece when it is looked at or put on.
+ * Answers '3d+gear', '3d' (no gear export on this server), '2d', or 'none' when there is nothing to show; the page
+ * then shows a still figure instead.
  */
-export async function figure(host, designerUrl, look) {
+export async function figure(host, designerUrl, gearUrl, look, outfit) {
+    // a page drawn by a server from before the figure wore anything asks without the gear script
+    if (gearUrl && typeof gearUrl !== 'string') {
+        look = gearUrl;
+        gearUrl = null;
+        outfit = null;
+    }
     dropFigure();
     if (!host || !look) return 'none';
     try {
-        // the page names the script from its own address; an import here would read it from this script's folder
+        const started = performance.now();
         const designer = await import(new URL(designerUrl, document.baseURI).href);
         const view = await designer.create(host, { inline: true });
         if (!host.isConnected) {
@@ -340,8 +369,27 @@ export async function figure(host, designerUrl, look) {
             view.wanted.distance = 4.2;
             view.distance = 4.2;
         }
-        await view.show(look);
-        return view.mode || '3d';
+        const body = view.show(look);
+        let dressed = false;
+        if (view.mode === '3d' && gearUrl) {
+            try {
+                const gear = await import(new URL(gearUrl, document.baseURI).href);
+                const w = await gear.attach(designer, view, on => host.classList.toggle('is-arriving', on));
+                await body;
+                if (w && figureNow === view) {
+                    wardrobe = w;
+                    // for measuring and for tests: what was fetched and what is worn
+                    host.rfFigure = () => w.stats();
+                    await w.set(outfit || { pieces: [] });
+                    dressed = true;
+                    host.dataset.dressedMs = String(Math.round(performance.now() - started));
+                }
+            } catch (e) {
+                console.warn('The character is shown without its gear', e);
+            }
+        }
+        await body;
+        return (view.mode || '3d') + (dressed ? '+gear' : '');
     } catch (e) {
         console.warn('The character could not be shown on the gear page', e);
         dropFigure();
@@ -349,7 +397,21 @@ export async function figure(host, designerUrl, look) {
     }
 }
 
+/** What the character wears changed (the server has answered): the figure follows. */
+export function dressFigure(outfit) {
+    return wardrobe ? wardrobe.set(outfit || { pieces: [] }) : null;
+}
+
+/** What the gear's files cost so far: for measuring. */
+export function figureStats() {
+    return wardrobe ? wardrobe.stats() : null;
+}
+
 export function dropFigure() {
+    if (wardrobe) {
+        try { wardrobe.dispose(); } catch { /* already gone */ }
+        wardrobe = null;
+    }
     if (figureNow) {
         try { figureNow.dispose(); } catch { /* already gone */ }
         figureNow = null;

@@ -222,7 +222,11 @@ function setColors(uniforms, a) {
 // ---- Animations ----------------------------------------------------------------------------------------------------
 
 function clipOf(m, name, boneName) {
-    const a = m.animations[name];
+    return clipFrom(m.animations[name], name, boneName);
+}
+
+/** An animation in the export's layout (a turn for each bone that moves, frame by frame, and where the hips are). */
+function clipFrom(a, name, boneName) {
     if (!a) return null;
     const times = new Float32Array(a.frames);
     for (let f = 0; f < a.frames; f++) times[f] = f / a.fps;
@@ -355,7 +359,7 @@ class Stage {
             const now = performance.now();
             if (now > this.nextFidget && this.current !== 'cheer') {
                 this.nextFidget = now + 18000 + Math.random() * 14000;
-                if (this.clips.bored && !this.dragging) this.play('bored');
+                if (this.clips.bored && !this.dragging && !this.stance) this.play('bored');
             }
         }
         this.mixer.update(dt);
@@ -451,12 +455,35 @@ class Stage {
         this.play('cheer');
     }
 
+    /**
+     * How the character stands: a stance (an animation in the export's layout, as the idle with a weapon in hand) in
+     * place of the idle, or nothing for the idle itself. The bored fidget is the empty hands' own and waits meanwhile.
+     */
+    stand(name, animation) {
+        const wanted = name && animation ? name : null;
+        if ((this.stance || null) === wanted) return;
+        this.stances ??= new Map();
+        if (wanted && !this.stances.has(wanted)) this.stances.set(wanted, clipFrom(animation, 'stance-' + wanted, i => 'b' + i));
+        const clip = wanted ? this.stances.get(wanted) : this.clips.idle;
+        if (!clip) return;
+        const next = this.mixer.clipAction(clip);
+        if (this.current && this.clips[this.current]) {
+            this.mixer.clipAction(this.clips[this.current]).fadeOut(0.3);
+            this.current = null;
+        }
+        if (this.idle && this.idle !== next) this.idle.fadeOut(0.3);
+        next.reset().fadeIn(0.3).play();
+        this.idle = next;
+        this.stance = wanted;
+    }
+
     getMode() {
         return '3d';
     }
 
     /** Dresses the character in an appearance; only the parts that changed are swapped. */
     show(appearance) {
+        this.look = appearance;
         this.ready = this.dress(appearance);
         return this.ready;
     }
@@ -466,12 +493,19 @@ class Stage {
         const a = this.appearance = normalize(appearance);
         setColors(this.material.userData.uniforms, a);
         const parts = partsOf(this.m, a);
+        // what the character wears (rf-character-gear.js sets this on the Equipment tab): it takes away the body
+        // parts armor stands in for and what a helmet hides, and brings the armor's own meshes
+        const worn = this.outfit ? await this.outfit(a, parts) : null;
+        if (token !== this.token || this.disposed) return;
         const ids = new Set();
         for (const p of [...parts.body, parts.head, parts.eyebrows, parts.beard, parts.hair]) if (p) p.meshes.forEach(id => ids.add(id));
         const geometries = await Promise.all([...ids].map(id => loadMesh(this.m, id).then(g => [id, g])));
         if (token !== this.token || this.disposed) return;
+        const extra = worn && worn.meshes ? worn.meshes : [];
+        const keep = new Set(ids);
+        for (const x of extra) keep.add(x.key);
         for (const [id, mesh] of [...this.shown]) {
-            if (ids.has(id)) continue;
+            if (keep.has(id)) continue;
             this.rig.remove(mesh);
             this.shown.delete(id);
         }
@@ -480,6 +514,12 @@ class Stage {
             const mesh = skinned(g, this.material, this.skeleton);
             this.rig.add(mesh);
             this.shown.set(id, mesh);
+        }
+        for (const x of extra) {
+            if (this.shown.has(x.key)) continue;
+            const mesh = skinned(x.geometry, x.material, x.skeleton || this.skeleton);
+            this.rig.add(mesh);
+            this.shown.set(x.key, mesh);
         }
         if (this.options.still) this.tick();
     }

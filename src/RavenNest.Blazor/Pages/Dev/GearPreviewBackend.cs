@@ -36,10 +36,20 @@ namespace RavenNest.Blazor.Pages.Dev
         private readonly Guid userId = Guid.NewGuid();
         private readonly Guid otherCharacterId = Guid.NewGuid();
 
+        private readonly IReadOnlyDictionary<string, string> options;
+
+        private string Option(string name) => options != null && options.TryGetValue(name, out var value) ? value : null;
+
         /// <param name="state">"owner" (the default), "visitor", "admin" or "empty".</param>
-        public GearPreviewBackend(ItemService items, string state)
+        /// <param name="options">
+        ///     For looking at the dressed figure: wear (ItemMaterial names, comma separated: the armor of those
+        ///     materials is worn instead of the usual set), headpiece (a word of the head piece's name to prefer),
+        ///     bare (nothing else is worn), gender, hair, head, beard, cape (0 to 4), capehidden, helmet (0 hides it).
+        /// </param>
+        public GearPreviewBackend(ItemService items, string state, IReadOnlyDictionary<string, string> options = null)
         {
             this.items = items;
+            this.options = options;
             byName = new Dictionary<string, Item>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in items.GetItems())
             {
@@ -57,8 +67,46 @@ namespace RavenNest.Blazor.Pages.Dev
             return bag.FirstOrDefault(x => x.Equipped == worn && byName.TryGetValue(itemName ?? string.Empty, out var item) && x.ItemId == item.Id)?.Id;
         }
 
+        // The armor of the named materials, worn: one piece a slot, the first material that has one.
+        private void WearMaterials(string names)
+        {
+            var taken = new HashSet<EquipmentSlot>();
+            var prefer = Option("headpiece");
+            foreach (var name in names.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (!Enum.TryParse<ItemMaterial>(name.Trim(), true, out var material)) continue;
+                var pieces = byName.Values
+                    .Where(x => x.Material == material && x.Category == ItemCategory.Armor)
+                    .OrderByDescending(x => prefer != null && x.Name.Contains(prefer, StringComparison.OrdinalIgnoreCase))
+                    .ThenBy(x => x.Name, StringComparer.Ordinal);
+                foreach (var piece in pieces)
+                {
+                    var slot = GearRules.SlotOf(piece);
+                    if (slot == EquipmentSlot.None || !taken.Add(slot)) continue;
+                    bag.Add(new InventoryItem { Id = Guid.NewGuid(), ItemId = piece.Id, Amount = 1, Equipped = true });
+                }
+            }
+        }
+
         private void Fill()
         {
+            var wear = Option("wear");
+            if (wear != null)
+            {
+                WearMaterials(wear);
+                if (Option("bare") == null)
+                {
+                    Add("Dragon Katana", worn: true);
+                    Add("Dragon Bow", worn: true);
+                    Add("Phantom Staff", worn: true);
+                    Add("Dragon Shield", worn: true);
+                    Add("Archmages Pendant", worn: true);
+                }
+
+                FillBag();
+                return;
+            }
+
             // what a healer around level 160 wears: a class gear set with one plate piece left to replace, a weapon
             // for each way of fighting, and an empty shield slot
             Add("Priest Cowl", worn: true, sockets: Sockets((GemKind.Diamond, GemTier.Polished)));
@@ -74,6 +122,11 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Raven Pet", worn: true);
             Add("Sloop", worn: true);
 
+            FillBag();
+        }
+
+        private void FillBag()
+        {
             // pieces to wear: an upgrade, pieces of other lines, ones the character cannot wear yet, looks
             Add("Priest Gloves");
             Add("Priest Boots");
@@ -211,14 +264,19 @@ namespace RavenNest.Blazor.Pages.Dev
                 State = new CharacterState { Task = "Fighting", TaskArgument = "Healing", Island = "Kyo" },
                 Appearance = new SyntyAppearance
                 {
-                    Gender = Gender.Female, Head = 3, Hair = 12, Eyebrows = 2, FacialHair = -1,
+                    Gender = Option("gender") == "male" ? Gender.Male : Gender.Female,
+                    Head = Number("head", 3), Hair = Number("hair", 12), Eyebrows = 2, FacialHair = Number("beard", -1),
                     SkinColor = "#E8C0A8", HairColor = "#A0461E", BeardColor = "#A0461E", EyeColor = "#3D8A4A",
                     StubbleColor = "#E8C0A8", ScarColor = "#E8C0A8", WarPaintColor = "#000000",
+                    // no cape of her own, and the helmet shows (both as the game's toggles leave them by default)
+                    Cape = Number("cape", -1), HelmetVisible = Option("helmet") != "0", CapeHidden = Option("capehidden") != null,
                 },
                 // copies, so the page cannot change the "server's" stacks by accident
                 InventoryItems = bag.Select(Copy).ToList(),
             };
         }
+
+        private int Number(string option, int otherwise) => int.TryParse(Option(option), out var value) ? value : otherwise;
 
         private static InventoryItem Copy(InventoryItem x) => new InventoryItem
         {

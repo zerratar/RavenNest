@@ -91,13 +91,15 @@ else
 
                         <div class="rf-gear-stage @(figureState)">
                             <div class="rf-gear-stage__canvas" @ref="stageHost"></div>
+                            @* shown by the script while a piece's model is on its way *@
+                            <span class="rf-gear-stage__arriving" aria-hidden="true"><i class="fa-solid fa-circle-notch"></i></span>
                             <div class="rf-gear-stage__still" aria-hidden="true"><i class="fa-solid fa-person"></i></div>
                             <div class="rf-gear-stage__plate">
                                 <span class="rf-gear-stage__name">@player.Name</span>
                                 <span class="rf-gear-stage__level">Combat level @player.CombatLevel</span>
                             </div>
                             <div class="rf-gear-stage__boat">
-                                @if (figureState == "is-3d" || figureState == "is-flat")
+                                @if (!figureDressed && (figureState == "is-3d" || figureState == "is-flat"))
                                 {
                                     <span class="rf-gear-stage__note" title="The character's own look, from the Customize tab. What it wears is in the slots around it.">Shown without gear</span>
                                 }
@@ -475,7 +477,8 @@ else
                 if (e.Slot == EquipmentSlot.None) continue;
                 Entry against = null;
                 if (!e.Stack.Equipped) worn.TryGetValue(e.Slot, out against);
-                <div data-tip-card="@e.Stack.Id" data-tip-slot="@GearRules.Get(e.Slot)?.Key" data-tip-with="@against?.Stack.Id">
+                <div data-tip-card="@e.Stack.Id" data-tip-slot="@GearRules.Get(e.Slot)?.Key" data-tip-with="@against?.Stack.Id"
+                     data-look="@(e.Stack.Equipped ? null : FigureData(e))">
                     @TipCard(e, against)
                 </div>
             }

@@ -526,6 +526,27 @@ i.rf-gear-slot__glyph {
     opacity: 0.5;
 }
 
+/* a piece's model is on its way: a small turning mark in the corner, and nothing waits for it */
+.rf-gear-stage__arriving {
+    position: absolute;
+    top: var(--rf-space-2);
+    right: var(--rf-space-2);
+    z-index: 1;
+    display: none;
+    color: var(--rf-gold);
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.rf-gear-stage:has(.rf-gear-stage__canvas.is-arriving) .rf-gear-stage__arriving {
+    display: block;
+    animation: rf-gear-turn 0.9s linear infinite;
+}
+
+@keyframes rf-gear-turn {
+    to { transform: rotate(360deg); }
+}
+
 .rf-gear-stage__plate {
     position: relative;
     display: flex;
