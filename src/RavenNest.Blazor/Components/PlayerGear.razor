@@ -152,7 +152,12 @@ else
                             <div class="rf-gear-outfit @(LooksAtOutfit ? "is-viewing" : "") @(ProposalView ? "is-proposed" : "")" aria-live="polite">
                                 <i class="rf-gear-outfit__icon fa-solid @(ProposalView ? "fa-wand-magic-sparkles" : LooksAtOutfit ? "fa-eye" : "fa-shirt")" aria-hidden="true"></i>
                                 <div class="rf-gear-outfit__text">
-                                    @if (!SkillTab)
+                                    @if (CanAct && !HasGear)
+                                    {
+                                        <b>Nothing to wear yet</b>
+                                        <span>This character has no weapons, armor or jewelry. Buy some at the Vendor: they show up in the bag, and outfits and "equip best" work from there.</span>
+                                    }
+                                    else if (!SkillTab)
                                     {
                                         if (WornOutfitSkill == Skill.None)
                                         {
@@ -493,7 +498,7 @@ else
                         @CoinsLine()
                     </div>
 
-                    <div class="rf-gear-bag__tools">
+                    <div class="rf-gear-bag__tools" hidden="@(WearableCount == 0)">
                         <SearchBox Placeholder="Search pieces" AriaLabel="Search the pieces to wear by name"
                                    Value="@wearSearch" ValueChanged="v => wearSearch = v ?? string.Empty" ClearSignal="@clearSignal" />
                         <label class="rf-gear-sort">
@@ -755,6 +760,7 @@ else
                                 <li><span class="rf-gear-mark rf-gear-mark--worn">E</span> worn now</li>
                                 <li><span class="rf-gear-mark rf-gear-mark--up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span> better than what is worn</li>
                                 <li><span class="rf-gear-mark rf-gear-mark--ench"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span> enchanted</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--skin"><i class="fa-solid fa-mask" aria-hidden="true"></i></span> wears a skin</li>
                                 <li><span class="rf-gear-dots"><i class="rf-gear-dot is-gem-ruby"></i><i class="rf-gear-dot"></i></span> gem sockets</li>
                             </ul>
                         </div>

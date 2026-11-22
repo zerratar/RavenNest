@@ -626,7 +626,7 @@
 
 .rf-gear-stats__whose.is-proposed { color: var(--rf-gold-bright); }
 .rf-gear-stats__whose.is-now { color: var(--rf-ink-muted); }
-.rf-gear-stats.is-proposed .rf-gear-stat { border-style: dashed; }
+.rf-gear-stats.is-proposed { outline: 2px dashed var(--rf-gold-dim); outline-offset: 3px; }
 
 /* the bag piece that is in the outfit looked at */
 .rf-gear-mark--outfit { background: var(--rf-gold); color: var(--rf-bg); }
@@ -2884,3 +2884,13 @@ body.rf-gear-dragging * {
 
 /* the bag's search gives way to the sort on one line where it can */
 .rf-gear-bag__tools > :first-child { flex: 1 1 9rem; min-width: 0; }
+
+/* a button in an empty state keeps its own small icon */
+.rf-gear-empty .rf-btn i { font-size: 1em; margin: 0; color: inherit; }
+.rf-gear-bag__tools[hidden] { display: none; }
+
+/* the line under the character: its buttons go under the words when both do not fit (long ones like "Keep Priest
+   Gloves in the Healing outfit" squeezed the words into a column of one word a line) */
+.rf-gear-pick { flex-wrap: wrap; }
+.rf-gear-pick__text { flex: 1 1 15rem; }
+.rf-gear-pick__acts { flex: 0 1 auto; flex-wrap: wrap; margin-left: auto; }
