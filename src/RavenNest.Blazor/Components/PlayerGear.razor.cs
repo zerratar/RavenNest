@@ -947,7 +947,8 @@ namespace RavenNest.Blazor.Components
             // what happened, and whether the outfit that is on still has something else there
             var kept = OutfitsKnown && Drifted(slot) ? KeptIn(WornOutfit, slot) : null;
             Say(name + " is on" + (was != null && was != name ? ", in place of " + was : "") + "."
-                + (kept != null ? " Your " + GearRules.SkillName(WornOutfitSkill) + " outfit still keeps " + kept.Name + " there: save it to the outfit, or it comes back when the outfit next goes on." : ""));
+                // (the strip above the slots says what the outfit keeps and offers to save it: the notice only points to it)
+                + (kept != null ? " Not saved to your " + GearRules.SkillName(WornOutfitSkill) + " outfit yet." : ""));
             if (ActiveView == "equipment")
             {
                 pickedSlot = slot;
