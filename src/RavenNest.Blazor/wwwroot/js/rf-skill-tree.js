@@ -947,15 +947,26 @@ function drawLabels(g, view) {
     // the trees' names past their crowns, readable at every zoom
     const size = titleSize(zoom);
     const crown = NODE_RADIUS.capstone * map.crownScale * u * CROWN_RAYS;
+    const crowns = zoom < LABEL_MIN_ZOOM && !map.fans ? map.nodes.filter(n => n.capstone && n.x !== undefined).map(n => cam.toScreen(n.x, n.y, w, h)) : [];
     const titles = map.hubs.map(hub => {
         const box = titleBox(g, hub, size);
         const [ox, oy] = cam.toScreen(hub.cos * OUTER_RING, hub.sin * OUTER_RING, w, h);
         const [dx, dy] = titleOffset(map, hub, box, crown);
         let x = ox + dx, y = oy + dy;
         if (box.hw * 2 < w && zoom < LABEL_MIN_ZOOM && !map.fans) {
-            // in the overview kept inside the view (a phone shows the side trees' names whole), and off the crown
-            x = Math.min(w - box.hw - 4, Math.max(box.hw + 4, x));
-            if (Math.abs(x - ox) < box.hw + crown * 0.7 && Math.abs(y - oy) < box.hh + crown * 0.7) y = oy + (hub.sin > 0.3 ? 1 : -1) * (crown * 0.8 + box.hh + 4);
+            // In the overview a name is kept inside the view (a phone shows the side trees' names whole). A tree ends
+            // in three crowns side by side and the ring of them has no gap to lie in, so a name that would lie on a
+            // crown once it is moved into the view lies inside its own wedge instead, within the ring: every crown
+            // stays in sight.
+            const kept = Math.min(w - box.hw - 4, Math.max(box.hw + 4, x));
+            const reach = crown * 0.62;
+            const onCrown = kept !== x && crowns.some(([cx, cy]) => Math.abs(kept - cx) < box.hw + reach && Math.abs(y - cy) < box.hh + reach);
+            if (onCrown) {
+                const inward = crown * 0.72 + 6 + box.hw * Math.abs(hub.cos) + box.hh * Math.abs(hub.sin);
+                x = ox - hub.cos * inward;
+                y = oy - hub.sin * inward;
+            }
+            else x = kept;
         }
         return { hub, box, x, y };
     });
@@ -1015,8 +1026,10 @@ function drawLabels(g, view) {
         g.font = `${picked || capstone ? 800 : 700} ${fontSize}px ${FONT}`;
         // Among a few fans the skills stand close and their names are long ("Enchanter's Patience"): a long name is
         // set on two lines there, so it fits under or over its own skill and is not pushed off to a corner.
+        // (So is a crown's on the wheel: a tree ends in three crowns side by side, and "Shield of the Many" on one
+        // line would push its neighbor's name out.)
         let lines = [n.name];
-        if (map.fans && g.measureText(n.name).width > 84) {
+        if ((map.fans || capstone) && g.measureText(n.name).width > 84) {
             let cut = -1;
             for (let i = n.name.indexOf(' '); i >= 0; i = n.name.indexOf(' ', i + 1)) {
                 if (cut < 0 || Math.abs(i - n.name.length / 2) < Math.abs(cut - n.name.length / 2)) cut = i;
@@ -1029,7 +1042,9 @@ function drawLabels(g, view) {
         const reach = grown + 5 + tall;
         // under the node, else over it; among a few fans (their skills stand one above the other where the fans lie
         // on their sides) also beside it
-        const sides = capstone ? (map.fans ? [[0, 1], [1, 0], [-1, 0]] : [[0, 1]])
+        // (a crown on the wheel: under it, else beside it, the side toward the middle first: the three crowns of a
+        // tree at the wheel's left or right stand one above the other, and the name under one would lie on the next)
+        const sides = capstone ? (map.fans ? [[0, 1], [1, 0], [-1, 0]] : [[0, 1], [n.x > 0 ? -1 : 1, 0], [n.x > 0 ? 1 : -1, 0]])
             : map.fans ? [[0, 1], [0, -1], [1, 0], [-1, 0], [0.75, 1], [-0.75, 1], [0.75, -1], [-0.75, -1]] : [[0, 1], [0, -1]];
         let at = null;
         for (const [dx, dy] of sides) {
