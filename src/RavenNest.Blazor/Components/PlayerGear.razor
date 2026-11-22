@@ -72,34 +72,54 @@ else
                                     <i class="fa-solid @(moreSkills ? "fa-chevron-up" : "fa-chevron-down")" aria-hidden="true"></i>
                                 </button>
                             }
+                            @if (OutfitsKnown && outfits.Outfits.Count > 0)
+                            {
+                                <button type="button" class="rf-gear-skills__more rf-gear-skills__all" @onclick="OpenOverview"
+                                        title="Every outfit at once, with its pieces, pet and main number; start one outfit from another">
+                                    <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i> All outfits
+                                </button>
+                            }
                             @if (TrainingNow != null)
                             {
                                 <span class="rf-gear-skills__now"><i class="rf-gear-skills__dot" aria-hidden="true"></i> Training now: <b>@TrainingNow</b></span>
                             }
                         </div>
-                        <div class="rf-gear-skills__row @(OutfitsKnown ? "is-outfits" : "")">
+                        @{
+                            var pickerSkills = PickerSkills();
+                            var tileCount = pickerSkills.Count + (OutfitsKnown ? 1 : 0);
+                        }
+                        <div class="rf-gear-skills__row @(OutfitsKnown ? "is-outfits" : "")"
+                             style="--rf-cols-wide: @Columns(tileCount, 10); --rf-cols-mid: @Columns(tileCount, 4); --rf-cols-narrow: @Columns(tileCount, 4)">
                             @if (OutfitsKnown)
                             {
                                 @* "Now" is the gear worn this moment; every skill after it is that skill's outfit *@
+                                var nowOutfit = WornOutfitSkill != Skill.None ? GearRules.SkillName(WornOutfitSkill) : null;
                                 <button type="button" class="rf-gear-skill rf-gear-skill--now @(!dressFor.HasValue ? "is-on" : "")" aria-pressed="@(!dressFor.HasValue)"
-                                        title="What you wear right now. Equipping here puts it on at once, whatever you train."
+                                        title="@("What you wear right now" + (nowOutfit != null ? " (your " + nowOutfit + " outfit is on)" : "") + ". Equipping here puts it on at once, whatever you train.")"
                                         @onclick="PickNow">
                                     <span class="rf-gear-skill__pic"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
-                                    <span class="rf-gear-skill__name">Now</span>
+                                    <span class="rf-gear-skill__words">
+                                        <span class="rf-gear-skill__name">Now</span>
+                                        @if (nowOutfit != null)
+                                        {
+                                            <span class="rf-gear-skill__state">@nowOutfit on</span>
+                                        }
+                                    </span>
                                 </button>
                             }
-                            @foreach (var skill in PickerSkills())
+                            @foreach (var skill in pickerSkills)
                             {
                                 var s = skill;
                                 var on = dressFor.HasValue && (OutfitsKnown ? OutfitRules.Normalize(dressFor.Value) == s : dressFor == s);
                                 var has = OutfitsKnown && outfits.Find(s) != null;
-                                var isOn = has && WornOutfitSkill == s;
+                                var isOn = OutfitsKnown && WornOutfitSkill == s && (has || TrainedOutfitSkill == s);
                                 var trained = IsTrainedSkill(s);
                                 var name = GearRules.SkillName(s);
                                 var icon = GearRules.SkillIcon(s);
+                                var state = SkillState(s);
                                 <button type="button" class="rf-gear-skill @(on ? "is-on" : "") @(trained ? "is-trained" : "") @(has ? "has-outfit" : "") @(isOn ? "is-worn" : "")"
                                         aria-pressed="@on"
-                                        title="@(!OutfitsKnown ? (trained ? name + " (training now)" : "Numbers and best gear for " + name) : isOn ? name + ": this outfit is on" + (trained ? " (training now)" : "") : has ? name + ": an outfit is kept for it" + (trained ? " (training now)" : "") : name + ": no outfit yet" + (trained ? " (training now)" : ""))"
+                                        title="@(!OutfitsKnown ? (trained ? name + " (training now)" : "Numbers and best gear for " + name) : isOn ? name + ": this outfit is on" + (trained ? " (training now)" : "") : has ? name + ": an outfit is saved for it" + (trained ? " (training now)" : "") : name + ": no outfit yet" + (trained ? " (training now)" : ""))"
                                         @onclick="() => PickSkill(s)">
                                     <span class="rf-gear-skill__pic">
                                         @if (icon != null)
@@ -111,11 +131,13 @@ else
                                             <img src="@GearRules.SkillPicture(s)" alt="" draggable="false" />
                                         }
                                     </span>
-                                    <span class="rf-gear-skill__name">@name</span>
-                                    @if (has)
-                                    {
-                                        <span class="rf-gear-skill__kept" aria-hidden="true"><i class="fa-solid fa-shirt"></i></span>
-                                    }
+                                    <span class="rf-gear-skill__words">
+                                        <span class="rf-gear-skill__name">@name</span>
+                                        @if (state != null)
+                                        {
+                                            <span class="rf-gear-skill__state @(isOn ? "is-worn" : trained ? "is-trained" : "")">@state</span>
+                                        }
+                                    </span>
                                 </button>
                             }
                         </div>
@@ -124,48 +146,70 @@ else
                         {
                             var outfitName = GearRules.SkillName(OutfitSkill);
                             var shownOutfit = ShownOutfit;
-                            <div class="rf-gear-outfit @(OutfitView ? "is-viewing" : "")" aria-live="polite">
-                                <i class="rf-gear-outfit__icon fa-solid @(OutfitView ? "fa-eye" : "fa-shirt")" aria-hidden="true"></i>
+                            var diff = DiffCount;
+                            var wornName = GearRules.SkillName(WornOutfitSkill);
+                            var trainedName = GearRules.SkillName(TrainedOutfitSkill);
+                            <div class="rf-gear-outfit @(LooksAtOutfit ? "is-viewing" : "") @(ProposalView ? "is-proposed" : "")" aria-live="polite">
+                                <i class="rf-gear-outfit__icon fa-solid @(ProposalView ? "fa-wand-magic-sparkles" : LooksAtOutfit ? "fa-eye" : "fa-shirt")" aria-hidden="true"></i>
                                 <div class="rf-gear-outfit__text">
                                     @if (!SkillTab)
                                     {
-                                        <b>Worn now</b>
-                                        <span>What you have on@(TrainingNow != null ? " while training " + TrainingNow : ""). Equipping here puts it on in the game at once. Pick a skill to set up its outfit.</span>
-                                    }
-                                    else if (OutfitSkill == Skill.None)
-                                    {
-                                        <b>No outfit yet</b>
-                                        <span>What is worn becomes an outfit the first time training changes.</span>
+                                        if (WornOutfitSkill == Skill.None)
+                                        {
+                                            <b>Now: what you wear</b>
+                                            <span>Equipping here puts it on in the game at once. Pick a skill to set up its outfit.</span>
+                                        }
+                                        else if (WornByHand)
+                                        {
+                                            <b>Now: your @wornName outfit is on (put on by hand)</b>
+                                            <span>You train @trainedName; @(outfits.Follow ? "it changes back when training changes." : "it stays on, since outfits do not change with training.") Equipping here puts it on in the game at once.</span>
+                                        }
+                                        else if (WornOutfit == null)
+                                        {
+                                            <b>Now: what you wear for @wornName</b>
+                                            <span>No @wornName outfit is saved yet: what you wear becomes it when training changes. Equipping here puts it on in the game at once.</span>
+                                        }
+                                        else
+                                        {
+                                            <b>Now: your @wornName outfit is on</b>
+                                            <span>What you wear this moment. Equipping here puts it on in the game at once. Pick a skill to set up its outfit.</span>
+                                        }
                                     }
                                     else if (NoOutfitYet)
                                     {
-                                        <b>No @outfitName outfit yet</b>
-                                        <span>The slots show what you wear now. Make one from your best gear for @outfitName, or add pieces to it: nothing you wear changes.</span>
+                                        <b>No @outfitName outfit yet@(ProposalView ? ": proposed" : "")</b>
+                                        @if (NoOutfitYetIsOn)
+                                        {
+                                            <span>You train @outfitName, so its outfit is the one that is on: making it from your best gear puts that gear on now.@(ProposalView ? " The slots show what it would pick. Nothing is saved yet." : "")</span>
+                                        }
+                                        else if (ProposalView)
+                                        {
+                                            <span>The slots, the figure and the numbers show what making it from your best gear would pick (@(diff == 0 ? "the same as what you wear" : Plural(diff, "piece") + (diff == 1 ? " differs" : " differ") + " from what you wear")). Nothing is saved until you press the button, and nothing you wear changes.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Make one from your best gear, or add pieces to start one. Nothing you wear changes.</span>
+                                        }
                                     }
                                     else if (OutfitIsOn)
                                     {
-                                        <b>@outfitName outfit</b>
-                                        <span>On now. @OutfitSummary(shownOutfit). It is what you wear, so changes here go on in the game too.</span>
-                                    }
-                                    else if (OutfitView)
-                                    {
-                                        <b>@outfitName outfit</b>
-                                        <span>Not on now. @OutfitSummary(shownOutfit). Changes here are saved to this outfit; what you wear stays as it is until you train @outfitName or put it on.</span>
+                                        <b>@outfitName outfit: on</b>
+                                        <span>@OutfitSummary(shownOutfit). @(diff == 0 ? "It is what you wear, so changes here go on in the game too." : Plural(diff, "slot") + (diff == 1 ? " differs" : " differ") + " from what you wear (changed by hand on Now). Changes here go on in the game too.")</span>
                                     }
                                     else
                                     {
-                                        <b>@outfitName: no outfit kept yet</b>
-                                        <span>What is worn becomes its outfit the first time training changes. Pin a piece to keep it.</span>
+                                        <b>@outfitName outfit: not on</b>
+                                        <span>@OutfitSummary(shownOutfit). @(diff == 0 ? "The same as what you wear." : Plural(diff, "piece") + (diff == 1 ? " differs" : " differ") + " from what you wear.") Changes here are saved to this outfit; what you wear stays as it is until you train @outfitName or put it on.</span>
                                     }
                                 </div>
                                 <div class="rf-gear-outfit__acts">
-                                    @if (Stable.Count > 0 && SkillTab && OutfitSkill != Skill.None)
+                                    @if (Stable.Count > 0 && SkillTab && OutfitSkill != Skill.None && HasGear)
                                     {
                                         var petNow = shownOutfit?.Pet ?? Guid.Empty;
-                                        <label class="rf-gear-outfit__pet" title="The battle pet that goes out with this outfit">
-                                            <span><i class="fa-solid fa-paw" aria-hidden="true"></i> Pet</span>
+                                        <label class="rf-gear-outfit__pet" title="The battle pet that goes out with this outfit (not the Pet slot, which is a look)">
+                                            <span><i class="fa-solid fa-paw" aria-hidden="true"></i> Battle pet</span>
                                             <select class="rf-input" value="@(petNow == Guid.Empty ? "" : petNow.ToString())" @onchange="x => SetOutfitPet(x.Value?.ToString())">
-                                                <option value="">Stays as it is</option>
+                                                <option value="">Whichever is out</option>
                                                 @foreach (var pet in Stable)
                                                 {
                                                     <option value="@pet.Id">@pet.Name</option>
@@ -181,20 +225,50 @@ else
                                     }
                                 </div>
                             </div>
-                            <div class="rf-gear-switches">
-                                <label class="rf-switch" title="On: starting to train another skill puts that skill's outfit on. A skill without an outfit keeps what is worn.">
-                                    <input type="checkbox" checked="@outfits.Follow" @onchange="x => SetFollow(x.Value is bool b && b)" />
-                                    <span class="rf-switch__track" aria-hidden="true"></span>
-                                    <span class="rf-switch__state">Change outfit when training changes</span>
-                                </label>
-                                <label class="rf-switch" title="On: a better piece that arrives goes into the outfits it is better for. Pinned slots are left alone.">
-                                    <input type="checkbox" checked="@outfits.Upgrade" @onchange="x => SetUpgrade(x.Value is bool b && b)" />
-                                    <span class="rf-switch__track" aria-hidden="true"></span>
-                                    <span class="rf-switch__state">Put better gear on automatically</span>
-                                </label>
-                            </div>
+                            @if (HasGear)
+                            {
+                                <div class="rf-gear-switches">
+                                    <label class="rf-switch" title="On: starting to train another skill puts that skill's outfit on. A skill without an outfit keeps what is worn.">
+                                        <input type="checkbox" checked="@outfits.Follow" @onchange="x => SetFollow(x.Value is bool b && b)" />
+                                        <span class="rf-switch__track" aria-hidden="true"></span>
+                                        <span class="rf-switch__state">Change outfit when training changes</span>
+                                    </label>
+                                    <label class="rf-switch" title="On: a better piece that arrives goes into the outfits it is better for. Pinned slots are left alone.">
+                                        <input type="checkbox" checked="@outfits.Upgrade" @onchange="x => SetUpgrade(x.Value is bool b && b)" />
+                                        <span class="rf-switch__track" aria-hidden="true"></span>
+                                        <span class="rf-switch__state">Put better gear on automatically</span>
+                                    </label>
+                                </div>
+                            }
                         }
                     </div>
+
+                    @{
+                        var drifted = CanAct ? DriftedSlots() : new List<GearSlot>();
+                    }
+                    @if (drifted.Count > 0)
+                    {
+                        @* Now and the outfit that is on, kept in step: gear changed by hand here is not in the outfit until it is saved *@
+                        var keptBy = GearRules.SkillName(WornOutfitSkill);
+                        <div class="rf-gear-drift" role="status">
+                            <i class="rf-gear-drift__icon fa-solid fa-code-compare" aria-hidden="true"></i>
+                            <div class="rf-gear-drift__text">
+                                <b>@Plural(drifted.Count, "change") not in your @keptBy outfit</b>
+                                <span>
+                                    @string.Join(", ", drifted.Take(3).Select(x => x.Label + ": " + (worn.TryGetValue(x.Slot, out var w) ? w.Name : "nothing") + " (the outfit has " + (KeptIn(WornOutfit, x.Slot)?.Name ?? "nothing") + ")"))@(drifted.Count > 3 ? ", and " + (drifted.Count - 3) + " more" : "").
+                                    The outfit puts its own pieces back when it next goes on.
+                                </span>
+                            </div>
+                            <div class="rf-gear-drift__acts">
+                                <button type="button" class="rf-btn rf-btn--small rf-btn--primary" title="Each slot marked here takes what you wear now; a pinned slot stays pinned" @onclick="SaveWornToOutfit">
+                                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save to the @keptBy outfit
+                                </button>
+                                <button type="button" class="rf-btn rf-btn--small" title="The outfit's own pieces go back on" @onclick="PutOutfitBack">
+                                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Put the outfit back
+                                </button>
+                            </div>
+                        </div>
+                    }
 
                     <div class="rf-gear-figure">
                         <div class="rf-gear-slots">
@@ -268,11 +342,19 @@ else
                         @PickBar()
                     </div>
 
-                    @if (OutfitView)
+                    @if (ProposalView)
+                    {
+                        <p class="rf-gear-stats__whose is-proposed"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> The numbers with the proposed @GearRules.SkillName(OutfitSkill) outfit (not saved)</p>
+                    }
+                    else if (OutfitView)
                     {
                         <p class="rf-gear-stats__whose"><i class="fa-solid fa-eye" aria-hidden="true"></i> The numbers with the @GearRules.SkillName(OutfitSkill) outfit on</p>
                     }
-                    <div class="rf-gear-stats" aria-label="@(OutfitView ? "Combat numbers with the outfit on" : "Combat numbers as worn")">
+                    else if (OutfitsKnown && !dressFor.HasValue && EffectiveSkill != Skill.None)
+                    {
+                        <p class="rf-gear-stats__whose is-now"><i class="fa-solid fa-user-check" aria-hidden="true"></i> As worn now, counted for @SkillWord</p>
+                    }
+                    <div class="rf-gear-stats @(ProposalView ? "is-proposed" : "")" aria-label="@(LooksAtOutfit ? "Combat numbers with the outfit on" : "Combat numbers as worn")">
                         <div class="rf-gear-stat">
                             <span class="rf-gear-stat__label"><i class="fa-solid fa-heart" aria-hidden="true"></i> Health</span>
                             <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHealth)</span>
@@ -328,34 +410,52 @@ else
                             <i class="fa-solid @(allStats ? "fa-chevron-up" : "fa-chevron-down")" aria-hidden="true"></i>
                             @(allStats ? "Fewer stats" : "All stats")
                         </button>
-                        @if (CanAct && OutfitIsOn)
+                        @if (CanAct && !HasGear)
                         {
-                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" title="Every slot that is not pinned gets your best piece for @GearRules.SkillName(OutfitSkill), saved to the outfit. It is on, so it goes on in the game too." @onclick="FillOutfitBest">
+                            NoteBigButton("vendor");
+                            <a class="rf-btn rf-btn--primary rf-gear-best" href="/vendor">
+                                <i class="fa-solid fa-store" aria-hidden="true"></i> Buy gear at the Vendor
+                            </a>
+                        }
+                        else if (CanAct && OutfitIsOn)
+                        {
+                            NoteBigButton("fill-on:" + OutfitSkill);
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" title="Every slot that is not pinned gets your best piece for @GearRules.SkillName(OutfitSkill), saved to the outfit. It is on, so it goes on in the game too." @onclick="() => PressBig(FillOutfitBest)">
                                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                                 Equip best for @GearRules.SkillName(OutfitSkill)
                             </button>
                         }
                         else if (CanAct && OutfitView)
                         {
-                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" title="Wear the @GearRules.SkillName(OutfitSkill) outfit now, whatever you train" @onclick="WearOutfit">
+                            var changes = DiffCount;
+                            NoteBigButton("wear:" + OutfitSkill);
+                            <button type="button" class="rf-btn rf-gear-best rf-gear-best--wear" title="Wear the @GearRules.SkillName(OutfitSkill) outfit now, whatever you train" @onclick="() => PressBig(WearOutfit)">
                                 <i class="fa-solid fa-shirt" aria-hidden="true"></i>
-                                Put the @GearRules.SkillName(OutfitSkill) outfit on now
+                                Put the @GearRules.SkillName(OutfitSkill) outfit on now@(changes > 0 ? " (changes " + Plural(changes, "slot") + ")" : " (nothing changes)")
                             </button>
                         }
                         else if (CanAct && NoOutfitYet)
                         {
                             @* for a skill that is not worn, the big button makes its outfit: it used to be "equip best", which
                                changed the gear worn now and kept nothing for that skill *@
-                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" title="Saves your best gear for @GearRules.SkillName(OutfitSkill) as its outfit. Nothing you wear changes." @onclick="FillOutfitBest">
+                            NoteBigButton("make:" + OutfitSkill);
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best"
+                                    title="@(NoOutfitYetIsOn ? "Saves your best gear for " + GearRules.SkillName(OutfitSkill) + " as its outfit and puts it on: it is the outfit of what you train." : "Saves your best gear for " + GearRules.SkillName(OutfitSkill) + " as its outfit. Nothing you wear changes.")"
+                                    @onclick="() => PressBig(FillOutfitBest)">
                                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-                                Make a @GearRules.SkillName(OutfitSkill) outfit from my best gear
+                                Make a @GearRules.SkillName(OutfitSkill) outfit from my best gear@(NoOutfitYetIsOn ? " and wear it" : "")
                             </button>
                         }
                         else if (CanAct)
                         {
-                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" @onclick="EquipBest">
+                            var bestFor = OutfitsKnown && WornOutfitSkill != Skill.None ? GearRules.SkillName(WornOutfitSkill)
+                                : dressFor.HasValue && GearRules.DressFor.Contains(dressFor.Value) ? dressFor.ToString() : TrainingNow;
+                            NoteBigButton("best-now");
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best"
+                                    title="@(OutfitsKnown && WornOutfitSkill != Skill.None ? "Every slot that is not pinned in your " + bestFor + " outfit gets your best piece for " + bestFor + ", and it goes on now." : "Puts on the best you own.")"
+                                    @onclick="() => PressBig(EquipBest)">
                                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-                                @(dressFor.HasValue && GearRules.DressFor.Contains(dressFor.Value) ? "Equip best for " + dressFor : !dressFor.HasValue && TrainingNow != null ? "Equip best for " + TrainingNow : "Equip best")
+                                @(bestFor != null ? "Equip best for " + bestFor : "Equip best")
                             </button>
                         }
                     </div>
@@ -396,6 +496,15 @@ else
                     <div class="rf-gear-bag__tools">
                         <SearchBox Placeholder="Search pieces" AriaLabel="Search the pieces to wear by name"
                                    Value="@wearSearch" ValueChanged="v => wearSearch = v ?? string.Empty" ClearSignal="@clearSignal" />
+                        <label class="rf-gear-sort">
+                            <span>Sort</span>
+                            <select class="rf-input" value="@wearSort" @onchange="e => wearSort = e.Value?.ToString() ?? wearSort">
+                                <option value="slot">By slot</option>
+                                <option value="best">@(SkillWord.Length > 0 ? "Best for " + SkillWord : "Best first")</option>
+                                <option value="rarity">Rarity</option>
+                                <option value="name">Name</option>
+                            </select>
+                        </label>
                     </div>
 
                     @if (WearKinds.Count() > 2)
@@ -406,6 +515,7 @@ else
                                 var kind = k;
                                 <button type="button" class="rf-gear-chip @(wearKind == kind ? "is-on" : "")" aria-pressed="@(wearKind == kind)" @onclick="() => wearKind = kind">
                                     <span>@GearRules.KindLabel(kind)</span>
+                                    <b>@WearKindCount(kind)</b>
                                 </button>
                             }
                         </div>
@@ -422,6 +532,10 @@ else
                             {
                                 <span><i class="fa-solid fa-crosshairs" aria-hidden="true"></i> Outlined: what goes in the <b>@GearRules.Get(pickedSlot)?.Label.ToLowerInvariant()</b> slot</span>
                                 <button type="button" class="rf-btn rf-btn--small" @onclick="ClearPick">Clear</button>
+                            }
+                            else if (CanAct && SkillTab)
+                            {
+                                <span><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> Pick a piece and press Add, or drag it onto its slot: it goes into the <b>@GearRules.SkillName(OutfitSkill)</b> outfit.</span>
                             }
                             else if (CanAct)
                             {
@@ -445,6 +559,10 @@ else
                             {
                                 <p><b>Nothing to wear in the bag.</b></p>
                                 <p>Weapons, armor and jewelry this character finds or is sent show up here.</p>
+                                @if (CanAct && !HasGear)
+                                {
+                                    <a class="rf-btn rf-btn--small" href="/vendor"><i class="fa-solid fa-store" aria-hidden="true"></i> Buy gear at the Vendor</a>
+                                }
                             }
                             else
                             {
@@ -463,6 +581,23 @@ else
                         </div>
                     }
 
+
+                    @if (WearableCount > 0)
+                    {
+                        <details class="rf-gear-legendbox">
+                            <summary><i class="fa-solid fa-circle-info" aria-hidden="true"></i> What the marks mean</summary>
+                            <ul class="rf-gear-legend">
+                                <li><span class="rf-gear-mark rf-gear-mark--up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span> @(SkillTab ? "better than the piece in this outfit" : "better than what is worn") for @(SkillWord.Length > 0 ? SkillWord : "what you train")</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--outfit"><i class="fa-solid fa-shirt" aria-hidden="true"></i></span> @(SkillTab ? "in this outfit" : "in the outfit that is on, not worn")</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--pin"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></span> pinned: nothing replaces it (on a slot)</li>
+                                <li><span class="rf-gear-slot__badge">@(SkillTab ? "Changes" : "Not saved")</span> @(SkillTab ? "putting the outfit on changes this slot" : "worn, but not what the outfit keeps")</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--ench"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span> enchanted</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--skin"><i class="fa-solid fa-mask" aria-hidden="true"></i></span> wears a skin</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--lock"><i class="fa-solid fa-lock" aria-hidden="true"></i></span> cannot be worn yet</li>
+                                <li><span class="rf-gear-dots"><i class="rf-gear-dot is-gem-ruby"></i><i class="rf-gear-dot"></i></span> gem sockets</li>
+                            </ul>
+                        </details>
+                    }
 
                     @*
                         Where the bag is under the character (a phone, a narrow window), the picked piece and its
@@ -650,8 +785,7 @@ else
             @foreach (var e in entries)
             {
                 if (e.Slot == EquipmentSlot.None) continue;
-                Entry against = null;
-                if (!e.Stack.Equipped) worn.TryGetValue(e.Slot, out against);
+                var against = e.Stack.Equipped && !SkillTab ? null : Against(e);
                 <div data-tip-card="@e.Stack.Id" data-tip-slot="@GearRules.Get(e.Slot)?.Key" data-tip-with="@against?.Stack.Id"
                      data-look="@(e.Stack.Equipped ? null : FigureData(e))">
                     @TipCard(e, against)
@@ -668,6 +802,106 @@ else
             <button type="button" class="rf-gear-side__close" aria-label="Close" @onclick="() => detailOpen = false">&times;</button>
             @ItemPanel(PickedEntry)
         </aside>
+    }
+
+    @*
+        All outfits at once: each with its pieces as small tiles, the pinned count, its battle pet and the number that
+        says most about it for its skill; open one, or start another skill's outfit from it (copied on the server).
+    *@
+    @if (overviewOpen && OutfitsKnown)
+    {
+        <div class="rf-modal-backdrop" @onclick="() => overviewOpen = false">
+            <div class="rf-modal rf-modal--wide rf-gear-overview" role="dialog" aria-modal="true" aria-label="All outfits" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">All outfits</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="() => overviewOpen = false">&times;</button>
+                </div>
+                <p class="rf-meta">Every skill's saved outfit. Open one to change it, or start another skill's outfit from it: its pieces, pins and battle pet are copied.</p>
+                <div class="rf-gear-ovlist">
+                    @foreach (var outfit in outfits.Outfits.OrderBy(x => Array.IndexOf(GearRules.OutfitSkills, x.Skill)))
+                    {
+                        var o = outfit;
+                        var name = GearRules.SkillName(o.Skill);
+                        var state = SkillState(o.Skill);
+                        var headline = Headline(o);
+                        var pet = Stable.FirstOrDefault(x => x.Id == o.Pet);
+                        var icon = GearRules.SkillIcon(o.Skill);
+                        <article class="rf-gear-ov @(WornOutfitSkill == o.Skill ? "is-worn" : "")">
+                            <header class="rf-gear-ov__head">
+                                <span class="rf-gear-skill__pic">
+                                    @if (icon != null)
+                                    {
+                                        <i class="@icon" aria-hidden="true"></i>
+                                    }
+                                    else
+                                    {
+                                        <img src="@GearRules.SkillPicture(o.Skill)" alt="" />
+                                    }
+                                </span>
+                                <span class="rf-gear-ov__title">
+                                    <b>@name</b>
+                                    @if (state != null)
+                                    {
+                                        <span class="rf-gear-skill__state @(WornOutfitSkill == o.Skill ? "is-worn" : "")">@state</span>
+                                    }
+                                </span>
+                                @if (headline.Value != null)
+                                {
+                                    <span class="rf-gear-ov__num"><small>@headline.Label</small> <b>@headline.Value</b></span>
+                                }
+                            </header>
+                            <div class="rf-gear-ov__pieces">
+                                @foreach (var slotOf in GearRules.All)
+                                {
+                                    var entry = o.Get(Wire(slotOf.Slot));
+                                    if (entry == null) continue;
+                                    var piece = PieceOf(entry);
+                                    <span class="rf-gear-ov__piece @(piece?.RarityClass) @(piece == null ? "is-gone" : "")" title="@(slotOf.Label + ": " + (piece?.Name ?? "gone from the bag") + (entry.Pinned ? " (pinned)" : ""))">
+                                        @if (piece != null)
+                                        {
+                                            @Picture(piece)
+                                        }
+                                        else
+                                        {
+                                            <i class="fa-solid fa-question" aria-hidden="true"></i>
+                                        }
+                                        @if (entry.Pinned)
+                                        {
+                                            <span class="rf-gear-mark rf-gear-mark--pin"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></span>
+                                        }
+                                    </span>
+                                }
+                            </div>
+                            <p class="rf-gear-ov__meta">@OutfitSummary(o)@(pet != null ? ". Battle pet: " + pet.Name : ". Battle pet: whichever is out")</p>
+                            <div class="rf-gear-ov__acts">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => { overviewOpen = false; dressFor = o.Skill; ClearPick(); Judge(); }">Open</button>
+                                @if (copyFrom == o.Skill)
+                                {
+                                    <label class="rf-gear-ov__copy">
+                                        <span>Into</span>
+                                        <select class="rf-input" value="@(copyTo == Skill.None ? "" : ((int)copyTo).ToString())" @onchange="x => copyTo = int.TryParse(x.Value?.ToString(), out var n) ? (Skill)n : Skill.None">
+                                            <option value="">Pick a skill</option>
+                                            @foreach (var target in GearRules.OutfitSkills.Where(x => x != o.Skill))
+                                            {
+                                                <option value="@((int)target)">@GearRules.SkillName(target)@(outfits.Find(target) != null ? " (replaces its outfit)" : "")</option>
+                                            }
+                                        </select>
+                                    </label>
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" disabled="@(copyTo == Skill.None)" @onclick="() => CopyOutfit(o.Skill, copyTo)">Copy</button>
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => copyFrom = null">Cancel</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => { copyFrom = o.Skill; copyTo = Skill.None; }">
+                                        <i class="fa-solid fa-copy" aria-hidden="true"></i> Start another outfit from this
+                                    </button>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </div>
+        </div>
     }
 
     @if (dialog == Dialog.Sell && dialogEntry != null)
@@ -1019,13 +1253,16 @@ else
         var pinned = e != null && IsPinned(slot.Slot);
         var gone = IsGone(slot.Slot);
         var stays = StaysAsWorn(slot.Slot);
+        var changes = SkillTab && Differs(slot.Slot);
+        var drift = !SkillTab && CanAct && Drifted(slot.Slot);
+        var proposed = ProposalView && !stays && IsOutfitSlot(slot.Slot);
         <button type="button"
-                class="rf-gear-slot @(e == null ? "is-empty" : e.RarityClass) @(picked ? "is-picked" : "") @(stays ? "is-as-worn" : "") @(gone ? "is-gone" : "")"
+                class="rf-gear-slot @(e == null ? "is-empty" : e.RarityClass) @(picked ? "is-picked" : "") @(stays ? "is-as-worn" : "") @(gone ? "is-gone" : "") @(proposed ? "is-proposed" : "") @(changes || drift ? "is-changed" : "")"
                 data-slot="@slot.Key" data-gear-drop="@slot.Key"
-                data-gear-drag="@(e != null && CanAct && e.Stack.Equipped && !OutfitView ? e.Stack.Id.ToString() : null)" data-gear-from="worn"
+                data-gear-drag="@(e != null && CanAct && e.Stack.Equipped && !SkillTab ? e.Stack.Id.ToString() : null)" data-gear-from="worn"
                 data-tip="@(e != null ? e.Stack.Id.ToString() : null)"
                 aria-pressed="@picked"
-                aria-label="@(e == null ? slot.Label + ": empty" : slot.Label + ": " + e.Name)"
+                aria-label="@((e == null ? slot.Label + ": empty" : slot.Label + ": " + e.Name) + (changes ? ", changes when the outfit goes on" : drift ? ", not what the outfit keeps" : proposed ? ", proposed" : ""))"
                 title="@(e == null ? slot.Label + ": empty" : null)"
                 @onclick="() => ClickSlot(slot)">
             <span class="rf-gear-slot__pic">
@@ -1055,12 +1292,20 @@ else
                     <i class="rf-gear-slot__glyph @slot.Icon" aria-hidden="true"></i>
                 }
             </span>
+            @if (changes || drift)
+            {
+                <span class="rf-gear-slot__badge" title="@(changes ? "Putting the outfit on changes this slot" : "Worn now, but the outfit keeps " + (KeptIn(WornOutfit, slot.Slot)?.Name ?? "another piece") + " here")">@(changes ? "Changes" : "Not saved")</span>
+            }
             <span class="rf-gear-slot__text">
                 <span class="rf-gear-slot__label">@slot.Short</span>
                 <span class="rf-gear-slot__name">@(gone ? "Gone from the bag" : e == null ? "Empty" : e.Name)</span>
                 @if (stays && e != null)
                 {
                     <span class="rf-gear-slot__note">Stays as worn</span>
+                }
+                else if (proposed && e != null)
+                {
+                    <span class="rf-gear-slot__note is-proposed">Proposed</span>
                 }
             </span>
         </button>
@@ -1090,7 +1335,11 @@ else
             <span class="rf-gear-tile__marks">
                 @if (e.Upgrade)
                 {
-                    <span class="rf-gear-mark rf-gear-mark--up" title="Better than what is worn"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span>
+                    <span class="rf-gear-mark rf-gear-mark--up" title="@(e.BestPick ? "Equip best would pick this for " + SkillWord : SkillTab ? "Better than the piece in the " + GearRules.SkillName(OutfitSkill) + " outfit" : "Better than what is worn")"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span>
+                }
+                @if (wearView && InOutfit(e))
+                {
+                    <span class="rf-gear-mark rf-gear-mark--outfit" title="@InOutfitTitle"><i class="fa-solid fa-shirt" aria-hidden="true"></i></span>
                 }
                 @if (e.Enchanted)
                 {
@@ -1117,41 +1366,61 @@ else
         </button>
     };
 
-    // The line under the character: what is picked and the one thing most likely wanted with it.
+    // The line under the character: what is picked and the one thing most likely wanted with it. In a skill's tab it
+    // is about that outfit (compared with its piece, "Add to outfit", never "Equip now"); on "Now" about what is worn.
     private RenderFragment PickBar() => __builder =>
     {
         var e = PickedEntry;
         var slot = pickedSlot == EquipmentSlot.None ? null : GearRules.Get(pickedSlot);
         if (e != null)
         {
-            worn.TryGetValue(e.Slot, out var wornNow);
+            var against = Against(e);
+            var inSlot = Shown(e.Slot) == e;
+            var outfitName = GearRules.SkillName(OutfitSkill);
+            var keptOutfit = WornOutfit;
+            var drifted = !SkillTab && e.Stack.Equipped && Drifted(e.Slot);
+            var kept = drifted ? KeptIn(keptOutfit, e.Slot) : null;
             <span class="rf-gear-pick__pic @e.RarityClass">@Picture(e)</span>
             <span class="rf-gear-pick__text">
                 <b class="@e.RarityClass">@e.Name</b>
-                @if (OutfitView && Shown(e.Slot) == e)
+                @if (SkillTab && LooksAtOutfit && inSlot)
                 {
-                    <span>@(StaysAsWorn(e.Slot) ? "Not part of the " + GearRules.SkillName(OutfitSkill) + " outfit: stays as worn" : "In the " + GearRules.SkillName(OutfitSkill) + " outfit: " + (IsPinned(e.Slot) ? "pinned" : "best, a better piece takes its place"))</span>
+                    worn.TryGetValue(e.Slot, out var wornThere);
+                    <span>
+                        @(StaysAsWorn(e.Slot) ? "Not part of the " + outfitName + " outfit: stays as worn"
+                            : ProposalView ? "Proposed for the " + outfitName + " outfit (not saved yet)"
+                            : "In the " + outfitName + " outfit: " + (IsPinned(e.Slot) ? "pinned" : "best, a better piece takes its place"))@(Differs(e.Slot) ? "; you wear " + (wornThere?.Name ?? "nothing") + " there now" : "")
+                    </span>
+                }
+                else if (drifted && kept != null)
+                {
+                    var keptPinned = keptOutfit.IsPinned(Wire(e.Slot));
+                    <span>Worn: @slot?.Label. Your @GearRules.SkillName(WornOutfitSkill) outfit keeps @kept.Name here@(keptPinned ? " (pinned)" : "") and puts it back when it next goes on.</span>
                 }
                 else if (e.Stack.Equipped)
                 {
-                    <span>Worn: @slot?.Label@(IsPinned(e.Slot) ? ", pinned for " + GearRules.SkillName(OutfitSkill) : "")</span>
+                    <span>Worn: @slot?.Label@(!SkillTab && IsPinned(e.Slot) ? ", pinned in your " + GearRules.SkillName(WornOutfitSkill) + " outfit" : "")</span>
                 }
                 else if (!e.CanWear)
                 {
                     <span class="is-bad"><i class="fa-solid fa-lock" aria-hidden="true"></i> @e.Blocked</span>
                 }
-                else if (wornNow == null)
+                else if (against == null)
                 {
-                    <span>Goes in the empty @slot?.Label.ToLowerInvariant() slot</span>
+                    <span>Goes in the empty @slot?.Label.ToLowerInvariant() slot@(SkillTab ? " of the " + outfitName + " outfit" : "")</span>
                 }
                 else
                 {
-                    var gains = Gains(e, wornNow, e.Upgrade ? 1 : 2);
-                    <span>Instead of @wornNow.Name</span>
+                    var gains = Gains(e, against, e.Upgrade ? 1 : 2);
+                    <span>Instead of @against.Name@(SkillTab && LooksAtOutfit && !StaysAsWorn(e.Slot) ? (ProposalView ? " (proposed)" : " (in the " + outfitName + " outfit)") : "")</span>
                     <span class="rf-gear-pick__gains">
-                        @if (e.Upgrade)
+                        @if (e.BestPick)
                         {
-                            <em class="is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Better@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "")</em>
+                            <em class="is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Equip best would pick this@(SkillWord.Length > 0 ? " for " + SkillWord : "")</em>
+                        }
+                        else if (e.Upgrade)
+                        {
+                            <em class="is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Better@(SkillWord.Length > 0 ? " for " + SkillWord : "")</em>
                         }
                         @foreach (var gain in gains)
                         {
@@ -1166,41 +1435,53 @@ else
             </span>
             <span class="rf-gear-pick__acts">
                 @{
-                    var inSlot = Shown(e.Slot) == e;
                     var outfitSlot = CanAct && OutfitsKnown && OutfitSkill != Skill.None && IsOutfitSlot(e.Slot);
-                    var seesOutfit = !dressFor.HasValue || OutfitView || OutfitSkill == WornOutfitSkill;
-                }
-                @if (outfitSlot && inSlot && seesOutfit && !StaysAsWorn(e.Slot))
-                {
-                    var isPinned = IsPinned(e.Slot);
                     var slotOf = e.Slot;
-                    <button type="button" class="rf-btn rf-btn--small @(isPinned ? "is-on" : "")" aria-pressed="@isPinned"
-                            title="@(isPinned ? "Pinned for " + GearRules.SkillName(OutfitSkill) + ": nothing replaces it. Press to leave the slot to the best piece again." : "Keep this piece in the " + GearRules.SkillName(OutfitSkill) + " outfit whatever else arrives")"
-                            @onclick="() => PinSlot(slotOf, !isPinned)">
-                        <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> @(isPinned ? "Unpin" : "Pin")
-                    </button>
-                    @if (OutfitView)
+                }
+                @if (SkillTab)
+                {
+                    @* a skill's tab: what is done here goes into its outfit; nothing here puts gear on by itself *@
+                    if (outfitSlot && inSlot && OutfitView && !StaysAsWorn(e.Slot))
                     {
+                        var isPinned = IsPinned(e.Slot);
+                        <button type="button" class="rf-btn rf-btn--small @(isPinned ? "is-on" : "")" aria-pressed="@isPinned"
+                                title="@(isPinned ? "Pinned for " + outfitName + ": nothing replaces it. Press to leave the slot to the best piece again." : "Keep this piece in the " + outfitName + " outfit whatever else arrives")"
+                                @onclick="() => PinSlot(slotOf, !isPinned)">
+                            <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> @(isPinned ? "Unpin" : "Pin")
+                        </button>
                         <button type="button" class="rf-btn rf-btn--small" title="Take the slot out of this outfit: what is worn there stays" @onclick="() => ClearOutfitSlot(slotOf)">Leave out</button>
                     }
+                    else if (outfitSlot && (!inSlot || StaysAsWorn(e.Slot) || ProposalView || NoOutfitYet) && e.CanWear)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => AddToOutfit(e)">
+                            <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Add to @outfitName outfit
+                        </button>
+                    }
                 }
-                else if (outfitSlot && !inSlot && e.CanWear && (OutfitView || NoOutfitYet))
+                else if (CanAct && e.Stack.Equipped)
                 {
-                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => AddToOutfit(e)">
-                        <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Add to @GearRules.SkillName(OutfitSkill) outfit
-                    </button>
-                }
-                @if (CanAct && e.Stack.Equipped && !OutfitView)
-                {
+                    if (drifted && kept != null)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small rf-btn--primary" title="The outfit that is on takes this piece for the slot (its pin stays)" @onclick="() => KeepInWornOutfit(slotOf)">
+                            Keep @e.Name in the @GearRules.SkillName(WornOutfitSkill) outfit
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => PutKeptBack(slotOf)">Put @kept.Name back</button>
+                    }
+                    else if (outfitSlot && WornOutfitSkill != Skill.None)
+                    {
+                        var isPinned = IsPinned(e.Slot);
+                        var wornName = GearRules.SkillName(WornOutfitSkill);
+                        <button type="button" class="rf-btn rf-btn--small @(isPinned ? "is-on" : "")" aria-pressed="@isPinned"
+                                title="@(isPinned ? "Pinned in your " + wornName + " outfit: nothing replaces it. Press to leave the slot to the best piece again." : "Keep this piece in your " + wornName + " outfit whatever else arrives")"
+                                @onclick="() => PinSlot(slotOf, !isPinned)">
+                            <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> @(isPinned ? "Unpin" : "Pin")
+                        </button>
+                    }
                     <button type="button" class="rf-btn rf-btn--small" @onclick="() => Unequip(e)">Take off</button>
-                }
-                else if (CanAct && e.CanWear && !e.Stack.Equipped && !OutfitView && !NoOutfitYet)
-                {
-                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => Equip(e)">Equip</button>
                 }
                 else if (CanAct && e.CanWear && !e.Stack.Equipped)
                 {
-                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => Equip(e)">Equip now</button>
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => Equip(e)">Equip</button>
                 }
                 <button type="button" class="rf-btn rf-btn--small" @onclick="() => detailOpen = true">Details</button>
             </span>
@@ -1227,7 +1508,7 @@ else
         {
             <span class="rf-gear-pick__hint">
                 <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                @(CanAct ? "Pick a slot to see what goes in it, or a piece to see what it would change." : "Pick a slot or a piece to look at it.")
+                @(!CanAct ? "Pick a slot or a piece to look at it." : SkillTab ? "Pick a slot or a piece: what you do here goes into the " + GearRules.SkillName(OutfitSkill) + " outfit." : "Pick a slot to see what goes in it, or a piece to see what it would change.")
             </span>
         }
     };
@@ -1244,7 +1525,7 @@ else
         var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
         var skin = e.Stack.TransmogrificationId != null ? ItemService.GetItem(e.Stack.TransmogrificationId.Value) : null;
         <div class="rf-gear-tipcard @(e.Stack.Equipped ? "is-worn" : "is-bag")">
-            <div class="rf-gear-tipcard__label">@(e.Stack.Equipped ? "Worn now" : "In your bag")</div>
+            <div class="rf-gear-tipcard__label">@AgainstLabel(e)</div>
             <div class="rf-gear-tipcard__head">
                 <span class="rf-gear-tipcard__pic @e.RarityClass">@Picture(e)</span>
                 <span class="rf-gear-tipcard__title">
@@ -1345,15 +1626,19 @@ else
                 </div>
             }
 
-            @if (!e.Stack.Equipped)
+            @if (!e.Stack.Equipped && Shown(e.Slot) != e)
             {
-                if (e.Upgrade)
+                if (e.BestPick)
                 {
-                    <div class="rf-gear-tipcard__verdict is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Equip best would wear this@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "")</div>
+                    <div class="rf-gear-tipcard__verdict is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Equip best would pick this@(SkillWord.Length > 0 ? " for " + SkillWord : "")</div>
+                }
+                else if (e.Upgrade && against != null)
+                {
+                    <div class="rf-gear-tipcard__verdict is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Better than @against.Name@(SkillWord.Length > 0 ? " for " + SkillWord : "")</div>
                 }
                 else if (against == null && e.CanWear)
                 {
-                    <div class="rf-gear-tipcard__verdict">Nothing is worn in the @GearRules.Get(e.Slot)?.Label.ToLowerInvariant() slot</div>
+                    <div class="rf-gear-tipcard__verdict">@(SkillTab ? "The " + GearRules.SkillName(OutfitSkill) + " outfit has nothing in the " + GearRules.Get(e.Slot)?.Label.ToLowerInvariant() + " slot" : "Nothing is worn in the " + GearRules.Get(e.Slot)?.Label.ToLowerInvariant() + " slot")</div>
                 }
             }
         </div>
@@ -1364,8 +1649,9 @@ else
     {
         var item = e.Item;
         var skin = e.Stack.TransmogrificationId != null ? ItemService.GetItem(e.Stack.TransmogrificationId.Value) : null;
-        Entry wornNow = null;
-        if (e.Slot != EquipmentSlot.None && !e.Stack.Equipped) worn.TryGetValue(e.Slot, out wornNow);
+        var wornNow = ActiveView == "equipment" ? (e.Stack.Equipped && !SkillTab ? null : Against(e))
+            : (e.Slot != EquipmentSlot.None && !e.Stack.Equipped && worn.TryGetValue(e.Slot, out var w) ? w : null);
+        var fromOutfit = ActiveView == "equipment" && wornNow != null && SkillTab && LooksAtOutfit && !StaysAsWorn(e.Slot);
         var stats = StatsOf(e);
         var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
         var requirements = Requirements(item);
@@ -1422,7 +1708,7 @@ else
                     <div class="rf-gear-compare__head">
                         <span></span>
                         <span>This</span>
-                        <span>Worn</span>
+                        <span>@(fromOutfit ? (ProposalView ? "Proposed" : "Outfit") : "Worn")</span>
                         <span>Change</span>
                     </div>
                     @foreach (var row in rows)
@@ -1434,10 +1720,14 @@ else
                             <b class="@(row.Delta > 0 ? "is-good" : row.Delta < 0 ? "is-bad" : "is-same")">@row.Change</b>
                         </div>
                     }
-                    <p class="rf-gear-compare__with">Compared with the worn @wornNow.Name@(WornExtras(wornNow)).</p>
-                    @if (e.Upgrade)
+                    <p class="rf-gear-compare__with">Compared with @(fromOutfit ? (ProposalView ? "the proposed " : "") + wornNow.Name + (ProposalView ? "" : " in the " + GearRules.SkillName(OutfitSkill) + " outfit") : "the worn " + wornNow.Name)@(WornExtras(wornNow)).</p>
+                    @if (e.BestPick)
                     {
-                        <p class="rf-gear-compare__verdict"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> "Equip best" would wear this instead@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "").</p>
+                        <p class="rf-gear-compare__verdict"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> "Equip best" would pick this@(SkillWord.Length > 0 ? " for " + SkillWord : "").</p>
+                    }
+                    else if (e.Upgrade)
+                    {
+                        <p class="rf-gear-compare__verdict"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Better than @wornNow.Name@(SkillWord.Length > 0 ? " for " + SkillWord : "").</p>
                     }
                 </div>
             }
@@ -1564,7 +1854,17 @@ else
             @if (CanAct)
             {
                 <div class="rf-gear-acts">
-                    @if (e.Stack.Equipped)
+                    @if (ActiveView == "equipment" && SkillTab)
+                    {
+                        @* a skill's tab changes its outfit only: the piece goes into it, and nothing is put on here *@
+                        if (IsOutfitSlot(e.Slot) && e.CanWear && (Shown(e.Slot) != e || ProposalView || StaysAsWorn(e.Slot)))
+                        {
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-acts__main" @onclick="() => AddToOutfit(e)">
+                                <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Add to @GearRules.SkillName(OutfitSkill) outfit
+                            </button>
+                        }
+                    }
+                    else if (e.Stack.Equipped)
                     {
                         <button type="button" class="rf-btn rf-btn--primary rf-gear-acts__main" @onclick="() => Unequip(e)">Take off</button>
                     }
@@ -1573,7 +1873,7 @@ else
                         <button type="button" class="rf-btn rf-btn--primary rf-gear-acts__main" @onclick="() => Equip(e)">Equip</button>
                     }
 
-                    @if (ActiveView == "equipment" && OutfitsKnown && OutfitSkill != Skill.None && IsOutfitSlot(e.Slot) && e.CanWear && Shown(e.Slot) != e)
+                    @if (ActiveView == "equipment" && !SkillTab && OutfitsKnown && OutfitSkill != Skill.None && IsOutfitSlot(e.Slot) && e.CanWear && Shown(e.Slot) != e)
                     {
                         <button type="button" class="rf-btn" title="Keeps this piece in that outfit whatever else arrives@(OutfitSkill == WornOutfitSkill ? "; the outfit is on, so it is put on now" : "")" @onclick="() => AddToOutfit(e)">
                             <i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Pin in @GearRules.SkillName(OutfitSkill) outfit

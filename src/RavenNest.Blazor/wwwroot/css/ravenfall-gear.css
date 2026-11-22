@@ -204,7 +204,9 @@
 
 .rf-gear-eq {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    /* the character and its slots get the bigger share; the bag keeps five columns (the review: at 1280 and 1500
+       the bag took some 40% while the slots and the figure were cramped) */
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
     gap: var(--rf-space-4);
     align-items: start;
 }
@@ -323,9 +325,44 @@
 /* ---- Outfits (the row of skills as the outfit picker) -------------------- */
 /* as many skills as fit a row, the rest below: the fighting ones, then any other that has an outfit */
 .rf-gear-skills__row.is-outfits {
-    /* "Now", the fighting skills, and any other skill with an outfit: as many to a row as fit */
-    grid-template-columns: repeat(auto-fit, minmax(5.4rem, 1fr));
+    /* "Now", the fighting skills, and any other skill with an outfit: the page works out columns that leave no
+       tile alone on a row (--rf-cols-wide, -mid, -narrow; the review found the trained skill alone below at 1500) */
+    grid-template-columns: repeat(var(--rf-cols-wide, 8), minmax(0, 1fr));
 }
+
+/* the name and, under it, what the skill is to the character in a word: On, Saved, Training */
+.rf-gear-skill__words {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    gap: 1px;
+    line-height: 1.15;
+}
+
+.rf-gear-skill__name {
+    max-width: 100%;
+    font-size: 0.9rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* the longest names (Woodcutting, Gathering) step down a little rather than run into the border */
+.rf-gear-skill { min-width: 0; overflow: hidden; }
+
+.rf-gear-skill__state {
+    color: var(--rf-ink-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rf-gear-skill__state.is-worn { color: var(--rf-gold-bright); }
+.rf-gear-skill__state.is-trained { color: var(--rf-good); }
+.rf-gear-skill.is-on .rf-gear-skill__state { color: var(--rf-gold-bright); }
+
+.rf-gear-skills__all { margin-right: 0; }
 
 /* "Now" is not a skill: set apart from the outfits after it */
 .rf-gear-skill--now {
@@ -363,23 +400,13 @@
     color: var(--rf-bg);
 }
 
-/* a skill that has an outfit kept wears a small shirt; the one that is on wears it in gold */
-.rf-gear-skill__kept {
-    position: absolute;
-    top: 0.45rem;
-    left: 0.55rem;
-    color: var(--rf-ink-faint);
-    font-size: 0.8rem;
-    line-height: 1;
-}
-
-.rf-gear-skill.is-worn .rf-gear-skill__kept { color: var(--rf-gold-bright); }
-
+/* the outfit that is on: a gold edge, not the fill (the fill is the picked tile's alone) */
 .rf-gear-skill.is-worn:not(.is-on) { border-color: var(--rf-gold-dim, var(--rf-line-strong)); }
 
 /* what the picked skill's outfit is, in words, and what can be done with the whole of it */
 .rf-gear-outfit {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--rf-space-3);
     margin-top: var(--rf-space-2);
@@ -405,7 +432,8 @@
 .rf-gear-outfit__text {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
+    /* the actions go under the words when both do not fit (the review: a one-word column at 1280) */
+    flex: 1 1 14rem;
     min-width: 0;
     gap: 2px;
 }
@@ -424,10 +452,17 @@
 
 .rf-gear-outfit__acts {
     display: flex;
-    flex: none;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--rf-space-2);
+    margin-left: auto;
 }
+
+.rf-gear-outfit__acts:empty { display: none; }
+
+/* a proposal: nothing is saved yet, so it is drawn dashed */
+.rf-gear-outfit.is-proposed { border-style: dashed; }
 
 .rf-gear-outfit__pet {
     display: inline-flex;
@@ -498,9 +533,22 @@
     .rf-gear-slot__note { display: none; }
 }
 
+@container rf-gear-eq (max-width: 1149px) {
+    .rf-gear-skills__row.is-outfits {
+        grid-template-columns: repeat(var(--rf-cols-mid, 4), minmax(0, 1fr));
+    }
+
+    .rf-gear-skills__row.is-outfits .rf-gear-skill {
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 2px;
+        padding: var(--rf-space-2) 2px;
+    }
+}
+
 @container rf-gear-eq (max-width: 759px) {
     .rf-gear-skills__row.is-outfits {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(var(--rf-cols-narrow, 4), minmax(0, 1fr));
     }
 
     .rf-gear-outfit {
@@ -514,18 +562,209 @@
 }
 /* ---- end of outfits ---- */
 
-/* the skill being trained: a small green light, the same as beside "Training now" */
-.rf-gear-skill.is-trained::after {
-    content: "";
-    position: absolute;
-    top: 0.4rem;
-    right: 0.4rem;
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    background: var(--rf-good);
-    box-shadow: 0 0 0 3px var(--rf-good-wash);
+/* the skill being trained says so in words under its name ("Training"); no light of its own any more */
+
+/* ---- Now and the outfit that is on, kept in step ---------------------------- */
+.rf-gear-drift {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    padding: var(--rf-space-3);
+    border: 1px solid var(--rf-warn);
+    border-radius: var(--rf-radius);
+    background: var(--rf-warn-wash);
 }
+
+.rf-gear-drift__icon { color: var(--rf-warn); font-size: 1.1rem; }
+
+.rf-gear-drift__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 18rem;
+    min-width: 0;
+    gap: 2px;
+}
+
+.rf-gear-drift__text b { color: var(--rf-ink); font-weight: 800; }
+.rf-gear-drift__text span { color: var(--rf-ink-muted); font-size: var(--rf-size-small); font-weight: 600; }
+
+.rf-gear-drift__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-left: auto;
+}
+
+/* a slot that differs: "Changes" (a skill's tab: putting the outfit on changes it) or "Not saved" (Now) */
+.rf-gear-slot { position: relative; }
+
+.rf-gear-slot.is-changed { border-color: var(--rf-warn); }
+
+.rf-gear-slot__badge {
+    position: absolute;
+    top: -0.55rem;
+    right: 0.3rem;
+    z-index: 1;
+    padding: 1px 0.4rem;
+    border-radius: 999px;
+    background: var(--rf-warn);
+    color: var(--rf-ink-inverse);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.rf-gear-legend .rf-gear-slot__badge { position: static; }
+
+/* a proposed piece: drawn dashed and a little back, as nothing is saved yet */
+.rf-gear-slot.is-proposed { border-style: dashed; }
+.rf-gear-slot.is-proposed:not(.is-changed) .rf-gear-slot__pic { opacity: 0.8; }
+.rf-gear-slot__note.is-proposed { color: var(--rf-gold-bright); }
+
+.rf-gear-stats__whose.is-proposed { color: var(--rf-gold-bright); }
+.rf-gear-stats__whose.is-now { color: var(--rf-ink-muted); }
+.rf-gear-stats.is-proposed .rf-gear-stat { border-style: dashed; }
+
+/* the bag piece that is in the outfit looked at */
+.rf-gear-mark--outfit { background: var(--rf-gold); color: var(--rf-bg); }
+
+/* "Put the outfit on now" is not a fill: its own look, so a quick second click is not mistaken for the first */
+.rf-gear-best--wear {
+    border: 2px solid var(--rf-gold);
+    background: var(--rf-surface-3);
+    color: var(--rf-gold-bright);
+}
+
+.rf-gear-best--wear:hover,
+.rf-gear-best--wear:focus-visible {
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+}
+
+/* what the marks of the bag mean, folded away until asked for */
+.rf-gear-legendbox {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear-legendbox summary {
+    cursor: pointer;
+    color: var(--rf-ink-muted);
+    font-weight: 800;
+}
+
+.rf-gear-legendbox summary:hover { color: var(--rf-ink); }
+.rf-gear-legendbox .rf-gear-legend { margin-top: var(--rf-space-2); }
+
+/* the bag's search and sort on one line */
+.rf-gear-bag__tools { gap: var(--rf-space-2); flex-wrap: wrap; }
+.rf-gear-bag__tools .rf-gear-sort { flex: none; }
+
+/* ---- All outfits ---------------------------------------------------------- */
+.rf-gear-overview { max-width: 64rem; }
+
+.rf-gear-ovlist {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: var(--rf-space-3);
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.rf-gear-ov {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-3);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-ov.is-worn { border-color: var(--rf-gold); }
+
+.rf-gear-ov__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-ov__title {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rf-gear-ov__title b { color: var(--rf-ink); font-size: var(--rf-size-body); font-weight: 800; }
+
+.rf-gear-ov__num {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.1;
+}
+
+.rf-gear-ov__num small { color: var(--rf-ink-muted); font-size: 0.78rem; font-weight: 800; }
+.rf-gear-ov__num b { color: var(--rf-ink); font-size: 1.3rem; font-weight: 800; }
+
+.rf-gear-ov__pieces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.rf-gear-ov__piece {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+}
+
+.rf-gear-ov__piece img { width: 88%; height: 88%; object-fit: contain; }
+.rf-gear-ov__piece.is-gone { border-style: dashed; border-color: var(--rf-bad); color: var(--rf-bad); }
+
+.rf-gear-ov__piece .rf-gear-mark--pin {
+    position: absolute;
+    right: -0.35rem;
+    bottom: -0.35rem;
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.55rem;
+}
+
+.rf-gear-ov__meta { margin: 0; color: var(--rf-ink-muted); font-size: var(--rf-size-small); font-weight: 700; }
+
+.rf-gear-ov__acts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-top: auto;
+}
+
+.rf-gear-ov__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+}
+
+.rf-gear-ov__copy select { width: auto; padding-top: var(--rf-space-1); padding-bottom: var(--rf-space-1); font-weight: 700; }
 
 /* ---- The character and its slots ----------------------------------------- */
 .rf-gear-figure {
@@ -1092,6 +1331,7 @@ i.rf-gear-slot__glyph {
 }
 
 .rf-gear-bag > .rf-gear-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     flex: 1 1 auto;
     min-height: 6rem;
     /* room for the outline of a picked tile, which the scrolling edge would cut */
@@ -2279,7 +2519,14 @@ body.rf-gear-dragging * {
 /* ---- middle: slots as pictures ----------------------------------------------- */
 @container rf-gear-eq (max-width: 1149px) {
     .rf-gear-eq {
-        grid-template-columns: minmax(0, 25.5rem) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    }
+
+    /* the slots sit close together here: the badge goes inside the slot's corner */
+    .rf-gear-slot__badge {
+        top: 0;
+        right: 0;
+        border-radius: 0 var(--rf-radius) 0 var(--rf-radius);
     }
 
     .rf-gear-doll {
@@ -2403,6 +2650,7 @@ body.rf-gear-dragging * {
     }
 
     .rf-gear-bag > .rf-gear-grid {
+        grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr));
         margin: 0;
         padding: 0;
         overflow: visible;
@@ -2633,3 +2881,6 @@ body.rf-gear-dragging * {
     background: var(--rf-gold-wash);
     box-shadow: 0 0 0 2px var(--rf-gold-wash), 0 0 1.1rem var(--rf-line-gold);
 }
+
+/* the bag's search gives way to the sort on one line where it can */
+.rf-gear-bag__tools > :first-child { flex: 1 1 9rem; min-width: 0; }

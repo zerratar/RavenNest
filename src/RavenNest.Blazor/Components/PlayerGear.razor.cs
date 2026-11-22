@@ -65,8 +65,10 @@ namespace RavenNest.Blazor.Components
             public bool CanWear;
             /// <summary>What is missing when it cannot be worn: "Needs Attack 120."</summary>
             public string Blocked;
-            /// <summary>"Equip best" would wear it instead of what is worn.</summary>
+            /// <summary>Better than the piece it is compared with (the outfit's in a skill's tab, the worn one on "Now"), by the best rule.</summary>
             public bool Upgrade;
+            /// <summary>The one best rule (OutfitRules.BestPicks) picks this very piece for its slot, for the skill the page is about.</summary>
+            public bool BestPick;
             public List<GemManager.SocketView> Sockets;
             public bool Enchanted;
             /// <summary>It can leave the bag (it is not worn).</summary>
@@ -104,6 +106,7 @@ namespace RavenNest.Blazor.Components
         private bool allStats;
         private string wearSearch = string.Empty;
         private GearKind wearKind = GearKind.All;
+        private string wearSort = "slot";
 
         // the Inventory tab
         private string search = string.Empty;
@@ -157,12 +160,22 @@ namespace RavenNest.Blazor.Components
             }
         }
 
-        /// <summary>The skill the numbers and the upgrade marks are for: the picked one, or the trained one.</summary>
-        private Skill EffectiveSkill => dressFor ?? Trained;
+        /// <summary>
+        ///     The skill the numbers and the upgrade marks are for: the picked one, or on "Now" the skill of the outfit
+        ///     that is on (the review: after the Magic outfit was put on by hand, "Now" still counted for Healing), or
+        ///     what is trained when outfits are not known.
+        /// </summary>
+        private Skill EffectiveSkill => dressFor ?? (OutfitsKnown && WornOutfitSkill != Skill.None ? WornOutfitSkill : Trained);
+
+        /// <summary>The skill the page is about, as a word: "Strength", "All"; empty for none.</summary>
+        private string SkillWord => EffectiveSkill == Skill.None ? string.Empty : GearRules.SkillName(EffectiveSkill);
 
         private Entry PickedEntry => pickedId.HasValue && byId.TryGetValue(pickedId.Value, out var e) ? e : null;
         private int WearableCount => entries.Count(x => x.Slot != EquipmentSlot.None && !x.Stack.Equipped);
         private int WornCount => entries.Count(x => x.Stack.Equipped);
+
+        /// <summary>The character owns something an outfit can hold (worn or in the bag): without it, "equip best" and the switches mean nothing.</summary>
+        private bool HasGear => entries.Any(x => IsOutfitSlot(x.Slot));
 
         protected override async Task OnParametersSetAsync()
         {
@@ -348,10 +361,13 @@ namespace RavenNest.Blazor.Components
         private void Judge()
         {
             var skill = EffectiveSkill;
-            // an outfit that is looked at but not on: its numbers. The sheet reads what is marked worn, so the marks
-            // are set for the count and put back (these stacks are the page's own copy of the server's answer).
+            // a skill without an outfit shows what making one would pick: asked again after every change
+            proposal = NoOutfitYet && CanAct ? Server.ProposeOutfit(player.Id, OutfitSkill) : null;
+
+            // an outfit that is looked at (kept or proposed): its numbers. The sheet reads what is marked worn, so the
+            // marks are set for the count and put back (these stacks are the page's own copy of the server's answer).
             List<(InventoryItem Stack, bool Was)> marks = null;
-            if (OutfitView)
+            if (LooksAtOutfit)
             {
                 var shown = new HashSet<Guid>(ShownPieces().Select(x => x.Stack.Id));
                 marks = entries.Where(x => x.Slot != EquipmentSlot.None).Select(x => (x.Stack, x.Stack.Equipped)).ToList();
@@ -368,12 +384,32 @@ namespace RavenNest.Blazor.Components
                 if (marks != null) foreach (var mark in marks) mark.Stack.Equipped = mark.Was;
             }
 
+            // the arrows and "equip best would pick this": the one best rule the outfits and the server's equip best
+            // share, for the outfit the page is about, measured against the piece it has in the slot
+            var pieces = RulePieces(out _);
+            var bestOutfit = BestOutfit();
+            var picks = OutfitRules.BestPicks(bestOutfit, pieces);
+            var picked = new HashSet<Guid>();
+            foreach (var index in picks) if (index >= 0) picked.Add(pieces[index].Id);
+            var fits = OutfitRules.FitsForBest(bestOutfit, pieces);
+
             foreach (var e in entries)
             {
                 e.Upgrade = false;
-                if (e.Stack.Equipped || !e.CanWear) continue;
-                worn.TryGetValue(e.Slot, out var wornNow);
-                e.Upgrade = GearRules.Beats(e.Item, e.Classic, wornNow?.Item, wornNow?.Classic ?? 0, skill);
+                e.BestPick = false;
+                if (e.Stack.Equipped || !e.CanWear || e.Slot == EquipmentSlot.None) continue;
+                var current = SkillTab ? Shown(e.Slot) : (worn.TryGetValue(e.Slot, out var w) ? w : null);
+                if (current != null && Same(current, e)) continue;
+                if (!IsOutfitSlot(e.Slot))
+                {
+                    e.Upgrade = GearRules.Beats(e.Item, e.Classic, current?.Item, current?.Classic ?? 0, skill);
+                    continue;
+                }
+                var look = !ItemLines.IsClassGear(e.Item.Material) && (e.Item.Type == ItemType.Hat || e.Item.Type == ItemType.Mask);
+                if (e.Classic <= 0 || look) continue;
+                var against = current?.Item.Material ?? ItemMaterial.None;
+                e.Upgrade = GearScore.Beats(e.Item.Material, e.Classic, against, current?.Classic ?? 0, GearScore.KeepWorn(fits, against));
+                e.BestPick = picked.Contains(e.Stack.Id);
             }
         }
 
@@ -431,14 +467,28 @@ namespace RavenNest.Blazor.Components
                 list = list.Where(x => x.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
             }
 
-            return list
-                .OrderBy(x => Array.FindIndex(GearRules.All, s => s.Slot == x.Slot))
-                .ThenByDescending(x => x.CanWear)
-                .ThenByDescending(x => x.Classic)
-                .ThenByDescending(x => x.Rarity)
-                .ThenBy(x => x.Name)
-                .ToList();
+            switch (wearSort)
+            {
+                case "best":
+                    // what the best rule would pick first, then what beats the piece in the slot, then by worth
+                    return list.OrderByDescending(x => x.CanWear).ThenByDescending(x => x.BestPick).ThenByDescending(x => x.Upgrade)
+                        .ThenByDescending(x => x.Classic).ThenBy(x => x.Name).ToList();
+                case "name":
+                    return list.OrderBy(x => x.Name).ToList();
+                case "rarity":
+                    return list.OrderByDescending(x => x.Rarity).ThenByDescending(x => x.Classic).ThenBy(x => x.Name).ToList();
+                default:
+                    return list
+                        .OrderBy(x => Array.FindIndex(GearRules.All, s => s.Slot == x.Slot))
+                        .ThenByDescending(x => x.CanWear)
+                        .ThenByDescending(x => x.Classic)
+                        .ThenByDescending(x => x.Rarity)
+                        .ThenBy(x => x.Name)
+                        .ToList();
+            }
         }
+
+        private int WearKindCount(GearKind kind) => entries.Count(x => x.Slot != EquipmentSlot.None && !x.Stack.Equipped && (kind == GearKind.All || x.Kind == kind));
 
         private IEnumerable<GearKind> Kinds
         {
@@ -540,7 +590,8 @@ namespace RavenNest.Blazor.Components
             if (e.Stack.Amount > 1) parts.Add(e.Stack.Amount.ToString("N0"));
             parts.Add(ItemService.GetRarityName(e.Item));
             if (e.Stack.Equipped) parts.Add("worn");
-            if (e.Upgrade) parts.Add("better than what is worn");
+            if (e.BestPick) parts.Add("equip best would pick it");
+            else if (e.Upgrade) parts.Add(SkillTab ? "better than the outfit's piece" : "better than what is worn");
             if (e.Enchanted) parts.Add("enchanted");
             if (e.Stack.Soulbound) parts.Add("soulbound");
             return e.Name + " (" + string.Join(", ", parts) + ")";
@@ -629,7 +680,9 @@ namespace RavenNest.Blazor.Components
 
         private void PickSkill(Skill skill)
         {
-            dressFor = dressFor == skill ? null : skill;
+            // a second click on the picked skill does nothing (it used to go back to "Now" without saying so)
+            if (dressFor == skill) return;
+            dressFor = skill;
             // the slots may show another outfit now: what was picked in them is no longer what is there
             if (OutfitsKnown) ClearPick();
             Judge();
@@ -733,7 +786,7 @@ namespace RavenNest.Blazor.Components
         {
             if (!CanAct || !Guid.TryParse(stackId, out var id) || !byId.TryGetValue(id, out var e)) return;
             var slot = GearRules.Get(e.Slot);
-            if (slot == null || slot.Key != slotKey || (e.Stack.Equipped && !OutfitView)) return;
+            if (slot == null || slot.Key != slotKey || (e.Stack.Equipped && !SkillTab)) return;
             if (!e.CanWear)
             {
                 Say(e.Blocked, true);
@@ -756,6 +809,8 @@ namespace RavenNest.Blazor.Components
         public void DropOnBag(string stackId)
         {
             if (!CanAct || !Guid.TryParse(stackId, out var id) || !byId.TryGetValue(id, out var e) || !e.Stack.Equipped) return;
+            // a skill's tab changes its outfit, never what is worn
+            if (SkillTab) return;
             Unequip(e);
             StateHasChanged();
         }
@@ -883,11 +938,16 @@ namespace RavenNest.Blazor.Components
         {
             var slot = e.Slot;
             var name = e.Name;
+            var was = worn.TryGetValue(slot, out var before) ? before.Name : null;
             notice = null;
             if (!Take(Server.Equip(player.Id, e.Stack), name + " was not put on. It may be in a trade or being enchanted, or the game changed it a moment ago.")) return;
 
             // the worn piece can be a new stack (one taken from a stack of several): follow it
             pickedId = worn.TryGetValue(slot, out var now) ? now.Stack.Id : null;
+            // what happened, and whether the outfit that is on still has something else there
+            var kept = OutfitsKnown && Drifted(slot) ? KeptIn(WornOutfit, slot) : null;
+            Say(name + " is on" + (was != null && was != name ? ", in place of " + was : "") + "."
+                + (kept != null ? " Your " + GearRules.SkillName(WornOutfitSkill) + " outfit still keeps " + kept.Name + " there: save it to the outfit, or it comes back when the outfit next goes on." : ""));
             if (ActiveView == "equipment")
             {
                 pickedSlot = slot;
@@ -902,6 +962,7 @@ namespace RavenNest.Blazor.Components
             var name = e.Name;
             notice = null;
             if (!Take(Server.Unequip(player.Id, e.Stack), name + " was not taken off. The game may have changed it a moment ago.")) return;
+            Say(name + " is off, back in the bag.");
 
             // it is back in the bag, perhaps joined with others like it
             if (ActiveView == "equipment")
@@ -917,19 +978,22 @@ namespace RavenNest.Blazor.Components
 
         private void EquipBest()
         {
-            var before = worn.ToDictionary(x => x.Key, x => x.Value.Stack.ItemId);
+            // "Now" with outfits: equip best is the outfit that is on filled with the best (pinned slots stay), so
+            // what is worn and that outfit stay one and the same, and its rule is the outfits' one best rule
+            if (OutfitsKnown && !dressFor.HasValue && WornOutfitSkill != Skill.None)
+            {
+                FillOutfitBest(WornOutfitSkill);
+                return;
+            }
+
+            var before = SnapWorn();
             // "all" and the gathering skills have no word of their own for the server's rule: what is trained decides
             var word = dressFor.HasValue && GearRules.DressFor.Contains(dressFor.Value) ? dressFor.Value.ToString().ToLowerInvariant() : null;
             if (!Take(Server.EquipBest(player.Id, word), "Equip best did not run. Try again in a moment.")) return;
 
-            var changed = GearRules.All.Count(s =>
-            {
-                before.TryGetValue(s.Slot, out var was);
-                var isNow = worn.TryGetValue(s.Slot, out var e) ? e.Stack.ItemId : Guid.Empty;
-                return was != isNow;
-            });
+            var list = Changes(before, SnapWorn());
             var forWhat = word != null ? " for " + dressFor : Trained != Skill.None ? " for " + Trained : "";
-            Say(changed == 0 ? "Already wearing the best" + forWhat + "." : "Equip best changed " + Plural(changed, "slot") + forWhat + ".");
+            Say(list.Length == 0 ? "Already wearing the best" + forWhat + "." : "Equip best" + forWhat + " changed " + list + ".");
             ClearPick();
         }
 

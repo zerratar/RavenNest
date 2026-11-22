@@ -126,7 +126,7 @@ namespace RavenNest.Blazor.Components
         /// <summary>An outfit is looked at and its head piece is not the one worn.</summary>
         private bool OtherHeadShown()
         {
-            if (!OutfitView) return false;
+            if (!LooksAtOutfit) return false;
             var shown = ShownPieces().FirstOrDefault(x => x.Slot == EquipmentSlot.Head);
             if (shown == null) return false;
             return !worn.TryGetValue(EquipmentSlot.Head, out var on) || on.Stack.Id != shown.Stack.Id;
