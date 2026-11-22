@@ -1013,9 +1013,20 @@ function drawLabels(g, view) {
         const capstone = n.capstone, picked = selected === n.id || hover === n.id;
         const fontSize = capstone ? nameSize + 2 : nameSize;
         g.font = `${picked || capstone ? 800 : 700} ${fontSize}px ${FONT}`;
-        const half = g.measureText(n.name).width / 2 + 3, tall = fontSize * 0.62;
+        // Among a few fans the skills stand close and their names are long ("Enchanter's Patience"): a long name is
+        // set on two lines there, so it fits under or over its own skill and is not pushed off to a corner.
+        let lines = [n.name];
+        if (map.fans && g.measureText(n.name).width > 84) {
+            let cut = -1;
+            for (let i = n.name.indexOf(' '); i >= 0; i = n.name.indexOf(' ', i + 1)) {
+                if (cut < 0 || Math.abs(i - n.name.length / 2) < Math.abs(cut - n.name.length / 2)) cut = i;
+            }
+            if (cut > 0) lines = [n.name.slice(0, cut), n.name.slice(cut + 1)];
+        }
+        const lineHeight = fontSize * 1.12;
+        const half = Math.max(...lines.map(line => g.measureText(line).width)) / 2 + 3, tall = fontSize * 0.62 + (lines.length - 1) * lineHeight / 2;
         const grown = n.outer * u * (n.id === hover ? 1.1 : 1);
-        const reach = grown + 5 + fontSize * 0.6;
+        const reach = grown + 5 + tall;
         // under the node, else over it; among a few fans (their skills stand one above the other where the fans lie
         // on their sides) also beside it
         const sides = capstone ? (map.fans ? [[0, 1], [1, 0], [-1, 0]] : [[0, 1]])
@@ -1028,12 +1039,16 @@ function drawLabels(g, view) {
             const cx = dx ? Math.min(w - half - 5, Math.max(half + 5, n.sx + dx * (corner ? grown * 0.5 + half : grown + 7 + half))) : n.sx, cy = n.sy + dy * reach;
             if (dx && !corner && Math.abs(cx - n.sx) < grown + half) continue;
             let free = true;
-            for (const b of placed) { if (Math.abs(b.x - cx) < b.half + half && Math.abs(b.y - cy) < b.tall + tall) { free = false; break; } }
+            // (among the fans a little air between two names, so two of them never read as one)
+            const air = map.fans ? 4 : 0;
+            for (const b of placed) { if (Math.abs(b.x - cx) < b.half + half + air && Math.abs(b.y - cy) < b.tall + tall + air) { free = false; break; } }
             if (free) {
                 for (const m of map.nodes) {
                     if (m === n || !m.seen) continue;
                     const mr = m.outer * u * (map.fans ? 0.78 : 0.9); // (the fans' skills are big: their corners leave room)
-                    if (Math.abs(m.sx - cx) < mr + half && Math.abs(m.sy - cy) < mr + tall) { free = false; break; }
+                    // (a capstone wears a crown above it, which a name must not lie on either)
+                    const up = map.fans && m.capstone ? mr * 0.6 : 0;
+                    if (Math.abs(m.sx - cx) < mr + half && Math.abs(m.sy - up / 2 - cy) < mr + up / 2 + tall) { free = false; break; }
                 }
             }
             if (free || picked) { at = [cx, cy]; break; }
@@ -1041,7 +1056,7 @@ function drawLabels(g, view) {
         if (at === null) continue;
         placed.push({ x: at[0], y: at[1], half, tall });
         const color = n.state === 'locked' ? (capstone ? 'rgba(214,196,150,0.6)' : 'rgba(226,224,236,0.55)') : capstone ? GOLD_BRIGHT : n.state === 'open' ? 'rgba(255,244,222,0.82)' : '#fff6e2';
-        shadowText(g, n.name, at[0], at[1], color);
+        for (let i = 0; i < lines.length; i++) shadowText(g, lines[i], at[0], at[1] + (i - (lines.length - 1) / 2) * lineHeight, color);
     }
     drawLevels();
 }
