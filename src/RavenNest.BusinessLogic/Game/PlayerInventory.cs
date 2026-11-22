@@ -326,7 +326,9 @@ namespace RavenNest.BusinessLogic.Game
                         .OrderByDescending(x => GetItemValue(x))
                         .ToList();
 
-                    var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
+                    // every melee weapon (one-handed axes and spears too), as the outfits' best rule counts them
+                    // (RavenNest.Models.OutfitRules.SlotOf): the two pick the same weapon
+                    var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe || x.Item.Type == (int)ItemType.OneHandedAxe || x.Item.Type == (int)ItemType.TwoHandedSpear));
                     if (meleeWeaponToEquip.IsNotNull())
                         EquipItem(meleeWeaponToEquip);
 

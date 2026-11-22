@@ -100,6 +100,33 @@ namespace RavenNest.Blazor.Services
             return Act(characterId, () => outfits.FillBest(characterId, skill));
         }
 
+        /// <summary>
+        ///     What "make an outfit from my best gear" would put in a skill's outfit, without keeping anything (the
+        ///     page shows it as "Proposed"). Null when refused or for a skill without outfits.
+        /// </summary>
+        public Outfit Propose(Guid characterId, Skill skill)
+        {
+            return MayChange(characterId) != null ? null : outfits.Propose(characterId, skill);
+        }
+
+        /// <summary>"Start from this outfit": the slots and pet of one skill's outfit copied into another's.</summary>
+        public OutfitChange Copy(Guid characterId, Skill from, Skill to)
+        {
+            return Act(characterId, () => outfits.Copy(characterId, from, to));
+        }
+
+        /// <summary>The outfit that is on takes what is worn now (gear changed by hand); pins stay.</summary>
+        public OutfitChange KeepWorn(Guid characterId, Skill skill)
+        {
+            return Act(characterId, () => outfits.KeepWorn(characterId, skill));
+        }
+
+        /// <summary>Every piece of the outfit that is on goes back on.</summary>
+        public OutfitChange PutBack(Guid characterId, Skill skill)
+        {
+            return Act(characterId, () => outfits.PutBack(characterId, skill));
+        }
+
         /// <summary>The two switches; null leaves one as it is.</summary>
         public OutfitChange SetSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
         {

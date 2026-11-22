@@ -389,14 +389,8 @@ namespace RavenNest.BusinessLogic.Game
                 var pieces = Pieces(character, inventory);
                 EnsureWorn(character, state);
                 var outfit = state.GetOrAdd(skill);
-                var fits = OutfitRules.FitsOf(outfit, pieces, null);
-                foreach (var slot in OutfitRules.Slots)
-                {
-                    if (outfit.IsPinned(slot)) continue;
-                    var best = OutfitRules.Best(outfit, slot, pieces, fits);
-                    if (best < 0) continue;
-                    outfit.Set(slot, pieces[best].Id, pieces[best].ItemId, false);
-                }
+                // the pieces "equip best" picks for that skill (OutfitRules.BestPicks), so both give the same gear
+                OutfitRules.FillBest(outfit, pieces);
 
                 if (state.Worn == skill)
                 {
@@ -405,6 +399,131 @@ namespace RavenNest.BusinessLogic.Game
                     TellOldGame(character, pieces, plan);
                 }
                 Tidy(state, outfit);
+                return Done(character, state, result, tellGame: true);
+            }
+        }
+
+        /// <summary>
+        ///     What <see cref="FillBest"/> would put in a skill's outfit, without keeping anything: a copy of the outfit
+        ///     (or a new one for a skill that has none) filled with the best owned. The website shows it as "Proposed"
+        ///     before the outfit is made. Null for a skill that has no outfit to have.
+        /// </summary>
+        public Outfit Propose(Guid characterId, Skill skill)
+        {
+            var character = gameData.GetCharacter(characterId);
+            skill = OutfitRules.Normalize(skill);
+            if (character == null || skill == Skill.None) return null;
+            var state = Load(character);
+            var kept = state.Find(skill);
+            var outfit = new Outfit { Skill = skill };
+            if (kept != null)
+            {
+                OutfitRules.CopyInto(kept, outfit);
+                outfit.Word = kept.Word;
+            }
+            OutfitRules.FillBest(outfit, Pieces(character, inventories.Get(character.Id)));
+            return outfit;
+        }
+
+        /// <summary>
+        ///     "Start from this outfit": the slots and the pet of one skill's outfit are copied into another's (pinned
+        ///     stays pinned), which is made if it has none. When the target is the outfit that is on, it goes on.
+        /// </summary>
+        public OutfitResult Copy(Guid characterId, Skill from, Skill to)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return OutfitResult.Fail(OutfitStatus.Error);
+            from = OutfitRules.Normalize(from);
+            to = OutfitRules.Normalize(to);
+            if (from == Skill.None || to == Skill.None) return OutfitResult.Fail(OutfitStatus.UnknownSkill);
+            lock (LockOf(characterId))
+            {
+                var state = Load(character);
+                var result = new OutfitResult { Skill = (int)to };
+                var source = state.Find(from);
+                if (source == null || from == to)
+                {
+                    result.Status = OutfitStatus.NoOutfit;
+                    result.Outfits = state.ToString();
+                    return result;
+                }
+
+                EnsureWorn(character, state);
+                var outfit = state.GetOrAdd(to);
+                OutfitRules.CopyInto(source, outfit);
+                if (state.Worn == to)
+                {
+                    var inventory = inventories.Get(character.Id);
+                    var pieces = Pieces(character, inventory);
+                    var plan = OutfitRules.Wear(outfit, pieces);
+                    Equip(inventory, pieces, plan, result);
+                    TellOldGame(character, pieces, plan);
+                    SendOutPet(character, outfit, result);
+                }
+                Tidy(state, outfit);
+                return Done(character, state, result, tellGame: true);
+            }
+        }
+
+        /// <summary>
+        ///     The outfit that is on takes what is worn now, slot by slot (OutfitRules.KeepWorn): the gear was changed
+        ///     by hand and the player keeps it. A pinned slot stays pinned, to the worn piece.
+        /// </summary>
+        public OutfitResult KeepWorn(Guid characterId, Skill skill)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return OutfitResult.Fail(OutfitStatus.Error);
+            skill = OutfitRules.Normalize(skill);
+            if (skill == Skill.None) return OutfitResult.Fail(OutfitStatus.UnknownSkill);
+            lock (LockOf(characterId))
+            {
+                var state = Load(character);
+                var result = new OutfitResult { Skill = (int)skill };
+                EnsureWorn(character, state);
+                var outfit = state.Find(skill);
+                if (outfit == null || state.Worn != skill)
+                {
+                    result.Status = OutfitStatus.NoOutfit;
+                    result.Outfits = state.ToString();
+                    return result;
+                }
+                result.Changed = OutfitRules.KeepWorn(outfit, Pieces(character, inventories.Get(character.Id))) > 0;
+                return Done(character, state, result, tellGame: true);
+            }
+        }
+
+        /// <summary>
+        ///     Every piece of the outfit that is on goes back on (not only the pinned ones, as when training comes back
+        ///     to it): the website's "Put the outfit back" after gear was changed by hand.
+        /// </summary>
+        public OutfitResult PutBack(Guid characterId, Skill skill)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return OutfitResult.Fail(OutfitStatus.Error);
+            skill = OutfitRules.Normalize(skill);
+            if (skill == Skill.None) return OutfitResult.Fail(OutfitStatus.UnknownSkill);
+            lock (LockOf(characterId))
+            {
+                var state = Load(character);
+                var result = new OutfitResult { Skill = (int)skill };
+                EnsureWorn(character, state);
+                var outfit = state.Find(skill);
+                if (outfit == null || state.Worn != skill)
+                {
+                    result.Status = OutfitStatus.NoOutfit;
+                    result.Outfits = state.ToString();
+                    return result;
+                }
+                var inventory = inventories.Get(character.Id);
+                var pieces = Pieces(character, inventory);
+                var plan = OutfitRules.Wear(outfit, pieces);
+                Equip(inventory, pieces, plan, result);
+                if (plan.Gone.Count > 0)
+                {
+                    result.Gone = plan.Gone.ToArray();
+                    result.Filled = plan.Filled.ToArray();
+                }
+                TellOldGame(character, pieces, plan);
                 return Done(character, state, result, tellGame: true);
             }
         }

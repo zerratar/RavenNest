@@ -155,6 +155,10 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Crusader Helm");
             Add("Tracker Hood");
             Add("Witchfinder Buckle Hat");
+            // class gear within reach for Strength (melee, tier 4) and Ranged (ranger, tier 3), so their best differs
+            Add("Reaver Hauberk");
+            Add("Hunter Gloves");
+            Add("Hunter Boots");
             Add("Ring Of The Celestial");
             Add("Ruby Ring");
             Add("Dragon Ring", 2);
@@ -446,25 +450,68 @@ namespace RavenNest.Blazor.Pages.Dev
             return Outfit(OutfitStatus.Ok, skill);
         }
 
+        // The character's pieces as the outfit rules see them, worth counted as the server counts it (the classic
+        // columns with what a Power, Aim or Armor enchantment adds: PlayerInventory.GetItemValue).
+        private List<OutfitPiece> Pieces()
+        {
+            var pieces = new List<OutfitPiece>();
+            foreach (var x in bag)
+            {
+                var item = items.GetItem(x.ItemId);
+                if (item == null || x.Amount <= 0 || !OutfitRules.IsOutfitSlot(OutfitRules.SlotOf(item.Type))) continue;
+                pieces.Add(new OutfitPiece
+                {
+                    Id = x.Id, ItemId = x.ItemId, Type = item.Type, Category = item.Category, Material = item.Material,
+                    Classic = Worth(x), Worn = x.Equipped, Wearable = CanWear(x), Name = item.Name,
+                    Plain = x.Enchantment == null && x.Sockets == null && x.TransmogrificationId == null,
+                });
+            }
+            return pieces;
+        }
+
+        // the server's OutfitManager.Equip: the plan's pieces go on, and the outfit follows a piece taken from a stack
+        private bool Apply(Outfit outfit, List<OutfitPiece> pieces, OutfitPlan plan)
+        {
+            var changed = false;
+            foreach (var index in plan.Equip)
+            {
+                var stack = bag.FirstOrDefault(x => x.Id == pieces[index].Id);
+                if (stack == null) continue;
+                var slotOf = SlotOf(stack);
+                if (!Wear(stack)) continue;
+                changed = true;
+                var entry = outfit?.Get((RavenNest.Models.EquipmentSlot)(int)slotOf);
+                var now = bag.FirstOrDefault(x => x.Equipped && SlotOf(x) == slotOf);
+                if (entry != null && now != null && entry.ItemId == now.ItemId) entry.Item = now.Id;
+            }
+            return changed;
+        }
+
+        // as the server's OutfitManager.Switch: what is worn is kept as the outfit that was on, then the target goes on
         public OutfitChange WearOutfit(Guid characterId, Skill skill)
         {
             skill = OutfitRules.Normalize(skill);
             if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
             var outfit = outfits.Find(skill);
             if (outfit == null) return Outfit(OutfitStatus.NoOutfit, skill);
-            foreach (var entry in outfit.Slots)
-            {
-                var stack = PieceOf(entry);
-                if (stack == null || stack.Equipped) continue;
-                if (Wear(stack))
-                {
-                    var now = bag.FirstOrDefault(x => x.Equipped && x.ItemId == entry.ItemId);
-                    if (now != null) entry.Item = now.Id;
-                }
-            }
+            var pieces = Pieces();
+            var same = outfits.Worn == skill;
+            if (!same && outfits.Worn != Skill.None) OutfitRules.Remember(outfits.GetOrAdd(outfits.Worn), pieces, petOut);
+            var plan = OutfitRules.Wear(outfit, pieces, pinnedOnly: same);
+            Apply(outfit, pieces, plan);
             if (outfit.Pet != Guid.Empty) petOut = outfit.Pet;
             outfits.Worn = skill;
-            return Outfit(OutfitStatus.Ok, skill, true);
+            return WithGone(Outfit(OutfitStatus.Ok, skill, true), plan);
+        }
+
+        private static OutfitChange WithGone(OutfitChange answer, OutfitPlan plan)
+        {
+            if (answer.Result != null && plan.Gone.Count > 0)
+            {
+                answer.Result.Gone = plan.Gone.ToArray();
+                answer.Result.Filled = plan.Filled.ToArray();
+            }
+            return answer;
         }
 
         public OutfitChange FillOutfitBest(Guid characterId, Skill skill)
@@ -472,36 +519,70 @@ namespace RavenNest.Blazor.Pages.Dev
             skill = OutfitRules.Normalize(skill);
             if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
             if (skill == Skill.None) return Outfit(OutfitStatus.UnknownSkill, skill);
+            if (outfits.Worn == Skill.None) outfits.Worn = Skill.Healing;
             var outfit = outfits.GetOrAdd(skill);
-            // the server's rule (OutfitRules.Best) on this made up bag
-            var pieces = new List<OutfitPiece>();
-            foreach (var x in bag)
-            {
-                var item = items.GetItem(x.ItemId);
-                if (item == null) continue;
-                pieces.Add(new OutfitPiece
-                {
-                    Id = x.Id, ItemId = x.ItemId, Type = item.Type, Category = item.Category, Material = item.Material,
-                    Classic = GearScore.Classic(item), Worn = x.Equipped, Wearable = CanWear(x), Name = item.Name,
-                });
-            }
-            var fits = OutfitRules.FitsOf(outfit, pieces, null);
-            foreach (var slot in OutfitRules.Slots)
-            {
-                if (outfit.IsPinned(slot)) continue;
-                var best = OutfitRules.Best(outfit, slot, pieces, fits);
-                if (best >= 0) outfit.Set(slot, pieces[best].Id, pieces[best].ItemId, false);
-            }
+            // the server's rule (OutfitRules.FillBest: the pieces equip best picks) on this made up bag
+            var pieces = Pieces();
+            OutfitRules.FillBest(outfit, pieces);
             var changed = false;
-            if (outfits.Worn == skill)
-            {
-                foreach (var entry in outfit.Slots)
-                {
-                    var stack = PieceOf(entry);
-                    if (stack != null && !stack.Equipped) changed |= Wear(stack);
-                }
-            }
+            if (outfits.Worn == skill) changed = Apply(outfit, pieces, OutfitRules.Wear(outfit, pieces));
+            if (outfit.Slots.Count == 0 && outfit.Pet == Guid.Empty && outfits.Worn != skill) outfits.Remove(skill);
             return Outfit(OutfitStatus.Ok, skill, changed);
+        }
+
+        public Outfit ProposeOutfit(Guid characterId, Skill skill)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if ((!owner && !administrator) || skill == Skill.None) return null;
+            var outfit = new Outfit { Skill = skill };
+            var kept = outfits.Find(skill);
+            if (kept != null)
+            {
+                OutfitRules.CopyInto(kept, outfit);
+                outfit.Word = kept.Word;
+            }
+            OutfitRules.FillBest(outfit, Pieces());
+            return outfit;
+        }
+
+        public OutfitChange CopyOutfit(Guid characterId, Skill from, Skill to)
+        {
+            from = OutfitRules.Normalize(from);
+            to = OutfitRules.Normalize(to);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, to);
+            var source = outfits.Find(from);
+            if (source == null || from == to || to == Skill.None) return Outfit(OutfitStatus.NoOutfit, to);
+            var outfit = outfits.GetOrAdd(to);
+            OutfitRules.CopyInto(source, outfit);
+            var changed = false;
+            if (outfits.Worn == to)
+            {
+                var pieces = Pieces();
+                changed = Apply(outfit, pieces, OutfitRules.Wear(outfit, pieces));
+                if (outfit.Pet != Guid.Empty) petOut = outfit.Pet;
+            }
+            return Outfit(OutfitStatus.Ok, to, changed);
+        }
+
+        public OutfitChange KeepWornInOutfit(Guid characterId, Skill skill)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            var outfit = outfits.Find(skill);
+            if (outfit == null || outfits.Worn != skill) return Outfit(OutfitStatus.NoOutfit, skill);
+            var changed = OutfitRules.KeepWorn(outfit, Pieces()) > 0;
+            return Outfit(OutfitStatus.Ok, skill, changed);
+        }
+
+        public OutfitChange PutOutfitBack(Guid characterId, Skill skill)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            var outfit = outfits.Find(skill);
+            if (outfit == null || outfits.Worn != skill) return Outfit(OutfitStatus.NoOutfit, skill);
+            var pieces = Pieces();
+            var plan = OutfitRules.Wear(outfit, pieces);
+            return WithGone(Outfit(OutfitStatus.Ok, skill, Apply(outfit, pieces, plan)), plan);
         }
 
         public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
@@ -520,25 +601,29 @@ namespace RavenNest.Blazor.Pages.Dev
             return Result(1);
         }
 
-        // The game's own comparison, slot by slot. The server's "equip best" also narrows the fitting class gear
-        // lines to one for the whole outfit; this stand-in does not.
+        // As the server's PlayerInventory.EquipBestItems: everything is taken off and the best of what may be worn
+        // goes on, for what is trained (or the skill or role asked for). The picks are the rule the server's equip
+        // best and an outfit's fill share (OutfitRules.BestPicks), so this stand-in and its outfits agree as the real
+        // server's do. Slots that are no part of an outfit (pet items, the boat) are left alone.
         public GearResult EquipBest(Guid characterId, string skill)
         {
-            var outfit = GearOutfit.Parse(skill);
-            var dressFor = outfit != null ? outfit.Skill : GearScore.Trained("Fighting", "Healing");
-            foreach (var slot in GearRules.All)
+            var asked = GearOutfit.Parse(skill);
+            var player = GetPlayer(CharacterId);
+            var dressFor = asked != null && !asked.OnlyLine ? asked.Skill : OutfitRules.SkillOf(player.State?.Task, player.State?.TaskArgument);
+            var pieces = Pieces();
+            var picks = OutfitRules.BestPicks(new Outfit { Skill = OutfitRules.Normalize(dressFor), Word = asked?.Word }, pieces, keepPinned: false);
+            for (var s = 0; s < OutfitRules.Slots.Length; ++s)
             {
-                while (true)
+                var slot = (EquipmentSlot)(int)OutfitRules.Slots[s];
+                var wornNow = bag.FirstOrDefault(x => x.Equipped && SlotOf(x) == slot);
+                if (picks[s] < 0)
                 {
-                    var wornNow = bag.FirstOrDefault(x => x.Equipped && SlotOf(x) == slot.Slot);
-                    var wornItem = wornNow == null ? null : items.GetItem(wornNow.ItemId);
-                    var wornWorth = wornNow == null ? 0 : Worth(wornNow);
-                    var better = bag
-                        .Where(x => !x.Equipped && SlotOf(x) == slot.Slot && CanWear(x))
-                        .OrderByDescending(Worth)
-                        .FirstOrDefault(x => GearRules.Beats(items.GetItem(x.ItemId), Worth(x), wornItem, wornWorth, dressFor));
-                    if (better == null || !Wear(better)) break;
+                    // taken off, and nothing may go in its place
+                    if (wornNow != null && !CanWear(wornNow)) PutBack(wornNow);
+                    continue;
                 }
+                var stack = bag.FirstOrDefault(x => x.Id == pieces[picks[s]].Id);
+                if (stack != null && !stack.Equipped) Wear(stack);
             }
 
             return Result(1);

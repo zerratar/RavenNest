@@ -109,6 +109,18 @@ namespace RavenNest.Blazor.Services
         /// <summary>"Change outfit when I switch training" and "Upgrade to better gear automatically"; null leaves one as it is.</summary>
         OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically);
 
+        /// <summary>What filling a skill's outfit with the best would give, kept nowhere; null when refused.</summary>
+        Outfit ProposeOutfit(Guid characterId, Skill skill);
+
+        /// <summary>Copies one skill's outfit (slots, pins, pet) into another's.</summary>
+        OutfitChange CopyOutfit(Guid characterId, Skill from, Skill to);
+
+        /// <summary>The outfit that is on takes what is worn now.</summary>
+        OutfitChange KeepWornInOutfit(Guid characterId, Skill skill);
+
+        /// <summary>Every piece of the outfit that is on goes back on.</summary>
+        OutfitChange PutOutfitBack(Guid characterId, Skill skill);
+
         /// <summary>Administrators: puts an item in the inventory.</summary>
         GearResult AddItem(Guid characterId, Item item, int amount);
 
@@ -250,6 +262,14 @@ namespace RavenNest.Blazor.Services
 
         public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
             => outfitService.SetSwitches(characterId, changeWithTraining, upgradeAutomatically);
+
+        public Outfit ProposeOutfit(Guid characterId, Skill skill) => outfitService.Propose(characterId, skill);
+
+        public OutfitChange CopyOutfit(Guid characterId, Skill from, Skill to) => outfitService.Copy(characterId, from, to);
+
+        public OutfitChange KeepWornInOutfit(Guid characterId, Skill skill) => outfitService.KeepWorn(characterId, skill);
+
+        public OutfitChange PutOutfitBack(Guid characterId, Skill skill) => outfitService.PutBack(characterId, skill);
 
         public GearResult SendToStash(Guid characterId, IReadOnlyList<InventoryItem> items)
         {

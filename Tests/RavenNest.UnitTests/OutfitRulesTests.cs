@@ -420,6 +420,186 @@ namespace RavenNest.UnitTests
             Assert.AreEqual(pinned.Id, pieces[plan.Equip[0]].Id);
         }
 
+        // ---- one best rule: the outfit's fill and "equip best" ------------------------------------------------------
+
+        // What the website's preview character carries (a healer around level 160; RavenNest.Blazor's
+        // GearPreviewBackend), with the worth the server counts: the classic columns and what a Power, Aim or Armor
+        // enchantment adds. Pieces the character may not wear yet are marked so.
+        private static List<OutfitPiece> HealerBag()
+        {
+            var healer = ItemLines.Material(ItemLine.Healer, 4);
+            return new List<OutfitPiece>
+            {
+                Piece("Priest Cowl", ItemType.HeadCovering, healer, 30, worn: true, plain: false),
+                Piece("Archmages Pendant", ItemType.Amulet, ItemMaterial.None, 101, worn: true, wearable: false),
+                Piece("Priest Vestment", ItemType.Chest, healer, 52 + 6, worn: true, plain: false), // ARMOR 12%
+                Piece("Rune Gloves", ItemType.Gloves, ItemMaterial.Rune, 38, worn: true),
+                Piece("Priest Tabard", ItemType.Leggings, healer, 34, worn: true),
+                Piece("Dragon Boots", ItemType.Boots, ItemMaterial.Dragon, 58, worn: true, plain: false),
+                Piece("Dragon Katana", ItemType.TwoHandedSword, ItemMaterial.Dragon, 168, worn: true, plain: false),
+                Piece("Dragon Bow", ItemType.TwoHandedBow, ItemMaterial.Dragon, 168, worn: true),
+                Piece("Phantom Staff", ItemType.TwoHandedStaff, ItemMaterial.Phantom, 256 + 22, worn: true, plain: false), // POWER 9%
+                Piece("Owls Eye Ring", ItemType.Ring, ItemMaterial.None, 80, worn: true),
+                Piece("Priest Gloves", ItemType.Gloves, healer, 32),
+                Piece("Priest Boots", ItemType.Boots, healer, 36),
+                Piece("Priest Cap", ItemType.HeadCovering, healer, 30),
+                Piece("Hierophant Vestment", ItemType.Chest, ItemLines.Material(ItemLine.Healer, 5), 63, wearable: false),
+                Piece("Abraxas Helmet", ItemType.Helmet, ItemMaterial.Abraxas, 73 + 5, plain: false), // ARMOR 8%
+                Piece("Dragon Helmet", ItemType.Helmet, ItemMaterial.Dragon, 43),
+                Piece("Phantom Chest", ItemType.Chest, ItemMaterial.Phantom, 142, plain: false),
+                Piece("Dragon Chest", ItemType.Chest, ItemMaterial.Dragon, 98),
+                Piece("Dragon Leggings", ItemType.Leggings, ItemMaterial.Dragon, 53),
+                Piece("Rune Boots", ItemType.Boots, ItemMaterial.Rune, 45),
+                Piece("Dragon Shield", ItemType.Shield, ItemMaterial.Dragon, 53),
+                Piece("Rune Shield", ItemType.Shield, ItemMaterial.Rune, 49),
+                Piece("Rune Sword", ItemType.OneHandedSword, ItemMaterial.Rune, 100),
+                Piece("Dragon 2H Axe", ItemType.TwoHandedAxe, ItemMaterial.Dragon, 165),
+                Piece("Rune Bow", ItemType.TwoHandedBow, ItemMaterial.Rune, 140),
+                Piece("Dragon Staff", ItemType.TwoHandedStaff, ItemMaterial.Dragon, 168),
+                Piece("Elder Atlarus Staff", ItemType.TwoHandedStaff, ItemMaterial.ElderAtlarus, 1552, wearable: false),
+                Piece("Warlock Robe", ItemType.Chest, ItemLines.Material(ItemLine.Mage, 5), 63, wearable: false),
+                Piece("Conjurer Hood", ItemType.HeadCovering, ItemLines.Material(ItemLine.Mage, 3), 12),
+                Piece("Crusader Helm", ItemType.HeadCovering, ItemLines.Material(ItemLine.Paladin, 2), 12),
+                Piece("Tracker Hood", ItemType.HeadCovering, ItemLines.Material(ItemLine.Ranger, 2), 8),
+                Piece("Witchfinder Buckle Hat", ItemType.Hat, ItemLines.Material(ItemLine.WitchHunter, 5), 65, wearable: false),
+                Piece("Reaver Hauberk", ItemType.Chest, ItemLines.Material(ItemLine.Melee, 4), 96),
+                Piece("Hunter Gloves", ItemType.Gloves, ItemLines.Material(ItemLine.Ranger, 3), 23),
+                Piece("Hunter Boots", ItemType.Boots, ItemLines.Material(ItemLine.Ranger, 3), 27),
+                Piece("Ring Of The Celestial", ItemType.Ring, ItemMaterial.None, 80, wearable: false),
+                Piece("Ruby Ring", ItemType.Ring, ItemMaterial.None, 37),
+                Piece("Dragon Ring", ItemType.Ring, ItemMaterial.Dragon, 47),
+                Piece("Phantom Amulet", ItemType.Amulet, ItemMaterial.Phantom, 67),
+                Piece("Emerald Amulet", ItemType.Amulet, ItemMaterial.None, 17),
+                Piece("Santa Hat", ItemType.Hat, ItemMaterial.None, 0),
+            };
+        }
+
+        // The server's "equip best" (PlayerInventory.EquipBestItems with nothing asked for), said again on pieces:
+        // everything comes off; the most worth per weapon slot; one line for the armor (GearScore.OneLine, what was
+        // worn winning among equals); then each type of item in turn, the best by GearScore.Value, a second type for
+        // a slot only when it beats the first (GearScore.Beats). The kind of item worn per slot afterwards.
+        private static Dictionary<EquipmentSlot, Guid> EquipBestLikeTheServer(List<OutfitPiece> bag, Skill trained)
+        {
+            var worn = new Dictionary<EquipmentSlot, OutfitPiece>();
+            var mayWear = bag.Where(x => x.Wearable).OrderByDescending(x => x.Classic).ToList();
+            foreach (var slot in new[] { EquipmentSlot.MeleeWeapon, EquipmentSlot.RangedWeapon, EquipmentSlot.MagicWeapon })
+            {
+                var weapon = mayWear.FirstOrDefault(x => x.Slot == slot);
+                if (weapon.ItemId != Guid.Empty) worn[slot] = weapon;
+            }
+
+            var fits = ItemLines.Fits(trained);
+            var armor = mayWear.Where(x => ItemLines.IsClassGear(x.Material)).ToList();
+            if (armor.Count > 0)
+            {
+                fits = GearScore.OneLine(fits, armor.Select(x => x.Material).ToArray(), armor.Select(x => x.Classic).ToArray(),
+                    armor.Select(x => (int)x.Slot).ToArray(), armor.Select(x => x.Worn).ToArray());
+            }
+
+            foreach (var group in mayWear
+                .Where(x => x.Slot != EquipmentSlot.MeleeWeapon && x.Slot != EquipmentSlot.RangedWeapon && x.Slot != EquipmentSlot.MagicWeapon)
+                .GroupBy(x => x.Type))
+            {
+                var slot = group.First().Slot;
+                if (worn.TryGetValue(slot, out var now))
+                {
+                    var slotFits = GearScore.KeepWorn(fits, now.Material);
+                    var better = group.OrderByDescending(x => GearScore.Value(x.Material, x.Classic, slotFits))
+                        .FirstOrDefault(x => GearScore.Beats(x.Material, x.Classic, now.Material, now.Classic, slotFits));
+                    if (better.ItemId != Guid.Empty) worn[slot] = better;
+                }
+                else
+                {
+                    worn[slot] = group.OrderByDescending(x => GearScore.Value(x.Material, x.Classic, fits)).First();
+                }
+            }
+
+            return worn.Where(x => x.Value.Classic > 0).ToDictionary(x => x.Key, x => x.Value.ItemId);
+        }
+
+        private static Dictionary<EquipmentSlot, Guid> Picked(Skill skill, List<OutfitPiece> bag)
+        {
+            var picks = OutfitRules.BestPicks(new Outfit { Skill = skill }, bag);
+            var result = new Dictionary<EquipmentSlot, Guid>();
+            for (var s = 0; s < OutfitRules.Slots.Length; ++s)
+            {
+                if (picks[s] >= 0) result[OutfitRules.Slots[s]] = bag[picks[s]].ItemId;
+            }
+            return result;
+        }
+
+        private static string Names(Dictionary<EquipmentSlot, Guid> worn, List<OutfitPiece> bag)
+        {
+            return string.Join(", ", worn.OrderBy(x => x.Key).Select(x => x.Key + ": " + bag.First(p => p.ItemId == x.Value).Name));
+        }
+
+        [TestMethod]
+        public void MakingAnOutfitFromTheBest_PicksWhatEquipBestPicks_ForEverySkill()
+        {
+            var bag = HealerBag();
+            foreach (var skill in new[] { Skill.Healing, Skill.Magic, Skill.Strength, Skill.Attack, Skill.Defense, Skill.Ranged, Skill.Health, Skill.Mining })
+            {
+                var server = EquipBestLikeTheServer(bag, skill);
+                var outfit = Picked(skill, bag);
+                Assert.AreEqual(Names(server, bag), Names(outfit, bag), skill.ToString());
+            }
+
+            // the numbers the website's review found apart (2026-11-22): the healer's own gloves and boots, the
+            // enchanted staff, and the best amulet and ring the character may wear (the pendant needs Slayer 200)
+            var healing = Picked(Skill.Healing, bag);
+            Assert.AreEqual(Kind("Priest Gloves"), healing[EquipmentSlot.Gloves]);
+            Assert.AreEqual(Kind("Priest Boots"), healing[EquipmentSlot.Boots]);
+            Assert.AreEqual(Kind("Phantom Staff"), healing[EquipmentSlot.MagicWeapon]);
+            Assert.AreEqual(Kind("Phantom Amulet"), healing[EquipmentSlot.Amulet]);
+            Assert.AreEqual(Kind("Owls Eye Ring"), healing[EquipmentSlot.Ring]);
+        }
+
+        [TestMethod]
+        public void TheStrengthAndRangedOutfits_Differ_WhereTheBagHasGearOfTheirLines()
+        {
+            var bag = HealerBag();
+            var strength = Picked(Skill.Strength, bag);
+            var ranged = Picked(Skill.Ranged, bag);
+            Assert.AreEqual(Kind("Reaver Hauberk"), strength[EquipmentSlot.Chest], "melee gear of tier 4 beats the Phantom plate for Strength");
+            Assert.AreEqual(Kind("Rune Gloves"), strength[EquipmentSlot.Gloves], "ranger gloves do not fit Strength");
+            Assert.AreEqual(Kind("Phantom Chest"), ranged[EquipmentSlot.Chest], "no ranger chest beats it");
+            Assert.AreEqual(Kind("Hunter Gloves"), ranged[EquipmentSlot.Gloves], "ranger gloves count as plate of their tier and a quarter");
+            Assert.AreNotEqual(Names(strength, bag), Names(ranged, bag));
+
+            // a bag with no gear of either line: the two are the same, as equip best makes them
+            var plain = bag.Where(x => !ItemLines.IsClassGear(x.Material)).ToList();
+            Assert.AreEqual(Names(Picked(Skill.Strength, plain), plain), Names(Picked(Skill.Ranged, plain), plain));
+        }
+
+        [TestMethod]
+        public void FillingAnOutfit_LeavesPinnedSlots_AndKeepWornTakesWhatIsWornKeepingPins()
+        {
+            var bag = HealerBag();
+            var outfit = new Outfit { Skill = Skill.Strength };
+            var cowl = bag.First(x => x.Name == "Priest Cowl");
+            outfit.Set(EquipmentSlot.Head, cowl.Id, cowl.ItemId, true);
+            Assert.IsTrue(OutfitRules.FillBest(outfit, bag));
+            Assert.AreEqual(cowl.ItemId, outfit.Get(EquipmentSlot.Head).ItemId, "pinned");
+            Assert.AreEqual(Kind("Reaver Hauberk"), outfit.Get(EquipmentSlot.Chest).ItemId);
+            Assert.IsFalse(OutfitRules.FillBest(outfit, bag), "filled again: nothing changes");
+
+            // what is worn (the healer's set) is kept in it: the head stays pinned, to the worn piece
+            var count = OutfitRules.KeepWorn(outfit, bag);
+            Assert.IsTrue(count > 0);
+            Assert.IsTrue(outfit.IsPinned(EquipmentSlot.Head));
+            Assert.AreEqual(Kind("Priest Vestment"), outfit.Get(EquipmentSlot.Chest).ItemId);
+            Assert.AreEqual(0, OutfitRules.KeepWorn(outfit, bag));
+
+            // copied into another skill: the same pieces, pins and pet
+            outfit.Pet = Guid.NewGuid();
+            var copy = new Outfit { Skill = Skill.Attack, Word = "tank" };
+            OutfitRules.CopyInto(outfit, copy);
+            Assert.AreEqual(outfit.Slots.Count, copy.Slots.Count);
+            Assert.IsTrue(copy.IsPinned(EquipmentSlot.Head));
+            Assert.AreEqual(outfit.Pet, copy.Pet);
+            Assert.AreEqual("tank", copy.Word, "the role belongs to the skill it was asked for in");
+        }
+
         // ---- gear that arrives -------------------------------------------------------------------------------------
 
         [TestMethod]

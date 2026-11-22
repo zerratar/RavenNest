@@ -745,6 +745,111 @@ namespace RavenNest.Models
         }
 
         /// <summary>
+        /// The lines "equip best" ranks class gear by for an outfit's skill (or the role asked for with it), as the
+        /// server's equip best narrows them (PlayerInventory.EquipBestItems): several fitting lines become one, the
+        /// one worn now winning among equals. A skill that names no line (training all, a gathering skill) is 0: equip
+        /// best ranks by worth alone for it.
+        /// </summary>
+        public static int FitsForBest(Outfit outfit, IList<OutfitPiece> pieces)
+        {
+            if (outfit == null) return 0;
+            var word = GearOutfit.Parse(outfit.Word);
+            var fits = word != null ? word.Fits : ItemLines.Fits(outfit.Skill);
+            if (fits == 0 || pieces == null) return fits;
+            var worn = new bool[pieces.Count];
+            for (var i = 0; i < pieces.Count; ++i) worn[i] = pieces[i].Worn;
+            return FitsOf(outfit, pieces, worn);
+        }
+
+        /// <summary>
+        /// What "make an outfit from my best gear" fills an outfit with, slot by slot: the pieces "equip best" picks
+        /// for the outfit's skill, so the website's fill, an outfit going on, the game and the server's equip best all
+        /// agree (the website's review, 2026-11-22: the fill and equip best gave different gear). The lines are
+        /// <see cref="FitsForBest"/>, each slot is <see cref="Best"/>. Indexes into <paramref name="pieces"/> in the
+        /// order of <see cref="Slots"/>; -1 where nothing is owned, and for a pinned slot when
+        /// <paramref name="keepPinned"/> (nothing replaces a pinned piece).
+        /// </summary>
+        public static int[] BestPicks(Outfit outfit, IList<OutfitPiece> pieces, bool keepPinned = true)
+        {
+            var picks = new int[Slots.Length];
+            for (var s = 0; s < picks.Length; ++s) picks[s] = -1;
+            if (outfit == null || pieces == null) return picks;
+            var fits = FitsForBest(outfit, pieces);
+            for (var s = 0; s < Slots.Length; ++s)
+            {
+                if (keepPinned && outfit.IsPinned(Slots[s])) continue;
+                picks[s] = Best(outfit, Slots[s], pieces, fits);
+            }
+            return picks;
+        }
+
+        /// <summary>
+        /// Fills an outfit with <see cref="BestPicks"/>: every slot that is not pinned gets its best piece, as "best".
+        /// A slot with nothing owned for it keeps what it had.
+        /// </summary>
+        /// <returns>Whether the outfit changed.</returns>
+        public static bool FillBest(Outfit outfit, IList<OutfitPiece> pieces)
+        {
+            if (outfit == null || pieces == null) return false;
+            var picks = BestPicks(outfit, pieces);
+            var changed = false;
+            for (var s = 0; s < Slots.Length; ++s)
+            {
+                if (picks[s] < 0) continue;
+                var piece = pieces[picks[s]];
+                var entry = outfit.Get(Slots[s]);
+                if (entry != null && entry.Item == piece.Id && entry.ItemId == piece.ItemId && !entry.Pinned) continue;
+                outfit.Set(Slots[s], piece.Id, piece.ItemId, false);
+                changed = true;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// Makes <paramref name="to"/> a copy of <paramref name="from"/>: the same pieces in the same slots, pinned
+        /// where they were pinned, and the same battle pet. The role asked for with "!equip" is not copied: it was
+        /// asked for while the other skill was trained.
+        /// </summary>
+        public static void CopyInto(Outfit from, Outfit to)
+        {
+            if (from == null || to == null || ReferenceEquals(from, to)) return;
+            to.Slots.Clear();
+            for (var i = 0; i < from.Slots.Count; ++i)
+            {
+                var slot = from.Slots[i];
+                if (slot == null || !IsOutfitSlot(slot.Slot) || slot.ItemId == Guid.Empty) continue;
+                to.Set(slot.Slot, slot.Item, slot.ItemId, slot.Pinned);
+            }
+            to.Pet = from.Pet;
+        }
+
+        /// <summary>
+        /// Keeps what is worn in an outfit that is on, after gear was changed by hand: every slot where the worn piece
+        /// is not the outfit's takes the worn piece, keeping its pin when it had one; a slot of the outfit where
+        /// nothing is worn any more is forgotten. The "Save to the outfit" of the website's Now view.
+        /// </summary>
+        /// <returns>How many slots changed.</returns>
+        public static int KeepWorn(Outfit outfit, IList<OutfitPiece> pieces)
+        {
+            if (outfit == null || pieces == null) return 0;
+            var count = 0;
+            foreach (var slot in Slots)
+            {
+                var entry = outfit.Get(slot);
+                var worn = WornIn(pieces, slot);
+                if (worn < 0)
+                {
+                    if (entry != null && Find(entry, pieces) >= 0 && outfit.Clear(slot)) count++;
+                    continue;
+                }
+                if (entry != null && (Find(entry, pieces) == worn || (entry.Item == pieces[worn].Id && entry.ItemId == pieces[worn].ItemId))) continue;
+                outfit.Set(slot, pieces[worn].Id, pieces[worn].ItemId, entry != null && entry.Pinned);
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
         /// Puts an outfit on: every slot of it that has a piece gets that piece, slots it has nothing for keep what
         /// is worn (an outfit never takes gear off without putting something on). A slot whose piece is gone is
         /// filled with the best piece owned (<see cref="Best"/>) and loses its pin; with nothing to fill it, the slot
