@@ -618,6 +618,15 @@ namespace RavenNest.Blazor.Components
 
         // ---- Picking -----------------------------------------------------------------------------------------------------
 
+        /// <summary>"Now": the gear worn this moment, where equipping puts it on at once.</summary>
+        private void PickNow()
+        {
+            if (!dressFor.HasValue) return;
+            dressFor = null;
+            ClearPick();
+            Judge();
+        }
+
         private void PickSkill(Skill skill)
         {
             dressFor = dressFor == skill ? null : skill;
@@ -641,8 +650,8 @@ namespace RavenNest.Blazor.Components
             // a piece is picked and this is where it goes: put it on
             if (CanAct && picked != null && !picked.Stack.Equipped && picked.Slot == slot.Slot && picked.CanWear && Shown(slot.Slot) != picked)
             {
-                // into the outfit that is looked at, or onto the body
-                if (OutfitView) AddToOutfit(picked); else Equip(picked);
+                // into the outfit of the skill that is picked, or onto the body ("Now")
+                if (SkillTab && IsOutfitSlot(slot.Slot)) AddToOutfit(picked); else Equip(picked);
                 return;
             }
 
@@ -714,7 +723,8 @@ namespace RavenNest.Blazor.Components
         private void DoubleClickTile(Entry e, bool wearView)
         {
             if (several || !CanAct || !wearView) return;
-            if (byId.TryGetValue(e.Stack.Id, out var now) && !now.Stack.Equipped && now.CanWear) Equip(now);
+            if (!byId.TryGetValue(e.Stack.Id, out var now) || now.Stack.Equipped || !now.CanWear) return;
+            if (SkillTab && IsOutfitSlot(now.Slot)) AddToOutfit(now); else Equip(now);
         }
 
         /// <summary>A piece dragged from the bag onto a slot (the page's script calls this).</summary>
@@ -728,9 +738,9 @@ namespace RavenNest.Blazor.Components
             {
                 Say(e.Blocked, true);
             }
-            else if (OutfitView)
+            else if (SkillTab)
             {
-                // an outfit that is not on is looked at: the piece goes into it, not onto the body
+                // a skill's outfit is looked at: the piece goes into it (and on, only if that outfit is the one on)
                 if (IsOutfitSlot(e.Slot)) AddToOutfit(e); else Say("The " + slot.Label.ToLowerInvariant() + " is not part of an outfit.", true);
             }
             else

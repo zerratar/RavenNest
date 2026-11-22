@@ -323,7 +323,18 @@
 /* ---- Outfits (the row of skills as the outfit picker) -------------------- */
 /* as many skills as fit a row, the rest below: the fighting ones, then any other that has an outfit */
 .rf-gear-skills__row.is-outfits {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    /* "Now", the fighting skills, and any other skill with an outfit: as many to a row as fit */
+    grid-template-columns: repeat(auto-fit, minmax(5.4rem, 1fr));
+}
+
+/* "Now" is not a skill: set apart from the outfits after it */
+.rf-gear-skill--now {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--rf-good) 55%, var(--rf-line));
+}
+
+.rf-gear-skill--now .rf-gear-skill__pic i {
+    color: var(--rf-good);
 }
 
 /* "More skills": a word in the head line, so the row stays one row until it is asked for more */

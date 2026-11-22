@@ -369,6 +369,46 @@ namespace RavenNest.BusinessLogic.Game
             return WearNow(character, OutfitRules.Normalize(skill), tellGame: true);
         }
 
+        /// <summary>
+        ///     Fills a skill's outfit with the best the character owns for that skill, by the rule "equip best" uses
+        ///     (OutfitRules.Best): every slot that is not pinned gets its best piece, as "best". Nothing is put on
+        ///     unless that outfit is the one that is on; the website's way to get an outfit ready for a skill that is
+        ///     not trained now (before this, its only button was "equip best", which changed the gear that is worn).
+        /// </summary>
+        public OutfitResult FillBest(Guid characterId, Skill skill)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return OutfitResult.Fail(OutfitStatus.Error);
+            skill = OutfitRules.Normalize(skill);
+            if (skill == Skill.None) return OutfitResult.Fail(OutfitStatus.UnknownSkill);
+            lock (LockOf(characterId))
+            {
+                var state = Load(character);
+                var result = new OutfitResult { Skill = (int)skill };
+                var inventory = inventories.Get(character.Id);
+                var pieces = Pieces(character, inventory);
+                EnsureWorn(character, state);
+                var outfit = state.GetOrAdd(skill);
+                var fits = OutfitRules.FitsOf(outfit, pieces, null);
+                foreach (var slot in OutfitRules.Slots)
+                {
+                    if (outfit.IsPinned(slot)) continue;
+                    var best = OutfitRules.Best(outfit, slot, pieces, fits);
+                    if (best < 0) continue;
+                    outfit.Set(slot, pieces[best].Id, pieces[best].ItemId, false);
+                }
+
+                if (state.Worn == skill)
+                {
+                    var plan = OutfitRules.Wear(outfit, pieces);
+                    Equip(inventory, pieces, plan, result);
+                    TellOldGame(character, pieces, plan);
+                }
+                Tidy(state, outfit);
+                return Done(character, state, result, tellGame: true);
+            }
+        }
+
         /// <summary>The two switches; null leaves one as it is.</summary>
         public OutfitResult SetSwitches(Guid characterId, bool? follow, bool? upgrade)
         {

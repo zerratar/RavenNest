@@ -103,6 +103,9 @@ namespace RavenNest.Blazor.Services
         /// <summary>Puts a skill's outfit on now.</summary>
         OutfitChange WearOutfit(Guid characterId, Skill skill);
 
+        /// <summary>Fills a skill's outfit with the best owned for it (slots that are not pinned); puts nothing on unless that outfit is on.</summary>
+        OutfitChange FillOutfitBest(Guid characterId, Skill skill);
+
         /// <summary>"Change outfit when I switch training" and "Upgrade to better gear automatically"; null leaves one as it is.</summary>
         OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically);
 
@@ -242,6 +245,8 @@ namespace RavenNest.Blazor.Services
         public OutfitChange SetOutfitPet(Guid characterId, Skill skill, Guid petId) => outfitService.SetPet(characterId, skill, petId);
 
         public OutfitChange WearOutfit(Guid characterId, Skill skill) => outfitService.Wear(characterId, skill);
+
+        public OutfitChange FillOutfitBest(Guid characterId, Skill skill) => outfitService.FillBest(characterId, skill);
 
         public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
             => outfitService.SetSwitches(characterId, changeWithTraining, upgradeAutomatically);

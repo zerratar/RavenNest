@@ -91,6 +91,15 @@ namespace RavenNest.Blazor.Services
             return Act(characterId, () => outfits.WearNow(characterId, skill));
         }
 
+        /// <summary>
+        ///     Fills a skill's outfit with the best the character owns for it (every slot that is not pinned). Puts
+        ///     nothing on, unless that outfit is the one that is on.
+        /// </summary>
+        public OutfitChange FillBest(Guid characterId, Skill skill)
+        {
+            return Act(characterId, () => outfits.FillBest(characterId, skill));
+        }
+
         /// <summary>The two switches; null leaves one as it is.</summary>
         public OutfitChange SetSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
         {

@@ -467,6 +467,43 @@ namespace RavenNest.Blazor.Pages.Dev
             return Outfit(OutfitStatus.Ok, skill, true);
         }
 
+        public OutfitChange FillOutfitBest(Guid characterId, Skill skill)
+        {
+            skill = OutfitRules.Normalize(skill);
+            if (!owner && !administrator) return Outfit(OutfitStatus.Error, skill);
+            if (skill == Skill.None) return Outfit(OutfitStatus.UnknownSkill, skill);
+            var outfit = outfits.GetOrAdd(skill);
+            // the server's rule (OutfitRules.Best) on this made up bag
+            var pieces = new List<OutfitPiece>();
+            foreach (var x in bag)
+            {
+                var item = items.GetItem(x.ItemId);
+                if (item == null) continue;
+                pieces.Add(new OutfitPiece
+                {
+                    Id = x.Id, ItemId = x.ItemId, Type = item.Type, Category = item.Category, Material = item.Material,
+                    Classic = GearScore.Classic(item), Worn = x.Equipped, Wearable = CanWear(x), Name = item.Name,
+                });
+            }
+            var fits = OutfitRules.FitsOf(outfit, pieces, null);
+            foreach (var slot in OutfitRules.Slots)
+            {
+                if (outfit.IsPinned(slot)) continue;
+                var best = OutfitRules.Best(outfit, slot, pieces, fits);
+                if (best >= 0) outfit.Set(slot, pieces[best].Id, pieces[best].ItemId, false);
+            }
+            var changed = false;
+            if (outfits.Worn == skill)
+            {
+                foreach (var entry in outfit.Slots)
+                {
+                    var stack = PieceOf(entry);
+                    if (stack != null && !stack.Equipped) changed |= Wear(stack);
+                }
+            }
+            return Outfit(OutfitStatus.Ok, skill, changed);
+        }
+
         public OutfitChange SetOutfitSwitches(Guid characterId, bool? changeWithTraining, bool? upgradeAutomatically)
         {
             if (!owner && !administrator) return Outfit(OutfitStatus.Error, Skill.None);

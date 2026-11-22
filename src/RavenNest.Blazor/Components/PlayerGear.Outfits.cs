@@ -42,11 +42,23 @@ namespace RavenNest.Blazor.Components
 
         private Outfit ShownOutfit => outfits?.Find(OutfitSkill);
 
-        /// <summary>An outfit that is not on is being looked at: the slots, the figure and the numbers show it.</summary>
-        private bool OutfitView => outfits != null && dressFor.HasValue && OutfitSkill != WornOutfitSkill && ShownOutfit != null;
+        /// <summary>
+        ///     A skill is picked in the row (not "Now"): the page is that skill's outfit, its loadout. What is done here
+        ///     is saved to the outfit; gear only goes on when that outfit is the one that is on, or with "Put it on".
+        ///     "Now" (no skill picked) is the gear worn this moment, and what is done there goes on at once (2026-11-22:
+        ///     the owner picked Strength, pressed "equip best for Strength", and it changed what was worn while the
+        ///     Strength outfit stayed as it was).
+        /// </summary>
+        private bool SkillTab => outfits != null && dressFor.HasValue;
 
-        /// <summary>The picked skill has no outfit yet (and is not the one that is on).</summary>
-        private bool NoOutfitYet => outfits != null && dressFor.HasValue && OutfitSkill != Skill.None && OutfitSkill != WornOutfitSkill && ShownOutfit == null;
+        /// <summary>A skill's outfit is looked at: the slots, the figure and the numbers show it.</summary>
+        private bool OutfitView => SkillTab && ShownOutfit != null;
+
+        /// <summary>The picked skill has no outfit yet: the slots show what is worn, and the outfit can be made.</summary>
+        private bool NoOutfitYet => SkillTab && OutfitSkill != Skill.None && ShownOutfit == null;
+
+        /// <summary>The outfit looked at is the one that is on: what changes in it changes what is worn too.</summary>
+        private bool OutfitIsOn => OutfitView && OutfitSkill == WornOutfitSkill;
 
         private static RavenNest.Models.EquipmentSlot Wire(EquipmentSlot slot) => (RavenNest.Models.EquipmentSlot)(int)slot;
 
@@ -207,6 +219,25 @@ namespace RavenNest.Blazor.Components
             if (!TakeOutfit(change, "The outfit was not put on. Try again in a moment.")) return;
             var gone = change.Result?.Gone?.Length ?? 0;
             Say("The " + GearRules.SkillName(skill) + " outfit is on." + (gone > 0 ? " " + Plural(gone, "piece") + " of it " + (gone == 1 ? "is" : "are") + " gone: the best you own went in." : ""));
+            ClearPick();
+        }
+
+        /// <summary>Fills the picked skill's outfit with the best owned for it (slots that are not pinned). Nothing worn changes unless it is the outfit that is on.</summary>
+        private void FillOutfitBest()
+        {
+            var skill = OutfitSkill;
+            if (skill == Skill.None) return;
+            var name = GearRules.SkillName(skill);
+            notice = null;
+            if (!TakeOutfit(Server.FillOutfitBest(player.Id, skill), "The " + name + " outfit was not made. Try again in a moment.")) return;
+            if (outfits?.Find(skill) == null)
+            {
+                Say("You have nothing to wear for " + name + " yet, so no outfit was made.", true);
+                return;
+            }
+            Say(skill == WornOutfitSkill
+                ? "The " + name + " outfit has your best gear for " + name + ", and it is on."
+                : "The " + name + " outfit has your best gear for " + name + ". What you wear did not change: it goes on when you train " + name + ", or press Put it on.");
             ClearPick();
         }
 
