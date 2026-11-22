@@ -174,12 +174,12 @@ namespace RavenNest.Combat
             [GearStat.PetGathering] = ("your pet's gathering skills are {0} stronger", null),
             [GearStat.PetGuard] = ("a tank pet takes {0} more of the blows meant for you", null),
             // the capstone paths
-            [GearStat.FirstStrike] = ("your first hit on each new target is a critical hit that ignores {0} of its armor", null),
+            [GearStat.FirstStrike] = ("your first hit on a new target is a critical hit that ignores {0} of its armor (once every 12 s)", null),
             [GearStat.PoisonOnCrit] = ("crits poison for {0} of the hit a second for 4 s", null),
             [GearStat.ComboSpeed] = ("every hit in a row on one target makes you {0} faster (5 hits at most)", null),
             [GearStat.RagePower] = ("up to {0} more melee damage as your health falls (all of it at 30% health)", null),
             [GearStat.Aftershock] = ("every fourth melee hit strikes every other enemy around you for {0} of its damage", null),
-            [GearStat.AllyGuard] = ("you take {0} of the damage dealt to allies near you in their place", null),
+            [GearStat.AllyGuard] = ("you take {0} of the damage dealt to allies near you in their place, while you are above 30% health", null),
             [GearStat.BlockRetort] = ("after you block, your next hit deals {0} more", null),
             [GearStat.HealStrike] = ("every heal also strikes an enemy for {0} of the amount healed", null),
             [GearStat.GuardianAngel] = ("once a minute, an ally near you who would die is left at 1 health and healed for {0} of theirs", null),
@@ -1041,37 +1041,37 @@ namespace RavenNest.Combat
             Ending(SkillTree.Bulwark, "retribution", "Retribution", "Avenger", "What strikes your shield comes back harder.", "THORNS:10%;BLOCK_RETORT:60%", "spiked-armour", "shield-training");
 
             Capstone(SkillTree.Restoration, "miracle-worker", "Miracle Worker", "Your heals do what should not be possible.", "HEALING_POWER_BONUS:15%;HEAL_SHIELD:10%", "sanctuary", "smite");
-            Ending(SkillTree.Restoration, "holy-fire", "Holy Fire", "Crusader", "The light that mends your allies burns their enemies.", "UNDEAD_DAMAGE:20%;HEAL_STRIKE:30%", "smite", "devotion");
-            Ending(SkillTree.Restoration, "guardian-angel", "Guardian Angel", "Lifebinder", "Nobody near you falls the first time.", "CAST_SPEED:8%;GUARDIAN_ANGEL:30%", "barrier", "quick-hands");
+            Ending(SkillTree.Restoration, "holy-fire", "Holy Fire", "Crusader", "The light that mends your allies burns their enemies.", "UNDEAD_DAMAGE:20%;HEAL_STRIKE:20%", "smite", "devotion");
+            Ending(SkillTree.Restoration, "guardian-angel", "Guardian Angel", "Lifebinder", "Nobody near you falls the first time.", "CAST_SPEED:10%;GUARDIAN_ANGEL:40%", "barrier", "quick-hands");
 
             Capstone(SkillTree.Might, "colossus", "Colossus", "Every blow lands like a falling tree.", "MELEE_POWER_BONUS:12%;EXECUTE_DAMAGE:10%", "leap", "titan");
-            Ending(SkillTree.Might, "blood-rage", "Blood Rage", "Berserker", "The closer to death, the harder the blows, and they feed you.", "LIFE_STEAL:3%;RAGE_POWER:30%", "brute-force", "rend");
-            Ending(SkillTree.Might, "aftershock", "Aftershock", "Earthshaker", "The ground answers your blows.", "CROWD_CONTROL_DURATION:20%;AFTERSHOCK:50%", "cleave", "whirlwind");
+            Ending(SkillTree.Might, "blood-rage", "Blood Rage", "Berserker", "The closer to death, the harder the blows, and they feed you.", "LIFE_STEAL:3%;RAGE_POWER:25%", "brute-force", "rend");
+            Ending(SkillTree.Might, "aftershock", "Aftershock", "Earthshaker", "The ground answers your blows.", "CROWD_CONTROL_DURATION:20%;AFTERSHOCK:70%", "cleave", "whirlwind");
 
             Capstone(SkillTree.Precision, "perfect-form", "Perfect Form", "No wasted movement: more critical hits, and they hit much harder.", "CRIT_CHANCE:4%;CRIT_DAMAGE:20%", "disarm", "precision-strikes").Path = "Duelist";
-            Ending(SkillTree.Precision, "first-blood", "First Blood", "Assassin", "The first cut is the deepest, and the blade is poisoned.", "FIRST_STRIKE:50%;POISON_ON_CRIT:6%", "sharp-edge", "precision-strikes");
-            Ending(SkillTree.Precision, "flowing-steel", "Flowing Steel", "Blade Dancer", "One enemy, one rhythm: every hit comes sooner than the last.", "ATTACK_SPEED:8%;COMBO_SPEED:2%", "swift", "flurry");
+            Ending(SkillTree.Precision, "first-blood", "First Blood", "Assassin", "The first cut is the deepest, and the blade is poisoned.", "FIRST_STRIKE:25%;POISON_ON_CRIT:4%", "sharp-edge", "precision-strikes");
+            Ending(SkillTree.Precision, "flowing-steel", "Flowing Steel", "Blade Dancer", "One enemy, one rhythm: every hit comes sooner than the last.", "ATTACK_SPEED:5%;COMBO_SPEED:1%", "swift", "flurry");
 
             Capstone(SkillTree.Marksman, "deadeye", "Deadeye", "You do not miss, and armor does not help them.", "RANGED_POWER_BONUS:12%;ARMOR_PENETRATION:15%", "snare", "rapid-fire");
-            Ending(SkillTree.Marksman, "clean-kill", "Clean Kill", "Sniper", "The first shot is the one that counts.", "CRIT_DAMAGE:20%;HEALTHY_DAMAGE:25%", "eagle-eye", "piercing-shot");
-            Ending(SkillTree.Marksman, "volley", "Volley", "Stormbow", "One arrow is never just one arrow.", "ATTACK_SPEED:6%;VOLLEY:60%", "multishot", "hunters-pace");
+            Ending(SkillTree.Marksman, "clean-kill", "Clean Kill", "Sniper", "The first shot is the one that counts.", "CRIT_DAMAGE:30%;HEALTHY_DAMAGE:50%", "eagle-eye", "piercing-shot");
+            Ending(SkillTree.Marksman, "volley", "Volley", "Stormbow", "One arrow is never just one arrow.", "ATTACK_SPEED:10%;VOLLEY:100%", "multishot", "hunters-pace");
 
             Capstone(SkillTree.Elements, "archmage", "Archmage", "The elements answer faster and harder.", "MAGIC_POWER_BONUS:12%;CAST_SPEED:8%", "meteor");
-            Ending(SkillTree.Elements, "wildfire", "Wildfire", "Pyromancer", "Your fires spread on their own.", "BURN_BONUS:40%;BURN_SPREAD:100%", "searing", "fireball");
+            Ending(SkillTree.Elements, "wildfire", "Wildfire", "Pyromancer", "Your fires spread on their own.", "BURN_BONUS:150%;BURN_SPREAD:100%", "searing", "fireball");
             Ending(SkillTree.Elements, "eye-of-the-storm", "Eye of the Storm", "Stormcaller", "Lightning jumps harder, and everything is ready sooner.", "LIGHTNING_JUMP_BONUS:30%;COOLDOWN_REDUCTION:10%", "chain-lightning", "unravel");
 
             Capstone(SkillTree.Vitality, "undying", "Undying", "Much more health, and it keeps coming back.", "MAX_HEALTH_BONUS:10%;COMBAT_REGEN:0.6%", "iron-skin");
-            Ending(SkillTree.Vitality, "crimson-pact", "Crimson Pact", "Blood Drinker", "Blood you have no use for becomes a shield.", "LIFE_STEAL:4%;LIFE_STEAL_SHIELD:10%", "bloodthirst", "hardy");
-            Ending(SkillTree.Vitality, "ironblood", "Ironblood", "Ironblood", "No lucky blow finds you, and every heal goes further.", "HEALING_RECEIVED:15%;CRIT_RESISTANCE:10%", "resilience", "iron-skin");
+            Ending(SkillTree.Vitality, "crimson-pact", "Crimson Pact", "Blood Drinker", "Blood you have no use for becomes a shield.", "LIFE_STEAL:5%;LIFE_STEAL_SHIELD:15%", "bloodthirst", "hardy");
+            Ending(SkillTree.Vitality, "ironblood", "Ironblood", "Ironblood", "No lucky blow finds you, and every heal goes further.", "HEALING_RECEIVED:35%;CRIT_RESISTANCE:10%", "resilience", "iron-skin");
 
             Capstone(SkillTree.Hunter, "legend-of-the-hunt", "Legend of the Hunt", "Bosses fear you, and their hoards know it.", "BOSS_DAMAGE:10%;LOOT_LUCK:5%", "apex-predator");
-            Ending(SkillTree.Hunter, "thin-the-herd", "Thin the Herd", "Culler", "The small ones fall fast, and each one makes the next easier.", "NON_BOSS_DAMAGE:12%;KILL_RUSH:10%", "execute", "pressure-points");
+            Ending(SkillTree.Hunter, "thin-the-herd", "Thin the Herd", "Culler", "The small ones fall fast, and each one makes the next easier.", "NON_BOSS_DAMAGE:8%;KILL_RUSH:10%", "execute", "pressure-points");
             Ending(SkillTree.Hunter, "fortunes-favorite", "Fortune's Favorite", "Fortune's Favorite", "No fighting trick at all. Just luck, and a lot of it.", "LOOT_LUCK:12%", "treasure-hunter");
 
             // Beastmaster's is no pair of stats: a second animal at the owner's side (the same kind as the pet that is
             // out; a second pet from the stable is the proposal in the design document)
             Capstone(SkillTree.Beastmaster, "pack-leader", "Pack Leader", "A packmate of your pet's own kind fights beside it at half strength.", null, "elemental-bond", "guardians-oath", "call-of-the-wild").PetTwin = true;
-            Ending(SkillTree.Beastmaster, "alpha", "Alpha", "Alpha", "No packmate: one pet, and it is the biggest thing in the fight.", "PET_POWER:30%;PET_HEALTH:30%;PET_ALPHA:25%", "fang-and-claw", "guardians-oath");
+            Ending(SkillTree.Beastmaster, "alpha", "Alpha", "Alpha", "No packmate: one pet, and it is the biggest thing in the fight.", "PET_POWER:40%;PET_HEALTH:40%;PET_ALPHA:25%", "fang-and-claw", "guardians-oath");
             Ending(SkillTree.Beastmaster, "trailblazer", "Trailblazer", "Trailblazer", "Your pet was made for the woods and the mines.", "PET_GATHERING:50%;PET_SAFE_GATHERING:100%", "keen-senses", "back-on-its-feet");
             // The trade trees' capstones make what is below them better in a skill at 999, so their paths come from
             // those nodes too, not only from the tier below: a cook at 999 with no Crafting cannot learn the Crafting

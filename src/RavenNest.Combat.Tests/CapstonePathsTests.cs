@@ -217,51 +217,66 @@ namespace RavenNest.Combat.Tests
         // ---- what the 18 do ----
 
         [Fact]
-        public void First_Blood_the_first_hit_on_a_new_target_crits_through_half_its_armor_and_crits_poison()
+        public void First_Blood_the_first_hit_on_a_new_target_crits_through_part_of_its_armor_and_crits_poison()
         {
             var assassin = Fighter(SkillTrees.Get("first-blood").Passive);
-            Assert.Equal(0.5, assassin.FirstStrike, 6);
-            Assert.Equal(0.06, assassin.PoisonOnCrit, 6);
+            Assert.Equal(0.25, assassin.FirstStrike, 6);
+            Assert.Equal(0.04, assassin.PoisonOnCrit, 6);
             var plain = Fighter();
             var state = new PathState();
             object a = "a", b = "b";
             var roll = new Fixed(0.3);
 
-            var first = PathRules.Before(state, assassin, a, AttackOptions.Basic, true);
+            var first = PathRules.Before(state, assassin, a, AttackOptions.Basic, true, now: 100);
             Assert.True(first.Critical);
-            Assert.Equal(0.5, first.ArmorIgnored, 6);
+            Assert.Equal(0.25, first.ArmorIgnored, 6);
             var hit = CombatMath.Attack(assassin, AttackStyle.Melee, Enemy(), roll, first);
             Assert.True(hit.Critical);
-            Assert.True(PathRules.After(state, assassin, AttackStyle.Melee, a, hit, true).First);
-            // harder than the same roll without it: the crit, and half the armor
+            Assert.True(PathRules.After(state, assassin, AttackStyle.Melee, a, hit, true, now: 100).First);
+            // harder than the same roll without it: the crit, and a quarter of the armor
             var normal = CombatMath.Attack(plain, AttackStyle.Melee, Enemy(), roll);
             Assert.False(normal.Critical);
-            var halfArmor = (1 - CombatMath.ArmorReduction(200)) / (1 - CombatMath.ArmorReduction(400));
-            Assert.InRange(hit.Total / (double)normal.Total, 1.5 * halfArmor - 0.02, 1.5 * halfArmor + 0.02);
-            // the crit poisons: 6% of the hit a second
-            Assert.Equal(hit.Total * 0.06, hit.Poison, 6);
+            var lessArmor = (1 - CombatMath.ArmorReduction(300)) / (1 - CombatMath.ArmorReduction(400));
+            Assert.InRange(hit.Total / (double)normal.Total, 1.5 * lessArmor - 0.02, 1.5 * lessArmor + 0.02);
+            // the crit poisons: 4% of the hit a second
+            Assert.Equal(hit.Total * 0.04, hit.Poison, 6);
             Assert.Equal(0, normal.Poison);
 
-            // the second hit on the same target is a plain one; another target is new again; so is this one after a rest
-            Assert.False(PathRules.Before(state, assassin, a, AttackOptions.Basic, true).Critical);
-            Assert.True(PathRules.Before(state, assassin, b, AttackOptions.Basic, true).Critical);
-            // a skill's blow is never the first hit, and does not use it up
-            Assert.False(PathRules.Before(new PathState(), assassin, a, AttackOptions.Basic, false).Critical);
+            // the second hit on the same target is a plain one
+            Assert.False(PathRules.Before(state, assassin, a, AttackOptions.Basic, true, now: 101.5).Critical);
+            Assert.False(PathRules.After(state, assassin, AttackStyle.Melee, a, normal, true, now: 101.5).First);
+            // another target is new, but the first hit is ready only twelve seconds after the last one landed
+            Assert.False(PathRules.Before(state, assassin, b, AttackOptions.Basic, true, now: 105).Critical);
+            Assert.False(PathRules.Before(state, assassin, b, AttackOptions.Basic, true, now: 111.9).Critical);
+            Assert.True(PathRules.Before(state, assassin, b, AttackOptions.Basic, true, now: 112).Critical);
             // a miss keeps it for the blow that lands
+            Assert.False(PathRules.After(state, assassin, AttackStyle.Melee, b, new AttackResult { Hit = false }, true, now: 112).First);
+            Assert.True(PathRules.Before(state, assassin, b, AttackOptions.Basic, true, now: 113.5).Critical);
+            Assert.True(PathRules.After(state, assassin, AttackStyle.Melee, b, hit, true, now: 113.5).First);
+            Assert.False(PathRules.Before(state, assassin, a, AttackOptions.Basic, true, now: 115).Critical);
+            // a skill's blow is never the first hit, and does not use it up
             var fresh = new PathState();
-            PathRules.After(fresh, assassin, AttackStyle.Melee, a, new AttackResult { Hit = false }, true);
-            Assert.True(PathRules.Before(fresh, assassin, a, AttackOptions.Basic, true).Critical);
-            // the target fell (or six seconds passed without a hit): the same enemy come back is a new target
-            state.Forget(a);
-            Assert.True(PathRules.Before(state, assassin, a, AttackOptions.Basic, true).Critical);
+            Assert.False(PathRules.Before(fresh, assassin, a, AttackOptions.Basic, false, now: 50).Critical);
+            Assert.False(PathRules.After(fresh, assassin, AttackStyle.Melee, a, hit, false, now: 50).First);
+            Assert.True(PathRules.Before(fresh, assassin, a, AttackOptions.Basic, true, now: 51).Critical);
+
+            // the target fell: the same enemy come back is a new target
+            var again = new PathState();
+            PathRules.Before(again, assassin, a, AttackOptions.Basic, true, now: 0);
+            PathRules.After(again, assassin, AttackStyle.Melee, a, hit, true, now: 0);
+            again.Forget(a);
+            Assert.True(PathRules.Before(again, assassin, a, AttackOptions.Basic, true, now: 20).Critical);
+            // and so is it after six seconds without a blow struck (a miss or a skill's blow counts as one)
             var rested = new PathState();
-            PathRules.After(rested, assassin, AttackStyle.Melee, a, hit, true, now: 10);
+            PathRules.Before(rested, assassin, a, AttackOptions.Basic, true, now: 0);
+            PathRules.After(rested, assassin, AttackStyle.Melee, a, hit, true, now: 0);
+            PathRules.After(rested, assassin, AttackStyle.Melee, a, new AttackResult { Hit = false }, true, now: 10);
             PathRules.Rest(rested, 15);
-            Assert.False(PathRules.Before(rested, assassin, a, AttackOptions.Basic, true).Critical);
+            Assert.False(PathRules.Before(rested, assassin, a, AttackOptions.Basic, true, now: 15).Critical);
             PathRules.Rest(rested, 16.5);
-            Assert.True(PathRules.Before(rested, assassin, a, AttackOptions.Basic, true).Critical);
+            Assert.True(PathRules.Before(rested, assassin, a, AttackOptions.Basic, true, now: 16.5).Critical);
             // without the capstone nothing of this happens
-            Assert.False(PathRules.Before(new PathState(), plain, a, AttackOptions.Basic, true).Critical);
+            Assert.False(PathRules.Before(new PathState(), plain, a, AttackOptions.Basic, true, now: 100).Critical);
         }
 
         [Fact]
@@ -287,8 +302,8 @@ namespace RavenNest.Combat.Tests
         public void Flowing_Steel_every_hit_in_a_row_is_faster_up_to_five_and_a_new_target_starts_again()
         {
             var dancer = Fighter(SkillTrees.Get("flowing-steel").Passive);
-            Assert.Equal(1.08, dancer.AttackSpeed, 6);
-            Assert.Equal(0.02, dancer.ComboSpeed, 6);
+            Assert.Equal(1.05, dancer.AttackSpeed, 6);
+            Assert.Equal(0.01, dancer.ComboSpeed, 6);
             var state = new PathState();
             object a = "a", b = "b";
             var hit = new AttackResult { Hit = true, Total = 100 };
@@ -296,15 +311,15 @@ namespace RavenNest.Combat.Tests
             for (var i = 1; i <= 8; ++i)
             {
                 PathRules.After(state, dancer, AttackStyle.Melee, a, hit, true);
-                Assert.Equal(0.02 * Math.Min(i, 5), PathRules.ComboSpeed(state, dancer), 6);
+                Assert.Equal(0.01 * Math.Min(i, 5), PathRules.ComboSpeed(state, dancer), 6);
             }
-            Assert.Equal(0.10, PathRules.ComboSpeed(state, 0.02), 6);
+            Assert.Equal(0.05, PathRules.ComboSpeed(state, 0.01), 6);
             // a miss does not break it, a skill's blow neither adds nor breaks, another target starts at one
             PathRules.After(state, dancer, AttackStyle.Melee, a, new AttackResult { Hit = false }, true);
             PathRules.After(state, dancer, AttackStyle.Melee, b, hit, false);
-            Assert.Equal(0.10, PathRules.ComboSpeed(state, dancer), 6);
+            Assert.Equal(0.05, PathRules.ComboSpeed(state, dancer), 6);
             PathRules.After(state, dancer, AttackStyle.Melee, b, hit, true);
-            Assert.Equal(0.02, PathRules.ComboSpeed(state, dancer), 6);
+            Assert.Equal(0.01, PathRules.ComboSpeed(state, dancer), 6);
             Assert.Equal(0, PathRules.ComboSpeed(state, Fighter()), 6);
         }
 
@@ -317,7 +332,7 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(1, PathRules.Rage(0.05), 6);
 
             var berserker = Fighter(SkillTrees.Get("blood-rage").Passive);
-            Assert.Equal(0.30, berserker.RagePower, 6);
+            Assert.Equal(0.25, berserker.RagePower, 6);
             Assert.Equal(0.03, berserker.LifeSteal, 6);
             var roll = new Fixed(0.3);
             var full = CombatMath.Attack(berserker, AttackStyle.Melee, Enemy(), roll).Total;
@@ -325,8 +340,8 @@ namespace RavenNest.Combat.Tests
             var half = CombatMath.Attack(berserker, AttackStyle.Melee, Enemy(), roll).Total;
             berserker.CurrentHealthShare = 0.2;
             var low = CombatMath.Attack(berserker, AttackStyle.Melee, Enemy(), roll);
-            Assert.InRange(half / (double)full, 1.14, 1.16);
-            Assert.InRange(low.Total / (double)full, 1.29, 1.31);
+            Assert.InRange(half / (double)full, 1.115, 1.135);
+            Assert.InRange(low.Total / (double)full, 1.24, 1.26);
             Assert.Equal((int)Math.Round(low.Total * 0.03), low.Healed);
             // melee only
             var shot = CombatMath.Attack(berserker, AttackStyle.Ranged, Enemy(), roll).Total;
@@ -335,16 +350,16 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void Aftershock_every_fourth_melee_hit_strikes_the_others_for_half()
+        public void Aftershock_every_fourth_melee_hit_strikes_the_others_for_its_share()
         {
             var shaker = Fighter(SkillTrees.Get("aftershock").Passive);
-            Assert.Equal(0.5, shaker.Aftershock, 6);
+            Assert.Equal(0.7, shaker.Aftershock, 6);
             Assert.Equal(0.2, shaker.CrowdControlDuration, 6);
             var state = new PathState();
             object a = "a", b = "b";
-            var hit = new AttackResult { Hit = true, Total = 802 };
+            var hit = new AttackResult { Hit = true, Total = 800 };
             var splashes = Enumerable.Range(1, 12).Select(i => PathRules.After(state, shaker, AttackStyle.Melee, i % 2 == 0 ? a : b, hit, true).Splash).ToList();
-            Assert.Equal(new[] { 0, 0, 0, 401, 0, 0, 0, 401, 0, 0, 0, 401 }, splashes);
+            Assert.Equal(new[] { 0, 0, 0, 560, 0, 0, 0, 560, 0, 0, 0, 560 }, splashes);
             // misses, skills' blows, shots and spells do not count
             var other = new PathState();
             for (var i = 0; i < 8; ++i)
@@ -361,12 +376,12 @@ namespace RavenNest.Combat.Tests
         public void Volley_every_third_shot_hits_a_second_enemy_for_its_share()
         {
             var bow = Fighter(SkillTrees.Get("volley").Passive);
-            Assert.Equal(0.6, bow.Volley, 6);
-            Assert.Equal(1.06, bow.AttackSpeed, 6);
+            Assert.Equal(1.0, bow.Volley, 6);
+            Assert.Equal(1.10, bow.AttackSpeed, 6);
             var state = new PathState();
             var hit = new AttackResult { Hit = true, Total = 500 };
             var seconds = Enumerable.Range(1, 9).Select(_ => PathRules.After(state, bow, AttackStyle.Ranged, "a", hit, true).Second).ToList();
-            Assert.Equal(new[] { 0, 0, 300, 0, 0, 300, 0, 0, 300 }, seconds);
+            Assert.Equal(new[] { 0, 0, 500, 0, 0, 500, 0, 0, 500 }, seconds);
             Assert.Equal(0, PathRules.After(new PathState { Shots = 2 }, bow, AttackStyle.Melee, "a", hit, true).Second);
         }
 
@@ -385,6 +400,8 @@ namespace RavenNest.Combat.Tests
             guardian.DamageTakenMultiplier = 0.8;
             Assert.Equal(60, PathRules.GuardTaken(150, guardian));
             Assert.Equal(0, PathRules.GuardTaken(0, guardian));
+            // only while the guardian has more than 30% of its health: the game and the simulator ask before sharing
+            Assert.Equal(0.3, PathRules.GuardFloor, 6);
         }
 
         [Fact]
@@ -425,15 +442,16 @@ namespace RavenNest.Combat.Tests
         public void Holy_Fire_a_heal_strikes_for_its_share_and_harder_on_the_undead()
         {
             var crusader = Fighter(SkillTrees.Get("holy-fire").Passive);
-            Assert.Equal(0.30, crusader.HealStrike, 6);
+            Assert.Equal(0.20, crusader.HealStrike, 6);
             Assert.Equal(0.20, crusader.UndeadDamage, 6);
-            Assert.Equal(300, PathRules.HealStrike(1000, crusader, Enemy()));
-            Assert.Equal(300, PathRules.HealStrike(1000, crusader, Enemy(armor: 5000))); // armor does not take from it
-            var undead = Enemy();
+            Assert.Equal(200, PathRules.HealStrike(1000, crusader, Enemy(armor: 0)));
+            // armor takes half its usual cut, as of an element: 640 armor halves a blow and takes a quarter of this
+            Assert.Equal(150, PathRules.HealStrike(1000, crusader, Enemy(armor: 640)));
+            var undead = Enemy(armor: 0);
             undead.Family = EnemyFamily.Undead;
-            Assert.Equal(360, PathRules.HealStrike(1000, crusader, undead));
+            Assert.Equal(240, PathRules.HealStrike(1000, crusader, undead));
             undead.DamageTakenMultiplier = 1.2; // Mark Prey
-            Assert.Equal(432, PathRules.HealStrike(1000, crusader, undead));
+            Assert.Equal(288, PathRules.HealStrike(1000, crusader, undead));
             Assert.Equal(0, PathRules.HealStrike(1000, Fighter(), Enemy()));
             Assert.Equal(0, PathRules.HealStrike(0, crusader, Enemy()));
             Assert.Equal(1, PathRules.HealStrike(1, crusader, Enemy()));
@@ -443,9 +461,9 @@ namespace RavenNest.Combat.Tests
         public void Guardian_Angel_saves_one_ally_a_minute_and_heals_a_share_of_their_health()
         {
             var monk = Fighter(SkillTrees.Get("guardian-angel").Passive);
-            Assert.Equal(0.30, monk.GuardianAngel, 6);
-            Assert.Equal(1.08, monk.CastSpeed, 6);
-            Assert.Equal(3000, PathRules.AngelHeal(10000, monk.GuardianAngel));
+            Assert.Equal(0.40, monk.GuardianAngel, 6);
+            Assert.Equal(1.10, monk.CastSpeed, 6);
+            Assert.Equal(4000, PathRules.AngelHeal(10000, monk.GuardianAngel));
             Assert.Equal(0, PathRules.AngelHeal(10000, 0));
             var state = new PathState();
             Assert.True(PathRules.UseAngel(state, 100));
@@ -459,8 +477,8 @@ namespace RavenNest.Combat.Tests
         public void Clean_Kill_hits_the_healthy_harder()
         {
             var sniper = Fighter(SkillTrees.Get("clean-kill").Passive);
-            Assert.Equal(0.25, sniper.HealthyDamage, 6);
-            Assert.Equal(CombatMath.BaseCritDamage + 0.20, sniper.CritDamage, 6);
+            Assert.Equal(0.50, sniper.HealthyDamage, 6);
+            Assert.Equal(CombatMath.BaseCritDamage + 0.30, sniper.CritDamage, 6);
             var roll = new Fixed(0.3);
             var enemy = Enemy();
             var healthy = CombatMath.Attack(sniper, AttackStyle.Ranged, enemy, roll).Total;
@@ -468,7 +486,7 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(healthy, CombatMath.Attack(sniper, AttackStyle.Ranged, enemy, roll).Total);
             enemy.CurrentHealthShare = 0.8;
             var hurt = CombatMath.Attack(sniper, AttackStyle.Ranged, enemy, roll).Total;
-            Assert.InRange(healthy / (double)hurt, 1.24, 1.26);
+            Assert.InRange(healthy / (double)hurt, 1.49, 1.51);
             Assert.Equal(hurt, CombatMath.Attack(Fighter(), AttackStyle.Ranged, Enemy(), roll).Total);
         }
 
@@ -476,7 +494,7 @@ namespace RavenNest.Combat.Tests
         public void Wildfire_burns_harder_and_a_dead_enemys_burn_moves_on()
         {
             var pyro = Fighter(SkillTrees.Get("wildfire").Passive);
-            Assert.Equal(0.40, pyro.BurnBonus, 6);
+            Assert.Equal(1.50, pyro.BurnBonus, 6);
             Assert.True(pyro.BurnSpread > 0);
             var dead = new StatusEffectSet();
             dead.Burn(50, ElementRules.BurnSeconds);
@@ -502,8 +520,8 @@ namespace RavenNest.Combat.Tests
         public void Crimson_Pact_life_steal_beyond_full_health_becomes_a_shield_up_to_its_share()
         {
             var drinker = Fighter(SkillTrees.Get("crimson-pact").Passive);
-            Assert.Equal(0.04, drinker.LifeSteal, 6);
-            Assert.Equal(0.10, drinker.LifeStealShield, 6);
+            Assert.Equal(0.05, drinker.LifeSteal, 6);
+            Assert.Equal(0.15, drinker.LifeStealShield, 6);
             // 300 healed with 100 missing: 200 over, into the shield
             Assert.Equal(200, PathRules.OverflowShield(300, 100, 0, 10000, 0.10));
             Assert.Equal(700, PathRules.OverflowShield(300, 0, 400, 10000, 0.10));
@@ -520,7 +538,7 @@ namespace RavenNest.Combat.Tests
         {
             var iron = Fighter(SkillTrees.Get("ironblood").Passive);
             Assert.True(iron.CritResistance >= 0.10);
-            Assert.True(iron.HealingReceived >= 0.15);
+            Assert.Equal(0.35, iron.HealingReceived, 6);
             var enemy = Enemy();
             enemy.Melee.DamageLevel = 500; enemy.Melee.AimLevel = 2000; enemy.Melee.Power = 300;
             enemy.CritChance = 0.15;
@@ -535,17 +553,17 @@ namespace RavenNest.Combat.Tests
         public void Thin_the_Herd_hits_everything_but_bosses_harder()
         {
             var culler = Fighter(SkillTrees.Get("thin-the-herd").Passive);
-            Assert.Equal(0.12, culler.NonBossDamage, 6);
+            Assert.Equal(0.08, culler.NonBossDamage, 6);
             Assert.Equal(0.10, culler.KillRush, 6);
             var roll = new Fixed(0.3);
             var plain = CombatMath.Attack(Fighter(), AttackStyle.Melee, Enemy(), roll).Total;
-            Assert.InRange(CombatMath.Attack(culler, AttackStyle.Melee, Enemy(), roll).Total / (double)plain, 1.115, 1.125);
+            Assert.InRange(CombatMath.Attack(culler, AttackStyle.Melee, Enemy(), roll).Total / (double)plain, 1.075, 1.085);
             var boss = Enemy();
             boss.IsBoss = true;
             Assert.Equal(plain, CombatMath.Attack(culler, AttackStyle.Melee, boss, roll).Total);
             // the rush after a kill is a timed "damage dealt" change like Call of the Wild's: the game adds it
             culler.DamageMultiplier *= 1 + culler.KillRush;
-            Assert.InRange(CombatMath.Attack(culler, AttackStyle.Melee, Enemy(), roll).Total / (double)plain, 1.225, 1.24);
+            Assert.InRange(CombatMath.Attack(culler, AttackStyle.Melee, Enemy(), roll).Total / (double)plain, 1.18, 1.195);
         }
 
         [Fact]
@@ -561,8 +579,8 @@ namespace RavenNest.Combat.Tests
         {
             var alpha = With("fang-and-claw", "guardians-oath", "alpha");
             var stats = alpha.Passives();
-            Assert.Equal(0.04 + 0.30, stats[GearStat.PetPower], 6);
-            Assert.Equal(0.30, stats[GearStat.PetHealth], 6);
+            Assert.Equal(0.04 + 0.40, stats[GearStat.PetPower], 6);
+            Assert.Equal(0.40, stats[GearStat.PetHealth], 6);
             Assert.True(stats[GearStat.PetAlpha] > 0);
             Assert.False(alpha.HasPetTwin);
             // a tree has one ending: no packmate beside the Alpha
@@ -589,7 +607,7 @@ namespace RavenNest.Combat.Tests
                 Assert.DoesNotContain("–", text);
                 Assert.DoesNotContain("armour", text);
             }
-            Assert.Equal("7% of the damage you deal heals you, up to 30% more melee damage as your health falls (all of it at 30% health)".Replace("7%", "3%"), SkillTrees.Get("blood-rage").EffectText());
+            Assert.Equal("3% of the damage you deal heals you, up to 25% more melee damage as your health falls (all of it at 30% health)", SkillTrees.Get("blood-rage").EffectText());
         }
     }
 }

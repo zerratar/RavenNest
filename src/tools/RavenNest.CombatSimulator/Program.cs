@@ -70,11 +70,16 @@ namespace RavenNest.CombatSimulator
                         Console.WriteLine($"{lv} melee {m.WeaponPower}/{m.WeaponAim}/{m.ArmorPower} ranged {r.RangedPower}/{r.RangedAim}/{r.ArmorPower} magic {g.MagicPower}/{g.MagicAim}/{g.ArmorPower}");
                     }
                     return 0;
+                case "paths":
+                    // the capstone paths: each tree's three endings for the tree's own job; "paths 200 might" runs one tree ("all": every tree),
+                    // and "paths 200 might aftershock=AFTERSHOCK:80%" tries other numbers for an ending
+                    PathScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var pr) ? pr : 100, args.Length > 2 ? args[2] : null, args.Skip(3).ToArray());
+                    return 0;
                 case "tower":
                     TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
                     return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], pets [runs] [armour share] [offence share], tower [attempts]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], paths [runs] [tree], pets [runs] [armour share] [offence share], tower [attempts]");
                     return 1;
             }
         }

@@ -24,8 +24,14 @@ namespace RavenNest.Combat
         /// <summary>Blocked a blow: the next hit is stronger (Retribution).</summary>
         public bool Retort;
 
-        /// <summary>When the last basic attack landed, on the caller's clock in seconds (<see cref="PathRules.Rest"/>).</summary>
+        /// <summary>When the last blow was struck (hit or miss), on the caller's clock in seconds (<see cref="PathRules.Rest"/>).</summary>
         public double LastHit;
+
+        /// <summary>When First Blood's first hit last landed, on the caller's clock; ready again <see cref="PathRules.FirstStrikeSeconds"/> later.</summary>
+        public double FirstAt = double.NegativeInfinity;
+
+        /// <summary>The blow being struck is First Blood's first hit (set before it, settled after it).</summary>
+        public bool FirstPending;
 
         /// <summary>When Guardian Angel last saved someone, on the caller's clock; ready again <see cref="PathRules.AngelSeconds"/> later.</summary>
         public double AngelAt = double.NegativeInfinity;
@@ -94,6 +100,12 @@ namespace RavenNest.Combat
         /// <summary>Shield of the Many and Guardian Angel reach allies this near.</summary>
         public const double AllyRadius = 10;
 
+        /// <summary>
+        ///     Shield of the Many only while the guardian has more than this share of its health: in a crowd it takes a
+        ///     share of every ally's blows, and without a floor it would fall over and over.
+        /// </summary>
+        public const double GuardFloor = 0.3;
+
         /// <summary>A shield from life steal's overflow lasts this long after the last drop into it.</summary>
         public const double OverflowShieldSeconds = 10;
 
@@ -105,6 +117,13 @@ namespace RavenNest.Combat
         ///     it fell to someone else) is a new target, and the hits in a row start again.
         /// </summary>
         public const double RestSeconds = 6;
+
+        /// <summary>
+        ///     First Blood's first hit is ready again this long after it landed. Enemies of a fighter's own level fall
+        ///     in four or five blows, so without a wait every fourth blow was a critical hit through half the armor
+        ///     (the simulator: a third more damage than the tree's other two endings on anything but a boss).
+        /// </summary>
+        public const double FirstStrikeSeconds = 12;
 
         /// <summary>Guardian Angel saves one ally, then not again for this long.</summary>
         public const double AngelSeconds = 60;
@@ -141,13 +160,14 @@ namespace RavenNest.Combat
 
         /// <summary>
         ///     Before a blow: what the attacker's path changes about it. First Blood makes a basic attack on a new
-        ///     target a critical hit that ignores part of its armor; Retribution makes the blow after a block (basic
+        ///     target a critical hit that ignores part of its armor (once every <see cref="FirstStrikeSeconds"/>); Retribution makes the blow after a block (basic
         ///     or a skill's first) stronger.
         /// </summary>
-        public static AttackOptions Before(PathState state, CombatSheet attacker, object target, AttackOptions options, bool basic)
+        public static AttackOptions Before(PathState state, CombatSheet attacker, object target, AttackOptions options, bool basic, double now = 0)
         {
             if (state == null || attacker == null) return options;
-            if (basic && attacker.FirstStrike > 0 && !ReferenceEquals(state.Target, target))
+            state.FirstPending = basic && attacker.FirstStrike > 0 && !ReferenceEquals(state.Target, target) && now - state.FirstAt >= FirstStrikeSeconds;
+            if (state.FirstPending)
             {
                 options.Critical = true;
                 options.ArmorIgnored += attacker.FirstStrike;
@@ -164,7 +184,11 @@ namespace RavenNest.Combat
         public static PathBlow After(PathState state, CombatSheet attacker, AttackStyle style, object target, AttackResult result, bool basic, double now = 0)
         {
             var blow = new PathBlow();
-            if (state == null || attacker == null || result == null || !result.Hit) return blow;
+            if (state == null) return blow;
+            var first = state.FirstPending;
+            state.FirstPending = false;
+            state.LastHit = now; // any blow keeps the fight going, a miss and a skill's too
+            if (attacker == null || result == null || !result.Hit) return blow;
 
             if (state.Retort)
             {
@@ -174,10 +198,13 @@ namespace RavenNest.Combat
 
             if (!basic) return blow;
 
-            state.LastHit = now;
+            if (first)
+            {
+                blow.First = true;
+                state.FirstAt = now;
+            }
             if (!ReferenceEquals(state.Target, target))
             {
-                blow.First = attacker.FirstStrike > 0;
                 state.Target = target;
                 state.Row = 1;
             }
@@ -225,8 +252,9 @@ namespace RavenNest.Combat
         }
 
         /// <summary>
-        ///     Holy Fire: what a heal of <paramref name="healed"/> strikes an enemy for. Holy damage: armor does not
-        ///     take from it, what makes the enemy take more or less does, and the undead take the healer's bonus.
+        ///     Holy Fire: what a heal of <paramref name="healed"/> strikes an enemy for. Holy damage, like an
+        ///     element's: armor takes half its usual cut of it, what makes the enemy take more or less counts, and the
+        ///     undead take the healer's bonus. It cannot miss or crit (the heal already did, or did not).
         /// </summary>
         public static int HealStrike(int healed, CombatSheet healer, CombatSheet enemy)
         {
@@ -235,6 +263,7 @@ namespace RavenNest.Combat
             if (enemy != null)
             {
                 if (enemy.Family == EnemyFamily.Undead) amount *= 1 + healer.UndeadDamage;
+                amount *= 1 - CombatMath.ArmorReduction(enemy.EffectiveArmor) * CombatMath.ElementArmorShare;
                 amount *= enemy.DamageTakenMultiplier;
             }
             return Math.Max(1, (int)Math.Round(amount));
