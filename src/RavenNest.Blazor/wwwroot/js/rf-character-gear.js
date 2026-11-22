@@ -625,8 +625,14 @@ export async function attach(designer, stage, onBusy) {
         }
         const stance = name && g.stances ? g.stances[name] : null;
         const file = stance ? stance.file : null;
-        // a stance stands wide: the camera steps back a little for it
-        const far = on => { if (stage.wanted && typeof stage.wanted.distance === 'number') { roomy ??= stage.wanted.distance; stage.wanted.distance = roomy * (on ? 1.12 : 1); } };
+        // a stance stands wide: the camera steps back for it
+        const far = on => {
+            if (!stage.wanted || typeof stage.wanted.distance !== 'number') return;
+            roomy ??= stage.wanted.distance;
+            stage.wanted.distance = roomy * (on ? 1.2 : 1);
+            // the weapon is held out to one side: the view moves over a little, so it is in the picture
+            if (stage.wanted.target && stage.view !== 'face') stage.wanted.target.x = on ? -0.14 : 0;
+        };
         if (!file) { far(false); stage.stand(null); return; }
         if (!stances.has(name)) {
             stances.set(name, fetch(BASE + file + '?v=' + g.version).then(r => {

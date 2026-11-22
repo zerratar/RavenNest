@@ -63,7 +63,8 @@ export function attach(root, dotnet) {
         tip.anchor = null;
         tip.waiting = null;
         if (tip.layer) tip.layer.classList.remove('is-on');
-        if (keepOn !== true) tryOn(null);
+        // (a piece that is being dragged stays on the figure whatever the mouse leaves)
+        if (keepOn !== true && !s.drag) tryOn(null);
     };
 
     // Where the card goes: beside what it is about, inside the window, and never over the slot the piece would go
