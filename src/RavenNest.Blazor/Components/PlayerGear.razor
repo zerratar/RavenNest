@@ -1,0 +1,1220 @@
+@using RavenNest.BusinessLogic.Extended
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.Models
+@using RavenNest.Blazor.Services
+@using Blazored.Typeahead
+@using Gems = RavenNest.Combat.Gems
+@using GemKind = RavenNest.Combat.GemKind
+@using GemTier = RavenNest.Combat.GemTier
+@using EquipmentSlot = RavenNest.BusinessLogic.Game.EquipmentSlot
+
+@*
+    A character's gear: the Equipment tab (the character with its slots around it, the wearable part of the bag
+    beside it) and the Inventory tab (the whole bag, with a panel for the picked item). One component, because both
+    are views of the same inventory and share every piece: the tiles, the item panel, the dialogs and the rules.
+
+    Everything it does goes through an IGearBackend, and after each action it shows the character the backend
+    answers with. The signed-out preview at /dev/gear-preview passes its own backend, so this exact page can be
+    clicked through with a made up character.
+
+    Phase 2 (an outfit per skill) has its places kept: the row of skill buttons above the character becomes the
+    outfit picker, and the item panel's action list takes an "Add to outfit" button.
+*@
+
+@if (player == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else
+{
+    <div class="rf-gear rf-gear--@ActiveView @(CanAct ? "can-act" : "is-readonly")" @ref="root"
+         data-sel-slot="@(ActiveView == "equipment" && pickedSlot != EquipmentSlot.None ? GearRules.Get(pickedSlot)?.Key : null)">
+
+        @if (View == null)
+        {
+            @* The admin pages show both views in one tab, so the switch between them is here. *@
+            <div class="rf-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected="@(ActiveView == "equipment")" class="rf-tab @(ActiveView == "equipment" ? "is-active" : "")" @onclick='() => ownView = "equipment"'>Equipment</button>
+                <button type="button" role="tab" aria-selected="@(ActiveView == "inventory")" class="rf-tab @(ActiveView == "inventory" ? "is-active" : "")" @onclick='() => ownView = "inventory"'>Inventory</button>
+            </div>
+        }
+
+        @if (notice != null)
+        {
+            <div class="rf-gear-notice @(noticeBad ? "is-bad" : "is-good")" role="status">
+                <i class="fa-solid @(noticeBad ? "fa-circle-exclamation" : "fa-circle-check")" aria-hidden="true"></i>
+                <span>@notice</span>
+                <button type="button" class="rf-gear-notice__close" aria-label="Dismiss" @onclick="() => notice = null">&times;</button>
+            </div>
+        }
+
+        @if (ActiveView == "equipment")
+        {
+            <div class="rf-gear-eq @(PickedEntry != null && !PickedEntry.Stack.Equipped ? "has-float" : "")">
+                <section class="rf-panel rf-gear-doll" aria-label="Equipment">
+                    @*
+                        The row of skills. Phase 1: pick a skill to see its numbers and what "equip best" would
+                        wear for it. Phase 2 turns the same row into the outfit picker.
+                    *@
+                    <div class="rf-gear-skills" role="group" aria-label="Dress for a skill">
+                        <div class="rf-gear-skills__head">
+                            <span class="rf-gear-skills__label">Dress for</span>
+                            @if (TrainingNow != null)
+                            {
+                                <span class="rf-gear-skills__now"><i class="rf-gear-skills__dot" aria-hidden="true"></i> Training now: <b>@TrainingNow</b></span>
+                            }
+                        </div>
+                        <div class="rf-gear-skills__row">
+                            @foreach (var skill in GearRules.DressFor)
+                            {
+                                var s = skill;
+                                var on = dressFor == s;
+                                <button type="button" class="rf-gear-skill @(on ? "is-on" : "") @(Trained == s ? "is-trained" : "")"
+                                        aria-pressed="@on" title="@(Trained == s ? s + " (training now)" : "Numbers and best gear for " + s)"
+                                        @onclick="() => PickSkill(s)">
+                                    <span class="rf-gear-skill__pic"><img src="@GearRules.SkillPicture(s)" alt="" draggable="false" /></span>
+                                    <span class="rf-gear-skill__name">@s</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="rf-gear-figure">
+                        <div class="rf-gear-slots">
+                            @foreach (var slot in GearRules.Left)
+                            {
+                                @SlotTile(slot)
+                            }
+                        </div>
+
+                        <div class="rf-gear-stage @(figureState)">
+                            <div class="rf-gear-stage__canvas" @ref="stageHost"></div>
+                            <div class="rf-gear-stage__still" aria-hidden="true"><i class="fa-solid fa-person"></i></div>
+                            <div class="rf-gear-stage__plate">
+                                <span class="rf-gear-stage__name">@player.Name</span>
+                                <span class="rf-gear-stage__level">Combat level @player.CombatLevel</span>
+                            </div>
+                            <div class="rf-gear-stage__boat">
+                                @if (figureState == "is-3d" || figureState == "is-flat")
+                                {
+                                    <span class="rf-gear-stage__note" title="The character's own look, from the Customize tab. What it wears is in the slots around it.">Shown without gear</span>
+                                }
+                                @SlotTile(GearRules.Boat)
+                            </div>
+                        </div>
+
+                        <div class="rf-gear-slots">
+                            @foreach (var slot in GearRules.Right)
+                            {
+                                @SlotTile(slot)
+                            }
+                        </div>
+                    </div>
+
+                    @* What is picked, and what can be done with it. Always there, so nothing below it jumps. *@
+                    <div class="rf-gear-pick" aria-live="polite">
+                        @PickBar()
+                    </div>
+
+                    <div class="rf-gear-stats" aria-label="Combat numbers as worn">
+                        <div class="rf-gear-stat">
+                            <span class="rf-gear-stat__label"><i class="fa-solid fa-heart" aria-hidden="true"></i> Health</span>
+                            <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHealth)</span>
+                        </div>
+                        <div class="rf-gear-stat">
+                            <span class="rf-gear-stat__label"><i class="fa-solid fa-shield" aria-hidden="true"></i> Armor</span>
+                            <span class="rf-gear-stat__value">@GearSheet.Number(sheet.Armor)</span>
+                            <span class="rf-gear-stat__note">cuts @GearSheet.Percent(sheet.ArmorCut)</span>
+                        </div>
+                        <div class="rf-gear-stat">
+                            <span class="rf-gear-stat__label"><i class="fa-solid fa-hand-fist" aria-hidden="true"></i> Power</span>
+                            <span class="rf-gear-stat__value">@GearSheet.Number(sheet.Power)</span>
+                            <span class="rf-gear-stat__note">@sheet.StyleName</span>
+                        </div>
+                        @if (sheet.Style != RavenNest.Combat.AttackStyle.Healing)
+                        {
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Accuracy</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Number(sheet.Accuracy)</span>
+                            </div>
+                        }
+                        <div class="rf-gear-stat">
+                            <span class="rf-gear-stat__label"><i class="fa-solid fa-burst" aria-hidden="true"></i> @(sheet.Style == RavenNest.Combat.AttackStyle.Healing ? "Max heal" : "Max hit")</span>
+                            <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHit)</span>
+                        </div>
+                        <div class="rf-gear-stat">
+                            <span class="rf-gear-stat__label"><i class="fa-solid fa-star" aria-hidden="true"></i> Crit</span>
+                            <span class="rf-gear-stat__value">@GearSheet.Percent(sheet.Sheet.CritChance)</span>
+                            <span class="rf-gear-stat__note">@GearSheet.Percent(sheet.Sheet.CritDamage) damage</span>
+                        </div>
+                    </div>
+
+                    <div class="rf-gear-doll__foot">
+                        <button type="button" class="rf-btn rf-gear-allstats" aria-expanded="@allStats" @onclick="() => allStats = !allStats">
+                            <i class="fa-solid @(allStats ? "fa-chevron-up" : "fa-chevron-down")" aria-hidden="true"></i>
+                            @(allStats ? "Fewer stats" : "All stats")
+                        </button>
+                        @if (CanAct)
+                        {
+                            <button type="button" class="rf-btn rf-btn--primary rf-gear-best" @onclick="EquipBest">
+                                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                                @(dressFor.HasValue ? "Equip best for " + dressFor : "Equip best")
+                            </button>
+                        }
+                    </div>
+
+                    @if (allStats)
+                    {
+                        <div class="rf-gear-sheet">
+                            @foreach (var group in sheet.Groups())
+                            {
+                                <div class="rf-gear-sheet__group">
+                                    <h4 class="rf-gear-sheet__title">@group.Heading</h4>
+                                    @foreach (var row in group.Rows)
+                                    {
+                                        <div class="rf-gear-sheet__row">
+                                            <span>@row.Label</span>
+                                            <b class="@(row.Good ? "is-good" : row.Bad ? "is-bad" : "")">@row.Value</b>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <p class="rf-gear-sheet__note">
+                                As worn, with enchantments, gems and skill tree passives. Food, potions and a battle pet's bonuses are not counted.
+                                @if (sheet.ShieldLeftOut)
+                                {
+                                    <span> The shield is left out: the game does not count it while fighting with @sheet.StyleName.</span>
+                                }
+                            </p>
+                        </div>
+                    }
+                </section>
+
+                <section class="rf-panel rf-gear-bag" aria-label="Pieces to wear" data-gear-drop="bag">
+                    <div class="rf-gear-bag__head">
+                        <h3 class="rf-gear-bag__title"><i class="fa-solid fa-sack" aria-hidden="true"></i> Bag <span class="rf-gear-bag__count">@Plural(WearableCount, "piece") to wear</span></h3>
+                        @CoinsLine()
+                    </div>
+
+                    <div class="rf-gear-bag__tools">
+                        <SearchBox Placeholder="Search pieces" AriaLabel="Search the pieces to wear by name"
+                                   Value="@wearSearch" ValueChanged="v => wearSearch = v ?? string.Empty" ClearSignal="@clearSignal" />
+                    </div>
+
+                    @if (WearKinds.Count() > 2)
+                    {
+                        <div class="rf-gear-chips" role="group" aria-label="Filter pieces by kind">
+                            @foreach (var k in WearKinds)
+                            {
+                                var kind = k;
+                                <button type="button" class="rf-gear-chip @(wearKind == kind ? "is-on" : "")" aria-pressed="@(wearKind == kind)" @onclick="() => wearKind = kind">
+                                    <span>@GearRules.KindLabel(kind)</span>
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @*
+                        One line that is always there, so the grid never moves under the mouse: how to put a piece
+                        on, or, with a slot picked, what the outlines mean.
+                    *@
+                    @if (WearableCount > 0)
+                    {
+                        <p class="rf-gear-fits @(pickedSlot != EquipmentSlot.None ? "is-on" : "")">
+                            @if (pickedSlot != EquipmentSlot.None)
+                            {
+                                <span><i class="fa-solid fa-crosshairs" aria-hidden="true"></i> Outlined: what goes in the <b>@GearRules.Get(pickedSlot)?.Label.ToLowerInvariant()</b> slot</span>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="ClearPick">Clear</button>
+                            }
+                            else if (CanAct)
+                            {
+                                <span><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> Pick a piece and press Equip, or drag it onto its slot.</span>
+                            }
+                            else
+                            {
+                                <span><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> Pick a piece to look at it.</span>
+                            }
+                        </p>
+                    }
+
+                    @{
+                        var pieces = WearablePieces();
+                    }
+                    @if (pieces.Count == 0)
+                    {
+                        <div class="rf-gear-empty">
+                            <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                            @if (WearableCount == 0)
+                            {
+                                <p><b>Nothing to wear in the bag.</b></p>
+                                <p>Weapons, armor and jewelry this character finds or is sent show up here.</p>
+                            }
+                            else
+                            {
+                                <p><b>Nothing matches that.</b></p>
+                                <p>Try another kind or clear the search.</p>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-gear-grid">
+                            @foreach (var e in pieces)
+                            {
+                                @Tile(e, true)
+                            }
+                        </div>
+                    }
+
+                </section>
+
+                @*
+                    Where the bag is under the character (a phone, a narrow window), the picked piece and its Equip
+                    button stay at the bottom of the screen: the line under the character is a scroll away.
+                *@
+                @if (PickedEntry != null && !PickedEntry.Stack.Equipped && !detailOpen)
+                {
+                    <div class="rf-gear-pick rf-gear-pick--float">
+                        @PickBar()
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            var visible = VisibleEntries();
+            var pickedEntry = PickedEntry;
+
+            <div class="rf-gear-inv @(pickedEntry != null && !several ? "has-pick" : "")">
+                <section class="rf-panel rf-gear-invmain" aria-label="Inventory">
+                    <div class="rf-gear-invtools">
+                        <SearchBox Placeholder="Search items" AriaLabel="Search the inventory by item name"
+                                   Value="@search" ValueChanged="OnSearch" ClearSignal="@clearSignal" />
+                        <label class="rf-gear-sort">
+                            <span>Sort</span>
+                            <select class="rf-input" value="@sort" @onchange="e => sort = e.Value?.ToString() ?? sort">
+                                <option value="best">Best first</option>
+                                <option value="name">Name</option>
+                                <option value="amount">Amount</option>
+                                <option value="value">Vendor value</option>
+                                <option value="kind">Kind</option>
+                            </select>
+                        </label>
+                        @CoinsLine()
+                    </div>
+
+                    <div class="rf-gear-chips" role="group" aria-label="Filter items by kind">
+                        @foreach (var k in Kinds)
+                        {
+                            var kind = k;
+                            <button type="button" class="rf-gear-chip @(invKind == kind ? "is-on" : "")" aria-pressed="@(invKind == kind)" @onclick="() => PickKind(kind)">
+                                <i class="@GearRules.KindIcon(kind)" aria-hidden="true"></i>
+                                <span>@GearRules.KindLabel(kind)</span>
+                                <b>@KindCount(kind)</b>
+                            </button>
+                        }
+                    </div>
+
+                    @{
+                        var groups = GroupsOf(invKind);
+                    }
+                    @if (groups.Count > 1)
+                    {
+                        <div class="rf-gear-chips rf-gear-chips--sub" role="group" aria-label="Narrow the kind">
+                            <button type="button" class="rf-gear-chip rf-gear-chip--sub @(invGroup == null ? "is-on" : "")" aria-pressed="@(invGroup == null)" @onclick="() => PickGroup(null)">Every @GearRules.KindLabel(invKind).ToLowerInvariant()</button>
+                            @foreach (var g in groups)
+                            {
+                                var name = g;
+                                <button type="button" class="rf-gear-chip rf-gear-chip--sub @(invGroup == name ? "is-on" : "")" aria-pressed="@(invGroup == name)" @onclick="() => PickGroup(name)">@name</button>
+                            }
+                        </div>
+                    }
+
+                    @if (visible.Count == 0)
+                    {
+                        <div class="rf-gear-empty">
+                            <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                            @if (entries.Count == 0)
+                            {
+                                <p><b>This bag is empty.</b></p>
+                                <p>What the character finds, makes or is sent lands here.</p>
+                            }
+                            else
+                            {
+                                <p><b>Nothing matches that.</b></p>
+                                <p>Try another kind or clear the search.</p>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-gear-grid rf-gear-grid--inv">
+                            @foreach (var e in visible)
+                            {
+                                @Tile(e, false)
+                            }
+                        </div>
+                    }
+
+                    <div class="rf-gear-invfoot">
+                        @if (several)
+                        {
+                            var chosen = SelectedEntries();
+                            <div class="rf-gear-invfoot__text">
+                                <b>@Plural(chosen.Count, "stack") picked</b>
+                                <span>@Plural(chosen.Sum(x => x.Stack.Amount), "item"), worth @Coins(chosen.Where(x => x.CanSell).Sum(x => x.SellValue)) at the vendor</span>
+                            </div>
+                            <div class="rf-gear-invfoot__acts">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => SelectAll(visible)">Pick all @visible.Count(x => x.CanMove) shown</button>
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(chosen.Count == 0)" @onclick="() => selected.Clear()">Pick none</button>
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(chosen.Count == 0)" @onclick="() => OpenSeveral(false)">
+                                    <i class="fa-solid fa-box-archive" aria-hidden="true"></i> Send to stash
+                                </button>
+                                <button type="button" class="rf-btn rf-btn--small rf-btn--danger" disabled="@(!chosen.Any(x => x.CanSell))" @onclick="() => OpenSeveral(true)">
+                                    <i class="fa-solid fa-coins" aria-hidden="true"></i> Sell
+                                </button>
+                                <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="StopSeveral">Done</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="rf-gear-invfoot__text">
+                                <b><i class="fa-solid fa-sack" aria-hidden="true"></i> Bag: @Plural(entries.Count, "stack")</b>
+                                <span>@Plural(entries.Sum(x => x.Stack.Amount), "item"), @WornCount worn@(visible.Count != entries.Count ? ", " + visible.Count + " shown" : "")</span>
+                            </div>
+                            <div class="rf-gear-invfoot__acts">
+                                @if (IsAdmin)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => dialog = Dialog.AddItem">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add item
+                                    </button>
+                                }
+                                @if (CanAct && entries.Count > 0)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="StartSeveral">
+                                        <i class="fa-regular fa-square-check" aria-hidden="true"></i> Select several
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                @* The picked item. Beside the grid on a wide screen, a sheet from the bottom on a phone. *@
+                <aside class="rf-panel rf-gear-side @(pickedEntry != null && !several ? "is-open" : "")" aria-label="The picked item">
+                    @if (several)
+                    {
+                        <div class="rf-gear-side__rest">
+                            <i class="fa-regular fa-square-check" aria-hidden="true"></i>
+                            <p><b>Picking several</b></p>
+                            <p>Tap the stacks to send to the stash or to sell, then choose what to do with them below the grid. Worn pieces cannot be picked.</p>
+                        </div>
+                    }
+                    else if (pickedEntry == null)
+                    {
+                        <div class="rf-gear-side__rest">
+                            <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
+                            <p><b>Pick an item</b></p>
+                            <p>Its stats, gems and what you can do with it show here.</p>
+                            <ul class="rf-gear-legend">
+                                <li><span class="rf-gear-mark rf-gear-mark--worn">E</span> worn now</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span> better than what is worn</li>
+                                <li><span class="rf-gear-mark rf-gear-mark--ench"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span> enchanted</li>
+                                <li><span class="rf-gear-dots"><i class="rf-gear-dot is-gem-ruby"></i><i class="rf-gear-dot"></i></span> gem sockets</li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <button type="button" class="rf-gear-side__close" aria-label="Close" @onclick="ClearPick">&times;</button>
+                        @ItemPanel(pickedEntry)
+                    }
+                </aside>
+                @if (pickedEntry != null && !several)
+                {
+                    <div class="rf-gear-sheetscrim" @onclick="ClearPick"></div>
+                }
+            </div>
+        }
+    </div>
+
+    @* The Equipment tab opens the item panel over the page: a drawer on a wide screen, a sheet on a phone. *@
+    @if (ActiveView == "equipment" && detailOpen && PickedEntry != null)
+    {
+        <div class="rf-gear-drawer-scrim" @onclick="() => detailOpen = false"></div>
+        <aside class="rf-gear-drawer" role="dialog" aria-modal="true" aria-label="@PickedEntry.Name">
+            <button type="button" class="rf-gear-side__close" aria-label="Close" @onclick="() => detailOpen = false">&times;</button>
+            @ItemPanel(PickedEntry)
+        </aside>
+    }
+
+    @if (dialog == Dialog.Sell && dialogEntry != null)
+    {
+        var e = dialogEntry;
+        <div class="rf-modal-backdrop" @onclick="CloseDialog">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Sell @e.Name" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Sell @e.Name</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseDialog">&times;</button>
+                </div>
+
+                @if (e.Stack.Amount > 1)
+                {
+                    <label class="rf-field">
+                        <span class="rf-label">How many of @e.Stack.Amount.ToString("N0")</span>
+                        <input type="number" class="rf-input" min="1" max="@e.Stack.Amount" @bind="sellAmount" @bind:event="oninput" />
+                    </label>
+                    <div class="rf-actions">
+                        @foreach (var amount in QuickAmounts(e.Stack.Amount))
+                        {
+                            var a = amount;
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => sellAmount = a">
+                                @(a == e.Stack.Amount ? "All " + a.ToString("N0") : a.ToString("N0"))
+                            </button>
+                        }
+                    </div>
+                }
+
+                <p class="rf-gear-confirm">
+                    Sells <b>@ClampedSellAmount(e).ToString("N0")</b> @e.Name to the vendor for
+                    <b class="rf-gear-price">@Coins(e.Item.ShopSellPrice * ClampedSellAmount(e))</b>.
+                </p>
+                <p class="rf-gear-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> A sale cannot be undone: sold items cannot be bought back.</p>
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseDialog">Keep it</button>
+                    <button type="button" class="rf-btn rf-btn--danger" @onclick="SellOne">Sell for @Coins(e.Item.ShopSellPrice * ClampedSellAmount(e))</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (dialog == Dialog.SellSeveral || dialog == Dialog.StashSeveral)
+    {
+        var selling = dialog == Dialog.SellSeveral;
+        var chosen = SelectedEntries();
+        var acting = selling ? chosen.Where(x => x.CanSell).ToList() : chosen.Where(x => x.CanMove).ToList();
+        var skipped = chosen.Count - acting.Count;
+        <div class="rf-modal-backdrop" @onclick="CloseDialog">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="@(selling ? "Sell the picked items" : "Send the picked items to the stash")" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">@(selling ? "Sell " : "Send ")@Plural(acting.Count, "stack")@(selling ? "?" : " to the stash?")</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseDialog">&times;</button>
+                </div>
+
+                <p class="rf-gear-confirm">
+                    @if (selling)
+                    {
+                        <span>Sells <b>@Plural(acting.Count, "stack")</b> (@Plural(acting.Sum(x => x.Stack.Amount), "item")) to the vendor for <b class="rf-gear-price">@Coins(acting.Sum(x => x.SellValue))</b>.</span>
+                    }
+                    else
+                    {
+                        <span>Moves <b>@Plural(acting.Count, "stack")</b> (@Plural(acting.Sum(x => x.Stack.Amount), "item")) to your account's stash, where every character of yours can take them.</span>
+                    }
+                </p>
+
+                <ul class="rf-gear-confirmlist">
+                    @foreach (var e in acting.Take(8))
+                    {
+                        <li>
+                            <span class="rf-gear-confirmlist__pic">@Picture(e)</span>
+                            <span class="@e.RarityClass">@e.Name</span>
+                            <b>@(e.Stack.Amount > 1 ? "x" + e.Stack.Amount.ToString("N0") : "")</b>
+                            @if (selling)
+                            {
+                                <span class="rf-gear-confirmlist__worth">@Coins(e.SellValue)</span>
+                            }
+                        </li>
+                    }
+                    @if (acting.Count > 8)
+                    {
+                        <li class="rf-gear-confirmlist__more">and @Plural(acting.Count - 8, "more stack")</li>
+                    }
+                </ul>
+
+                @if (skipped > 0)
+                {
+                    <p class="rf-meta">@Plural(skipped, "picked stack") @(skipped == 1 ? "is" : "are") left alone: @(selling ? "the vendor does not take streamer tokens, and a piece with a skin on it has to lose the skin first." : "they cannot be moved.")</p>
+                }
+
+                @if (selling)
+                {
+                    <p class="rf-gear-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> A sale cannot be undone: sold items cannot be bought back.</p>
+                }
+                else
+                {
+                    <p class="rf-meta">You can take them back from the Item Stash page at any time.</p>
+                }
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseDialog">@(selling ? "Keep them" : "Cancel")</button>
+                    @if (selling)
+                    {
+                        <button type="button" class="rf-btn rf-btn--danger" disabled="@(acting.Count == 0)" @onclick="() => DoSeveral(true)">Sell @Plural(acting.Count, "stack") for @Coins(acting.Sum(x => x.SellValue))</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="rf-btn rf-btn--primary" disabled="@(acting.Count == 0)" @onclick="() => DoSeveral(false)">Send @Plural(acting.Count, "stack")</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @*
+        The gem picker, for one socket of the picked item (opened by a socket row of the item panel). Gems and
+        sockets work as !socket and !unsocket do in the game, for the character's owner.
+
+        Taking a gem out, or socketing over one, usually destroys it. So the server first answers with the gem and
+        the chance to keep it and changes nothing (NeedsConfirm); it is done on the confirm click, and only while
+        that gem is still the one in the socket. The question and the result are shown inside the picker.
+    *@
+    @if (gemPickerSocket > 0 && PickedEntry != null && CanSocket)
+    {
+        var gemEntry = PickedEntry;
+        var pickerSocket = gemEntry.Sockets.FirstOrDefault(x => x.Number == gemPickerSocket);
+        if (pickerSocket != null && GemManager.TryGetSlot(gemEntry.Item, out var pickerSlot))
+        {
+            <GemPicker ItemName="@gemEntry.Name" ItemClass="@gemEntry.RarityClass"
+                       Slot="pickerSlot" Socket="gemPickerSocket"
+                       Current="@(pickerSocket.Empty ? null : PickerGem(pickerSocket.Kind, pickerSocket.Tier))"
+                       Owned="OwnedGems()" KeepChance="gemKeepChance"
+                       Confirm="PickerConfirm()" Result="gemResult" Error="@gemError"
+                       OnSocket="SocketGem" OnRemove="TakeOutGem" OnConfirm="ConfirmGemChange"
+                       OnCancel="CancelGemChange" OnBack="BackToGemList" OnClose="CloseGemPicker" />
+        }
+    }
+
+    @*
+        The skin picker (transmogrification): only what can stand in for this piece is listed, from the bag or
+        from the stash. A stash item moves to this character first, because the server looks for the skin in the
+        character's own inventory.
+    *@
+    @if (dialog == Dialog.Skin && PickedEntry != null)
+    {
+        var target = PickedEntry;
+        var candidates = VisibleSkinCandidates;
+        <div class="rf-modal-backdrop rf-modal-backdrop--stacked" @onclick="CloseDialog">
+            <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Choose a skin" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">A skin for @target.Name</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseDialog">&times;</button>
+                </div>
+                <p class="rf-meta">
+                    The piece keeps its stats and takes the look of the item you choose. That item is used up: it comes back
+                    only when the skin is removed or replaced.
+                </p>
+
+                <div class="rf-tabs" role="tablist">
+                    <button type="button" role="tab" aria-selected="@(!skinFromStash)" class="rf-tab @(!skinFromStash ? "is-active" : "")" @onclick="() => SetSkinTab(false)">
+                        Bag (@SkinCandidates(false).Count)
+                    </button>
+                    <button type="button" role="tab" aria-selected="@skinFromStash" class="rf-tab @(skinFromStash ? "is-active" : "")" @onclick="() => SetSkinTab(true)">
+                        Stash (@SkinCandidates(true).Count)
+                    </button>
+                </div>
+
+                <div class="rf-toolbar">
+                    <input type="search" class="rf-input rf-search" placeholder="Search by name" aria-label="Search items to use as a skin"
+                           value="@skinSearch" @oninput="e => skinSearch = e.Value?.ToString() ?? string.Empty" />
+                </div>
+
+                @if (skinFromStash)
+                {
+                    <p class="rf-meta">One taken from the stash moves to this character first, then it is used.</p>
+                }
+
+                @if (candidates.Count == 0)
+                {
+                    <div class="rf-banner rf-banner--warn">
+                        <h3 class="rf-banner__title">Nothing here fits</h3>
+                        <p>
+                            @if (!string.IsNullOrWhiteSpace(skinSearch))
+                            {
+                                <span>Nothing matches that. Clear the search to see everything that fits.</span>
+                            }
+                            else
+                            {
+                                <span>
+                                    @(skinFromStash ? "Your stash holds" : "This character carries") nothing that can be a skin for this piece.
+                                    A skin has to be the same kind of item: a helmet takes a helmet, a hat or a hood. Enchanted items cannot be used.
+                                </span>
+                            }
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="rf-gear-skins">
+                        @foreach (var candidate in candidates)
+                        {
+                            var c = candidate;
+                            var chosen = skinChoice != null && skinChoice.Item.Id == c.Item.Id && skinChoice.FromStash == c.FromStash;
+                            <button type="button" class="rf-gear-skin @(chosen ? "is-on" : "") @ItemService.GetRarityClass(c.Item)" aria-pressed="@chosen" @onclick="() => skinChoice = c">
+                                <span class="rf-gear-skin__pic"><img src="@ItemService.GetItemImage(c.Item.Id)" alt="" loading="lazy" /></span>
+                                <span class="rf-gear-skin__name">@c.Item.Name</span>
+                                <span class="rf-gear-skin__meta">@ItemService.GetTypeName(c.Item)@(c.Amount > 1 ? ", " + c.Amount.ToString("N0") + " owned" : "")</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                @if (skinError != null)
+                {
+                    <div class="rf-banner rf-banner--bad">
+                        <h3 class="rf-banner__title">That did not work</h3>
+                        <p>@skinError</p>
+                    </div>
+                }
+
+                <div class="rf-modal__foot rf-modal__foot--spread">
+                    <span class="rf-meta">@(skinChoice == null ? "Nothing chosen yet." : skinChoice.Item.Name + " chosen.")</span>
+                    <span class="rf-actions">
+                        <button type="button" class="rf-btn" @onclick="CloseDialog">Cancel</button>
+                        <button type="button" class="rf-btn rf-btn--primary" disabled="@(skinChoice == null)" @onclick="ApplySkin">
+                            @(target.Stack.TransmogrificationId != null ? "Replace the skin" : "Use as skin")
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (dialog == Dialog.AddItem && IsAdmin)
+    {
+        <div class="rf-modal-backdrop" @onclick="CloseDialog">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Add item" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Add item</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseDialog">&times;</button>
+                </div>
+                <label class="rf-field">
+                    <span class="rf-label">Search for an item</span>
+                    <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="addItem">
+                        <SelectedTemplate>@context.Name</SelectedTemplate>
+                        <ResultTemplate>@context.Name</ResultTemplate>
+                    </BlazoredTypeahead>
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">Amount</span>
+                    <input type="number" class="rf-input" min="1" @bind-value="addAmount" />
+                </label>
+                <div class="rf-actions">
+                    @foreach (var quick in new[] { 1, 10, 100, 1000 })
+                    {
+                        var q = quick;
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => addAmount = q">@q</button>
+                    }
+                </div>
+                @if (addItem != null)
+                {
+                    <p class="rf-meta">Adds <b>@addAmount</b> @addItem.Name to <b>@player.Name</b>.</p>
+                }
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseDialog">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary" disabled="@(addItem == null)" @onclick="AddItem">Add</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @*
+        Administrators set an account's coins here (refunds, corrections). The server holds them in memory, so it
+        works at once; a running game shows it within a minute. All the account's characters share them.
+    *@
+    @if (dialog == Dialog.Coins && IsAdmin)
+    {
+        <div class="rf-modal-backdrop" @onclick="CloseDialog">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Set coins" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Set coins</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseDialog">&times;</button>
+                </div>
+                <label class="rf-field">
+                    <span class="rf-label">Coins for this account (now @coins.ToString("N0"))</span>
+                    <input class="rf-input" type="text" inputmode="numeric" placeholder="10000000, 10m, or +500k / -500k to add or take" @bind="coinsText" />
+                </label>
+                <p class="rf-meta">Every character on the account shares these coins. The change is logged.</p>
+                @if (coinsMessage != null)
+                {
+                    <p class="@(coinsError ? "rf-form__error" : "rf-form__ok")">@coinsMessage</p>
+                }
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseDialog">Close</button>
+                    <button type="button" class="rf-btn rf-btn--primary" @onclick="SetCoins">Set coins</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    // ---- Pieces of markup both views share ----------------------------------------------------------------------
+
+    private RenderFragment CoinsLine() => __builder =>
+    {
+        <div class="rf-gear-coins" title="@coins.ToString("N0") coins">
+            <i class="fa-solid fa-coins" aria-hidden="true"></i>
+            <span>@Utility.FormatAmount(coins)</span>
+            @if (IsAdmin)
+            {
+                <button type="button" class="rf-btn rf-btn--small" @onclick="OpenCoins">Set coins</button>
+            }
+        </div>
+    };
+
+    // The item's picture, or a glyph of its kind where the game has none.
+    private RenderFragment Picture(Entry e) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(e.Picture))
+        {
+            <img src="@e.Picture" alt="" loading="lazy" draggable="false" />
+        }
+        else
+        {
+            <i class="rf-gear-nopic @GearRules.KindIcon(e.Kind)" aria-hidden="true"></i>
+        }
+    };
+
+    private RenderFragment Dots(Entry e) => __builder =>
+    {
+        if (e.Sockets.Count > 0)
+        {
+            <span class="rf-gear-dots" title="@SocketsTitle(e)">
+                @foreach (var socket in e.Sockets)
+                {
+                    <i class="rf-gear-dot @(socket.Empty ? "" : "is-gem-" + socket.Kind.ToString().ToLowerInvariant())"></i>
+                }
+            </span>
+        }
+    };
+
+    // One slot around the character: what is in it, or what belongs there.
+    private RenderFragment SlotTile(GearSlot slot) => __builder =>
+    {
+        worn.TryGetValue(slot.Slot, out var e);
+        var picked = pickedSlot == slot.Slot;
+        <button type="button"
+                class="rf-gear-slot @(e == null ? "is-empty" : e.RarityClass) @(picked ? "is-picked" : "")"
+                data-slot="@slot.Key" data-gear-drop="@slot.Key"
+                data-gear-drag="@(e != null && CanAct ? e.Stack.Id.ToString() : null)" data-gear-from="worn"
+                aria-pressed="@picked"
+                title="@(e == null ? slot.Label + ": empty" : slot.Label + ": " + e.Name)"
+                @onclick="() => ClickSlot(slot)">
+            <span class="rf-gear-slot__pic">
+                @if (e != null)
+                {
+                    @Picture(e)
+                    @if (e.Stack.TransmogrificationId != null)
+                    {
+                        <span class="rf-gear-mark rf-gear-mark--skin" title="Wears a skin"><i class="fa-solid fa-mask" aria-hidden="true"></i></span>
+                    }
+                    @if (e.Enchanted)
+                    {
+                        <span class="rf-gear-mark rf-gear-mark--ench" title="Enchanted"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span>
+                    }
+                    @Dots(e)
+                }
+                else if (slot.Picture != null)
+                {
+                    <img class="rf-gear-slot__glyph" src="@slot.Picture" alt="" draggable="false" />
+                }
+                else
+                {
+                    <i class="rf-gear-slot__glyph @slot.Icon" aria-hidden="true"></i>
+                }
+            </span>
+            <span class="rf-gear-slot__text">
+                <span class="rf-gear-slot__label">@slot.Short</span>
+                <span class="rf-gear-slot__name">@(e == null ? "Empty" : e.Name)</span>
+            </span>
+        </button>
+    };
+
+    // One stack of the bag. On the Equipment tab a piece can be dragged onto its slot.
+    private RenderFragment Tile(Entry e, bool wearView) => __builder =>
+    {
+        var isPicked = !several && pickedId == e.Stack.Id;
+        var isChosen = several && selected.Contains(e.Stack.Id);
+        var slotKey = e.Slot == EquipmentSlot.None ? null : GearRules.Get(e.Slot)?.Key;
+        <button type="button"
+                class="rf-gear-tile @e.RarityClass @(isPicked ? "is-picked" : "") @(isChosen ? "is-chosen" : "") @(e.Stack.Equipped ? "is-worn" : "") @(several && !e.CanMove ? "is-locked" : "") @(wearView && !e.CanWear ? "is-barred" : "")"
+                data-slot="@slotKey"
+                data-gear-drag="@(wearView && CanAct && e.CanWear ? e.Stack.Id.ToString() : null)" data-gear-from="bag"
+                aria-pressed="@(isPicked || isChosen)"
+                title="@TileTitle(e)"
+                @onclick="() => ClickTile(e, wearView)"
+                @ondblclick="() => DoubleClickTile(e, wearView)">
+            <span class="rf-gear-tile__pic">@Picture(e)</span>
+            @if (e.Stack.Equipped)
+            {
+                <span class="rf-gear-mark rf-gear-mark--worn" title="Worn now">E</span>
+            }
+            <span class="rf-gear-tile__marks">
+                @if (e.Upgrade)
+                {
+                    <span class="rf-gear-mark rf-gear-mark--up" title="Better than what is worn"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span>
+                }
+                @if (e.Enchanted)
+                {
+                    <span class="rf-gear-mark rf-gear-mark--ench" title="Enchanted"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span>
+                }
+                @if (e.Stack.TransmogrificationId != null)
+                {
+                    <span class="rf-gear-mark rf-gear-mark--skin" title="Wears a skin"><i class="fa-solid fa-mask" aria-hidden="true"></i></span>
+                }
+                @if (wearView && !e.CanWear)
+                {
+                    <span class="rf-gear-mark rf-gear-mark--lock" title="@e.Blocked"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+                }
+            </span>
+            @Dots(e)
+            @if (e.Stack.Amount > 1)
+            {
+                <span class="rf-gear-tile__amount">@Utility.FormatAmount(e.Stack.Amount)</span>
+            }
+            @if (several)
+            {
+                <span class="rf-gear-tile__check" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+            }
+        </button>
+    };
+
+    // The line under the character: what is picked and the one thing most likely wanted with it.
+    private RenderFragment PickBar() => __builder =>
+    {
+        var e = PickedEntry;
+        var slot = pickedSlot == EquipmentSlot.None ? null : GearRules.Get(pickedSlot);
+        if (e != null)
+        {
+            worn.TryGetValue(e.Slot, out var wornNow);
+            <span class="rf-gear-pick__pic @e.RarityClass">@Picture(e)</span>
+            <span class="rf-gear-pick__text">
+                <b class="@e.RarityClass">@e.Name</b>
+                @if (e.Stack.Equipped)
+                {
+                    <span>Worn: @slot?.Label</span>
+                }
+                else if (!e.CanWear)
+                {
+                    <span class="is-bad"><i class="fa-solid fa-lock" aria-hidden="true"></i> @e.Blocked</span>
+                }
+                else if (wornNow == null)
+                {
+                    <span>Goes in the empty @slot?.Label.ToLowerInvariant() slot</span>
+                }
+                else
+                {
+                    var gains = Gains(e, wornNow, e.Upgrade ? 1 : 2);
+                    <span>Instead of @wornNow.Name</span>
+                    <span class="rf-gear-pick__gains">
+                        @if (e.Upgrade)
+                        {
+                            <em class="is-good"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Better@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "")</em>
+                        }
+                        @foreach (var gain in gains)
+                        {
+                            <em class="@(gain.Delta > 0 ? "is-good" : "is-bad")">@gain.Text</em>
+                        }
+                        @if (gains.Count == 0 && !e.Upgrade)
+                        {
+                            <em class="is-same">The same stats</em>
+                        }
+                    </span>
+                }
+            </span>
+            <span class="rf-gear-pick__acts">
+                @if (CanAct && e.Stack.Equipped)
+                {
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => Unequip(e)">Take off</button>
+                }
+                else if (CanAct && e.CanWear)
+                {
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => Equip(e)">Equip</button>
+                }
+                <button type="button" class="rf-btn rf-btn--small" @onclick="() => detailOpen = true">Details</button>
+            </span>
+        }
+        else if (slot != null)
+        {
+            var fitting = entries.Count(x => !x.Stack.Equipped && x.Slot == pickedSlot);
+            <span class="rf-gear-pick__pic is-empty">
+                @if (slot.Picture != null)
+                {
+                    <img class="rf-gear-slot__glyph" src="@slot.Picture" alt="" />
+                }
+                else
+                {
+                    <i class="rf-gear-slot__glyph @slot.Icon" aria-hidden="true"></i>
+                }
+            </span>
+            <span class="rf-gear-pick__text">
+                <b>@slot.Label: empty</b>
+                <span>@(fitting == 0 ? "Nothing in the bag goes here." : Plural(fitting, "piece") + " in the bag " + (fitting == 1 ? "goes" : "go") + " here.")</span>
+            </span>
+        }
+        else
+        {
+            <span class="rf-gear-pick__hint">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                @(CanAct ? "Pick a slot to see what goes in it, or a piece to see what it would change." : "Pick a slot or a piece to look at it.")
+            </span>
+        }
+    };
+
+    // Everything about one item: what it is, how it compares, its gems and enchantments, and what can be done.
+    private RenderFragment ItemPanel(Entry e) => __builder =>
+    {
+        var item = e.Item;
+        var skin = e.Stack.TransmogrificationId != null ? ItemService.GetItem(e.Stack.TransmogrificationId.Value) : null;
+        Entry wornNow = null;
+        if (e.Slot != EquipmentSlot.None && !e.Stack.Equipped) worn.TryGetValue(e.Slot, out wornNow);
+        var stats = StatsOf(e);
+        var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
+        var requirements = Requirements(item);
+        var line = GearRules.LineOf(item);
+        var armorHealth = RavenNest.Combat.CombatMath.IsArmorPiece((int)item.Type) ? RavenNest.Combat.CombatMath.ArmorHealth(item.ArmorPower) : 0;
+
+        <div class="rf-gear-item">
+            <div class="rf-gear-item__head">
+                <span class="rf-gear-item__pic @e.RarityClass">
+                    @Picture(e)
+                    @if (e.Stack.Amount > 1)
+                    {
+                        <span class="rf-gear-tile__amount">@Utility.FormatAmount(e.Stack.Amount)</span>
+                    }
+                    @if (skin != null)
+                    {
+                        <span class="rf-gear-item__skin" title="Looks like @skin.Name in the game"><img src="@ItemService.GetItemImage(skin.Id)" alt="" /></span>
+                    }
+                </span>
+                <div class="rf-gear-item__title">
+                    <h3 class="rf-gear-item__name @e.RarityClass">@e.Name</h3>
+                    <div class="rf-gear-item__badges">
+                        <span class="rf-badge @e.RarityClass">@ItemService.GetRarityName(item)</span>
+                        @if (e.Stack.Equipped)
+                        {
+                            <span class="rf-badge rf-badge--good">Worn</span>
+                        }
+                        @if (e.Enchanted)
+                        {
+                            <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                        }
+                        @if (skin != null)
+                        {
+                            <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-mask" aria-hidden="true"></i> Skin: @skin.Name</span>
+                        }
+                        @if (e.Stack.Soulbound)
+                        {
+                            <span class="rf-badge rf-badge--warn"><i class="fa-solid fa-link" aria-hidden="true"></i> Soulbound</span>
+                        }
+                    </div>
+                    <p class="rf-gear-item__what">@What(e)@(line != null ? ". " + line : "")</p>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(item.Description))
+            {
+                <p class="rf-gear-item__desc">@item.Description</p>
+            }
+
+            @if (wornNow != null)
+            {
+                var rows = Compare(e, wornNow);
+                <div class="rf-gear-compare">
+                    <div class="rf-gear-compare__head">
+                        <span></span>
+                        <span>This</span>
+                        <span>Worn</span>
+                        <span>Change</span>
+                    </div>
+                    @foreach (var row in rows)
+                    {
+                        <div class="rf-gear-compare__row">
+                            <span>@row.Label</span>
+                            <b>@row.This</b>
+                            <span>@row.Worn</span>
+                            <b class="@(row.Delta > 0 ? "is-good" : row.Delta < 0 ? "is-bad" : "is-same")">@row.Change</b>
+                        </div>
+                    }
+                    <p class="rf-gear-compare__with">Compared with the worn @wornNow.Name.</p>
+                    @if (e.Upgrade)
+                    {
+                        <p class="rf-gear-compare__verdict"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> "Equip best" would wear this instead@(EffectiveSkill != Skill.None ? " for " + EffectiveSkill : "").</p>
+                    }
+                </div>
+            }
+            else if (stats.Count > 0 || armorHealth > 0)
+            {
+                <div class="rf-gear-facts">
+                    @foreach (var stat in stats)
+                    {
+                        <div class="rf-gear-facts__row">
+                            <span>@stat.Label</span>
+                            <b>
+                                @stat.Text(stat.Value)
+                                @if (stat.Bonus > 0)
+                                {
+                                    <em class="is-good" title="From its enchantment">+@stat.Text(stat.Bonus)</em>
+                                }
+                            </b>
+                        </div>
+                    }
+                    @if (armorHealth > 0)
+                    {
+                        <div class="rf-gear-facts__row">
+                            <span>Health from its armor</span>
+                            <b><em class="is-good">+@armorHealth.ToString("N0")</em></b>
+                        </div>
+                    }
+                </div>
+                @if (e.Slot != EquipmentSlot.None && !e.Stack.Equipped)
+                {
+                    <p class="rf-gear-compare__with">Nothing is worn in the @GearRules.Get(e.Slot)?.Label.ToLowerInvariant() slot.</p>
+                }
+            }
+
+            @*
+                Gems in the sockets. For the character's owner each socket is the control itself: the row opens the
+                gem picker for that socket. Everyone else reads them as plain rows.
+            *@
+            @if (GemManager.TryGetSlot(item, out _))
+            {
+                <div class="rf-gear-block">
+                    <h4 class="rf-gear-block__title">Gem sockets@(e.Sockets.Count > 0 ? " (" + e.Sockets.Count + ")" : "")</h4>
+                    @if (e.Sockets.Count == 0)
+                    {
+                        <p class="rf-gear-block__none">None. Pieces like this get their first socket at item level 25.</p>
+                    }
+                    else if (CanSocket)
+                    {
+                        <div class="rf-gear-sockets">
+                            @foreach (var socket in e.Sockets)
+                            {
+                                var number = socket.Number;
+                                <GemSocketButton Number="number" Name="@socket.Name" Bonus="@socket.Bonus"
+                                                 Icon="@(socket.Empty ? null : ItemService.GetItemImage(socket.GemId.Value))"
+                                                 OnClick="() => OpenGemPicker(number)" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-gear-facts">
+                            @foreach (var socket in e.Sockets)
+                            {
+                                <div class="rf-gear-facts__row">
+                                    <span>Socket @socket.Number</span>
+                                    @if (socket.Empty)
+                                    {
+                                        <b class="is-same">Empty</b>
+                                    }
+                                    else
+                                    {
+                                        <b>@socket.Name <em class="is-good">@socket.Bonus</em></b>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (enchantments != null && enchantments.Count > 0)
+            {
+                <div class="rf-gear-block">
+                    <h4 class="rf-gear-block__title">Enchantments</h4>
+                    <div class="rf-gear-facts">
+                        @foreach (var enchantment in enchantments)
+                        {
+                            <div class="rf-gear-facts__row">
+                                <span>@EnchantmentName(enchantment)</span>
+                                <b><em class="is-good">+@EnchantmentValue(enchantment)</em></b>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (requirements.Count > 0 || item.ShopSellPrice > 0)
+            {
+                <div class="rf-gear-block">
+                    <div class="rf-gear-facts">
+                        @foreach (var requirement in requirements)
+                        {
+                            <div class="rf-gear-facts__row">
+                                <span>Requires @requirement.Skill</span>
+                                <b class="@(requirement.Met ? "" : "is-bad")">@requirement.Level@(requirement.Met ? "" : " (has " + requirement.Has + ")")</b>
+                            </div>
+                        }
+                        @if (item.ShopSellPrice > 0)
+                        {
+                            <div class="rf-gear-facts__row">
+                                <span>Vendor price</span>
+                                <b>@Coins(item.ShopSellPrice)@(e.Stack.Amount > 1 ? " each" : "")</b>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* The Equip button is always there for a wearable piece: when it cannot be worn, this says why. *@
+            @if (e.Slot != EquipmentSlot.None && !e.CanWear && !e.Stack.Equipped)
+            {
+                <p class="rf-gear-blocked"><i class="fa-solid fa-lock" aria-hidden="true"></i> @player.Name cannot wear this yet. @e.Blocked</p>
+            }
+
+            @if (CanAct)
+            {
+                <div class="rf-gear-acts">
+                    @if (e.Stack.Equipped)
+                    {
+                        <button type="button" class="rf-btn rf-btn--primary rf-gear-acts__main" @onclick="() => Unequip(e)">Take off</button>
+                    }
+                    else if (e.Slot != EquipmentSlot.None && e.CanWear)
+                    {
+                        <button type="button" class="rf-btn rf-btn--primary rf-gear-acts__main" @onclick="() => Equip(e)">Equip</button>
+                    }
+
+                    @* Phase 2: "Add to outfit" goes here. *@
+
+                    <button type="button" class="rf-btn" @onclick="() => SendToStash(e)">
+                        <i class="fa-solid fa-box-archive" aria-hidden="true"></i> Send to stash
+                    </button>
+                    @foreach (var other in OtherCharacters)
+                    {
+                        var to = other;
+                        <button type="button" class="rf-btn" @onclick="() => SendToCharacter(e, to)">
+                            <i class="fa-solid fa-user-group" aria-hidden="true"></i> Send to @to.Name (@to.Alias)
+                        </button>
+                    }
+
+                    @if (CanSkin(e))
+                    {
+                        @if (skin != null)
+                        {
+                            <button type="button" class="rf-btn" @onclick="() => OpenSkins(e)"><i class="fa-solid fa-mask" aria-hidden="true"></i> Replace the skin</button>
+                            <button type="button" class="rf-btn" @onclick="() => RemoveSkin(e)"><i class="fa-solid fa-mask" aria-hidden="true"></i> Remove the skin</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="rf-btn" @onclick="() => OpenSkins(e)"><i class="fa-solid fa-mask" aria-hidden="true"></i> Change its look</button>
+                        }
+                    }
+
+                    @if (e.CanSell)
+                    {
+                        <button type="button" class="rf-btn rf-btn--danger" @onclick="() => OpenSell(e)">
+                            <i class="fa-solid fa-coins" aria-hidden="true"></i> Sell
+                        </button>
+                    }
+                    else if (!e.Stack.Equipped && e.WhyNotSell != null)
+                    {
+                        <p class="rf-gear-acts__note">@e.WhyNotSell</p>
+                    }
+                </div>
+            }
+        </div>
+    };
+}

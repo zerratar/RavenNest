@@ -90,6 +90,8 @@
         *@
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Overview)" class="rf-tab @SelectedClass(CharacterViewState.Overview)" @onclick="ShowOverview">Overview</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Skills)" class="rf-tab @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+        @* Gear is two tabs: what is worn (with the wearable part of the bag beside it), and the whole bag. *@
+        <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Equipment)" class="rf-tab @SelectedClass(CharacterViewState.Equipment)" @onclick="() => viewState = CharacterViewState.Equipment">Equipment</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Inventory)" class="rf-tab @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.SkillTrees)" class="rf-tab @SelectedClass(CharacterViewState.SkillTrees)" @onclick="() => viewState = CharacterViewState.SkillTrees">Skill trees</button>
         <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Pets)" class="rf-tab @SelectedClass(CharacterViewState.Pets)" @onclick="() => viewState = CharacterViewState.Pets">Pets</button>
@@ -121,10 +123,11 @@
         case CharacterViewState.Overview:
             <PlayerOverview Player="@SelectedPlayer" CanManage="CanManage"></PlayerOverview>
             break;
+        case CharacterViewState.Equipment:
+            <PlayerGear @key="@("equipment")" Player="@SelectedPlayer" CanManage="CanManage" View="equipment"></PlayerGear>
+            break;
         case CharacterViewState.Inventory:
-            <div class="rf-panel">
-                <PlayerInventory Player="@SelectedPlayer" CanManage="CanManage"></PlayerInventory>
-            </div>
+            <PlayerGear @key="@("inventory")" Player="@SelectedPlayer" CanManage="CanManage" View="inventory"></PlayerGear>
             break;
         case CharacterViewState.Skills:
             <PlayerSkills Player="@SelectedPlayer" CanManage="CanManage"></PlayerSkills>
@@ -252,6 +255,8 @@
         switch (Tab.Trim().ToLowerInvariant())
         {
             case "skills": viewState = CharacterViewState.Skills; break;
+            case "equipment":
+            case "gear": viewState = CharacterViewState.Equipment; break;
             case "inventory":
             case "items": viewState = CharacterViewState.Inventory; break;
             case "clan": viewState = CharacterViewState.Clan; break;
@@ -335,7 +340,8 @@
         Map,
         Boats,
         SkillTrees,
-        Pets
+        Pets,
+        Equipment
     }
 
     /// <summary>The character's own boats (the signed-in player's; none for somebody else's character).</summary>

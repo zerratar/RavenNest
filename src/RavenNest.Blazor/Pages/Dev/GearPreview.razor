@@ -1,0 +1,66 @@
+@layout DashboardLayout
+@page "/dev/gear-preview"
+@using RavenNest.Blazor.Services
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+@inject NavigationManager NavigationManager
+@inject ItemService ItemService
+
+@*
+    The Equipment and Inventory tabs of a character page with a made up character, for working on their look and
+    clicking through them without signing in. Only on a development server; elsewhere it is a page not found.
+
+    ?tab=    equipment (default) or inventory
+    &state=  owner (default)   the character's owner: everything can be done
+             visitor           somebody looking at the character: nothing can be changed
+             admin             an administrator: Add item and Set coins too
+             empty             a character that owns nothing
+    &pick=   an item's name, to open the page with it picked (&worn=1 for the worn one)
+
+    The character carries real items of the game, so the pictures, stats, sockets and comparisons are the real
+    ones. Every click changes this page's own made up character (GearPreviewBackend): nothing is saved or sent
+    anywhere, and a reload starts over.
+*@
+
+@if (Environment.EnvironmentName == "Development")
+{
+    <div class="rf-player">
+        <div class="rf-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="@(tab == "equipment")" class="rf-tab @(tab == "equipment" ? "is-active" : "")" @onclick='() => Open("equipment")'>Equipment</button>
+            <button type="button" role="tab" aria-selected="@(tab == "inventory")" class="rf-tab @(tab == "inventory" ? "is-active" : "")" @onclick='() => Open("inventory")'>Inventory</button>
+        </div>
+        <PlayerGear @key="tab" Player="player" CanManage="@(state != "visitor")" View="@tab" Backend="backend" InitialPick="pick" />
+    </div>
+}
+else
+{
+    <p class="rf-meta">Not found.</p>
+}
+
+@code {
+    private GearPreviewBackend backend;
+    private RavenNest.BusinessLogic.Extended.WebsitePlayer player;
+    private string tab = "equipment";
+    private string state = "owner";
+    private Guid? pick;
+
+    protected override void OnInitialized()
+    {
+        if (Environment.EnvironmentName != "Development") return;
+
+        var query = new Uri(NavigationManager.Uri).Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Split('=', 2)).Where(p => p.Length == 2).ToDictionary(p => p[0], p => Uri.UnescapeDataString(p[1].Replace('+', ' ')));
+        if (query.TryGetValue("tab", out var t) && t == "inventory") tab = "inventory";
+        if (query.TryGetValue("state", out var s)) state = s;
+
+        backend = new GearPreviewBackend(ItemService, state);
+        player = backend.GetPlayer(backend.CharacterId);
+        if (query.TryGetValue("pick", out var name)) pick = backend.StackOf(name, query.ContainsKey("worn"));
+    }
+
+    // The tabs switch in place, so what was done on one shows on the other, as on the real page.
+    private void Open(string to)
+    {
+        tab = to;
+        pick = null;
+    }
+}

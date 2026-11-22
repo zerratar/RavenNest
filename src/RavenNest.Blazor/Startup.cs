@@ -566,6 +566,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<CharacterLookService>();
             services.AddSingleton<LogoService>();
             services.AddSingleton<PlayerService>();
+            services.AddSingleton<GearService>();
             services.AddSingleton<NotificationService>();
             services.AddSingleton<TwitchService>();
             services.AddSingleton<RavenNest.Blazor.Services.Announcements.AnnouncementService>();
@@ -636,6 +637,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<RavenNest.BusinessLogic.Game.SkillTreeManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.GemManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.BattlePetManager>();
+            services.AddSingleton<RavenNest.BusinessLogic.Game.OutfitManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.TowerManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 

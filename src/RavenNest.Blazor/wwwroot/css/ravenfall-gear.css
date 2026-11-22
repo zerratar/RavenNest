@@ -1,0 +1,2070 @@
+/*
+  A character's gear: the Equipment tab and the Inventory tab (Components/PlayerGear.razor, .rf-gear).
+
+  Loaded after the design system, and only its tokens are used. The one table of raw colors is the gems' own
+  (below), as "r, g, b", so a socket dot has the color of the stone in it.
+
+  Text a player has to read is never smaller than --rf-size-small, never thinner than 600, and never fainter than
+  --rf-ink-muted: these pages are watched on streams.
+
+  Rarity: a tile, a slot or a name carries one of the shared rf-rarity- classes, which set its color. Borders and
+  glows here take currentColor from it, so nothing in this file knows the six bands.
+*/
+
+.is-gem-ruby { --gem: 232, 78, 78; }
+.is-gem-sapphire { --gem: 74, 144, 240; }
+.is-gem-topaz { --gem: 244, 196, 64; }
+.is-gem-emerald { --gem: 76, 196, 110; }
+.is-gem-diamond { --gem: 214, 232, 244; }
+.is-gem-onyx { --gem: 124, 118, 140; }
+.is-gem-amethyst { --gem: 176, 112, 232; }
+
+.rf-gear,
+.rf-gear *,
+.rf-gear-drawer,
+.rf-gear-drawer * {
+    box-sizing: border-box;
+}
+
+/* site.css paints every Font Awesome icon white. Here an icon takes the color of what it sits in (:where keeps
+   this no stronger than site.css's rule, so every "x i" rule below wins). */
+:where(.rf-gear, .rf-gear-drawer) .fa-solid,
+:where(.rf-gear, .rf-gear-drawer) .fa-regular,
+:where(.rf-gear, .rf-gear-drawer) .fa-sharp {
+    color: inherit;
+}
+
+.rf-gear {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+    color: var(--rf-ink);
+}
+
+.rf-gear .rf-panel {
+    margin-bottom: 0;
+}
+
+/* The small buttons of the design system are 12px, which a stream does not carry. */
+.rf-gear .rf-btn--small,
+.rf-gear-drawer .rf-btn--small {
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear .rf-btn[disabled],
+.rf-gear-drawer .rf-btn[disabled] {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.rf-gear .is-good,
+.rf-gear-drawer .is-good { color: var(--rf-good); }
+.rf-gear .is-bad,
+.rf-gear-drawer .is-bad { color: var(--rf-bad); }
+.rf-gear .is-same,
+.rf-gear-drawer .is-same { color: var(--rf-ink-muted); }
+
+/* ---- What the last action did ------------------------------------------- */
+.rf-gear-notice {
+    /* over the page, so nothing moves when it comes and goes; the page takes it away after a few seconds */
+    position: fixed;
+    top: var(--rf-space-4);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    width: max-content;
+    max-width: min(42rem, calc(100vw - 2 * var(--rf-space-4)));
+    padding: var(--rf-space-3) var(--rf-space-4);
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-good);
+    background: linear-gradient(var(--rf-good-wash), var(--rf-good-wash)), var(--rf-surface-raised);
+    box-shadow: var(--rf-shadow-lg);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+}
+
+.rf-gear-notice i { color: var(--rf-good); }
+
+.rf-gear-notice.is-bad {
+    border-color: var(--rf-bad);
+    background: linear-gradient(var(--rf-bad-wash), var(--rf-bad-wash)), var(--rf-surface-raised);
+}
+
+.rf-gear-notice.is-bad i { color: var(--rf-bad); }
+.rf-gear-notice span { flex: 1 1 auto; min-width: 0; }
+
+.rf-gear-notice__close {
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: var(--rf-ink-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rf-gear-notice__close:hover,
+.rf-gear-notice__close:focus-visible {
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+/* ---- Coins --------------------------------------------------------------- */
+.rf-gear-coins {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-left: auto;
+    color: var(--rf-gold);
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rf-gear-coins i { font-size: 0.95em; }
+
+/* ==========================================================================
+   Marks shared by slots and tiles
+   ========================================================================== */
+
+.rf-gear-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: 1px solid var(--rf-bg);
+    background: var(--rf-surface-raised);
+    color: var(--rf-ink);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.rf-gear-mark--worn {
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+    font-size: 0.78rem;
+}
+
+.rf-gear-mark--up { background: var(--rf-good); color: var(--rf-ink-inverse); }
+.rf-gear-mark--ench { background: var(--rf-surface-raised); color: var(--rf-gold-bright); }
+.rf-gear-mark--skin { background: var(--rf-surface-raised); color: var(--rf-rarity-epic); }
+.rf-gear-mark--lock { background: var(--rf-bad); color: var(--rf-ink-inverse); }
+
+/* Gem sockets as dots: hollow when empty, the stone's color when filled. */
+.rf-gear-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.rf-gear-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--rf-ink-muted);
+    background: var(--rf-bg);
+}
+
+.rf-gear-dot[class*="is-gem-"] {
+    border-color: var(--rf-bg);
+    background: rgb(var(--gem));
+    box-shadow: 0 0 0 1px rgba(var(--gem), 0.55), 0 0 5px rgba(var(--gem), 0.7);
+}
+
+.rf-gear-nopic {
+    font-size: 1.5rem;
+    color: var(--rf-ink-faint);
+}
+
+/* ==========================================================================
+   Equipment
+   ========================================================================== */
+
+.rf-gear-eq {
+    display: grid;
+    grid-template-columns: minmax(0, 1.28fr) minmax(0, 1fr);
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-gear-doll {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+    /* the character stays in view while a long bag scrolls, so a piece far down can still reach its slot */
+    position: sticky;
+    top: var(--rf-space-4);
+}
+
+/* ---- The row of skills --------------------------------------------------- */
+.rf-gear-skills__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-gear-skills__label {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.rf-gear-skills__now {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-skills__now b { color: var(--rf-ink); font-weight: 800; }
+
+.rf-gear-skills__dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--rf-good);
+    box-shadow: 0 0 0 3px var(--rf-good-wash);
+}
+
+.rf-gear-skills__row {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-skill {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-1);
+    padding: var(--rf-space-2) var(--rf-space-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-gear-skill__pic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    border: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-3);
+}
+
+.rf-gear-skill__pic img {
+    width: 1.4rem;
+    height: 1.4rem;
+    object-fit: contain;
+    opacity: 0.8;
+}
+
+.rf-gear-skill:hover,
+.rf-gear-skill:focus-visible {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-strong);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+.rf-gear-skill:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-gear-skill.is-on {
+    background: var(--rf-gold-wash);
+    border-color: var(--rf-gold);
+    color: var(--rf-gold-bright);
+}
+
+.rf-gear-skill.is-on .rf-gear-skill__pic {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold);
+}
+
+/* the game's glyphs are white; on the gold disc they read dark */
+.rf-gear-skill.is-on .rf-gear-skill__pic img {
+    opacity: 1;
+    filter: brightness(0.12);
+}
+
+/* the skill being trained: a small green light, the same as beside "Training now" */
+.rf-gear-skill.is-trained::after {
+    content: "";
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--rf-good);
+    box-shadow: 0 0 0 3px var(--rf-good-wash);
+}
+
+/* ---- The character and its slots ----------------------------------------- */
+.rf-gear-figure {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 14rem) minmax(0, 1fr);
+    gap: var(--rf-space-3);
+    align-items: stretch;
+}
+
+.rf-gear-slots {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    min-width: 0;
+}
+
+.rf-gear-slot {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    width: 100%;
+    min-height: 4.5rem;
+    padding: var(--rf-space-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    /* a slot's color is its piece's rarity; the text sets its own */
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), box-shadow var(--rf-transition), opacity var(--rf-transition);
+}
+
+.rf-gear-slot.is-empty {
+    color: var(--rf-ink-faint);
+    border-style: dashed;
+    border-color: var(--rf-line-strong);
+    background: none;
+}
+
+.rf-gear-slot__pic {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--rf-radius);
+    border: 2px solid color-mix(in srgb, currentColor 70%, transparent);
+    background:
+        radial-gradient(circle at 50% 40%, color-mix(in srgb, currentColor 22%, transparent), transparent 72%),
+        var(--rf-surface-3);
+}
+
+.rf-gear-slot.is-empty .rf-gear-slot__pic {
+    border: 2px dashed var(--rf-line-strong);
+    background: var(--rf-surface-1);
+}
+
+.rf-gear-slot__pic > img {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+}
+
+.rf-gear-slot__pic > img.rf-gear-slot__glyph,
+.rf-gear-pick__pic > img.rf-gear-slot__glyph {
+    width: 52%;
+    height: 52%;
+    opacity: 0.32;
+    filter: none;
+}
+
+i.rf-gear-slot__glyph {
+    font-size: 1.35rem;
+    color: var(--rf-ink-faint);
+    opacity: 0.8;
+}
+
+.rf-gear-slot__pic .rf-gear-mark {
+    position: absolute;
+    top: -0.4rem;
+    right: -0.4rem;
+}
+
+.rf-gear-slot__pic .rf-gear-mark--skin { right: auto; left: -0.4rem; }
+
+/* a slot's sockets sit in its frame, like stones in a setting */
+.rf-gear-slot__pic .rf-gear-dots {
+    position: absolute;
+    left: 50%;
+    bottom: -0.42rem;
+    transform: translateX(-50%);
+    gap: 2px;
+}
+
+.rf-gear-slot__pic .rf-gear-dot {
+    width: 0.72rem;
+    height: 0.72rem;
+}
+
+.rf-gear-slot__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.rf-gear-slot__label {
+    color: var(--rf-ink-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.rf-gear-slot__name {
+    /* the name keeps the rarity's color from the slot */
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    /* two lines hold every piece the game has at this width; a third would push the column out of step */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.rf-gear-slot.is-empty .rf-gear-slot__name {
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+.rf-gear-slot:hover,
+.rf-gear-slot:focus-visible {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-strong);
+    outline: none;
+}
+
+.rf-gear-slot:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-gear-slot.is-picked {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold-wash);
+    box-shadow: 0 0 0 1px var(--rf-gold);
+}
+
+/* ---- The stage the character stands on ------------------------------------ */
+.rf-gear-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 26rem;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    overflow: hidden;
+    /* a pool of light behind the figure, dark at the edges: the customizer's own backdrop, from tokens */
+    background:
+        radial-gradient(ellipse 70% 40% at 50% 42%, var(--rf-gold-wash) 0%, transparent 70%),
+        radial-gradient(ellipse 110% 75% at 50% 40%, var(--rf-surface-raised) 0%, var(--rf-surface-2) 55%, var(--rf-bg) 100%);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-gear-stage__canvas {
+    position: absolute;
+    inset: 3.2rem 0 5.6rem 0;
+}
+
+.rf-gear-stage__canvas canvas {
+    display: block;
+}
+
+/* Until the character is drawn, and where it cannot be: a still figure in the same light. */
+.rf-gear-stage__still {
+    position: absolute;
+    inset: 3.2rem 0 5.6rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--rf-surface-raised);
+    font-size: 11rem;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.rf-gear-stage.is-3d .rf-gear-stage__still,
+.rf-gear-stage.is-flat .rf-gear-stage__still {
+    opacity: 0;
+}
+
+.rf-gear-stage.is-loading .rf-gear-stage__still {
+    opacity: 0.5;
+}
+
+.rf-gear-stage__plate {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--rf-space-2) var(--rf-space-2) 0;
+    text-align: center;
+    pointer-events: none;
+}
+
+.rf-gear-stage__name {
+    max-width: 100%;
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.rf-gear-stage__level {
+    color: var(--rf-gold);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear-stage__boat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    margin-top: auto;
+    padding: var(--rf-space-2);
+}
+
+.rf-gear-stage__note {
+    align-self: center;
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: help;
+}
+
+.rf-gear-stage__boat .rf-gear-slot {
+    min-height: 0;
+    padding: var(--rf-space-1) var(--rf-space-2);
+    background: color-mix(in srgb, var(--rf-surface-1) 82%, transparent);
+}
+
+.rf-gear-stage__boat .rf-gear-slot__pic {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+/* ---- What is picked ------------------------------------------------------- */
+.rf-gear-pick {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    min-height: 5.25rem;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-pick__pic {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--rf-radius);
+    border: 2px solid color-mix(in srgb, currentColor 70%, transparent);
+    background: var(--rf-surface-3);
+}
+
+.rf-gear-pick__pic.is-empty {
+    border: 2px dashed var(--rf-line-strong);
+    color: var(--rf-ink-faint);
+}
+
+.rf-gear-pick__pic > img {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+}
+
+.rf-gear-pick__text {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.rf-gear-pick__text b {
+    font-size: var(--rf-size-body);
+    font-weight: 800;
+}
+
+.rf-gear-pick__text b:not([class*="rf-rarity-"]) { color: var(--rf-ink); }
+
+.rf-gear-pick__gains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--rf-space-3);
+}
+
+.rf-gear-pick__text em {
+    font-style: normal;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rf-gear-pick__acts {
+    flex: none;
+    display: flex;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-pick__hint {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* nothing picked: the line is a place waiting, not a panel */
+.rf-gear-pick:has(> .rf-gear-pick__hint) {
+    border-style: dashed;
+    border-color: var(--rf-line-strong);
+    background: none;
+}
+
+.rf-gear-pick__hint i { color: var(--rf-ink-faint); }
+
+/* the same line kept at the bottom of the screen, only where the bag is under the character (see below) */
+.rf-gear-pick--float {
+    display: none;
+}
+
+/* ---- The numbers ----------------------------------------------------------- */
+.rf-gear-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(5.6rem, 1fr));
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    overflow: hidden;
+}
+
+.rf-gear-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: var(--rf-space-3) var(--rf-space-1);
+    text-align: center;
+    box-shadow: 1px 0 0 var(--rf-line), 0 1px 0 var(--rf-line);
+}
+
+.rf-gear-stat__label {
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rf-gear-stat__label i { color: var(--rf-ink-faint); margin-right: 0.15em; }
+
+.rf-gear-stat__value {
+    color: var(--rf-gold);
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-gear-stat__note {
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rf-gear-doll__foot {
+    display: flex;
+    align-items: stretch;
+    gap: var(--rf-space-3);
+}
+
+.rf-gear-best {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+}
+
+.rf-gear-allstats { font-weight: 700; }
+
+.rf-gear-sheet {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: var(--rf-space-3) var(--rf-space-5);
+    padding: var(--rf-space-4);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-sheet__title {
+    margin: 0 0 var(--rf-space-1);
+    color: var(--rf-gold);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.rf-gear-sheet__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    padding: 2px 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-sheet__row b {
+    color: var(--rf-ink);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rf-gear-sheet__note {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+/* ---- The bag beside the character ------------------------------------------ */
+.rf-gear-bag {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    transition: border-color var(--rf-transition), box-shadow var(--rf-transition);
+}
+
+.rf-gear-bag__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    flex-wrap: wrap;
+}
+
+.rf-gear-bag__title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+}
+
+.rf-gear-bag__title i { color: var(--rf-ink-muted); font-size: 0.85em; }
+
+.rf-gear-bag__count {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+}
+
+.rf-gear-bag__tools {
+    display: flex;
+}
+
+.rf-gear-bag__tools .rf-search,
+.rf-gear-invtools .rf-search {
+    flex: 1 1 auto;
+    max-width: none;
+    padding: var(--rf-space-3);
+    font-size: var(--rf-size-body);
+    font-weight: 600;
+}
+
+.rf-gear-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: 999px;
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-gear-chip i { color: var(--rf-ink-muted); font-size: 0.9em; }
+
+.rf-gear-chip b {
+    color: var(--rf-ink-muted);
+    font-weight: 700;
+}
+
+.rf-gear-chip:hover,
+.rf-gear-chip:focus-visible {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+.rf-gear-chip:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-gear-chip.is-on {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-gear-chip.is-on i,
+.rf-gear-chip.is-on b { color: var(--rf-ink-inverse); }
+
+.rf-gear-chip--sub {
+    padding: var(--rf-space-1) var(--rf-space-3);
+    border-radius: var(--rf-radius-sm);
+    background: none;
+}
+
+.rf-gear-chip--sub.is-on {
+    background: var(--rf-gold-wash);
+    border-color: var(--rf-gold);
+    color: var(--rf-gold-bright);
+}
+
+/* the line over the grid: how to put a piece on, or what the outlines mean. The same height either way. */
+.rf-gear-fits {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    min-height: 3rem;
+    margin: 0;
+    padding: var(--rf-space-1) var(--rf-space-3);
+    border: 1px solid transparent;
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-fits i { color: var(--rf-ink-faint); margin-right: 0.3em; }
+.rf-gear-fits b { font-weight: 800; }
+
+.rf-gear-fits.is-on {
+    border-color: var(--rf-line-gold);
+    background: var(--rf-gold-wash);
+    color: var(--rf-ink);
+}
+
+.rf-gear-fits.is-on i { color: var(--rf-gold); }
+
+.rf-gear-fits .rf-btn--small {
+    flex: none;
+    padding: var(--rf-space-1) var(--rf-space-3);
+}
+
+.rf-gear-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-1);
+    padding: var(--rf-space-6) var(--rf-space-4);
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-body);
+    font-weight: 600;
+    text-align: center;
+}
+
+.rf-gear-empty i { font-size: 2rem; color: var(--rf-ink-faint); margin-bottom: var(--rf-space-2); }
+.rf-gear-empty p { margin: 0; }
+.rf-gear-empty b { color: var(--rf-ink); font-weight: 800; }
+.rf-gear-empty .rf-btn { margin-top: var(--rf-space-3); }
+
+/* ==========================================================================
+   Tiles
+   ========================================================================== */
+
+.rf-gear-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-grid--inv {
+    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+}
+
+.rf-gear-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: var(--rf-radius);
+    /* currentColor is the rarity, from the rf-rarity- class on the tile */
+    border: 2px solid color-mix(in srgb, currentColor 62%, transparent);
+    background:
+        radial-gradient(circle at 50% 38%, color-mix(in srgb, currentColor 20%, transparent), transparent 70%),
+        var(--rf-surface-2);
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform var(--rf-transition), box-shadow var(--rf-transition), opacity var(--rf-transition), filter var(--rf-transition), border-color var(--rf-transition);
+}
+
+/* common things are the many: a quiet edge, so the good ones stand out */
+.rf-gear-tile.rf-rarity-common {
+    border-color: var(--rf-line-strong);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-tile__pic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.rf-gear-tile__pic img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+}
+
+.rf-gear-tile:hover,
+.rf-gear-tile:focus-visible {
+    border-color: currentColor;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    outline: none;
+}
+
+.rf-gear-tile.rf-rarity-common:hover,
+.rf-gear-tile.rf-rarity-common:focus-visible {
+    border-color: var(--rf-ink-muted);
+}
+
+.rf-gear-tile.is-picked,
+.rf-gear-tile.is-picked:hover {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 2px var(--rf-bg), 0 0 0 4px var(--rf-gold), 0 0 1rem var(--rf-line-gold);
+}
+
+.rf-gear-tile > .rf-gear-mark--worn {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+}
+
+.rf-gear-tile__marks {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    display: flex;
+    gap: 2px;
+}
+
+.rf-gear-tile > .rf-gear-dots {
+    position: absolute;
+    left: 5px;
+    bottom: 5px;
+}
+
+.rf-gear-tile__amount {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    padding: 0 0.3rem;
+    border-radius: var(--rf-radius-sm);
+    background: color-mix(in srgb, var(--rf-bg) 82%, transparent);
+    color: var(--rf-ink);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+}
+
+/* a piece the character cannot wear yet: there, but plainly not for now */
+.rf-gear-tile.is-barred .rf-gear-tile__pic img {
+    opacity: 0.45;
+    filter: grayscale(0.7);
+}
+
+/* picking several: every tile shows its box; worn pieces cannot be picked */
+.rf-gear-tile__check {
+    position: absolute;
+    left: 3px;
+    bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: var(--rf-radius-sm);
+    border: 2px solid var(--rf-ink-muted);
+    background: var(--rf-bg);
+    color: transparent;
+    font-size: 0.75rem;
+}
+
+.rf-gear-tile__check ~ .rf-gear-dots,
+.rf-gear-tile:has(.rf-gear-tile__check) > .rf-gear-dots {
+    display: none;
+}
+
+.rf-gear-tile.is-chosen {
+    border-color: var(--rf-gold);
+    box-shadow: 0 0 0 2px var(--rf-bg), 0 0 0 4px var(--rf-gold);
+}
+
+.rf-gear-tile.is-chosen .rf-gear-tile__check {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-gear-tile.is-locked {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.rf-gear-tile.is-locked .rf-gear-tile__check { display: none; }
+
+/* ---- Dragging --------------------------------------------------------------
+   The page's script (js/rf-gear.js) puts the marks on; nothing here changes what is worn. */
+.can-act .rf-gear-tile[data-gear-drag],
+.can-act .rf-gear-slot[data-gear-drag] {
+    touch-action: manipulation;
+}
+
+body.rf-gear-dragging,
+body.rf-gear-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+}
+
+.rf-gear-ghost {
+    position: fixed;
+    left: -2.25rem;
+    top: -2.25rem;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border: 2px solid var(--rf-gold);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-3);
+    box-shadow: var(--rf-shadow-lg), 0 0 1.2rem var(--rf-line-gold);
+    pointer-events: none;
+    will-change: transform;
+}
+
+.rf-gear-ghost img {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+}
+
+[data-gear-dragging] {
+    opacity: 0.35;
+}
+
+.rf-gear-slot[data-gear-over] {
+    border-color: var(--rf-gold-bright);
+    background: var(--rf-gold-wash);
+    box-shadow: 0 0 0 3px var(--rf-gold), 0 0 1.4rem var(--rf-line-gold);
+    transform: scale(1.03);
+}
+
+/* a worn piece on its way back to the bag */
+.rf-gear[data-drag-from="worn"] .rf-gear-bag {
+    border-color: var(--rf-line-gold);
+    box-shadow: var(--rf-shadow), 0 0 0 2px var(--rf-gold-wash);
+}
+
+.rf-gear[data-drag-from="worn"] .rf-gear-bag[data-gear-over] {
+    border-color: var(--rf-gold);
+    box-shadow: var(--rf-shadow), 0 0 0 3px var(--rf-gold);
+}
+
+/* ==========================================================================
+   Inventory
+   ========================================================================== */
+
+.rf-gear-inv {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 25rem;
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-gear-invmain {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    padding-bottom: 0;
+}
+
+.rf-gear-invtools {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    flex-wrap: wrap;
+}
+
+.rf-gear-invtools .rf-search { flex-basis: 14rem; }
+
+.rf-gear-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.rf-gear-sort select {
+    padding: var(--rf-space-3);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* The count and the "several" actions stay in reach under a long bag. */
+.rf-gear-invfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    flex-wrap: wrap;
+    margin: var(--rf-space-2) calc(var(--rf-space-5) * -1) 0;
+    padding: var(--rf-space-3) var(--rf-space-5);
+    border-top: 1px solid var(--rf-line-strong);
+    border-radius: 0 0 var(--rf-radius) var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-invfoot__text {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-3);
+    flex-wrap: wrap;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-invfoot__text b {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 800;
+}
+
+.rf-gear-invfoot__text b i { color: var(--rf-ink-muted); margin-right: 0.25em; }
+
+.rf-gear-invfoot__acts {
+    display: flex;
+    gap: var(--rf-space-2);
+    flex-wrap: wrap;
+}
+
+/* ---- The picked item, beside the grid --------------------------------------- */
+.rf-gear-side {
+    position: sticky;
+    top: var(--rf-space-4);
+    max-height: calc(100vh - var(--rf-space-6));
+    overflow-y: auto;
+    padding: var(--rf-space-4);
+}
+
+.rf-gear-side__rest {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-5) var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    text-align: center;
+}
+
+.rf-gear-side__rest > i { font-size: 1.8rem; color: var(--rf-ink-faint); }
+.rf-gear-side__rest p { margin: 0; }
+.rf-gear-side__rest b { color: var(--rf-ink); font-size: var(--rf-size-heading); font-weight: 800; }
+
+.rf-gear-legend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    margin: var(--rf-space-4) 0 0;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    list-style: none;
+    text-align: left;
+    align-self: stretch;
+}
+
+.rf-gear-legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-gear-legend li > :first-child {
+    flex: none;
+    min-width: 1.6rem;
+    justify-content: center;
+}
+
+.rf-gear-side__close {
+    position: absolute;
+    top: var(--rf-space-2);
+    right: var(--rf-space-2);
+    z-index: 1;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: var(--rf-ink-muted);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rf-gear-side__close:hover,
+.rf-gear-side__close:focus-visible {
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+.rf-gear-sheetscrim { display: none; }
+
+/* ==========================================================================
+   The item panel (the side of the Inventory tab, the drawer of the Equipment tab)
+   ========================================================================== */
+
+.rf-gear-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+}
+
+.rf-gear-item__head {
+    display: flex;
+    gap: var(--rf-space-3);
+    padding-right: var(--rf-space-5);
+}
+
+.rf-gear-item__pic {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: var(--rf-radius);
+    border: 2px solid color-mix(in srgb, currentColor 70%, transparent);
+    background:
+        radial-gradient(circle at 50% 40%, color-mix(in srgb, currentColor 24%, transparent), transparent 72%),
+        var(--rf-surface-2);
+}
+
+.rf-gear-item__pic > img {
+    width: 84%;
+    height: 84%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.45));
+}
+
+.rf-gear-item__pic .rf-gear-nopic { font-size: 2.2rem; }
+
+/* the look it wears in the game, small in the corner */
+.rf-gear-item__skin {
+    position: absolute;
+    left: -0.4rem;
+    bottom: -0.4rem;
+    display: flex;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 2px;
+    border-radius: 50%;
+    border: 2px solid var(--rf-rarity-epic);
+    background: var(--rf-surface-1);
+}
+
+.rf-gear-item__skin img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.rf-gear-item__title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    min-width: 0;
+}
+
+.rf-gear-item__name {
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.rf-gear-item__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1);
+}
+
+.rf-gear-item__badges .rf-badge {
+    padding: 2px var(--rf-space-2);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.rf-gear-item__what,
+.rf-gear-item__desc {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.rf-gear-item__what { color: var(--rf-ink); }
+
+/* ---- This piece against the worn one ----------------------------------------- */
+.rf-gear-compare,
+.rf-gear-facts {
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-compare__head,
+.rf-gear-compare__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3.6rem 3.6rem 4.2rem;
+    gap: var(--rf-space-2);
+    align-items: baseline;
+    padding: var(--rf-space-1) var(--rf-space-3);
+    text-align: right;
+}
+
+.rf-gear-compare__head {
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    border-bottom: 1px solid var(--rf-line);
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.rf-gear-compare__row > :first-child {
+    color: var(--rf-ink-muted);
+    text-align: left;
+}
+
+.rf-gear-compare__row b {
+    color: var(--rf-ink);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-gear-compare__row span { font-variant-numeric: tabular-nums; }
+
+.rf-gear-compare__with,
+.rf-gear-compare__verdict {
+    margin: 0;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+    color: var(--rf-ink-muted);
+}
+
+.rf-gear-item > .rf-gear-compare__with {
+    padding: 0;
+    border: 0;
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-compare__verdict {
+    color: var(--rf-good);
+    font-weight: 800;
+}
+
+.rf-gear-facts__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-1) var(--rf-space-3);
+    color: var(--rf-ink-muted);
+}
+
+.rf-gear-facts__row + .rf-gear-facts__row { border-top: 1px solid var(--rf-line); }
+
+.rf-gear-facts__row b {
+    color: var(--rf-ink);
+    font-weight: 800;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-gear-facts__row em {
+    margin-left: 0.3em;
+    font-style: normal;
+}
+
+.rf-gear-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-block__title {
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 800;
+}
+
+.rf-gear-block__none {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+.rf-gear-sockets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-blocked {
+    margin: 0;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-bad);
+    border-radius: var(--rf-radius);
+    background: var(--rf-bad-wash);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear-blocked i { color: var(--rf-bad); margin-right: 0.3em; }
+
+.rf-gear-acts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    margin-top: var(--rf-space-1);
+}
+
+.rf-gear-acts .rf-btn {
+    justify-content: center;
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+}
+
+.rf-gear-acts .rf-gear-acts__main {
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+}
+
+.rf-gear-acts__note {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ---- The drawer of the Equipment tab ------------------------------------------ */
+.rf-gear-drawer-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 89;
+    background: var(--rf-scrim);
+}
+
+.rf-gear-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    width: min(27rem, 100vw);
+    padding: var(--rf-space-5) var(--rf-space-4);
+    overflow-y: auto;
+    border-left: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-1);
+    box-shadow: var(--rf-shadow-lg);
+    color: var(--rf-ink);
+}
+
+/* ==========================================================================
+   Dialogs
+   ========================================================================== */
+
+.rf-gear-confirm {
+    margin: var(--rf-space-3) 0;
+    font-size: var(--rf-size-body);
+    line-height: 1.5;
+}
+
+.rf-gear-price {
+    color: var(--rf-gold);
+    white-space: nowrap;
+}
+
+.rf-gear-warning {
+    margin: var(--rf-space-3) 0;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-bad);
+    border-radius: var(--rf-radius);
+    background: var(--rf-bad-wash);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear-warning i { color: var(--rf-bad); margin-right: 0.3em; }
+
+.rf-gear-confirmlist {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 var(--rf-space-3);
+    padding: 0;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    list-style: none;
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-gear-confirmlist li {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-1) var(--rf-space-3);
+}
+
+.rf-gear-confirmlist li + li { border-top: 1px solid var(--rf-line); }
+.rf-gear-confirmlist b { color: var(--rf-ink-muted); }
+
+.rf-gear-confirmlist__pic {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.rf-gear-confirmlist__pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.rf-gear-confirmlist__pic .rf-gear-nopic { font-size: 1rem; }
+
+.rf-gear-confirmlist__worth {
+    margin-left: auto;
+    color: var(--rf-gold);
+    white-space: nowrap;
+}
+
+.rf-gear-confirmlist__more { color: var(--rf-ink-muted); }
+
+/* ---- The skin picker ----------------------------------------------------------- */
+.rf-gear-skins {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: var(--rf-space-2);
+    max-height: 22rem;
+    margin-bottom: var(--rf-space-3);
+    padding: 3px;
+    overflow-y: auto;
+}
+
+.rf-gear-skin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--rf-space-2);
+    border: 2px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.rf-gear-skin__pic {
+    display: flex;
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+.rf-gear-skin__pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.rf-gear-skin__name {
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.rf-gear-skin__meta {
+    color: var(--rf-ink-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rf-gear-skin:hover,
+.rf-gear-skin:focus-visible {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-strong);
+    outline: none;
+}
+
+.rf-gear-skin.is-on {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold-wash);
+}
+
+/* ==========================================================================
+   Narrower screens
+   ========================================================================== */
+
+/* the bag goes under the character */
+@media (max-width: 1180px) {
+    .rf-gear-eq {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rf-gear-doll {
+        position: static;
+    }
+
+    .rf-gear-pick--float {
+        display: flex;
+        position: fixed;
+        left: var(--rf-space-3);
+        right: var(--rf-space-3);
+        bottom: var(--rf-space-3);
+        z-index: 80;
+        border-color: var(--rf-gold);
+        background: var(--rf-surface-1);
+        box-shadow: var(--rf-shadow-lg);
+    }
+
+    /* room for it under the last row of the bag */
+    .rf-gear-eq.has-float {
+        padding-bottom: 6.5rem;
+    }
+
+    .rf-gear-inv {
+        grid-template-columns: minmax(0, 1fr) 20rem;
+    }
+}
+
+/* the item panel becomes a sheet from the bottom, over the grid */
+@media (max-width: 860px) {
+    .rf-gear-inv {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rf-gear-side {
+        display: none;
+    }
+
+    .rf-gear-side.is-open {
+        display: block;
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 90;
+        max-height: 86vh;
+        max-height: 86dvh;
+        margin: 0;
+        padding: var(--rf-space-4);
+        border-radius: var(--rf-radius-lg) var(--rf-radius-lg) 0 0;
+        border-color: var(--rf-line-strong);
+        box-shadow: var(--rf-shadow-lg);
+    }
+
+    .rf-gear-inv.has-pick .rf-gear-sheetscrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 89;
+        background: var(--rf-scrim);
+    }
+
+    .rf-gear-drawer {
+        top: auto;
+        left: 0;
+        width: auto;
+        max-height: 86vh;
+        max-height: 86dvh;
+        border-left: 0;
+        border-top: 1px solid var(--rf-line-strong);
+        border-radius: var(--rf-radius-lg) var(--rf-radius-lg) 0 0;
+    }
+}
+
+/* a phone: the slots are their pictures with the slot's name under them, and the picked one is named below */
+@media (max-width: 640px) {
+    .rf-gear .rf-panel {
+        padding: var(--rf-space-3);
+    }
+
+    .rf-gear-skills__head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--rf-space-1);
+    }
+
+    .rf-gear-skills__row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .rf-gear-skill {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: var(--rf-space-2);
+        padding: var(--rf-space-2);
+    }
+
+    .rf-gear-skill__pic {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .rf-gear-skill__pic img {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .rf-gear-figure {
+        grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem;
+        gap: var(--rf-space-2);
+    }
+
+    .rf-gear-slots {
+        gap: var(--rf-space-1);
+    }
+
+    .rf-gear-slots .rf-gear-slot {
+        flex-direction: column;
+        gap: 2px;
+        min-height: 0;
+        padding: var(--rf-space-1) 2px;
+        text-align: center;
+    }
+
+    .rf-gear-slots .rf-gear-slot__pic {
+        width: 3.25rem;
+        height: 3.25rem;
+    }
+
+    .rf-gear-slots .rf-gear-slot__name {
+        display: none;
+    }
+
+    .rf-gear-slots .rf-gear-slot__label {
+        font-size: 0.75rem;
+        letter-spacing: 0;
+        text-transform: none;
+        white-space: nowrap;
+    }
+
+
+    .rf-gear-stage {
+        min-height: 0;
+    }
+
+    .rf-gear-stage__still {
+        font-size: 8rem;
+    }
+
+    .rf-gear-pick {
+        flex-wrap: wrap;
+    }
+
+    .rf-gear-pick__text {
+        flex-basis: calc(100% - 4rem);
+    }
+
+    .rf-gear-pick__acts {
+        flex: 1 1 100%;
+    }
+
+    .rf-gear-pick__acts .rf-btn {
+        flex: 1 1 0;
+        justify-content: center;
+        padding-top: var(--rf-space-3);
+        padding-bottom: var(--rf-space-3);
+    }
+
+    .rf-gear-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .rf-gear-stat__value {
+        font-size: 1.25rem;
+    }
+
+    .rf-gear-doll__foot {
+        flex-direction: column-reverse;
+    }
+
+    .rf-gear-allstats {
+        justify-content: center;
+    }
+
+    .rf-gear-grid,
+    .rf-gear-grid--inv {
+        grid-template-columns: repeat(auto-fill, minmax(4.1rem, 1fr));
+    }
+
+    .rf-gear-coins {
+        font-size: var(--rf-size-body);
+    }
+
+    .rf-gear-invfoot {
+        margin-left: calc(var(--rf-space-3) * -1);
+        margin-right: calc(var(--rf-space-3) * -1);
+        padding: var(--rf-space-3);
+    }
+
+    .rf-gear-invfoot__acts {
+        width: 100%;
+    }
+
+    .rf-gear-invfoot__acts .rf-btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .rf-gear-sort {
+        flex: 1 1 auto;
+    }
+
+    .rf-gear-sort select {
+        flex: 1 1 auto;
+    }
+}
+
+/* ==========================================================================
+   Where a piece goes
+   --------------------------------------------------------------------------
+   With a slot picked (data-sel-slot, from the page) or under the mouse (data-hover-slot, from the script), the
+   pieces of the bag that go in it are outlined and the rest dimmed. While a piece is dragged (data-drag-slot) or
+   under the mouse (data-hover-piece), its slot lights up and the other slots step back.
+
+   CSS cannot compare an attribute of one element with an attribute of another, so each of the thirteen slots has
+   its line in the four lists below.
+   ========================================================================== */
+
+.rf-gear[data-sel-slot="head"] .rf-gear-bag .rf-gear-tile:not([data-slot="head"]),
+.rf-gear[data-hover-slot="head"] .rf-gear-bag .rf-gear-tile:not([data-slot="head"]),
+.rf-gear[data-sel-slot="amulet"] .rf-gear-bag .rf-gear-tile:not([data-slot="amulet"]),
+.rf-gear[data-hover-slot="amulet"] .rf-gear-bag .rf-gear-tile:not([data-slot="amulet"]),
+.rf-gear[data-sel-slot="chest"] .rf-gear-bag .rf-gear-tile:not([data-slot="chest"]),
+.rf-gear[data-hover-slot="chest"] .rf-gear-bag .rf-gear-tile:not([data-slot="chest"]),
+.rf-gear[data-sel-slot="gloves"] .rf-gear-bag .rf-gear-tile:not([data-slot="gloves"]),
+.rf-gear[data-hover-slot="gloves"] .rf-gear-bag .rf-gear-tile:not([data-slot="gloves"]),
+.rf-gear[data-sel-slot="leggings"] .rf-gear-bag .rf-gear-tile:not([data-slot="leggings"]),
+.rf-gear[data-hover-slot="leggings"] .rf-gear-bag .rf-gear-tile:not([data-slot="leggings"]),
+.rf-gear[data-sel-slot="boots"] .rf-gear-bag .rf-gear-tile:not([data-slot="boots"]),
+.rf-gear[data-hover-slot="boots"] .rf-gear-bag .rf-gear-tile:not([data-slot="boots"]),
+.rf-gear[data-sel-slot="melee"] .rf-gear-bag .rf-gear-tile:not([data-slot="melee"]),
+.rf-gear[data-hover-slot="melee"] .rf-gear-bag .rf-gear-tile:not([data-slot="melee"]),
+.rf-gear[data-sel-slot="ranged"] .rf-gear-bag .rf-gear-tile:not([data-slot="ranged"]),
+.rf-gear[data-hover-slot="ranged"] .rf-gear-bag .rf-gear-tile:not([data-slot="ranged"]),
+.rf-gear[data-sel-slot="magic"] .rf-gear-bag .rf-gear-tile:not([data-slot="magic"]),
+.rf-gear[data-hover-slot="magic"] .rf-gear-bag .rf-gear-tile:not([data-slot="magic"]),
+.rf-gear[data-sel-slot="shield"] .rf-gear-bag .rf-gear-tile:not([data-slot="shield"]),
+.rf-gear[data-hover-slot="shield"] .rf-gear-bag .rf-gear-tile:not([data-slot="shield"]),
+.rf-gear[data-sel-slot="ring"] .rf-gear-bag .rf-gear-tile:not([data-slot="ring"]),
+.rf-gear[data-hover-slot="ring"] .rf-gear-bag .rf-gear-tile:not([data-slot="ring"]),
+.rf-gear[data-sel-slot="pet"] .rf-gear-bag .rf-gear-tile:not([data-slot="pet"]),
+.rf-gear[data-hover-slot="pet"] .rf-gear-bag .rf-gear-tile:not([data-slot="pet"]),
+.rf-gear[data-sel-slot="boat"] .rf-gear-bag .rf-gear-tile:not([data-slot="boat"]),
+.rf-gear[data-hover-slot="boat"] .rf-gear-bag .rf-gear-tile:not([data-slot="boat"]) {
+    opacity: 0.25;
+    filter: saturate(0.5);
+}
+
+.rf-gear[data-sel-slot="head"] .rf-gear-bag .rf-gear-tile[data-slot="head"],
+.rf-gear[data-hover-slot="head"] .rf-gear-bag .rf-gear-tile[data-slot="head"],
+.rf-gear[data-sel-slot="amulet"] .rf-gear-bag .rf-gear-tile[data-slot="amulet"],
+.rf-gear[data-hover-slot="amulet"] .rf-gear-bag .rf-gear-tile[data-slot="amulet"],
+.rf-gear[data-sel-slot="chest"] .rf-gear-bag .rf-gear-tile[data-slot="chest"],
+.rf-gear[data-hover-slot="chest"] .rf-gear-bag .rf-gear-tile[data-slot="chest"],
+.rf-gear[data-sel-slot="gloves"] .rf-gear-bag .rf-gear-tile[data-slot="gloves"],
+.rf-gear[data-hover-slot="gloves"] .rf-gear-bag .rf-gear-tile[data-slot="gloves"],
+.rf-gear[data-sel-slot="leggings"] .rf-gear-bag .rf-gear-tile[data-slot="leggings"],
+.rf-gear[data-hover-slot="leggings"] .rf-gear-bag .rf-gear-tile[data-slot="leggings"],
+.rf-gear[data-sel-slot="boots"] .rf-gear-bag .rf-gear-tile[data-slot="boots"],
+.rf-gear[data-hover-slot="boots"] .rf-gear-bag .rf-gear-tile[data-slot="boots"],
+.rf-gear[data-sel-slot="melee"] .rf-gear-bag .rf-gear-tile[data-slot="melee"],
+.rf-gear[data-hover-slot="melee"] .rf-gear-bag .rf-gear-tile[data-slot="melee"],
+.rf-gear[data-sel-slot="ranged"] .rf-gear-bag .rf-gear-tile[data-slot="ranged"],
+.rf-gear[data-hover-slot="ranged"] .rf-gear-bag .rf-gear-tile[data-slot="ranged"],
+.rf-gear[data-sel-slot="magic"] .rf-gear-bag .rf-gear-tile[data-slot="magic"],
+.rf-gear[data-hover-slot="magic"] .rf-gear-bag .rf-gear-tile[data-slot="magic"],
+.rf-gear[data-sel-slot="shield"] .rf-gear-bag .rf-gear-tile[data-slot="shield"],
+.rf-gear[data-hover-slot="shield"] .rf-gear-bag .rf-gear-tile[data-slot="shield"],
+.rf-gear[data-sel-slot="ring"] .rf-gear-bag .rf-gear-tile[data-slot="ring"],
+.rf-gear[data-hover-slot="ring"] .rf-gear-bag .rf-gear-tile[data-slot="ring"],
+.rf-gear[data-sel-slot="pet"] .rf-gear-bag .rf-gear-tile[data-slot="pet"],
+.rf-gear[data-hover-slot="pet"] .rf-gear-bag .rf-gear-tile[data-slot="pet"],
+.rf-gear[data-sel-slot="boat"] .rf-gear-bag .rf-gear-tile[data-slot="boat"],
+.rf-gear[data-hover-slot="boat"] .rf-gear-bag .rf-gear-tile[data-slot="boat"] {
+    box-shadow: 0 0 0 2px var(--rf-bg), 0 0 0 4px var(--rf-gold);
+}
+
+.rf-gear[data-drag-from="bag"][data-drag-slot="head"] .rf-gear-slot:not([data-slot="head"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="amulet"] .rf-gear-slot:not([data-slot="amulet"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="chest"] .rf-gear-slot:not([data-slot="chest"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="gloves"] .rf-gear-slot:not([data-slot="gloves"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="leggings"] .rf-gear-slot:not([data-slot="leggings"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="boots"] .rf-gear-slot:not([data-slot="boots"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="melee"] .rf-gear-slot:not([data-slot="melee"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="ranged"] .rf-gear-slot:not([data-slot="ranged"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="magic"] .rf-gear-slot:not([data-slot="magic"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="shield"] .rf-gear-slot:not([data-slot="shield"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="ring"] .rf-gear-slot:not([data-slot="ring"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="pet"] .rf-gear-slot:not([data-slot="pet"]),
+.rf-gear[data-drag-from="bag"][data-drag-slot="boat"] .rf-gear-slot:not([data-slot="boat"]) {
+    opacity: 0.3;
+}
+
+.rf-gear[data-drag-from="bag"][data-drag-slot="head"] .rf-gear-slot[data-slot="head"],
+.rf-gear[data-hover-piece="head"] .rf-gear-slot[data-slot="head"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="amulet"] .rf-gear-slot[data-slot="amulet"],
+.rf-gear[data-hover-piece="amulet"] .rf-gear-slot[data-slot="amulet"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="chest"] .rf-gear-slot[data-slot="chest"],
+.rf-gear[data-hover-piece="chest"] .rf-gear-slot[data-slot="chest"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="gloves"] .rf-gear-slot[data-slot="gloves"],
+.rf-gear[data-hover-piece="gloves"] .rf-gear-slot[data-slot="gloves"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="leggings"] .rf-gear-slot[data-slot="leggings"],
+.rf-gear[data-hover-piece="leggings"] .rf-gear-slot[data-slot="leggings"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="boots"] .rf-gear-slot[data-slot="boots"],
+.rf-gear[data-hover-piece="boots"] .rf-gear-slot[data-slot="boots"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="melee"] .rf-gear-slot[data-slot="melee"],
+.rf-gear[data-hover-piece="melee"] .rf-gear-slot[data-slot="melee"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="ranged"] .rf-gear-slot[data-slot="ranged"],
+.rf-gear[data-hover-piece="ranged"] .rf-gear-slot[data-slot="ranged"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="magic"] .rf-gear-slot[data-slot="magic"],
+.rf-gear[data-hover-piece="magic"] .rf-gear-slot[data-slot="magic"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="shield"] .rf-gear-slot[data-slot="shield"],
+.rf-gear[data-hover-piece="shield"] .rf-gear-slot[data-slot="shield"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="ring"] .rf-gear-slot[data-slot="ring"],
+.rf-gear[data-hover-piece="ring"] .rf-gear-slot[data-slot="ring"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="pet"] .rf-gear-slot[data-slot="pet"],
+.rf-gear[data-hover-piece="pet"] .rf-gear-slot[data-slot="pet"],
+.rf-gear[data-drag-from="bag"][data-drag-slot="boat"] .rf-gear-slot[data-slot="boat"],
+.rf-gear[data-hover-piece="boat"] .rf-gear-slot[data-slot="boat"] {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold-wash);
+    box-shadow: 0 0 0 2px var(--rf-gold-wash), 0 0 1.1rem var(--rf-line-gold);
+}

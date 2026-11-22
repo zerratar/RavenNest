@@ -385,7 +385,8 @@ class Stage {
     bindInput() {
         const el = this.renderer.domElement;
         el.style.cursor = 'grab';
-        el.style.touchAction = 'none';
+        // standing in a page (options.inline): a finger still scrolls the page up and down, and the wheel is the page's
+        el.style.touchAction = this.options.inline ? 'pan-y' : 'none';
         let from = null;
         el.addEventListener('pointerdown', e => {
             from = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch };
@@ -401,6 +402,7 @@ class Stage {
         const end = () => { from = null; this.dragging = false; el.style.cursor = 'grab'; };
         el.addEventListener('pointerup', end);
         el.addEventListener('pointercancel', end);
+        if (this.options.inline) return;
         el.addEventListener('wheel', e => {
             e.preventDefault();
             const near = e.deltaY < 0;
@@ -706,7 +708,7 @@ class Flat {
         // the pictures are waist up: faded out at the bottom rather than cut
         this.canvas.style.maskImage = this.canvas.style.webkitMaskImage = 'linear-gradient(to bottom, #000 72%, transparent 97%)';
         this.canvas.style.cursor = 'grab';
-        this.canvas.style.touchAction = 'none';
+        this.canvas.style.touchAction = this.options.inline ? 'pan-y' : 'none';
         this.canvas.className = 'rf-character-flat';
         container.appendChild(this.canvas);
         this.g = this.canvas.getContext('2d');
