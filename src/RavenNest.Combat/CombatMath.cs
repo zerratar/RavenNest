@@ -18,6 +18,9 @@ namespace RavenNest.Combat
         /// <summary>Skills that cannot miss (most heals and some boss attacks).</summary>
         public bool CannotMiss;
 
+        /// <summary>The blow is a critical hit whatever the dice say (First Blood's first hit on a new target).</summary>
+        public bool Critical;
+
         public static readonly AttackOptions Basic = new AttackOptions { Multiplier = 1 };
     }
 
@@ -49,6 +52,9 @@ namespace RavenNest.Combat
 
         /// <summary>Bleed on crit: damage to deal over 4 s (the status effects do it).</summary>
         public double Bleed;
+
+        /// <summary>Poison on crit: damage a second for <see cref="PathRules.PoisonSeconds"/> (the status effects do it; it does not stack).</summary>
+        public double Poison;
     }
 
     public struct ElementProc
@@ -209,9 +215,13 @@ namespace RavenNest.Combat
             result.Hit = true;
             var raw = MaxHit(stats.DamageLevel, stats.EffectivePower) * RollHitShare(random) * multiplier * attacker.DamageMultiplier;
             if (defender.IsBoss) raw *= 1 + attacker.BossDamage;
+            else if (attacker.NonBossDamage != 0) raw *= 1 + attacker.NonBossDamage; // Thin the Herd
             if (defender.CurrentHealthShare < ExecuteThreshold) raw *= 1 + attacker.ExecuteDamage;
             if (defender.Family == EnemyFamily.Undead) raw *= 1 + attacker.UndeadDamage;
-            if (random.Next() < attacker.CritChance - defender.CritResistance)
+            // the capstone paths: Clean Kill on the healthy, Blood Rage by the attacker's own missing health (melee)
+            if (attacker.HealthyDamage != 0 && defender.CurrentHealthShare > PathRules.HealthyThreshold) raw *= 1 + attacker.HealthyDamage;
+            if (attacker.RagePower != 0 && style == AttackStyle.Melee) raw *= 1 + attacker.RagePower * PathRules.Rage(attacker.CurrentHealthShare);
+            if (options.Critical || random.Next() < attacker.CritChance - defender.CritResistance)
             {
                 result.Critical = true;
                 raw *= Math.Max(1, attacker.CritDamage);
@@ -278,6 +288,8 @@ namespace RavenNest.Combat
                     result.Healed = (int)Math.Round(result.Total * Math.Min(attacker.LifeSteal, MaxLifeSteal));
                 if (result.Critical && attacker.BleedOnCrit > 0)
                     result.Bleed = result.Total * attacker.BleedOnCrit;
+                if (result.Critical && attacker.PoisonOnCrit > 0)
+                    result.Poison = result.Total * attacker.PoisonOnCrit;
             }
 
             // element effects: a share of the blow in an element gives that element's effect a chance

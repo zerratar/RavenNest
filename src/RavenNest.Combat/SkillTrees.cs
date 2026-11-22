@@ -173,6 +173,27 @@ namespace RavenNest.Combat
             [GearStat.PetRecovery] = ("your pet gets up {0} sooner after a knockout", null),
             [GearStat.PetGathering] = ("your pet's gathering skills are {0} stronger", null),
             [GearStat.PetGuard] = ("a tank pet takes {0} more of the blows meant for you", null),
+            // the capstone paths
+            [GearStat.FirstStrike] = ("your first hit on each new target is a critical hit that ignores {0} of its armor", null),
+            [GearStat.PoisonOnCrit] = ("crits poison for {0} of the hit a second for 4 s", null),
+            [GearStat.ComboSpeed] = ("every hit in a row on one target makes you {0} faster (5 hits at most)", null),
+            [GearStat.RagePower] = ("up to {0} more melee damage as your health falls (all of it at 30% health)", null),
+            [GearStat.Aftershock] = ("every fourth melee hit strikes every other enemy around you for {0} of its damage", null),
+            [GearStat.AllyGuard] = ("you take {0} of the damage dealt to allies near you in their place", null),
+            [GearStat.BlockRetort] = ("after you block, your next hit deals {0} more", null),
+            [GearStat.HealStrike] = ("every heal also strikes an enemy for {0} of the amount healed", null),
+            [GearStat.GuardianAngel] = ("once a fight, an ally near you who would die is left at 1 health and healed for {0} of theirs", null),
+            [GearStat.HealthyDamage] = ("{0} more damage to enemies above 80% health", null),
+            [GearStat.Volley] = ("every third shot also hits a second enemy for {0} of its damage", null),
+            [GearStat.BurnSpread] = ("when a burning enemy dies, its burn jumps to an enemy near it", null),
+            [GearStat.LifeStealShield] = ("life steal beyond full health becomes a shield of up to {0} of your health", null),
+            [GearStat.NonBossDamage] = ("{0} more damage to everything that is not a boss", null),
+            [GearStat.KillRush] = ("a kill gives {0} more damage for 6 s", null),
+            [GearStat.PetAlpha] = ("your pet is {0} larger", null),
+            [GearStat.PetSafeGathering] = ("your pet is never knocked out while you gather", null),
+            [GearStat.CritResistance] = ("enemies' chance of a critical hit on you is {0} lower", null),
+            [GearStat.LightningJumpBonus] = ("lightning that jumps hits {0} harder", null),
+            [GearStat.CooldownReduction] = ("your skills' cooldowns are {0} shorter", null),
         };
 
         /// <summary>Only the amounts ("5%", or "10% and 5%" for two stats), for totals beside the full words.</summary>
@@ -326,6 +347,19 @@ namespace RavenNest.Combat
 
         /// <summary>The tree's last node, for a maxed skill (level 999): one rank, a big passive.</summary>
         public bool Capstone;
+
+        /// <summary>
+        ///     A capstone's path, as players call it ("Assassin" for First Blood): a combat-side tree ends in three
+        ///     capstones of which only one can be learned (2026-11-22, docs/capstone-paths-design.md), and chat takes
+        ///     the path's name as well as the capstone's (!learn assassin).
+        /// </summary>
+        public string Path;
+
+        /// <summary>
+        ///     Every node in <see cref="Requires"/> must be learned first, not one of them: a new capstone asks for the
+        ///     nodes of its theme, so a path is something built toward.
+        /// </summary>
+        public bool NeedsAll;
         public int MaxRank = 1;
 
         /// <summary>Points per rank.</summary>
@@ -521,7 +555,24 @@ namespace RavenNest.Combat
         }
 
         /// <summary>The names of the skills a node's path comes from ("Thrifty or Second Helping"); empty on the first tier.</summary>
-        public static string PathText(SkillNode node) => OrList(node.Requires.Select(r => Get(r)?.Name ?? r));
+        public static string PathText(SkillNode node) =>
+            node.NeedsAll ? AndList(node.Requires.Select(r => Get(r)?.Name ?? r)) : OrList(node.Requires.Select(r => Get(r)?.Name ?? r));
+
+        /// <summary>"A", "A and B", "A, B and C": every one of several, in words.</summary>
+        public static string AndList(IEnumerable<string> names)
+        {
+            var list = names.ToList();
+            if (list.Count <= 1) return list.Count == 0 ? "" : list[0];
+            return string.Join(", ", list.Take(list.Count - 1)) + " and " + list[list.Count - 1];
+        }
+
+        /// <summary>A tree's capstones: three for a combat-side tree (the first is the one it always had), one for a trade tree.</summary>
+        public static IReadOnlyList<SkillNode> Capstones(SkillTree tree) => capstonesOf.TryGetValue(tree, out var nodes) ? nodes : Array.Empty<SkillNode>();
+
+        private static readonly Dictionary<SkillTree, SkillNode[]> capstonesOf = new Dictionary<SkillTree, SkillNode[]>();
+
+        /// <summary>A tree's name as players see it.</summary>
+        public static string TreeName(SkillTree tree) => tree.ToString();
 
         /// <summary>A tree's one skill; for a trade tree the first of its skills (see <see cref="SkillsOf(SkillTree)"/>).</summary>
         public static CombatSkill SkillOf(SkillTree tree)
@@ -628,9 +679,12 @@ namespace RavenNest.Combat
             var key = text.Trim();
             var exact = Get(key) ?? Get(key.Replace(' ', '-')) ?? all.FirstOrDefault(n => n.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (exact != null) return new[] { exact };
-            var starts = all.Where(n => n.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase)).ToList();
+            // a capstone also by its path ("assassin" is First Blood). A path's name counts like a skill's: when a
+            // skill starts with the same word it could mean either ("guardian": the Guardian's ending Shield of the
+            // Many, Guardian's Oath or Guardian Angel), and nothing is learned on a guess.
+            var starts = all.Where(n => n.Name.StartsWith(key, StringComparison.OrdinalIgnoreCase) || (n.Path != null && n.Path.StartsWith(key, StringComparison.OrdinalIgnoreCase))).ToList();
             if (starts.Count > 0) return starts;
-            return all.Where(n => n.Name.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            return all.Where(n => n.Name.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0 || (n.Path != null && n.Path.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
         }
 
         /// <summary>Why <see cref="Find"/> found nothing, for chat: the skills it could mean, or that there is none.</summary>
@@ -682,8 +736,11 @@ namespace RavenNest.Combat
 
         public static IEnumerable<SkillNode> Of(SkillTree tree) => all.Where(n => n.Tree == tree);
 
-        /// <summary>What every node of every tree costs at full rank.</summary>
-        public static int TotalCost => all.Sum(n => n.MaxRank * n.Cost);
+        /// <summary>
+        ///     What every node of every tree costs at full rank, one capstone a tree: nobody can buy a tree's other
+        ///     two endings.
+        /// </summary>
+        public static int TotalCost => all.Where(n => !n.Capstone).Sum(n => n.MaxRank * n.Cost) + capstonesOf.Values.Sum(c => c.Length == 0 ? 0 : c.Max(n => n.Cost));
 
         // ---- the trees ---------------------------------------------------------------------------------------
 
@@ -695,8 +752,18 @@ namespace RavenNest.Combat
         // rank, for a maxed skill, from stats the trees already use.
         private static SkillNode Capstone(SkillTree tree, string id, string name, string description, string stats, params string[] requires)
         {
-            var node = Add(new SkillNode { Tree = tree, Tier = 4, Id = id, Name = name, Description = description, Passive = stats, MaxRank = 1, Cost = CapstoneCost, Capstone = true });
+            var node = Add(new SkillNode { Tree = tree, Tier = 4, Id = id, Name = name, Path = name, Description = description, Passive = stats, MaxRank = 1, Cost = CapstoneCost, Capstone = true });
             node.Requires = requires;
+            return node;
+        }
+
+        // One of a tree's two other endings (2026-11-22): its path's name, and the nodes of its theme, all of which
+        // it asks for.
+        private static SkillNode Ending(SkillTree tree, string id, string name, string path, string description, string stats, params string[] requires)
+        {
+            var node = Capstone(tree, id, name, description, stats, requires);
+            node.Path = path;
+            node.NeedsAll = true;
             return node;
         }
 
@@ -948,7 +1015,11 @@ namespace RavenNest.Combat
             Path("enchanters-patience", "gem-salvager", "gem-cutter");
 
             Capstones();
-            foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree))) nodesOf[tree] = all.Where(n => n.Tree == tree).ToArray();
+            foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
+            {
+                nodesOf[tree] = all.Where(n => n.Tree == tree).ToArray();
+                capstonesOf[tree] = nodesOf[tree].Where(n => n.Capstone).ToArray();
+            }
         }
 
         private static readonly Dictionary<SkillTree, SkillNode[]> nodesOf = new Dictionary<SkillTree, SkillNode[]>();
@@ -960,17 +1031,48 @@ namespace RavenNest.Combat
 
         private static void Capstones()
         {
+            // The capstone paths (2026-11-22, the game's docs/capstone-paths-design.md): a combat-side tree ends in
+            // three capstones of which a character learns one (SkillBuild.CanRaise). The first of each three is the
+            // one the tree always had, with its id, stats and path unchanged, so a build from before keeps working;
+            // the other two (Ending) ask for all the nodes of their theme. The numbers are the simulator's
+            // (RavenNest.CombatSimulator, "paths"): the design document has its table.
             Capstone(SkillTree.Bulwark, "unbreakable", "Unbreakable", "Nothing gets through, and no enemy looks away.", "DAMAGE_REDUCTION:6%;THREAT:25%", "rally", "last-stand");
+            Ending(SkillTree.Bulwark, "shield-of-the-many", "Shield of the Many", "Guardian", "You stand in front of everyone near you.", "ALLY_GUARD:15%", "rally", "thick-skin");
+            Ending(SkillTree.Bulwark, "retribution", "Retribution", "Avenger", "What strikes your shield comes back harder.", "THORNS:10%;BLOCK_RETORT:60%", "spiked-armour", "shield-training");
+
             Capstone(SkillTree.Restoration, "miracle-worker", "Miracle Worker", "Your heals do what should not be possible.", "HEALING_POWER_BONUS:15%;HEAL_SHIELD:10%", "sanctuary", "smite");
+            Ending(SkillTree.Restoration, "holy-fire", "Holy Fire", "Crusader", "The light that mends your allies burns their enemies.", "UNDEAD_DAMAGE:20%;HEAL_STRIKE:30%", "smite", "devotion");
+            Ending(SkillTree.Restoration, "guardian-angel", "Guardian Angel", "Lifebinder", "Nobody near you falls the first time.", "CAST_SPEED:8%;GUARDIAN_ANGEL:30%", "barrier", "quick-hands");
+
             Capstone(SkillTree.Might, "colossus", "Colossus", "Every blow lands like a falling tree.", "MELEE_POWER_BONUS:12%;EXECUTE_DAMAGE:10%", "leap", "titan");
-            Capstone(SkillTree.Precision, "perfect-form", "Perfect Form", "No wasted movement: more critical hits, and they hit much harder.", "CRIT_CHANCE:4%;CRIT_DAMAGE:20%", "disarm", "precision-strikes");
+            Ending(SkillTree.Might, "blood-rage", "Blood Rage", "Berserker", "The closer to death, the harder the blows, and they feed you.", "LIFE_STEAL:3%;RAGE_POWER:30%", "brute-force", "rend");
+            Ending(SkillTree.Might, "aftershock", "Aftershock", "Earthshaker", "The ground answers your blows.", "CROWD_CONTROL_DURATION:20%;AFTERSHOCK:50%", "cleave", "whirlwind");
+
+            Capstone(SkillTree.Precision, "perfect-form", "Perfect Form", "No wasted movement: more critical hits, and they hit much harder.", "CRIT_CHANCE:4%;CRIT_DAMAGE:20%", "disarm", "precision-strikes").Path = "Duelist";
+            Ending(SkillTree.Precision, "first-blood", "First Blood", "Assassin", "The first cut is the deepest, and the blade is poisoned.", "FIRST_STRIKE:50%;POISON_ON_CRIT:6%", "sharp-edge", "precision-strikes");
+            Ending(SkillTree.Precision, "flowing-steel", "Flowing Steel", "Blade Dancer", "One enemy, one rhythm: every hit comes sooner than the last.", "ATTACK_SPEED:8%;COMBO_SPEED:2%", "swift", "flurry");
+
             Capstone(SkillTree.Marksman, "deadeye", "Deadeye", "You do not miss, and armor does not help them.", "RANGED_POWER_BONUS:12%;ARMOR_PENETRATION:15%", "snare", "rapid-fire");
+            Ending(SkillTree.Marksman, "clean-kill", "Clean Kill", "Sniper", "The first shot is the one that counts.", "CRIT_DAMAGE:20%;HEALTHY_DAMAGE:25%", "eagle-eye", "piercing-shot");
+            Ending(SkillTree.Marksman, "volley", "Volley", "Stormbow", "One arrow is never just one arrow.", "ATTACK_SPEED:6%;VOLLEY:60%", "multishot", "hunters-pace");
+
             Capstone(SkillTree.Elements, "archmage", "Archmage", "The elements answer faster and harder.", "MAGIC_POWER_BONUS:12%;CAST_SPEED:8%", "meteor");
+            Ending(SkillTree.Elements, "wildfire", "Wildfire", "Pyromancer", "Your fires spread on their own.", "BURN_BONUS:40%;BURN_SPREAD:100%", "searing", "fireball");
+            Ending(SkillTree.Elements, "eye-of-the-storm", "Eye of the Storm", "Stormcaller", "Lightning jumps harder, and everything is ready sooner.", "LIGHTNING_JUMP_BONUS:30%;COOLDOWN_REDUCTION:10%", "chain-lightning", "unravel");
+
             Capstone(SkillTree.Vitality, "undying", "Undying", "Much more health, and it keeps coming back.", "MAX_HEALTH_BONUS:10%;COMBAT_REGEN:0.6%", "iron-skin");
+            Ending(SkillTree.Vitality, "crimson-pact", "Crimson Pact", "Blood Drinker", "Blood you have no use for becomes a shield.", "LIFE_STEAL:4%;LIFE_STEAL_SHIELD:10%", "bloodthirst", "hardy");
+            Ending(SkillTree.Vitality, "ironblood", "Ironblood", "Ironblood", "No lucky blow finds you, and every heal goes further.", "HEALING_RECEIVED:15%;CRIT_RESISTANCE:10%", "resilience", "iron-skin");
+
             Capstone(SkillTree.Hunter, "legend-of-the-hunt", "Legend of the Hunt", "Bosses fear you, and their hoards know it.", "BOSS_DAMAGE:10%;LOOT_LUCK:5%", "apex-predator");
+            Ending(SkillTree.Hunter, "thin-the-herd", "Thin the Herd", "Culler", "The small ones fall fast, and each one makes the next easier.", "NON_BOSS_DAMAGE:12%;KILL_RUSH:10%", "execute", "pressure-points");
+            Ending(SkillTree.Hunter, "fortunes-favorite", "Fortune's Favorite", "Fortune's Favorite", "No fighting trick at all. Just luck, and a lot of it.", "LOOT_LUCK:12%", "treasure-hunter");
+
             // Beastmaster's is no pair of stats: a second animal at the owner's side (the same kind as the pet that is
             // out; a second pet from the stable is the proposal in the design document)
             Capstone(SkillTree.Beastmaster, "pack-leader", "Pack Leader", "A packmate of your pet's own kind fights beside it at half strength.", null, "elemental-bond", "guardians-oath", "call-of-the-wild").PetTwin = true;
+            Ending(SkillTree.Beastmaster, "alpha", "Alpha", "Alpha", "No packmate: one pet, and it is the biggest thing in the fight.", "PET_POWER:30%;PET_HEALTH:30%;PET_ALPHA:25%", "fang-and-claw", "guardians-oath");
+            Ending(SkillTree.Beastmaster, "trailblazer", "Trailblazer", "Trailblazer", "Your pet was made for the woods and the mines.", "PET_GATHERING:50%;PET_SAFE_GATHERING:100%", "keen-senses", "back-on-its-feet");
             // The trade trees' capstones make what is below them better in a skill at 999, so their paths come from
             // those nodes too, not only from the tier below: a cook at 999 with no Crafting cannot learn the Crafting
             // nodes between, and a gatherer should not have to buy eggs to master the trade.
@@ -1063,6 +1165,13 @@ namespace RavenNest.Combat
 
         public bool HasLastStand => Ranks.Any(r => r.Value > 0 && (SkillTrees.Get(r.Key)?.LastStand ?? false));
 
+        /// <summary>The ending chosen for a tree (the one of its capstones that is learned), or null while none is.</summary>
+        public SkillNode CapstoneOf(SkillTree tree)
+        {
+            foreach (var capstone in SkillTrees.Capstones(tree)) if (Has(capstone.Id)) return capstone;
+            return null;
+        }
+
         // ---- Beastmaster: what the build does for the battle pet ----
 
         /// <summary>Trick Training: skill slots for the pet on top of BattlePets.SkillSlots.</summary>
@@ -1124,12 +1233,27 @@ namespace RavenNest.Combat
             var node = SkillTrees.Get(id);
             if (node == null) return "There is no such skill.";
             if (Rank(id) >= node.MaxRank) return node.Name + " is already at its highest rank.";
+            // the capstone paths: a tree ends in three, and a character learns one of them
+            if (node.Capstone)
+            {
+                var chosen = CapstoneOf(node.Tree);
+                if (chosen != null && chosen != node)
+                    return "You chose " + chosen.Name + " as your " + SkillTrees.TreeName(node.Tree) + " ending, and a tree has only one. A respec gives the choice back.";
+            }
             // the level: the tree's skill, or for a trade tree the best of its skills ("needs Crafting, Cooking or Alchemy 100")
             var level = SkillTrees.GateLevel(node, levelOf);
             if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.GateName(node) + " " + node.RequiredLevel + ".";
-            // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path)
-            if (Rank(id) == 0 && node.Requires.Length > 0 && !node.Requires.Any(Has))
-                return node.Name + " needs " + SkillTrees.PathText(node) + " first.";
+            // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path); a new
+            // capstone asks for every node of its theme, and says which are still missing
+            if (Rank(id) == 0 && node.Requires.Length > 0)
+            {
+                if (node.NeedsAll)
+                {
+                    var missing = node.Requires.Where(r => !Has(r)).Select(r => SkillTrees.Get(r)?.Name ?? r).ToList();
+                    if (missing.Count > 0) return node.Name + " needs " + SkillTrees.AndList(missing) + " first.";
+                }
+                else if (!node.Requires.Any(Has)) return node.Name + " needs " + SkillTrees.PathText(node) + " first.";
+            }
             var left = earnedPoints - Spent;
             if (left < node.Cost) return node.Name + " costs " + node.Cost + " point" + (node.Cost == 1 ? "" : "s") + "; you have " + Math.Max(0, left) + ".";
             return null;
@@ -1180,7 +1304,8 @@ namespace RavenNest.Combat
             if (Rank(node.Id) > 1) return null;
             foreach (var above in SkillTrees.Dependents(node.Id))
             {
-                if (Has(above.Id) && !above.Requires.Any(r => !string.Equals(r, node.Id, StringComparison.OrdinalIgnoreCase) && Has(r)))
+                // a capstone that asks for all of its nodes needs this one; the others need one of theirs left
+                if (Has(above.Id) && (above.NeedsAll || !above.Requires.Any(r => !string.Equals(r, node.Id, StringComparison.OrdinalIgnoreCase) && Has(r))))
                     return above.Name + " needs " + node.Name + " for its path; take it back first.";
             }
             return null;
@@ -1238,10 +1363,13 @@ namespace RavenNest.Combat
         /// <summary>Drops what is no longer allowed (a node removed in a balance update, ranks above the maximum, an emptied loadout slot).</summary>
         public void Clean()
         {
+            // a tree has one ending: of two capstones of one tree (a hand-made link) the first in the text stays
+            var endings = new HashSet<SkillTree>();
             foreach (var id in Ranks.Keys.ToList())
             {
                 var node = SkillTrees.Get(id);
                 if (node == null || Ranks[id] <= 0) Ranks.Remove(id);
+                else if (node.Capstone && !endings.Add(node.Tree)) Ranks.Remove(id);
                 else if (Ranks[id] > node.MaxRank) Ranks[id] = node.MaxRank;
             }
             for (var i = 0; i < Loadout.Count; ++i)

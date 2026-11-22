@@ -59,9 +59,12 @@ namespace RavenNest.Combat.Tests
         {
             foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
             {
+                // the first of a tree's capstones is the one it always had (the capstone paths added two beside it
+                // on the combat side: they have their own tests in CapstonePathsTests)
                 var capstones = SkillTrees.Of(tree).Where(n => n.Capstone).ToList();
-                Assert.Single(capstones);
+                Assert.Equal(SkillTrees.IsTrade(tree) ? 1 : 3, capstones.Count);
                 var c = capstones[0];
+                Assert.False(c.NeedsAll);
                 Assert.Equal(999, c.RequiredLevel);
                 Assert.Equal(1, c.MaxRank);
                 Assert.Equal(SkillTrees.CapstoneCost, c.Cost);
@@ -176,7 +179,8 @@ namespace RavenNest.Combat.Tests
                     Assert.NotNull(below);
                     Assert.Equal(node.Tree, below.Tree);
                     // one tier down; a trade tree's capstone also hangs from the nodes it makes better, further down
-                    if (SkillTrees.IsTrade(node.Tree) && node.Capstone) Assert.True(below.Tier < node.Tier);
+                    // and a new ending (the capstone paths) from the nodes of its theme, wherever they are below it
+                    if ((SkillTrees.IsTrade(node.Tree) || node.NeedsAll) && node.Capstone) Assert.True(below.Tier < node.Tier);
                     else Assert.Equal(node.Tier - 1, below.Tier);
                 }
             }
@@ -256,7 +260,9 @@ namespace RavenNest.Combat.Tests
             // found from chat by its names
             Assert.Equal("sic-em", SkillTrees.Find("sic 'em").Id);
             Assert.Equal("sic-em", SkillTrees.Find("sic").Id);
-            Assert.Equal("guardians-oath", SkillTrees.Find("guardian").Id);
+            Assert.Equal("guardians-oath", SkillTrees.Find("guardian's").Id);
+            // "guardian" alone could also mean the Guardian's ending or Guardian Angel since the capstone paths
+            Assert.Null(SkillTrees.Find("guardian"));
             Assert.Equal("pack-leader", SkillTrees.Find("pack leader").Id);
         }
 
@@ -436,7 +442,8 @@ namespace RavenNest.Combat.Tests
         {
             Assert.Equal(new[] { SkillTree.Gathering, SkillTree.Artisan }, SkillTrees.Trees(trade: true).ToArray());
             Assert.Equal(9, SkillTrees.Trees(trade: false).Count());
-            int Cost(SkillTree t) => SkillTrees.Of(t).Sum(n => n.Cost * n.MaxRank);
+            // one capstone a tree: nobody can buy a tree's other two endings
+            int Cost(SkillTree t) => SkillTrees.Of(t).Where(n => !n.Capstone).Sum(n => n.Cost * n.MaxRank) + SkillTrees.CapstoneCost;
             Assert.Equal(7, SkillTrees.Of(SkillTree.Gathering).Count());
             Assert.Equal(7, SkillTrees.Of(SkillTree.Artisan).Count());
             Assert.Equal(70, Cost(SkillTree.Gathering));

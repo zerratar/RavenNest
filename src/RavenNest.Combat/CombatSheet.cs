@@ -118,6 +118,23 @@ namespace RavenNest.Combat
         /// <summary>A share off combat skill cooldowns (capped at <see cref="CombatMath.MaxCooldownReduction"/>).</summary>
         public double CooldownReduction;
 
+        // the capstone paths (GearStat has what each one is; PathRules and CombatMath.Attack use them)
+        public double FirstStrike;
+        public double PoisonOnCrit;
+        public double ComboSpeed;
+        public double RagePower;
+        public double Aftershock;
+        public double AllyGuard;
+        public double BlockRetort;
+        public double HealStrike;
+        public double GuardianAngel;
+        public double HealthyDamage;
+        public double Volley;
+        public double BurnSpread;
+        public double LifeStealShield;
+        public double NonBossDamage;
+        public double KillRush;
+
         /// <summary>Health left as a share of the pool (1 is full): for execute damage and low health passives.</summary>
         public double CurrentHealthShare = 1;
 

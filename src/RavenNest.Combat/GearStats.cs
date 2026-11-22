@@ -118,6 +118,44 @@ namespace RavenNest.Combat
         PetGathering,
         /// <summary>A share more of the blows meant for its owner for a tank pet to take (on top of its half).</summary>
         PetGuard,
+
+        // The capstone paths (2026-11-22, the game's docs/capstone-paths-design.md): what the trees' second and third
+        // endings do. The stateless ones are worked out in CombatMath.Attack, the ones that remember something
+        // (a new target, hits in a row, every fourth hit) in PathRules; the game and the simulator call both.
+        /// <summary>First Blood: the first hit on each new target is a critical hit that ignores this share of its armor.</summary>
+        FirstStrike,
+        /// <summary>Critical hits poison the target for this share of the hit a second, for PathRules.PoisonSeconds.</summary>
+        PoisonOnCrit,
+        /// <summary>Flowing Steel: a share faster attacks for every hit in a row on one target (PathRules.ComboStacks at most).</summary>
+        ComboSpeed,
+        /// <summary>Blood Rage: a share more melee damage at 30% health and below, growing as health falls from full.</summary>
+        RagePower,
+        /// <summary>Aftershock: every fourth melee hit strikes every other enemy around for this share of its damage.</summary>
+        Aftershock,
+        /// <summary>Shield of the Many: the share of the damage dealt to allies near that this fighter takes in their place.</summary>
+        AllyGuard,
+        /// <summary>Retribution: after a block the next hit deals this share more.</summary>
+        BlockRetort,
+        /// <summary>Holy Fire: every heal also strikes an enemy for this share of the amount healed.</summary>
+        HealStrike,
+        /// <summary>Guardian Angel: once a fight an ally near who would die is left at 1 health and healed this share of its health.</summary>
+        GuardianAngel,
+        /// <summary>Clean Kill: a share more damage to enemies above 80% health.</summary>
+        HealthyDamage,
+        /// <summary>Volley: every third shot also hits a second enemy for this share of its damage.</summary>
+        Volley,
+        /// <summary>Wildfire: when a burning enemy dies, this share of its burn jumps to an enemy near it.</summary>
+        BurnSpread,
+        /// <summary>Crimson Pact: life steal beyond full health becomes a shield of up to this share of maximum health.</summary>
+        LifeStealShield,
+        /// <summary>Thin the Herd: a share more damage to everything that is not a boss.</summary>
+        NonBossDamage,
+        /// <summary>Thin the Herd: a kill gives this share more damage for PathRules.RushSeconds.</summary>
+        KillRush,
+        /// <summary>Alpha: the battle pet is this share larger (it has no packmate: a tree has one ending).</summary>
+        PetAlpha,
+        /// <summary>Trailblazer: the battle pet is never knocked out while its owner gathers (any value above 0).</summary>
+        PetSafeGathering,
     }
 
     /// <summary>
@@ -129,7 +167,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.PetGuard + 1;
+        public const int Count = (int)GearStat.PetSafeGathering + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
@@ -446,6 +484,22 @@ namespace RavenNest.Combat
             sheet.PoisonBonus += this[GearStat.PoisonBonus];
             sheet.LightningJumpBonus += this[GearStat.LightningJumpBonus];
             sheet.CooldownReduction = Math.Min(CombatMath.MaxCooldownReduction, sheet.CooldownReduction + this[GearStat.CooldownReduction]);
+            // the capstone paths
+            sheet.FirstStrike += this[GearStat.FirstStrike];
+            sheet.PoisonOnCrit += this[GearStat.PoisonOnCrit];
+            sheet.ComboSpeed += this[GearStat.ComboSpeed];
+            sheet.RagePower += this[GearStat.RagePower];
+            sheet.Aftershock += this[GearStat.Aftershock];
+            sheet.AllyGuard += this[GearStat.AllyGuard];
+            sheet.BlockRetort += this[GearStat.BlockRetort];
+            sheet.HealStrike += this[GearStat.HealStrike];
+            sheet.GuardianAngel += this[GearStat.GuardianAngel];
+            sheet.HealthyDamage += this[GearStat.HealthyDamage];
+            sheet.Volley += this[GearStat.Volley];
+            sheet.BurnSpread += this[GearStat.BurnSpread];
+            sheet.LifeStealShield += this[GearStat.LifeStealShield];
+            sheet.NonBossDamage += this[GearStat.NonBossDamage];
+            sheet.KillRush += this[GearStat.KillRush];
             // health: the share is of the pool the sheet already holds (the game adds it to the Health pool itself)
             if (this[GearStat.MaxHealthBonus] != 0) sheet.MaxHealth = (int)(sheet.MaxHealth * (1 + this[GearStat.MaxHealthBonus]));
 

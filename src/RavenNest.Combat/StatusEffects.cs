@@ -199,6 +199,34 @@ namespace RavenNest.Combat
             poison.Remaining = ElementRules.PoisonSeconds;
         }
 
+        /// <summary>
+        ///     Poison that does not stack (First Blood's poison on a crit): one stack's worth for <paramref name="seconds"/>;
+        ///     on a target already poisoned it only keeps the stronger damage and the longer time.
+        /// </summary>
+        public void Venom(double damagePerSecond, double seconds)
+        {
+            var poison = Find(StatusEffectKind.Poison);
+            if (poison == null)
+            {
+                effects.Add(new StatusEffect { Kind = StatusEffectKind.Poison, DamagePerSecond = damagePerSecond, Remaining = seconds, Duration = seconds });
+                return;
+            }
+
+            poison.DamagePerSecond = Math.Max(poison.DamagePerSecond, damagePerSecond);
+            poison.Remaining = Math.Max(poison.Remaining, seconds);
+        }
+
+        /// <summary>
+        ///     Wildfire: what is left of a burn, taken off this fighter (it died) to put on another; null when it does
+        ///     not burn.
+        /// </summary>
+        public StatusEffect TakeBurn()
+        {
+            var burn = Find(StatusEffectKind.Burn);
+            if (burn != null) effects.Remove(burn);
+            return burn;
+        }
+
         /// <summary>A stun or freeze; bosses take half and are then immune for a while. False when it did not land.</summary>
         public bool CrowdControl(StatusEffectKind kind, double seconds)
         {
