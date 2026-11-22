@@ -50,7 +50,9 @@ else
 
         @if (ActiveView == "equipment")
         {
-            <div class="rf-gear-eq @(PickedEntry != null && !PickedEntry.Stack.Equipped ? "has-float" : "")">
+            @* The wrapper is what the layout measures: the same tab stands in a wide dashboard, a narrower front page and a phone. *@
+            <div class="rf-gear-eqwrap">
+            <div class="rf-gear-eq">
                 <section class="rf-panel rf-gear-doll" aria-label="Equipment">
                     @*
                         The row of skills. Phase 1: pick a skill to see its numbers and what "equip best" would
@@ -131,22 +133,40 @@ else
                             <span class="rf-gear-stat__value">@GearSheet.Number(sheet.Power)</span>
                             <span class="rf-gear-stat__note">@sheet.StyleName</span>
                         </div>
+                        @* Six numbers whatever the skill: a heal has no accuracy, so its crit takes two places. *@
                         @if (sheet.Style != RavenNest.Combat.AttackStyle.Healing)
                         {
                             <div class="rf-gear-stat">
                                 <span class="rf-gear-stat__label"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Accuracy</span>
                                 <span class="rf-gear-stat__value">@GearSheet.Number(sheet.Accuracy)</span>
                             </div>
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-burst" aria-hidden="true"></i> Max hit</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHit)</span>
+                            </div>
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-star" aria-hidden="true"></i> Crit</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Percent(sheet.Sheet.CritChance)</span>
+                                <span class="rf-gear-stat__note">@GearSheet.Percent(sheet.Sheet.CritDamage) damage</span>
+                            </div>
                         }
-                        <div class="rf-gear-stat">
-                            <span class="rf-gear-stat__label"><i class="fa-solid fa-burst" aria-hidden="true"></i> @(sheet.Style == RavenNest.Combat.AttackStyle.Healing ? "Max heal" : "Max hit")</span>
-                            <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHit)</span>
-                        </div>
-                        <div class="rf-gear-stat">
-                            <span class="rf-gear-stat__label"><i class="fa-solid fa-star" aria-hidden="true"></i> Crit</span>
-                            <span class="rf-gear-stat__value">@GearSheet.Percent(sheet.Sheet.CritChance)</span>
-                            <span class="rf-gear-stat__note">@GearSheet.Percent(sheet.Sheet.CritDamage) damage</span>
-                        </div>
+                        else
+                        {
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-burst" aria-hidden="true"></i> Max heal</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Number(sheet.MaxHit)</span>
+                            </div>
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-star" aria-hidden="true"></i> Crit</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Percent(sheet.Sheet.CritChance)</span>
+                                <span class="rf-gear-stat__note">chance</span>
+                            </div>
+                            <div class="rf-gear-stat">
+                                <span class="rf-gear-stat__label"><i class="fa-solid fa-star" aria-hidden="true"></i> Crit heal</span>
+                                <span class="rf-gear-stat__value">@GearSheet.Percent(sheet.Sheet.CritDamage)</span>
+                                <span class="rf-gear-stat__note">of a heal</span>
+                            </div>
+                        }
                     </div>
 
                     <div class="rf-gear-doll__foot">
@@ -266,18 +286,20 @@ else
                         </div>
                     }
 
-                </section>
 
-                @*
-                    Where the bag is under the character (a phone, a narrow window), the picked piece and its Equip
-                    button stay at the bottom of the screen: the line under the character is a scroll away.
-                *@
-                @if (PickedEntry != null && !PickedEntry.Stack.Equipped && !detailOpen)
-                {
-                    <div class="rf-gear-pick rf-gear-pick--float">
-                        @PickBar()
-                    </div>
-                }
+                    @*
+                        Where the bag is under the character (a phone, a narrow window), the picked piece and its
+                        Equip button stay at the bottom of the screen while the bag is looked through: the line
+                        under the character is a scroll away.
+                    *@
+                    @if (PickedEntry != null && !PickedEntry.Stack.Equipped && !detailOpen)
+                    {
+                        <div class="rf-gear-pick rf-gear-pick--float">
+                            @PickBar()
+                        </div>
+                    }
+                </section>
+            </div>
             </div>
         }
         else

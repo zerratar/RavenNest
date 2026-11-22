@@ -34,10 +34,15 @@
     color: inherit;
 }
 
+/* The page this replaced called its Equipment grid .rf-gear too, and its rule is still in
+   ravenfall-components.css (a grid, items at the start, a top margin). Everything it sets is set again here, so
+   this page looks the same with that rule or without it. */
 .rf-gear {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: var(--rf-space-4);
+    margin-top: var(--rf-space-4);
     color: var(--rf-ink);
 }
 
@@ -194,7 +199,7 @@
 
 .rf-gear-eq {
     display: grid;
-    grid-template-columns: minmax(0, 1.28fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     gap: var(--rf-space-4);
     align-items: start;
 }
@@ -203,9 +208,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--rf-space-4);
-    /* the character stays in view while a long bag scrolls, so a piece far down can still reach its slot */
-    position: sticky;
-    top: var(--rf-space-4);
 }
 
 /* ---- The row of skills --------------------------------------------------- */
@@ -329,7 +331,7 @@
 /* ---- The character and its slots ----------------------------------------- */
 .rf-gear-figure {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(11rem, 14rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 13rem) minmax(0, 1fr);
     gap: var(--rf-space-3);
     align-items: stretch;
 }
@@ -448,12 +450,8 @@ i.rf-gear-slot__glyph {
     font-size: 0.92rem;
     font-weight: 700;
     line-height: 1.2;
-    overflow-wrap: anywhere;
-    /* two lines hold every piece the game has at this width; a third would push the column out of step */
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    /* a long name takes a third line and the slot grows: it is never cut short */
+    overflow-wrap: break-word;
 }
 
 .rf-gear-slot.is-empty .rf-gear-slot__name {
@@ -668,7 +666,7 @@ i.rf-gear-slot__glyph {
 
 .rf-gear-pick__hint i { color: var(--rf-ink-faint); }
 
-/* the same line kept at the bottom of the screen, only where the bag is under the character (see below) */
+/* the same line at the bottom of the bag, only where the bag is under the character (see "Less room") */
 .rf-gear-pick--float {
     display: none;
 }
@@ -676,7 +674,7 @@ i.rf-gear-slot__glyph {
 /* ---- The numbers ----------------------------------------------------------- */
 .rf-gear-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(5.6rem, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     border: 1px solid var(--rf-line);
     border-radius: var(--rf-radius);
     background: var(--rf-surface-2);
@@ -784,7 +782,29 @@ i.rf-gear-slot__glyph {
     display: flex;
     flex-direction: column;
     gap: var(--rf-space-3);
+    /* Beside the character the bag is as tall as the window at most and scrolls inside itself, and it stays put
+       while the page scrolls: however many pieces it holds, they and the slots are on the screen together, so a
+       piece far down the bag can still be dragged onto its slot. */
+    position: sticky;
+    top: var(--rf-space-4);
+    max-height: calc(100vh - 2 * var(--rf-space-4));
     transition: border-color var(--rf-transition), box-shadow var(--rf-transition);
+}
+
+.rf-gear-bag > * {
+    flex: none;
+}
+
+.rf-gear-bag > .rf-gear-grid {
+    flex: 1 1 auto;
+    min-height: 6rem;
+    /* room for the outline of a picked tile, which the scrolling edge would cut */
+    margin: -5px;
+    padding: 5px;
+    overflow-y: auto;
+    align-content: start;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rf-line-strong) transparent;
 }
 
 .rf-gear-bag__head {
@@ -1727,43 +1747,174 @@ body.rf-gear-dragging * {
 }
 
 /* ==========================================================================
-   Narrower screens
+   Less room
+   --------------------------------------------------------------------------
+   The Equipment tab is laid out by the width it is given (a container query on its wrapper), not by the window's:
+   the same tab stands in the dashboard beside a sidebar, in the narrower front page, in the admin pages and on a
+   phone. Three layouts:
+     wide    the slots with their pieces named, the bag beside the character
+     middle  the slots as pictures with the slot's name under them, the bag still beside the character
+     narrow  the same slots, the bag under the character
+   The Inventory tab goes by the window: its item panel becomes a sheet from the bottom on a small screen.
    ========================================================================== */
 
-/* the bag goes under the character */
-@media (max-width: 1180px) {
+.rf-gear-eqwrap {
+    container: rf-gear-eq / inline-size;
+}
+
+/* ---- middle: slots as pictures ----------------------------------------------- */
+@container rf-gear-eq (max-width: 1149px) {
+    .rf-gear-eq {
+        grid-template-columns: minmax(0, 25.5rem) minmax(0, 1fr);
+    }
+
+    .rf-gear-doll {
+        padding: var(--rf-space-4);
+    }
+
+    .rf-gear-skills__head {
+        flex-wrap: wrap;
+        gap: 0 var(--rf-space-3);
+    }
+
+    .rf-gear-skills__row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .rf-gear-skill {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: var(--rf-space-2);
+        padding: var(--rf-space-2);
+    }
+
+    .rf-gear-skill__pic {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .rf-gear-skill__pic img {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .rf-gear-figure {
+        grid-template-columns: 4.6rem minmax(0, 1fr) 4.6rem;
+        gap: var(--rf-space-2);
+    }
+
+    .rf-gear-slots {
+        gap: var(--rf-space-1);
+    }
+
+    .rf-gear-slots .rf-gear-slot {
+        flex-direction: column;
+        gap: 3px;
+        min-height: 0;
+        padding: var(--rf-space-1) 2px var(--rf-space-2);
+        text-align: center;
+    }
+
+    .rf-gear-slots .rf-gear-slot__pic {
+        width: 3.25rem;
+        height: 3.25rem;
+    }
+
+    /* the piece is named in the line under the character when the slot is picked, and in its tooltip */
+    .rf-gear-slots .rf-gear-slot__name {
+        display: none;
+    }
+
+    .rf-gear-slots .rf-gear-slot__label {
+        font-size: 0.78rem;
+        letter-spacing: 0;
+        text-transform: none;
+        white-space: nowrap;
+    }
+
+    .rf-gear-stage {
+        min-height: 0;
+    }
+
+    .rf-gear-stage__still {
+        font-size: 8rem;
+    }
+
+    .rf-gear-pick {
+        flex-wrap: wrap;
+    }
+
+    .rf-gear-pick__text {
+        flex-basis: calc(100% - 4rem);
+    }
+
+    .rf-gear-pick__acts {
+        flex: 1 1 100%;
+    }
+
+    .rf-gear-pick__acts .rf-btn {
+        flex: 1 1 0;
+        justify-content: center;
+        padding-top: var(--rf-space-3);
+        padding-bottom: var(--rf-space-3);
+    }
+
+    .rf-gear-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .rf-gear-stat__value {
+        font-size: 1.3rem;
+    }
+
+    .rf-gear-doll__foot {
+        flex-direction: column-reverse;
+    }
+
+    .rf-gear-allstats {
+        justify-content: center;
+    }
+}
+
+/* ---- narrow: the bag goes under the character --------------------------------- */
+@container rf-gear-eq (max-width: 759px) {
     .rf-gear-eq {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .rf-gear-doll {
+    /* under the character the bag is as long as it is, and the page scrolls */
+    .rf-gear-bag {
         position: static;
+        max-height: none;
     }
 
+    .rf-gear-bag > .rf-gear-grid {
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+    }
+
+    /* the picked piece and its Equip button, kept at the bottom of the screen while the bag is on it */
     .rf-gear-pick--float {
         display: flex;
-        position: fixed;
-        left: var(--rf-space-3);
-        right: var(--rf-space-3);
+        position: sticky;
         bottom: var(--rf-space-3);
-        z-index: 80;
+        z-index: 3;
+        margin-top: var(--rf-space-2);
         border-color: var(--rf-gold);
         background: var(--rf-surface-1);
         box-shadow: var(--rf-shadow-lg);
     }
+}
 
-    /* room for it under the last row of the bag */
-    .rf-gear-eq.has-float {
-        padding-bottom: 6.5rem;
-    }
-
+@media (max-width: 1280px) {
     .rf-gear-inv {
-        grid-template-columns: minmax(0, 1fr) 20rem;
+        grid-template-columns: minmax(0, 1fr) 21rem;
     }
 }
 
 /* the item panel becomes a sheet from the bottom, over the grid */
-@media (max-width: 860px) {
+@media (max-width: 1000px) {
     .rf-gear-inv {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -1809,114 +1960,10 @@ body.rf-gear-dragging * {
     }
 }
 
-/* a phone: the slots are their pictures with the slot's name under them, and the picked one is named below */
+/* a phone */
 @media (max-width: 640px) {
     .rf-gear .rf-panel {
         padding: var(--rf-space-3);
-    }
-
-    .rf-gear-skills__head {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--rf-space-1);
-    }
-
-    .rf-gear-skills__row {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .rf-gear-skill {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: var(--rf-space-2);
-        padding: var(--rf-space-2);
-    }
-
-    .rf-gear-skill__pic {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .rf-gear-skill__pic img {
-        width: 1.15rem;
-        height: 1.15rem;
-    }
-
-    .rf-gear-figure {
-        grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem;
-        gap: var(--rf-space-2);
-    }
-
-    .rf-gear-slots {
-        gap: var(--rf-space-1);
-    }
-
-    .rf-gear-slots .rf-gear-slot {
-        flex-direction: column;
-        gap: 2px;
-        min-height: 0;
-        padding: var(--rf-space-1) 2px;
-        text-align: center;
-    }
-
-    .rf-gear-slots .rf-gear-slot__pic {
-        width: 3.25rem;
-        height: 3.25rem;
-    }
-
-    .rf-gear-slots .rf-gear-slot__name {
-        display: none;
-    }
-
-    .rf-gear-slots .rf-gear-slot__label {
-        font-size: 0.75rem;
-        letter-spacing: 0;
-        text-transform: none;
-        white-space: nowrap;
-    }
-
-
-    .rf-gear-stage {
-        min-height: 0;
-    }
-
-    .rf-gear-stage__still {
-        font-size: 8rem;
-    }
-
-    .rf-gear-pick {
-        flex-wrap: wrap;
-    }
-
-    .rf-gear-pick__text {
-        flex-basis: calc(100% - 4rem);
-    }
-
-    .rf-gear-pick__acts {
-        flex: 1 1 100%;
-    }
-
-    .rf-gear-pick__acts .rf-btn {
-        flex: 1 1 0;
-        justify-content: center;
-        padding-top: var(--rf-space-3);
-        padding-bottom: var(--rf-space-3);
-    }
-
-    .rf-gear-stats {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .rf-gear-stat__value {
-        font-size: 1.25rem;
-    }
-
-    .rf-gear-doll__foot {
-        flex-direction: column-reverse;
-    }
-
-    .rf-gear-allstats {
-        justify-content: center;
     }
 
     .rf-gear-grid,

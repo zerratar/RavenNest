@@ -570,10 +570,27 @@ namespace RavenNest.Blazor.Services
                 if (Array.Exists(ClassicColumns, x => x.Stat == stat)) continue;
                 var value = all[stat];
                 if (value == 0) continue;
-                lines.Add(new GearStatLine(stat, GearStats.Label(stat), value, 0, GearStats.IsShare(stat)));
+                lines.Add(new GearStatLine(stat, ShareLabel(stat), value, 0, GearStats.IsShare(stat)));
             }
 
             return lines;
+        }
+
+        // "1.5% Healing Power" says it: "Healing Power Bonus" is the stat's name beside the flat Healing Power, and
+        // the percent sign already tells the two apart (the game's item tooltips and chat name them the same way).
+        private static string ShareLabel(GearStat stat)
+        {
+            switch (stat)
+            {
+                case GearStat.MeleePowerBonus: return "Melee Power";
+                case GearStat.RangedPowerBonus: return "Ranged Power";
+                case GearStat.MagicPowerBonus: return "Magic Power";
+                case GearStat.HealingPowerBonus: return "Healing Power";
+                case GearStat.AccuracyBonus: return "Accuracy";
+                case GearStat.ArmorBonus: return "Armor";
+                case GearStat.MaxHealthBonus: return "Max Health";
+                default: return GearStats.Label(stat);
+            }
         }
 
         /// <summary>
