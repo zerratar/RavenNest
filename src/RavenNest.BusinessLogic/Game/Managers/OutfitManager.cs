@@ -209,8 +209,11 @@ namespace RavenNest.BusinessLogic.Game
         /// </summary>
         public void EquippedBest(SessionToken token, Guid characterId, string word)
         {
-            var character = GetCharacter(token, characterId);
+            var character = GetCharacter(token, characterId, asksAboutOutfits: false);
             if (character == null) return;
+            // a game before 0.9.7 wears what its own "equip best" put on: nothing is changed behind it
+            SessionOf(character, out var knowsOutfits);
+            if (!knowsOutfits) return;
             lock (LockOf(characterId))
             {
                 var state = Load(character);
@@ -401,6 +404,14 @@ namespace RavenNest.BusinessLogic.Game
             lock (LockOf(character.Id))
             {
                 var state = Load(character);
+                if (follow != null && follow.Value && !state.Follow)
+                {
+                    // on again: what is worn is the outfit of what is trained now (nothing changed while it was off)
+                    var task = gameData.GetCharacterState(character.StateId);
+                    var trained = OutfitRules.SkillOf(task?.Task, task?.TaskArgument);
+                    if (trained != Skill.None) state.Worn = trained;
+                    state.Back = Skill.None;
+                }
                 if (follow != null) state.Follow = follow.Value;
                 if (upgrade != null) state.Upgrade = upgrade.Value;
                 return Done(character, state, new OutfitResult { Skill = (int)state.Worn }, tellGame);
@@ -565,12 +576,12 @@ namespace RavenNest.BusinessLogic.Game
             return session;
         }
 
-        private Character GetCharacter(SessionToken token, Guid characterId)
+        private Character GetCharacter(SessionToken token, Guid characterId, bool asksAboutOutfits = true)
         {
             if (token == null) return null;
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
-            askingSessions[session.Id] = true;
+            if (asksAboutOutfits) askingSessions[session.Id] = true;
             return gameData.GetActiveSessionCharacters(session)?.FirstOrDefault(x => x.Id == characterId);
         }
     }
