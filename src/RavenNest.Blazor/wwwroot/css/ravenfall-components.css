@@ -5776,6 +5776,10 @@ a.rf-badge:hover {
 .rf-stage__pop-meta { margin: 0; color: rgba(236,228,214,0.72); font-size: 0.84rem; }
 .rf-stage__pop-meta .is-short { color: #ff9a7a; }
 .rf-stage__pop-why { margin: 0; color: #ffb48f; font-size: 0.82rem; }
+/* a tree's three endings: which one is chosen, or that only one can be */
+.rf-stage__pop-chosen { margin: 0; padding: 0.3rem 0.5rem; border-radius: 7px; background: rgba(255,180,143,0.12); border: 1px solid rgba(255,180,143,0.4); color: #ffcdb2; font-size: 0.86rem; font-weight: 600; }
+.rf-stage__pop-chosen.is-open { background: rgba(233,184,92,0.12); border-color: rgba(233,184,92,0.45); color: #ffe2a8; }
+.rf-stage__pop-chosen b { color: #ffd98a; }
 .rf-stage__pop-loadout { display: flex; align-items: center; gap: 6px; font-size: 0.84rem; color: rgba(236,228,214,0.8); }
 .rf-stage__pop-loadout span { margin-right: 2px; }
 .rf-stage__slotbtn { width: 2rem; height: 2rem; border-radius: 7px; background: rgba(8,10,28,0.95); border: 1px solid rgba(233,184,92,0.45); color: #f3e6cc; font-weight: 800; cursor: pointer; }

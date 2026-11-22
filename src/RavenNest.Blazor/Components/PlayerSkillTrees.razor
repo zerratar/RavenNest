@@ -41,7 +41,7 @@ else
                                 ShowModeToggle="true" PlannerChanged="SetPlanner"
                                 OnLearn="Learn" OnSlot="SetSlot" OnRule="SetRule" Message="@message" />
             }
-            <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the crowned one at the end of each tree is its capstone for a maxed skill (level 999); a gold number is the active's loadout slot.</p>
+            <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the three crowned ones at the end of each combat tree are its endings for a maxed skill (level 999): pick one, the other two stay closed; a gold number is the active's loadout slot.</p>
         </div>
 
         @if (listView)
@@ -59,10 +59,14 @@ else
                             var rank = build.Rank(node.Id);
                             var open = RavenNest.Combat.SkillTrees.GateLevel(node, levels) >= node.RequiredLevel;
                             var reason = build.CanRaise(node.Id, levels, info.Earned);
-                            <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open ? "" : "is-locked")">
+                            // a combat tree ends in three capstones of which one is learned (the capstone paths)
+                            var ending = node.Capstone && RavenNest.Combat.SkillTrees.Capstones(tree).Count > 1;
+                            var chosen = ending ? build.CapstoneOf(tree) : null;
+                            var closed = chosen != null && chosen != node;
+                            <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open && !closed ? "" : "is-locked")">
                                 <div class="rf-trees__node-head">
-                                    <strong>@node.Name</strong>
-                                    <span class="rf-chip">@(node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
+                                    <strong>@node.Name@(ending && !string.Equals(node.Path, node.Name, StringComparison.OrdinalIgnoreCase) ? " (" + node.Path + ")" : "")</strong>
+                                    <span class="rf-chip">@(ending ? (rank > 0 ? "Chosen ending" : closed ? "Not chosen" : "Ending, pick one") : node.IsActive ? "Active" : node.MaxRank > 1 ? $"{rank}/{node.MaxRank}" : rank > 0 ? "Learned" : "Passive")</span>
                                 </div>
                                 <div class="rf-trees__node-text">@node.Description</div>
                                 @if (!string.IsNullOrEmpty(node.EffectText()))
@@ -72,6 +76,8 @@ else
                                 <div class="rf-meta">
                                     @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
                                     <span>@RavenNest.Combat.SkillTrees.GateName(node) @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+                                    @if (node.NeedsAll) { <span> After @RavenNest.Combat.SkillTrees.PathText(node).</span> }
+                                    @if (closed) { <span> You chose @chosen.Name: a tree has one ending.</span> }
                                 </div>
                                 @if (canManage && rank < node.MaxRank)
                                 {

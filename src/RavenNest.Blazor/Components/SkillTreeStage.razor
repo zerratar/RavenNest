@@ -151,7 +151,7 @@
                 }
                 <div>
                     <strong>@node.Name</strong>
-                    <span class="rf-stage__pop-kind">@node.Tree · @(node.IsActive ? "active" : node.MaxRank > 1 ? $"passive {rank}/{node.MaxRank}" : node.ExtraLoadoutSlot || node.LastStand ? "special" : "passive")@(rank > 0 && node.MaxRank == 1 ? " · learned" : "")</span>
+                    <span class="rf-stage__pop-kind">@node.Tree · @KindText(node, rank)</span>
                 </div>
                 <button type="button" class="rf-stage__close" title="Close" @onclick="Deselect">×</button>
             </div>
@@ -161,10 +161,23 @@
             {
                 <p class="rf-stage__pop-effect">@effect@if (!string.IsNullOrEmpty(total)) { <span class="rf-stage__pop-total"> (@total)</span> }</p>
             }
+            @* a tree's three endings: which one is chosen, or that only one can be *@
+            @if (node.Capstone && RavenNest.Combat.SkillTrees.Capstones(node.Tree).Count > 1)
+            {
+                var chosen = Build.CapstoneOf(node.Tree);
+                if (chosen != null && chosen != node)
+                {
+                    <p class="rf-stage__pop-chosen">You chose <b>@chosen.Name</b>. A tree has one ending@(Planner ? ": take it back to pick another." : "; a respec gives the choice back.")</p>
+                }
+                else if (chosen == null)
+                {
+                    <p class="rf-stage__pop-chosen is-open">One of @node.Tree's three endings. Only one can be learned.</p>
+                }
+            }
             <p class="rf-stage__pop-meta">
                 @if (node.Requires.Length > 0)
                 {
-                    var onPath = node.Requires.Any(Build.Has);
+                    var onPath = node.NeedsAll ? node.Requires.All(Build.Has) : node.Requires.Any(Build.Has);
                     <span class="@(onPath || rank > 0 ? "" : "is-short")">After @RavenNest.Combat.SkillTrees.PathText(node). </span>
                 }
                 @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
@@ -188,7 +201,7 @@
                         <button type="button" class="rf-stage__btn" disabled="@(lowerWhy != null)" title="@lowerWhy" @onclick="() => OnLower.InvokeAsync(node.Id)">Take back</button>
                     }
                 </div>
-                @if (reason != null && rank < node.MaxRank)
+                @if (reason != null && rank < node.MaxRank && !(node.Capstone && Build.CapstoneOf(node.Tree) != null))
                 {
                     <p class="rf-stage__pop-why">@reason</p>
                 }
@@ -498,16 +511,38 @@
         {
             var rank = Build.Rank(n.Id);
             var level = RavenNest.Combat.SkillTrees.GateLevel(n, Levels);
-            var state = rank >= n.MaxRank ? "maxed" : rank > 0 ? "learned" : level < n.RequiredLevel ? "locked" : Build.CanRaise(n.Id, Levels, Earned) == null ? "available" : "open";
+            // a tree's other two endings once one is chosen: dim like a locked star, whatever the level
+            var closed = n.Capstone && rank == 0 && Build.CapstoneOf(n.Tree) != null;
+            var state = rank >= n.MaxRank ? "maxed" : rank > 0 ? "learned" : level < n.RequiredLevel || closed ? "locked" : Build.CanRaise(n.Id, Levels, Earned) == null ? "available" : "open";
             return new
             {
                 id = n.Id, name = n.Name, tree = shown.IndexOf(n.Tree), tier = n.Tier,
                 kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone || n.ExtraPetSkillSlot || n.HealsReachPet || n.Trade == TradeEffect.Eggs) ? "special" : "passive", capstone = n.Capstone,
-                rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = n.Requires,
+                rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = Links(n), closed,
                 icon = HasPicture(n.Id), needs = trade ? RavenNest.Combat.SkillTrees.GateText(n) : null,
             };
         }).ToList();
         return new { trees, nodes };
+    }
+
+    /// <summary>
+    ///     The links the map draws to a node: its path. An ending that asks for every node of its theme (the capstone
+    ///     paths) may ask for one far down its tree; the map draws only the links from the highest of them, so no line
+    ///     runs through four rings, and the node's panel names them all.
+    /// </summary>
+    private static string[] Links(SkillNode n)
+    {
+        if (!n.NeedsAll || n.Requires.Length <= 1) return n.Requires;
+        var top = n.Requires.Max(r => RavenNest.Combat.SkillTrees.Get(r)?.Tier ?? 0);
+        return n.Requires.Where(r => (RavenNest.Combat.SkillTrees.Get(r)?.Tier ?? 0) == top).ToArray();
+    }
+
+    /// <summary>What a node is, under its name: "active", "passive 2/5", or for a tree's ending whose it is ("the Assassin's ending").</summary>
+    private static string KindText(SkillNode node, int rank)
+    {
+        if (node.Capstone && !RavenNest.Combat.SkillTrees.IsTrade(node.Tree))
+            return (string.Equals(node.Path, node.Name, StringComparison.OrdinalIgnoreCase) ? "an ending" : "the " + node.Path + "'s ending") + (rank > 0 ? " · chosen" : "");
+        return (node.IsActive ? "active" : node.MaxRank > 1 ? $"passive {rank}/{node.MaxRank}" : node.ExtraLoadoutSlot || node.LastStand ? "special" : "passive") + (rank > 0 && node.MaxRank == 1 ? " · learned" : "");
     }
 
     private int SlotOf(string id) => Build.Loadout.FindIndex(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));

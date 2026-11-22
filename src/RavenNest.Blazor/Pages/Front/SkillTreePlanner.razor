@@ -33,7 +33,7 @@
                             StartOnTrade="trade" OnTradeView="SetTrade"
                             OnLearn="Learn" OnLower="Lower" OnSlot="Slot" OnRule="Rule" />
         </div>
-        <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the crowned one at the end of each tree is its capstone for a maxed skill (level 999). The trade trees are passives only: they work by themselves while you gather, cook, craft and brew.</p>
+        <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the three crowned ones at the end of each combat tree are its endings for a maxed skill (level 999): pick one, the other two stay closed. The trade trees are passives only: they work by themselves while you gather, cook, craft and brew.</p>
 
         <div class="rf-panel">
             <h3 class="rf-panel__title">What the build gives</h3>
@@ -49,8 +49,21 @@
                     {
                         var stat = (GearStat)s;
                         var v = passives[stat];
-                        if (v == 0) continue;
+                        // what a tree's ending does beyond plain stats is said under its own name, below
+                        if (v == 0 || stat >= GearStat.FirstStrike) continue;
                         <span class="rf-chip">@GearStats.Label(stat) @(GearStats.IsShare(stat) ? (v * 100).ToString("0.#") + "%" : v.ToString("0"))</span>
+                    }
+                </div>
+            }
+            @* the endings chosen (one a tree), each with what it does *@
+            @{ var endings = RavenNest.Combat.SkillTrees.Trees(trade: false).Select(build.CapstoneOf).Where(n => n != null).ToList(); }
+            @if (endings.Count > 0)
+            {
+                <h3 class="rf-panel__title">Endings chosen</h3>
+                <div class="rf-chips">
+                    @foreach (var n in endings)
+                    {
+                        <span class="rf-chip" title="@n.Description">@n.Tree: @n.Name@(string.IsNullOrEmpty(n.EffectText()) ? "" : " (" + n.EffectText() + ")")</span>
                     }
                 </div>
             }
