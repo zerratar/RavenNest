@@ -27,6 +27,16 @@ namespace RavenNest.Combat
         public static bool Drops(bool firstClearByStream, double roll) => roll < GearChance(firstClearByStream);
 
         /// <summary>
+        ///     A fighter with a battle pet out gets a Beastmaster piece (the Taming line, the game's
+        ///     docs/taming-gear-design.md) in place of their skill's line this often: one piece in five. Over the 30
+        ///     floors of the climb that is about six, a set's worth, while most of what they get stays their skill's.
+        /// </summary>
+        public const double BeastmasterChance = 0.2;
+
+        /// <summary>Does a roll in [0, 1) make a player's piece a Beastmaster one (only with a pet out).</summary>
+        public static bool Beastmaster(bool petOut, double roll) => petOut && roll < BeastmasterChance;
+
+        /// <summary>
         ///     The tier of the piece, 1 for the first: the highest whose level (<paramref name="tierLevels"/>, the
         ///     class gear tiers' levels, lowest first) is at or below the floor's level (<see cref="Tower.Level"/>).
         ///     The server then lowers it to what the character can wear.

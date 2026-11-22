@@ -213,6 +213,10 @@ else
                                         {
                                             <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
                                         }
+                                        @if (RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level) > 0)
+                                        {
+                                            <span class="rf-chip" title="Required taming level"><i class="fas fa-paw" aria-hidden="true"></i>@RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level)</span>
+                                        }
                                     </div>
                                 </td>
                                 <td data-label="Category" class="rf-table__quiet">@item.Category</td>
@@ -354,6 +358,8 @@ else
         if (item.RequiredAttackLevel > player.Skills.AttackLevel) missing.Add("Attack " + item.RequiredAttackLevel);
         if (item.RequiredDefenseLevel > player.Skills.DefenseLevel) missing.Add("Defense " + item.RequiredDefenseLevel);
         if (item.RequiredRangedLevel > player.Skills.RangedLevel) missing.Add("Ranged " + item.RequiredRangedLevel);
+        var taming = RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level);
+        if (taming > player.Skills.TamingLevel) missing.Add("Taming " + taming);
         if (item.RequiredSlayerLevel > player.Skills.SlayerLevel) missing.Add("Slayer " + item.RequiredSlayerLevel);
 
         var magic = Math.Max(player.Skills.MagicLevel, player.Skills.HealingLevel);

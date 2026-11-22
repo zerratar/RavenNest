@@ -145,5 +145,14 @@
         Enlightened,
         Transcendent,
         Celestial,
+        // Beastmaster (2026-11-22, the game's docs/taming-gear-design.md): the Taming line
+        Fledgling,
+        Trapper,
+        Houndmaster,
+        Falconer,
+        Wildheart,
+        Packlord,
+        Primal,
+        Wyrmkin,
     }
 }

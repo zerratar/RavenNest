@@ -1868,7 +1868,8 @@ namespace RavenNest.BusinessLogic.Game
                    (item.RequiredMagicLevel <= skills.Skills.MagicLevel || item.RequiredMagicLevel <= skills.Skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.Skills.RangedLevel &&
                    item.RequiredDefenseLevel <= skills.Skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
-                   item.RequiredAttackLevel <= skills.Skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
+                   item.RequiredAttackLevel <= skills.Skills.AttackLevel && //GameMath.ExperienceToLevel(skills.Attack);
+                   RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level) <= skills.Skills.TamingLevel; // the Beastmaster line
         }
 
 
@@ -1892,7 +1893,8 @@ namespace RavenNest.BusinessLogic.Game
                    (item.RequiredMagicLevel <= skills.MagicLevel || item.RequiredMagicLevel <= skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.RangedLevel &&
                    item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
-                   item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
+                   item.RequiredAttackLevel <= skills.AttackLevel && //GameMath.ExperienceToLevel(skills.Attack);
+                   RavenNest.Models.ItemLines.TamingLevelFor((RavenNest.Models.ItemMaterial)item.Material, item.Level) <= skills.TamingLevel; // the Beastmaster line
         }
 
 

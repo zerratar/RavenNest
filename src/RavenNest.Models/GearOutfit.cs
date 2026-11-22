@@ -116,6 +116,13 @@ namespace RavenNest.Models
                 case "monk":
                 case "plate":
                     return new GearOutfit(word, Skill.None, LineNamed(word).Value, true);
+
+                // the Taming line by its name or the one who wears it: a line, never a role, since no combat skill
+                // fits it (the gear a tamer fights in is a choice, not the ranking's)
+                case "beastmaster":
+                case "tamer":
+                case "taming":
+                    return new GearOutfit(word, Skill.None, ItemLine.Beastmaster, true);
             }
 
             // any line with "line" after its name: the way to the five lines whose name is a role's word
@@ -143,6 +150,7 @@ namespace RavenNest.Models
                 case "darkknight": return ItemLine.DarkKnight;
                 case "witchhunter": return ItemLine.WitchHunter;
                 case "monk": return ItemLine.Monk;
+                case "beastmaster": return ItemLine.Beastmaster;
                 case "plate": return ItemLine.Plate;
                 default: return null;
             }

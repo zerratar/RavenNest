@@ -34,6 +34,13 @@ namespace RavenNest.Models
         WitchHunter = 11,
         /// <summary>Wraps for Healing: healing power, cooldowns, regeneration, evasion.</summary>
         Monk = 12,
+
+        /// <summary>
+        /// Furs and hides for those who fight with a battle pet (2026-11-22): the pet's power, health and recovery, a
+        /// better tame chance, and the wearer's own health and crits. Gated by Taming (<see cref="ItemLines.TamingLevelFor"/>)
+        /// and fits Taming only, so "equip best" for a combat skill never picks it by itself.
+        /// </summary>
+        Beastmaster = 13,
     }
 
     /// <summary>
@@ -85,11 +92,22 @@ namespace RavenNest.Models
                 case ItemLine.DarkKnight: return 0.9;
                 case ItemLine.WitchHunter: return 0.6;
                 case ItemLine.Monk: return 0.4;
+                case ItemLine.Beastmaster: return 0.6;
                 default: return 1.0;
             }
         }
 
         public static bool IsClassGear(ItemMaterial material) => (int)material >= (int)ItemMaterial.Apprentice;
+
+        /// <summary>
+        /// The Taming level a piece needs: a Beastmaster piece its item level (the tier's level), anything else 0. The
+        /// line is the first gear that Taming opens and the items have no column for it, so the rule is here, read by
+        /// the game, the server and the website alike; the item's other requirement columns stay 0.
+        /// </summary>
+        public static int TamingLevelFor(ItemMaterial material, int itemLevel)
+        {
+            return IsClassGear(material) && Of(material) == ItemLine.Beastmaster ? Math.Max(1, itemLevel) : 0;
+        }
 
         /// <summary>Is the material of this line; for <see cref="ItemLine.Plate"/>, anything that is not class gear.</summary>
         public static bool IsOf(ItemLine line, ItemMaterial material)
@@ -156,6 +174,9 @@ namespace RavenNest.Models
                 case Skill.Attack: return Bit(ItemLine.Melee) | Bit(ItemLine.Rogue) | Bit(ItemLine.Samurai);
                 case Skill.Strength: return Bit(ItemLine.Melee) | Bit(ItemLine.Barbarian) | Bit(ItemLine.Samurai) | Bit(ItemLine.DarkKnight);
                 case Skill.Defense: return Bit(ItemLine.Tank) | Bit(ItemLine.Paladin) | Bit(ItemLine.DarkKnight);
+                // nobody trains Taming as a task (!tame keeps the combat skill), so this is for "!equip taming" and an
+                // outfit of Taming; a combat skill's "equip best" never counts the Beastmaster line as fitting
+                case Skill.Taming: return Bit(ItemLine.Beastmaster);
                 default: return 0;
             }
         }

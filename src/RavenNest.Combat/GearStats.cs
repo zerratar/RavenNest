@@ -156,6 +156,10 @@ namespace RavenNest.Combat
         PetAlpha,
         /// <summary>Trailblazer: the battle pet is never knocked out while its owner gathers (any value above 0).</summary>
         PetSafeGathering,
+
+        // Taming gear (2026-11-22, the game's docs/taming-gear-design.md)
+        /// <summary>A share more of the chance that a try tames the creature (Taming.Chance; the game rolls it). Not points added.</summary>
+        TameChance,
     }
 
     /// <summary>
@@ -167,7 +171,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.PetSafeGathering + 1;
+        public const int Count = (int)GearStat.TameChance + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);

@@ -490,7 +490,8 @@ namespace RavenNest.BusinessLogic.Game
             var build = SkillTreeManager.BuildOf(gameData, characterId); // kept parsed: this runs every gathering round
             var taming = Math.Max(1, gameData.GetCharacterSkills(gameData.GetCharacter(characterId)?.SkillsId ?? Guid.Empty)?.TamingLevel ?? 1);
             var count = BattlePets.SkillSlots(taming, pet.Stage) + build.ExtraPetSkillSlots;
-            var stronger = 1 + Math.Max(0, build.Passives()[GearStat.PetGathering]);
+            // and what the owner wears (the Beastmaster line's PET_GATHERING), added to the tree's as in a fight
+            var stronger = 1 + Math.Max(0, build.Passives()[GearStat.PetGathering] + WornPetStat(gameData, characterId, GearStat.PetGathering));
             foreach (var id in (pet.Slots ?? "").Split(',').Take(count))
             {
                 var skill = BattlePets.GetSkill(id);
@@ -503,6 +504,24 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
             return bonus;
+        }
+
+        /// <summary>
+        ///     A pet stat summed over what a character wears (the Beastmaster line, docs/taming-gear-design.md in the
+        ///     game repo). Pieces without it are skipped before any parsing: this runs every gathering round.
+        /// </summary>
+        public static double WornPetStat(GameData gameData, Guid characterId, GearStat stat)
+        {
+            var key = GearStats.Key(stat);
+            var total = 0d;
+            foreach (var stack in gameData.GetEquippedItems(characterId))
+            {
+                var item = stack != null ? gameData.GetItem(stack.ItemId) : null;
+                var text = item?.ExtraStats;
+                if (string.IsNullOrEmpty(text) || text.IndexOf(key, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                total += GearStats.Parse(text)[stat];
+            }
+            return total;
         }
 
         // ---------------------------------------------------------------- helpers

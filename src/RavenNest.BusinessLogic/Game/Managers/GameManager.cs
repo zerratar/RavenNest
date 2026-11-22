@@ -569,9 +569,15 @@ namespace RavenNest.BusinessLogic.Game
                             if (worn.Item != null) fits = fits | GearScore.KeepWorn(0, (RavenNest.Models.ItemMaterial)worn.Item.Material);
                         }
                     }
+                    // the Taming line only comes this way: to a fighter with a battle pet out, now and then, in place of
+                    // their skill's line (TowerLoot.BeastmasterChance); never as "any line"
                     var lines = made.Where(l => ItemLines.Has(fits, l)).ToList();
-                    if (lines.Count == 0) lines = made.ToList();
+                    if (lines.Count == 0) lines = made.Where(l => l != ItemLine.Beastmaster).ToList();
                     var line = lines[RavenNest.Combat.TowerLoot.Pick(lines.Count, rng.NextDouble())];
+                    var pet = gameData.GetActivePet(character.Id);
+                    var petOut = pet != null && !string.IsNullOrEmpty(pet.Species) && !BattlePetManager.ItemGone(gameData, pet);
+                    if (made.Contains(ItemLine.Beastmaster) && RavenNest.Combat.TowerLoot.Beastmaster(petOut, rng.NextDouble()))
+                        line = ItemLine.Beastmaster;
 
                     // one of the five slots (the head's two looks count as one), then down from the floor's tier
                     // to the first the character can wear

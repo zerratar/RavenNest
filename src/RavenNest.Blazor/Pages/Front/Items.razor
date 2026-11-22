@@ -196,6 +196,10 @@
                                                 {
                                                     <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
                                                 }
+                                                @if (RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level) > 0)
+                                                {
+                                                    <span class="rf-chip" title="Required taming level"><i class="fas fa-paw" aria-hidden="true"></i>@RavenNest.Models.ItemLines.TamingLevelFor(item.Material, item.Level)</span>
+                                                }
                                             </div>
                                         </td>
                                         <td class="rf-table__quiet">@ItemService.GetMaterialName(item)</td>

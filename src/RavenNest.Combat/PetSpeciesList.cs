@@ -490,12 +490,17 @@ namespace RavenNest.Combat
         public const double MaxChance = 0.08;
         public const double TreatMultiplier = 1.5;
 
-        /// <summary>The chance that a try tames the creature (0 when the Taming level is too low).</summary>
-        public static double Chance(int tamingLevel, PetSpecies species, bool treat = false)
+        /// <summary>
+        ///     The chance that a try tames the creature (0 when the Taming level is too low). <paramref name="gearBonus"/>
+        ///     is the TAME_CHANCE of what the tamer wears (the Beastmaster line): that share more of the chance, after
+        ///     the treat, never points added (a 2% chance and 15% more is 2.3%).
+        /// </summary>
+        public static double Chance(int tamingLevel, PetSpecies species, bool treat = false, double gearBonus = 0)
         {
             if (species == null || tamingLevel < species.TameLevel) return 0;
             var c = Math.Min(MaxChance, BaseChance + (tamingLevel - species.TameLevel) * ChancePerLevelAbove) * Math.Max(0, species.TameRarity);
-            return treat ? c * TreatMultiplier : c;
+            if (treat) c *= TreatMultiplier;
+            return c * (1 + Math.Max(0, gearBonus));
         }
 
         /// <summary>

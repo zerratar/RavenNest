@@ -13,8 +13,8 @@ using ItemLines = RavenNest.Models.ItemLines;
 namespace RavenNest.BusinessLogic.Data
 {
     /// <summary>
-    ///     Class gear (v0.9.7, the game's docs/class-gear-design.md): armor lines of eight tiers, six pieces each (twelve
-    ///     lines: the first five, and seven more since 2026-11-21).
+    ///     Class gear (v0.9.7, the game's docs/class-gear-design.md): armor lines of eight tiers, six pieces each (thirteen
+    ///     lines: the first five, seven more since 2026-11-21, and the Taming line, Beastmaster, since 2026-11-22).
     ///     Everything about them is made here at startup from two tables: <see cref="ClassGearPieces"/> (what a piece is
     ///     and how it looks) and <see cref="ClassGearLines"/> (what a line gives). The code is the record for these items:
     ///     a row that differs is put right at the next start. Adding a line or a piece is adding rows.
@@ -172,9 +172,17 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Monk, "gloves", ItemType.Gloves, "Handwraps", "8,14"),
             Piece(ItemLine.Monk, "leggings", ItemType.Leggings, "Leg Wraps", "23").From(2, "23,10,4", HeadMask.NoKneePads),
             Piece(ItemLine.Monk, "boots", ItemType.Boots, "Footwraps", "3").From(6, "17"),
+
+            // the Taming line (2026-11-22, the game's docs/taming-gear-design.md): furs, hides, feathers and bone
+            Piece(ItemLine.Beastmaster, "head1", ItemType.Hat, "Feathered Hat", "7").From(3, "7,12").From(6, "7,3"),
+            Piece(ItemLine.Beastmaster, "head2", ItemType.HeadCovering, "Pelt Hood", "9", HeadMask.Hair | HeadMask.Ears).From(3, "9,12").From(6, "9,3"),
+            Piece(ItemLine.Beastmaster, "chest", ItemType.Chest, "Hide Vest", "12,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "12,0,5,0", HeadMask.NoElbowPads).From(6, "12,8,5,0,3", HeadMask.NoElbowPads),
+            Piece(ItemLine.Beastmaster, "gloves", ItemType.Gloves, "Handler Gloves", "6,16"),
+            Piece(ItemLine.Beastmaster, "leggings", ItemType.Leggings, "Hide Breeches", "18").From(2, "18,10,11", HeadMask.NoKneePads).From(4, "18,10,11,2", HeadMask.NoKneePads),
+            Piece(ItemLine.Beastmaster, "boots", ItemType.Boots, "Tracking Boots", "7"),
         };
 
-        private enum ClassGearSkill { Magic, Ranged, Attack, Defense }
+        private enum ClassGearSkill { Magic, Ranged, Attack, Defense, Taming }
 
         /// <summary>
         ///     What a piece is made from, as { chest, leggings, each of head, gloves and boots }: linen and leather are
@@ -305,6 +313,22 @@ namespace RavenNest.BusinessLogic.Data
                 // capstone 0.6%): a set gives 0.1% to 0.6%
                 Stats = new[] { Stat(GearStat.HealingPowerBonus, 1, 10), Stat(GearStat.CooldownReduction, 1, 6), Stat(GearStat.CombatRegen, 0.1, 0.6, fine: true), Stat(GearStat.MaxHealthBonus, 1, 6), Stat(GearStat.Evasion, 1, 6) },
                 Cost = new ClassGearCost { Linen = ClassGearCloth, Bars = ClassGearOne },
+            },
+
+            // the Taming line (2026-11-22): needs Taming (ItemLines.TamingLevelFor, no column of its own), so no
+            // requirement column is set. The wearer's own numbers work with any weapon; the rest is for the pet, which
+            // reads them where it reads its owner's Beastmaster tree (the same stats), and the tame chance.
+            new ClassGearLineInfo
+            {
+                Line = ItemLine.Beastmaster, Requires = ClassGearSkill.Taming,
+                Description = "Furs and hides for those who fight beside a battle pet: less armor than plate, a stronger, sturdier pet that is up sooner, a better chance to tame, and more health and critical hits of your own with any weapon.",
+                Stats = new[]
+                {
+                    Stat(GearStat.MaxHealthBonus, 1, 8), Stat(GearStat.CritChance, 0.5, 3),
+                    Stat(GearStat.PetPower, 4, 75), Stat(GearStat.PetHealth, 3, 20), Stat(GearStat.PetRecovery, 2, 15),
+                    Stat(GearStat.PetGathering, 1, 10), Stat(GearStat.TameChance, 2, 15),
+                },
+                Cost = new ClassGearCost { Leather = ClassGearCloth, Bars = ClassGearOne },
             },
         };
 

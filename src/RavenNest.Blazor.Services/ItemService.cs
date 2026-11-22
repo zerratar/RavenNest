@@ -507,6 +507,7 @@ namespace RavenNest.Blazor.Services
             if (i.RequiredDefenseLevel > 0) return "Requires Defense Level";
             if (i.RequiredRangedLevel > 0) return "Requires Ranged Level";
             if (i.RequiredMagicLevel > 0) return "Requires Magic or Healing Level";
+            if (RavenNest.Models.ItemLines.TamingLevelFor(i.Material, i.Level) > 0) return "Requires Taming Level";
             return "";
         }
 
@@ -518,6 +519,8 @@ namespace RavenNest.Blazor.Services
             if (i.RequiredDefenseLevel > 0) return i.RequiredDefenseLevel.ToString();
             if (i.RequiredRangedLevel > 0) return i.RequiredRangedLevel.ToString();
             if (i.RequiredMagicLevel > 0) return i.RequiredMagicLevel.ToString();
+            var taming = RavenNest.Models.ItemLines.TamingLevelFor(i.Material, i.Level);
+            if (taming > 0) return taming.ToString();
             return "";
         }
 
