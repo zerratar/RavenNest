@@ -499,11 +499,29 @@ namespace RavenNest.Combat
 
         public static string GateName(SkillTree tree) => Names(SkillsOf(tree));
 
-        private static string Names(IReadOnlyList<CombatSkill> skills)
+        /// <summary>
+        ///     What a node waits for, short enough for a label: "Strength 300", "Crafting 300", or for a trade node
+        ///     that any of its tree's skills opens "level 100 in a gathering skill".
+        /// </summary>
+        public static string GateText(SkillNode node)
         {
-            if (skills.Count == 1) return SkillName(skills[0]);
-            return string.Join(", ", skills.Take(skills.Count - 1).Select(SkillName)) + " or " + SkillName(skills[skills.Count - 1]);
+            var skills = SkillsOf(node);
+            if (skills.Count == 1) return SkillName(skills[0]) + " " + node.RequiredLevel;
+            return "level " + node.RequiredLevel + " in " + (node.Tree == SkillTree.Artisan ? "an artisan skill" : "a " + node.Tree.ToString().ToLowerInvariant() + " skill");
         }
+
+        private static string Names(IReadOnlyList<CombatSkill> skills) => OrList(skills.Select(SkillName));
+
+        /// <summary>"A", "A or B", "A, B or C": any one of several, in words.</summary>
+        public static string OrList(IEnumerable<string> names)
+        {
+            var list = names.ToList();
+            if (list.Count <= 1) return list.Count == 0 ? "" : list[0];
+            return string.Join(", ", list.Take(list.Count - 1)) + " or " + list[list.Count - 1];
+        }
+
+        /// <summary>The names of the skills a node's path comes from ("Thrifty or Second Helping"); empty on the first tier.</summary>
+        public static string PathText(SkillNode node) => OrList(node.Requires.Select(r => Get(r)?.Name ?? r));
 
         /// <summary>A tree's one skill; for a trade tree the first of its skills (see <see cref="SkillsOf(SkillTree)"/>).</summary>
         public static CombatSkill SkillOf(SkillTree tree)
@@ -956,10 +974,10 @@ namespace RavenNest.Combat
             // The trade trees' capstones make what is below them better in a skill at 999, so their paths come from
             // those nodes too, not only from the tier below: a cook at 999 with no Crafting cannot learn the Crafting
             // nodes between, and a gatherer should not have to buy eggs to master the trade.
-            var master = Capstone(SkillTree.Gathering, "master-of-the-trade", "Master of the Trade", "In a gathering skill at 999, every round is worth two to the village and Tireless comes twice as often.", null, "nest-finder", "tireless");
+            var master = Capstone(SkillTree.Gathering, "master-of-the-trade", "Master of the Trade", "A master's work feeds the whole village.", null, "nest-finder", "tireless");
             master.Trade = TradeEffect.GatheringMaster;
             master.TradeText = "in a skill at 999: every round counts twice for the village, and Tireless's chance is doubled";
-            var artisan = Capstone(SkillTree.Artisan, "master-artisan", "Master Artisan", "In a skill at 999, Thrifty and Second Helping come more often.", null, "enchanters-patience", "thrifty", "second-helping");
+            var artisan = Capstone(SkillTree.Artisan, "master-artisan", "Master Artisan", "Nothing is wasted in a master's workshop, and there is always a little more.", null, "enchanters-patience", "thrifty", "second-helping");
             artisan.Trade = TradeEffect.ArtisanMaster;
             artisan.TradeAmount = 0.05;
             artisan.TradeText = "in a skill at 999: Thrifty and Second Helping are each worth {0} more";
@@ -1111,7 +1129,7 @@ namespace RavenNest.Combat
             if (level < node.RequiredLevel) return node.Name + " needs " + SkillTrees.GateName(node) + " " + node.RequiredLevel + ".";
             // the path: one of the nodes linked below it learned (ranks already held stay, whatever the path)
             if (Rank(id) == 0 && node.Requires.Length > 0 && !node.Requires.Any(Has))
-                return node.Name + " needs " + string.Join(" or ", node.Requires.Select(r => SkillTrees.Get(r)?.Name ?? r)) + " first.";
+                return node.Name + " needs " + SkillTrees.PathText(node) + " first.";
             var left = earnedPoints - Spent;
             if (left < node.Cost) return node.Name + " costs " + node.Cost + " point" + (node.Cost == 1 ? "" : "s") + "; you have " + Math.Max(0, left) + ".";
             return null;

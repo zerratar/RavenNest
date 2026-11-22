@@ -10,13 +10,16 @@
     (a press elsewhere puts it down), and the loadout along the bottom: the active skills the character uses by itself in
     fights, the first that fits first. The map is js/rf-skill-tree.js; the rules are RavenNest.Combat's. The page owning it
     saves (or, in the planner, keeps the build in the address).
+    Combat | Trade at the top switches between the nine combat-side trees (the wheel) and the two trade trees (Gathering
+    and Artisan, the game's docs/trade-skills-design.md), which open as two fans from the same middle. One pool of points
+    pays for both; the trade trees are passives only, so their view shows the nine trade levels in place of the loadout.
 *@
-<div class="rf-stage @(Planner ? "is-planner" : "")" @ref="root">
+<div class="rf-stage @(Planner ? "is-planner" : "") @(trade ? "is-trade" : "")" @ref="root">
     <div class="rf-stage__map" @ref="mapHost"></div>
 
     @* points, and the respec or the planner's tools *@
     <div class="rf-stage__hud">
-        <div class="rf-stage__points" title="Points come from your combat levels: one per ten levels up to 1,000, then one per forty. A skill also needs a level in its tree's combat skill.">
+        <div class="rf-stage__points" title="One pool of points for every tree. Your combat levels earn one per ten levels up to 1,000, then one per forty; Taming adds its own; the nine trade skills earn one per ten levels added up to 400, then one per 150. A skill also needs a level in its tree's skill.">
             <img src="/imgs/skills/point.webp" alt="" />
             <span class="rf-stage__points-left">@(Earned - Build.Spent)</span>
             <span class="rf-stage__points-of">of @Earned points left</span>
@@ -24,6 +27,9 @@
             {
                 <button type="button" class="rf-stage__btn rf-stage__more-toggle" @onclick="() => hudOpen = !hudOpen">@(hudOpen ? "Hide" : "Tools")</button>
             }
+        </div>
+        <div class="rf-stage__sources" title="Where the points come from. They are one pool: any of them can be spent in any tree.">
+            <span>Combat <b>@SkillPoints.FromCombat(Levels)</b></span><span>Taming <b>@SkillPoints.FromTaming(Levels)</b></span><span>Trade <b>@SkillPoints.FromTrade(Levels)</b></span>
         </div>
         @if (Planner)
         {
@@ -61,7 +67,15 @@
             @if (showLevels && LevelValues != null)
             {
                 <div class="rf-stage__levels">
+                    <span class="rf-stage__levels-head">Combat and Taming</span>
                     @foreach (CombatSkill skill in Enum.GetValues(typeof(CombatSkill)))
+                    {
+                        var s = skill;
+                        if (RavenNest.Combat.SkillTrees.IsTradeSkill(s)) continue;
+                        <label><span>@RavenNest.Combat.SkillTrees.SkillName(s)</span><input type="number" min="1" max="999" value="@LevelValues[(int)s]" @onchange="e => SetLevel(s, e.Value?.ToString())" /></label>
+                    }
+                    <span class="rf-stage__levels-head">Trade</span>
+                    @foreach (var skill in RavenNest.Combat.SkillTrees.TradeSkills)
                     {
                         var s = skill;
                         <label><span>@RavenNest.Combat.SkillTrees.SkillName(s)</span><input type="number" min="1" max="999" value="@LevelValues[(int)s]" @onchange="e => SetLevel(s, e.Value?.ToString())" /></label>
@@ -88,6 +102,12 @@
                 </div>
             }
         }
+    </div>
+
+    @* which trees: the combat wheel, or the two trade trees *@
+    <div class="rf-stage__views" role="tablist" aria-label="Which trees to show">
+        <button type="button" role="tab" class="@(!trade ? "is-active" : "")" aria-selected="@(!trade)" title="The nine trees for fighting: one per combat skill, and Beastmaster for Taming" @onclick="() => SetTrade(false)"><img src="/imgs/skills/tree-might.webp" alt="" />Combat</button>
+        <button type="button" role="tab" class="@(trade ? "is-active" : "")" aria-selected="@trade" title="The trees for gathering and making things: Gathering and Artisan" @onclick="() => SetTrade(true)"><img src="/imgs/skills/tree-gathering.webp" alt="" />Trade</button>
     </div>
 
     @* the mode and the zoom *@
@@ -121,10 +141,11 @@
         {
             var node = selected;
             var rank = Build.Rank(node.Id);
-            var skill = RavenNest.Combat.SkillTrees.SkillOf(node.Tree);
+            var gateLevel = RavenNest.Combat.SkillTrees.GateLevel(node, Levels);
+            var anyOf = RavenNest.Combat.SkillTrees.SkillsOf(node).Count > 1;
             var reason = Build.CanRaise(node.Id, Levels, Earned);
             <div class="rf-stage__pop-head">
-                @if (node.IsActive || node.ExtraLoadoutSlot || node.LastStand || node.ExtraPetSkillSlot || node.HealsReachPet)
+                @if (HasPicture(node.Id))
                 {
                     <img src="/imgs/skills/@(node.Id).webp" alt="" />
                 }
@@ -144,10 +165,14 @@
                 @if (node.Requires.Length > 0)
                 {
                     var onPath = node.Requires.Any(Build.Has);
-                    <span class="@(onPath || rank > 0 ? "" : "is-short")">After @string.Join(" or ", node.Requires.Select(r => RavenNest.Combat.SkillTrees.Get(r)?.Name ?? r)). </span>
+                    <span class="@(onPath || rank > 0 ? "" : "is-short")">After @RavenNest.Combat.SkillTrees.PathText(node). </span>
                 }
                 @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
-                <span class="@(Levels(skill) >= node.RequiredLevel ? "" : "is-short")">Needs @RavenNest.Combat.SkillTrees.SkillName(skill) @node.RequiredLevel (@(Planner ? "set to" : "you have") @Levels(skill)).</span>
+                <span class="@(gateLevel >= node.RequiredLevel ? "" : "is-short")">Needs @RavenNest.Combat.SkillTrees.GateName(node) @node.RequiredLevel (@(anyOf ? (Planner ? "the best is set to" : "your best is") : Planner ? "set to" : "you have") @gateLevel). </span>
+                @if (anyOf && node.RequiredLevel > 1)
+                {
+                    <span>It works in each of them that is at @node.RequiredLevel. </span>
+                }
                 <span>@node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
             </p>
             @if (CanEdit)
@@ -192,8 +217,27 @@
         }
     </div>
 
+    @* the trade trees have no actives: where the loadout is, the nine trade levels and the points they earn *@
+    @if (trade)
+    {
+        var tradeLevels = SkillPoints.TradeLevels(Levels);
+        <div class="rf-stage__loadout rf-stage__trade">
+            <div class="rf-stage__loadout-title" title="The trade trees are passives: they work by themselves while you gather and make things, so there is nothing to put in a loadout. The nine trade skills earn points too: one for every ten levels added up to 400, then one for every 150.">
+                Trade levels <span class="rf-stage__help">?</span>
+            </div>
+            <div class="rf-stage__tradeskills">
+                @foreach (var s in RavenNest.Combat.SkillTrees.TradeSkills)
+                {
+                    var kind = RavenNest.Combat.SkillTrees.SkillsOf(SkillTree.Gathering).Contains(s) ? "is-gathering" : RavenNest.Combat.SkillTrees.SkillsOf(SkillTree.Artisan).Contains(s) ? "is-artisan" : "";
+                    <span class="rf-stage__tradeskill @kind" title="@(kind == "is-gathering" ? "Opens the Gathering tree" : kind == "is-artisan" ? "Opens the Artisan tree" : "Earns points; no tree of its own yet")"><span>@RavenNest.Combat.SkillTrees.SkillName(s)</span><strong>@Math.Max(0, Levels(s))</strong></span>
+                }
+            </div>
+            <div class="rf-stage__tradesum"><span class="rf-stage__tradesum-label">Trade skills: </span><strong>@tradeLevels.ToString("N0")</strong> levels <br />earn <strong>@SkillPoints.FromTrade(Levels)</strong> points</div>
+        </div>
+    }
+
     @* the loadout *@
-    <div class="rf-stage__loadout">
+    <div class="rf-stage__loadout" style="@(trade ? "display:none" : "")">
         <div class="rf-stage__loadout-title" title="Your character uses these active skills by itself in fights, on their cooldowns, the first one that fits first. Learn an active skill to fill a slot; Battle Rhythm adds a fifth.">
             Loadout <span class="rf-stage__help">?</span>
         </div>
@@ -280,8 +324,54 @@
 </div>
 
 @code {
-    /// <summary>The trees' colours on the map, in SkillTree order.</summary>
-    public static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b", "#3fd0c9" };
+    /// <summary>The trees' colours on the map, in SkillTree order (the last two: Gathering's leaf green, Artisan's forge amber).</summary>
+    public static readonly string[] TreeColors = { "#6aa8ff", "#6fe39a", "#ff7a59", "#ffd166", "#9be15d", "#b48cff", "#ff5d8f", "#c9a26b", "#3fd0c9", "#7fd67a", "#ffab4a" };
+
+    /// <summary>Opens on the trade trees (a shared link made there).</summary>
+    [Parameter] public bool StartOnTrade { get; set; }
+
+    /// <summary>The view changed: true for the trade trees.</summary>
+    [Parameter] public EventCallback<bool> OnTradeView { get; set; }
+
+    private bool trade, refit;
+
+    /// <summary>What lies over the map's bottom on a phone: the loadout's row, or the trade levels' one line.</summary>
+    private int BottomInset => trade ? 64 : 96;
+
+    /// <summary>The same on a wide screen: the loadout's bar, or the trade levels' (two rows of them on a middling width).</summary>
+    private int FitBottom => trade ? 128 : 100;
+
+    protected override void OnInitialized() => trade = StartOnTrade;
+
+    private async Task SetTrade(bool on)
+    {
+        if (trade == on) return;
+        trade = on;
+        slotMenu = -1;
+        refit = true; // the other trees: the map is fitted to them again
+        await Deselect();
+        await OnTradeView.InvokeAsync(on);
+    }
+
+    // which skills have a picture of their own (wwwroot/imgs/skills/<id>.webp): the others wear their tree's emblem
+    private static HashSet<string> pictures;
+
+    private bool HasPicture(string id)
+    {
+        if (pictures == null)
+        {
+            var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var folder = System.IO.Path.Combine(Environment.WebRootPath ?? "", "imgs", "skills");
+                if (System.IO.Directory.Exists(folder))
+                    foreach (var file in System.IO.Directory.EnumerateFiles(folder, "*.webp")) found.Add(System.IO.Path.GetFileNameWithoutExtension(file));
+            }
+            catch (System.IO.IOException) { }
+            pictures = found;
+        }
+        return pictures.Contains(id);
+    }
 
     [Parameter] public SkillBuild Build { get; set; } = new SkillBuild();
     [Parameter] public Func<CombatSkill, int> Levels { get; set; } = _ => 1;
@@ -343,17 +433,21 @@
             if (map == null || shownKey != Key)
             {
                 if (map != null) { await map.InvokeVoidAsync("dispose"); await map.DisposeAsync(); }
-                map = await module.InvokeAsync<IJSObjectReference>("open", mapHost, MapData(), self, new { root, bottomInset = 96, fitBottom = 100, fitTop = 10, fitTopNarrow = 70, fitBottomNarrow = 90 });
+                // room kept free round the map: the view tabs above it, the loadout (or the trade levels) below
+                map = await module.InvokeAsync<IJSObjectReference>("open", mapHost, MapData(), self, new { root, bottomInset = BottomInset, fitBottom = FitBottom, fitTop = 50, fitTopNarrow = 104, fitBottomNarrow = BottomInset });
                 await map.InvokeVoidAsync("setPopover", popover);
                 shownKey = Key;
                 selected = null;
+                refit = false;
             }
             else
             {
                 var data = MapData();
                 var text = System.Text.Json.JsonSerializer.Serialize(data);
-                if (text != lastData) await map.InvokeVoidAsync("update", data, false);
+                if (refit) await map.InvokeVoidAsync("setInsets", new { bottomInset = BottomInset, fitBottom = FitBottom, fitBottomNarrow = BottomInset });
+                if (text != lastData) await map.InvokeVoidAsync("update", data, refit);
                 lastData = text;
+                refit = false;
             }
             if (firstRender && Planner) await LoadPlans();
         }
@@ -390,23 +484,27 @@
 
     private object MapData()
     {
-        var trees = Enum.GetValues(typeof(SkillTree)).Cast<SkillTree>().Select(t => new
+        // the trees of the view that is shown: the nine combat-side ones, or the two trade ones. A trade tree is
+        // opened by the best of its skills, so that one's name and level stand under the tree's name.
+        var shown = RavenNest.Combat.SkillTrees.Trees(trade).ToList();
+        var trees = shown.Select(t => new
         {
             name = t.ToString(),
-            skill = RavenNest.Combat.SkillTrees.SkillName(RavenNest.Combat.SkillTrees.SkillOf(t)),
-            level = Levels(RavenNest.Combat.SkillTrees.SkillOf(t)),
-            color = TreeColors[(int)t],
+            skill = (trade ? "Best: " : "") + RavenNest.Combat.SkillTrees.SkillName(RavenNest.Combat.SkillTrees.BestSkill(t, Levels)),
+            level = RavenNest.Combat.SkillTrees.GateLevel(t, Levels),
+            color = TreeColors[(int)t % TreeColors.Length],
         }).ToList();
-        var nodes = RavenNest.Combat.SkillTrees.All.Select(n =>
+        var nodes = RavenNest.Combat.SkillTrees.All.Where(n => RavenNest.Combat.SkillTrees.IsTrade(n.Tree) == trade).Select(n =>
         {
             var rank = Build.Rank(n.Id);
-            var level = Levels(RavenNest.Combat.SkillTrees.SkillOf(n.Tree));
+            var level = RavenNest.Combat.SkillTrees.GateLevel(n, Levels);
             var state = rank >= n.MaxRank ? "maxed" : rank > 0 ? "learned" : level < n.RequiredLevel ? "locked" : Build.CanRaise(n.Id, Levels, Earned) == null ? "available" : "open";
             return new
             {
-                id = n.Id, name = n.Name, tree = (int)n.Tree, tier = n.Tier,
-                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone || n.ExtraPetSkillSlot || n.HealsReachPet) ? "special" : "passive", capstone = n.Capstone,
+                id = n.Id, name = n.Name, tree = shown.IndexOf(n.Tree), tier = n.Tier,
+                kind = n.IsActive ? "active" : (n.ExtraLoadoutSlot || n.LastStand || n.Capstone || n.ExtraPetSkillSlot || n.HealsReachPet || n.Trade == TradeEffect.Eggs) ? "special" : "passive", capstone = n.Capstone,
                 rank, max = n.MaxRank, state, slot = SlotOf(n.Id) + 1, requires = n.Requires,
+                icon = HasPicture(n.Id), needs = trade ? RavenNest.Combat.SkillTrees.GateText(n) : null,
             };
         }).ToList();
         return new { trees, nodes };

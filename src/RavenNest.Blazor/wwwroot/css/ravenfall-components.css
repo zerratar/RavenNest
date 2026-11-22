@@ -5713,10 +5713,19 @@ a.rf-badge:hover {
 .rf-skilltree { cursor: grab; }
 .rf-skilltree.is-hover { cursor: pointer; }
 .rf-skilltree.is-dragging { cursor: grabbing; }
-.rf-stage__hud, .rf-stage__pop, .rf-stage__loadout, .rf-stage__slotmenu, .rf-stage__modes, .rf-stage__note {
+.rf-stage__hud, .rf-stage__pop, .rf-stage__loadout, .rf-stage__slotmenu, .rf-stage__modes, .rf-stage__note, .rf-stage__views {
     background: linear-gradient(180deg, rgba(20,26,58,0.94) 0%, rgba(10,14,36,0.94) 100%); border: 1px solid rgba(233,184,92,0.5); border-radius: 10px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.45), 0 0 0 3px rgba(10,12,30,0.55); backdrop-filter: blur(4px); }
-.rf-stage__hud { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; max-width: min(340px, calc(100% - 28px)); z-index: 3; }
+.rf-stage__hud { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; max-width: min(340px, calc(100% - 28px)); max-height: calc(100% - 28px); overflow-y: auto; z-index: 3; }
+/* where the points come from: one pool, three sources */
+.rf-stage__sources { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.85rem; font-weight: 700; color: rgba(236,228,214,0.78); cursor: help; }
+.rf-stage__sources b { color: #fbe7b8; font-weight: 800; }
+/* Combat | Trade: which trees the map shows */
+.rf-stage__views { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; padding: 4px; gap: 4px; z-index: 3; }
+.rf-stage__views button { display: flex; align-items: center; gap: 7px; background: none; border: none; color: rgba(236,228,214,0.8); font-weight: 800; font-size: 1rem; padding: 0.3rem 1.1rem 0.3rem 0.7rem; border-radius: 7px; cursor: pointer; line-height: 1.3; }
+.rf-stage__views button img { width: 28px; height: 28px; }
+.rf-stage__views button:hover:not(.is-active) { color: #fbe7b8; background: rgba(233,184,92,0.12); }
+.rf-stage__views button.is-active { background: linear-gradient(180deg, #f1c46c 0%, #c98d32 100%); color: #1a1206; }
 .rf-stage__points { display: flex; align-items: center; gap: 8px; cursor: help; }
 .rf-stage__points img { width: 34px; height: 34px; filter: drop-shadow(0 0 6px rgba(255,210,120,0.6)); }
 .rf-stage__points-left { font-size: 1.9rem; font-weight: 800; color: #fbe7b8; line-height: 1; text-shadow: 0 0 12px rgba(233,184,92,0.45); }
@@ -5736,14 +5745,15 @@ a.rf-badge:hover {
 .rf-stage__link { background: none; border: none; color: #e9b85c; padding: 0; font-size: 0.82rem; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
 .rf-stage__levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; font-size: 0.82rem; }
 .rf-stage__levels label { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.rf-stage__levels-head { grid-column: 1 / -1; font-weight: 800; color: #fbe7b8; font-size: 0.85rem; letter-spacing: 0.04em; margin-top: 2px; }
 .rf-stage__levels input { width: 4.2rem; background: rgba(8,10,28,0.95); color: #f3e6cc; border: 1px solid rgba(233,184,92,0.4); border-radius: 6px; padding: 0.15rem 0.35rem; }
 .rf-stage__tools { position: absolute; top: 14px; right: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 3; }
 .rf-stage__modes { display: flex; padding: 3px; gap: 3px; }
 .rf-stage__modes button { background: none; border: none; color: rgba(236,228,214,0.75); font-weight: 700; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 7px; cursor: pointer; }
 .rf-stage__modes button.is-active { background: linear-gradient(180deg, #f1c46c 0%, #c98d32 100%); color: #1a1206; }
 .rf-stage__zoom { display: flex; gap: 4px; }
-.rf-stage__note { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); padding: 0.35rem 0.9rem; font-size: 0.85rem; color: #fbe7b8; z-index: 2; white-space: nowrap; }
-.rf-stage__message { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(233,184,92,0.95); color: #1a1206; font-weight: 700; padding: 0.4rem 1rem; border-radius: 999px; z-index: 6; pointer-events: none;
+.rf-stage__note { position: absolute; top: 66px; left: 50%; transform: translateX(-50%); padding: 0.35rem 0.9rem; font-size: 0.85rem; color: #fbe7b8; z-index: 2; white-space: nowrap; }
+.rf-stage__message { position: absolute; top: 66px; left: 50%; transform: translateX(-50%); background: rgba(233,184,92,0.95); color: #1a1206; font-weight: 700; padding: 0.4rem 1rem; border-radius: 999px; z-index: 6; pointer-events: none;
     animation: rf-stage-fade 4.5s ease forwards; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
 @keyframes rf-stage-fade { 0% { opacity: 0; transform: translate(-50%, -6px); } 8% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .rf-stage__pop { position: absolute; top: 0; left: 0; width: 330px; max-width: calc(100% - 16px); padding: 12px 14px; visibility: hidden; z-index: 5; display: flex; flex-direction: column; gap: 8px; }
@@ -5802,10 +5812,31 @@ a.rf-badge:hover {
 .rf-stage__slotmenu-list button:hover { border-color: rgba(233,184,92,0.5); }
 .rf-stage__slotmenu-list button.is-on { border-color: #e9b85c; background: rgba(233,184,92,0.15); }
 .rf-stage__slotmenu-list img { width: 30px; height: 30px; }
+/* the trade view: the nine trade levels and their points where the loadout is */
+/* (wider than half the map: centred by its margins, since left: 50% would leave it only half the width to grow into) */
+.rf-stage__trade { gap: 14px; left: 12px; right: 12px; transform: none; width: fit-content; margin: 0 auto; }
+.rf-stage__tradeskills { display: grid; grid-template-columns: repeat(9, auto); gap: 6px; }
+.rf-stage__tradeskill { display: flex; flex-direction: column; align-items: center; min-width: 4.6rem; padding: 5px 11px 4px; border-radius: 8px; background: rgba(8,10,28,0.82); border: 1px solid rgba(180,190,230,0.35);
+    font-size: 0.82rem; font-weight: 700; color: rgba(236,228,214,0.85); line-height: 1.15; white-space: nowrap; }
+.rf-stage__tradeskill strong { font-size: 1.2rem; font-weight: 800; color: #fbe7b8; line-height: 1.15; }
+.rf-stage__tradeskill.is-gathering { border-color: rgba(127,214,122,0.7); }
+.rf-stage__tradeskill.is-gathering strong { color: #b6efb0; }
+.rf-stage__tradeskill.is-artisan { border-color: rgba(255,171,74,0.75); }
+.rf-stage__tradeskill.is-artisan strong { color: #ffcf94; }
+.rf-stage__tradesum { white-space: nowrap; font-weight: 700; font-size: 0.9rem; color: rgba(236,228,214,0.85); line-height: 1.3; }
+.rf-stage__tradesum strong { color: #fbe7b8; font-size: 1.05rem; font-weight: 800; }
+.rf-stage__tradesum-label { display: none; }
+@media (max-width: 1180px) {
+    .rf-stage__tradeskills { grid-template-columns: repeat(5, auto); }
+}
 @media (max-width: 620px) {
     .rf-stage { height: clamp(460px, calc(100dvh - 90px), 1200px); }
-    .rf-stage__hud { padding: 8px 10px; gap: 6px; max-width: calc(100% - 132px); top: 10px; left: 10px; }
-    .rf-stage__tools { top: 10px; right: 10px; }
+    .rf-stage__views { top: 8px; left: 8px; right: 8px; transform: none; padding: 3px; }
+    .rf-stage__views button { flex: 1; justify-content: center; font-size: 0.95rem; padding: 0.22rem 0.6rem; }
+    .rf-stage__views button img { width: 24px; height: 24px; }
+    .rf-stage__hud { padding: 8px 10px; gap: 6px; max-width: calc(100% - 132px); max-height: calc(100% - 64px); top: 54px; left: 10px; }
+    .rf-stage__sources { display: none; }
+    .rf-stage__tools { top: 54px; right: 10px; }
     .rf-stage__more { display: none; }
     .rf-stage__more.is-open { display: flex; }
     .rf-stage__more-toggle { display: inline-block; padding: 0.2rem 0.5rem; }
@@ -5813,6 +5844,14 @@ a.rf-badge:hover {
     .rf-stage__points img { width: 26px; height: 26px; }
     .rf-stage__points-left { font-size: 1.4rem; }
     .rf-stage__note { top: auto; bottom: 104px; white-space: normal; text-align: center; width: calc(100% - 28px); }
+    /* a phone keeps the map's height for the two trees: the nine levels are in the planner's Levels and on the
+       character's skills; here only what they add up to */
+    .rf-stage.is-trade .rf-stage__note { bottom: 72px; }
+    .rf-stage__trade { left: 8px; right: 8px; width: auto; margin: 0; padding: 9px 10px; }
+    .rf-stage__tradeskills { display: none; }
+    .rf-stage__tradesum { white-space: normal; text-align: center; font-size: 0.95rem; }
+    .rf-stage__tradesum br { display: none; }
+    .rf-stage__tradesum-label { display: inline; }
     .rf-stage__loadout { left: 8px; right: 8px; transform: none; max-width: none; justify-content: center; gap: 8px; padding: 6px 8px; }
     .rf-stage__loadout-title { display: none; }
     .rf-stage__slot { width: 60px; height: 64px; }

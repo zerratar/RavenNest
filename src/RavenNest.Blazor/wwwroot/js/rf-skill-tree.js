@@ -1,6 +1,8 @@
 // The skill trees as a map (combat v2, the game's docs/combat-skills-design.md): the trees (nine with Beastmaster) as wedges around a
 // centre, their tiers as rings, every skill a node to tap. Drag (or one finger) pans, the wheel or a pinch zooms, a
 // tap picks a node and tells the page (PlayerSkillTrees.razor), which shows it with its Learn button.
+// Two or three trees (the trade trees: Gathering and Artisan) do not fill the circle: they open as fans from the same
+// centre, facing each other, side by side on a wide view and one above the other on a tall one.
 //
 // The look is a star map (from the mockup the user picked on 2026-11-08, docs/mockups/skilltree-constellation.png in
 // the game): a deep blue night sky with a soft nebula and twinkling stars, a gold raven medallion in the middle with
@@ -23,6 +25,13 @@ const TIER_LEVELS = [1, 100, 300, 600, 999];
 const NODE_RADIUS = { active: 27, passive: 21, special: 30, capstone: 44 };
 const CROWN_RAYS = 1.72;         // how far a capstone's rays reach, in its radius
 const WEDGE_PADDING = 0.045;     // radians kept free at each side of a wedge
+const MAX_WEDGE = 1.3;           // a wedge is never wider than this: two or three trees are fans, not halves of the circle
+// Two fans open as wide as the view lets them without making the map smaller: the widest of these that fits best.
+const PAIR_WEDGES_WIDE = [1.4, 1.3, 1.2, 1.1, 1.0, 0.9];  // side by side
+const PAIR_WEDGES_TALL = [1.1, 1.0, 0.9, 0.8];            // one above the other
+const FAN_LABEL_MIN_ZOOM = 0.16; // a few trees have few skills: their names show from much further out
+const FAN_NODE_SCALE = 1.8;      // and room for bigger skills, so their pictures can be seen from afar
+const FAN_CROWN_SCALE = 1.35;    // (the capstones a little less: they are big already)
 const LABEL_MIN_ZOOM = 0.42;     // names show from this zoom up
 const MIN_ZOOM = 0.1, MAX_ZOOM = 3.2;
 const LEGEND = true;             // the key in the map's corner (wide screens only)
@@ -141,10 +150,18 @@ function linkKind(l) {
 }
 const LINK_ORDER = ['locked', 'dim', 'reach', 'next', 'walked'];
 
-/** Places the trees as wedges (tree 0 at the top, clockwise), their tiers as rings, the links from tier to tier. */
-function layout(data) {
+/**
+ * Places the trees as wedges (tree 0 at the top, clockwise), their tiers as rings, the links from tier to tier. A few
+ * trees (their wedges capped at MAX_WEDGE) are fans with sky between them; two of them lie left and right on a wide
+ * view (landscape), above and below on a tall one.
+ */
+function layout(data, landscape, pairWedge) {
     const trees = data.trees;
-    const wedge = (Math.PI * 2) / trees.length;
+    const step = (Math.PI * 2) / Math.max(1, trees.length);
+    const wedge = Math.min(step, trees.length === 2 ? pairWedge || (landscape ? PAIR_WEDGES_WIDE[0] : PAIR_WEDGES_TALL[0]) : MAX_WEDGE);
+    const fans = wedge < step;
+    const nodeScale = fans ? FAN_NODE_SCALE : 1, crownScale = fans ? FAN_CROWN_SCALE : 1;
+    const first = trees.length === 2 && landscape ? Math.PI : -Math.PI / 2;
     const nodes = data.nodes.map(n => ({ ...n }));
     const byTree = trees.map(() => Array.from({ length: TIERS }, () => []));
     for (const n of nodes) {
@@ -153,7 +170,7 @@ function layout(data) {
     }
 
     const hubs = trees.map((t, i) => {
-        const angle = -Math.PI / 2 + i * wedge;
+        const angle = first + i * step;
         // how far out the tree's level reaches: past the ring it has opened, and on towards the next one
         let tier = 0;
         while (tier < TIERS - 1 && t.level >= TIER_LEVELS[tier + 1]) tier++;
@@ -186,7 +203,7 @@ function layout(data) {
                 n.angle = a;
                 n.x = Math.cos(a) * radius;
                 n.y = Math.sin(a) * radius;
-                n.r = n.capstone ? NODE_RADIUS.capstone : NODE_RADIUS[n.kind] || 22;
+                n.r = n.capstone ? NODE_RADIUS.capstone * crownScale : (NODE_RADIUS[n.kind] || 22) * nodeScale;
                 n.outer = outerOf(n);
             });
         }
@@ -243,11 +260,12 @@ function layout(data) {
     });
 
     // whose name is written first where names crowd: learned, then what can be learned, then the rest; crowns before others
-    const weight = n => (lit(n) ? 0 : n.state === 'available' ? 2 : n.state === 'open' ? 4 : 6) + (n.capstone ? 0 : 1);
+    // (among a few fans every name is wanted, and a crown's has the fewest places to go: it goes first)
+    const weight = n => fans && n.capstone ? -1 : (lit(n) ? 0 : n.state === 'available' ? 2 : n.state === 'open' ? 4 : 6) + (n.capstone ? 0 : 1);
     const named = nodes.filter(n => n.angle !== undefined).sort((a, b) => weight(a) - weight(b) || a.tier - b.tier);
 
     const lively = nodes.some(n => n.state === 'available' || (n.capstone && lit(n)));
-    return { hubs, nodes, links, linkGroups, borders, byId, wedge, lively, named, extent: OUTER_RING + 150 };
+    return { hubs, nodes, links, linkGroups, borders, byId, wedge, fans, nodeScale, crownScale, lively, named, extent: OUTER_RING + 150 };
 }
 
 // ---- the camera and the pointer ------------------------------------------------------------------------------------
@@ -623,10 +641,12 @@ function drawMap(g, view, icons) {
         }
     }
 
-    // the compass rays: long gold ones to each tree, short ones between
-    for (let i = 0; i < map.hubs.length * 2; i++) {
-        const a = -Math.PI / 2 + i * Math.PI / map.hubs.length;
-        const long = i % 2 === 0;
+    // the compass rays: long gold ones to each tree, short ones between (at least eight, so a few trees still get a star)
+    const hubCount = Math.max(1, map.hubs.length), rays = hubCount >= 4 ? hubCount * 2 : Math.max(8, hubCount * 4);
+    const firstRay = map.hubs.length ? map.hubs[0].angle : -Math.PI / 2;
+    for (let i = 0; i < rays; i++) {
+        const a = firstRay + i * Math.PI * 2 / rays;
+        const long = i % (rays / hubCount) === 0;
         const reach = (long ? HUB_RADIUS + 40 : MEDALLION_RADIUS + 40) * zoom;
         const side = (long ? 10 : 6) * zoom;
         const ox = Math.cos(a), oy = Math.sin(a), px = -oy, py = ox;
@@ -729,7 +749,7 @@ function drawMap(g, view, icons) {
         g.strokeStyle = GOLD;
         g.lineWidth = Math.max(1.5, 4 * zoom);
         g.stroke();
-        const img = icons.get('tree:' + hub.index);
+        const img = icons.get('tree:' + hub.name);
         const size = 56 * zoom;
         if (img && size >= 8) g.drawImage(img, x - size / 2, y - size / 2, size, size);
     }
@@ -833,6 +853,16 @@ function titleBox(g, hub, size) {
     return { nameWidth, hw: Math.max(nameWidth / 2 + size * 1.5, subWidth / 2 + 4), hh: size * 1.25 };
 }
 
+/**
+ * Where a tree's name plate lies from its capstone, in screen pixels: past the crown, outwards. A fan lying on its side
+ * (two trees side by side) carries its name above its crown instead, so the pair may use the view's whole width.
+ */
+function titleOffset(map, hub, box, crown) {
+    if (map.fans && Math.abs(hub.cos) > 0.7) return [0, -(crown + 10 + box.hh)];
+    const away = crown + 8 + box.hw * Math.abs(hub.cos) + box.hh * Math.abs(hub.sin);
+    return [hub.cos * away, hub.sin * away];
+}
+
 function roundRect(g, x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
     g.beginPath();
@@ -890,7 +920,7 @@ function drawLabels(g, view) {
         const fits = (border, tier) => { const room = border.room[tier]; return !room || (room.d * zoom - room.outer * u) * 2 >= widths[tier] + 5; };
         for (let b = 0; b < map.borders.length; b++) {
             const border = map.borders[b];
-            if (close ? b % 2 === 1 : !texts.every((_, tier) => tier === 0 || fits(border, tier))) continue;
+            if (close ? !map.fans && b % 2 === 1 : !texts.every((_, tier) => tier === 0 || fits(border, tier))) continue;
             for (let tier = 0; tier < TIERS; tier++) {
                 const [x, y] = cam.toScreen(border.cos * ringRadius(tier), border.sin * ringRadius(tier), w, h);
                 if (x < -40 || y < -20 || x > w + 40 || y > h + 20 || !fits(border, tier)) continue;
@@ -916,13 +946,13 @@ function drawLabels(g, view) {
 
     // the trees' names past their crowns, readable at every zoom
     const size = titleSize(zoom);
-    const crown = NODE_RADIUS.capstone * u * CROWN_RAYS;
+    const crown = NODE_RADIUS.capstone * map.crownScale * u * CROWN_RAYS;
     const titles = map.hubs.map(hub => {
         const box = titleBox(g, hub, size);
         const [ox, oy] = cam.toScreen(hub.cos * OUTER_RING, hub.sin * OUTER_RING, w, h);
-        const away = crown + 8 + box.hw * Math.abs(hub.cos) + box.hh * Math.abs(hub.sin);
-        let x = ox + hub.cos * away, y = oy + hub.sin * away;
-        if (box.hw * 2 < w && zoom < LABEL_MIN_ZOOM) {
+        const [dx, dy] = titleOffset(map, hub, box, crown);
+        let x = ox + dx, y = oy + dy;
+        if (box.hw * 2 < w && zoom < LABEL_MIN_ZOOM && !map.fans) {
             // in the overview kept inside the view (a phone shows the side trees' names whole), and off the crown
             x = Math.min(w - box.hw - 4, Math.max(box.hw + 4, x));
             if (Math.abs(x - ox) < box.hw + crown * 0.7 && Math.abs(y - oy) < box.hh + crown * 0.7) y = oy + (hub.sin > 0.3 ? 1 : -1) * (crown * 0.8 + box.hh + 4);
@@ -948,10 +978,19 @@ function drawLabels(g, view) {
         shadowText(g, `${hub.skill} ${hub.level}`, x, y + size * 0.86, hub.pal.light);
         placed.push({ x, y, half: box.hw, tall: box.hh });
     }
+    if (map.fans) {
+        // where names may lie beside their skills, they keep off the medallion and the trees' emblems by it
+        const [mx, my] = cam.toScreen(0, 0, w, h);
+        placed.push({ x: mx, y: my, half: MEDALLION_RADIUS * 1.15 * zoom, tall: MEDALLION_RADIUS * 1.15 * zoom });
+        for (const hub of map.hubs) {
+            const [hx, hy] = cam.toScreen(hub.x, hub.y, w, h);
+            placed.push({ x: hx, y: hy, half: 40 * zoom, tall: 40 * zoom });
+        }
+    }
 
     // loadout slots, and the ranks learned of a passive: small badges at the node's shoulder
-    const names = zoom >= LABEL_MIN_ZOOM;
-    const nameSize = Math.max(12, Math.min(16, 15 * zoom));
+    const names = zoom >= (map.fans ? FAN_LABEL_MIN_ZOOM : LABEL_MIN_ZOOM);
+    const nameSize = map.fans ? Math.max(13, Math.min(17, 34 * zoom)) : Math.max(12, Math.min(16, 15 * zoom));
     for (const n of map.nodes) {
         const [x, y] = cam.toScreen(n.x, n.y, w, h);
         n.sx = x; n.sy = y;
@@ -975,25 +1014,34 @@ function drawLabels(g, view) {
         const fontSize = capstone ? nameSize + 2 : nameSize;
         g.font = `${picked || capstone ? 800 : 700} ${fontSize}px ${FONT}`;
         const half = g.measureText(n.name).width / 2 + 3, tall = fontSize * 0.62;
-        const reach = n.outer * u * (n.id === hover ? 1.1 : 1) + 5 + fontSize * 0.6;
+        const grown = n.outer * u * (n.id === hover ? 1.1 : 1);
+        const reach = grown + 5 + fontSize * 0.6;
+        // under the node, else over it; among a few fans (their skills stand one above the other where the fans lie
+        // on their sides) also beside it
+        const sides = capstone ? (map.fans ? [[0, 1], [1, 0], [-1, 0]] : [[0, 1]])
+            : map.fans ? [[0, 1], [0, -1], [1, 0], [-1, 0], [0.75, 1], [-0.75, 1], [0.75, -1], [-0.75, -1]] : [[0, 1], [0, -1]];
         let at = null;
-        for (const side of capstone ? [1] : [1, -1]) {
-            const cy = n.sy + side * reach;
+        for (const [dx, dy] of sides) {
+            // (beside it, a name is kept inside the view: a phone's is narrow)
+            // (the last four: a corner of the node, the name's near end by its middle)
+            const corner = dx !== 0 && dy !== 0;
+            const cx = dx ? Math.min(w - half - 5, Math.max(half + 5, n.sx + dx * (corner ? grown * 0.5 + half : grown + 7 + half))) : n.sx, cy = n.sy + dy * reach;
+            if (dx && !corner && Math.abs(cx - n.sx) < grown + half) continue;
             let free = true;
-            for (const b of placed) { if (Math.abs(b.x - n.sx) < b.half + half && Math.abs(b.y - cy) < b.tall + tall) { free = false; break; } }
+            for (const b of placed) { if (Math.abs(b.x - cx) < b.half + half && Math.abs(b.y - cy) < b.tall + tall) { free = false; break; } }
             if (free) {
                 for (const m of map.nodes) {
                     if (m === n || !m.seen) continue;
-                    const mr = m.outer * u * 0.9;
-                    if (Math.abs(m.sx - n.sx) < mr + half && Math.abs(m.sy - cy) < mr + tall) { free = false; break; }
+                    const mr = m.outer * u * (map.fans ? 0.78 : 0.9); // (the fans' skills are big: their corners leave room)
+                    if (Math.abs(m.sx - cx) < mr + half && Math.abs(m.sy - cy) < mr + tall) { free = false; break; }
                 }
             }
-            if (free || picked) { at = cy; break; }
+            if (free || picked) { at = [cx, cy]; break; }
         }
         if (at === null) continue;
-        placed.push({ x: n.sx, y: at, half, tall });
+        placed.push({ x: at[0], y: at[1], half, tall });
         const color = n.state === 'locked' ? (capstone ? 'rgba(214,196,150,0.6)' : 'rgba(226,224,236,0.55)') : capstone ? GOLD_BRIGHT : n.state === 'open' ? 'rgba(255,244,222,0.82)' : '#fff6e2';
-        shadowText(g, n.name, n.sx, at, color);
+        shadowText(g, n.name, at[0], at[1], color);
     }
     drawLevels();
 }
@@ -1036,7 +1084,7 @@ function shadowText(g, text, x, y, color, shadow = true) {
 /** What a skill's state means, in a few words (under the pointer). */
 function stateText(n, hub) {
     switch (n.state) {
-        case 'locked': return [`Needs ${hub.skill} ${TIER_LEVELS[n.tier]}`, '#ff9a7a'];
+        case 'locked': return [n.needs ? `Needs ${n.needs}` : `Needs ${hub.skill} ${TIER_LEVELS[n.tier]}`, '#ff9a7a'];
         case 'available': return ['Ready to learn', '#a5ecb4'];
         case 'learned': return [n.max > 1 ? `Rank ${n.rank} of ${n.max}` : 'Learned', GOLD_BRIGHT];
         case 'maxed': return [n.max > 1 ? 'Max rank' : 'Learned', GOLD_BRIGHT];
@@ -1059,7 +1107,7 @@ function drawTip(g, view) {
     g.font = `700 13px ${FONT}`;
     const width = Math.max(nameWidth, g.measureText(text).width) + 24, height = 50;
     const reach = (n.capstone ? n.r * 1.5 : n.outer) * u * 1.1;
-    const below = cam.zoom >= LABEL_MIN_ZOOM ? 26 : 8; // past the name under the node
+    const below = cam.zoom >= (map.fans ? FAN_LABEL_MIN_ZOOM : LABEL_MIN_ZOOM) ? 26 : 8; // past the name under the node
     const px = Math.max(6, Math.min(w - width - 6, x - width / 2));
     let py = y - reach - 10 - height;
     if (py < 6) py = y + reach + below;
@@ -1080,7 +1128,8 @@ const LEGEND_STATES = [['Locked', 'locked', 0], ['Not yet', 'open', 0], ['Ready'
 /** The map's key in its bottom left corner, drawn with the map's own nodes so it always matches. Wide screens only. */
 function drawLegend(g, view) {
     const { w, h, time } = view;
-    if (!LEGEND || w < 1100 || h < 620) return;
+    // (not beside a few fans: their view has a wide bar along the bottom, and no actives to explain)
+    if (!LEGEND || view.map.fans || w < 1100 || h < 620) return;
     const row = 27, pad = 12, left = 114, width = pad * 2 + left + 100, height = pad * 2 + row * 4 - 3;
     const x0 = 14, y0 = h - 14 - height;
     panel(g, x0, y0, width, height);
@@ -1256,7 +1305,7 @@ class GlScene {
 
     /** Each tree's wedge of light (wedgeBands) as triangles, made again when the trees' levels change. */
     build(map) {
-        const key = map.hubs.map(hub => hub.color + hub.frontier).join(' ');
+        const key = map.wedge + ' ' + map.hubs.map(hub => hub.color + hub.frontier + '@' + hub.angle).join(' ');
         if (key === this.wedgeKey) return;
         this.wedgeKey = key;
         if (this.wedges) { this.scene.remove(this.wedges); this.wedges.geometry.dispose(); }
@@ -1357,6 +1406,7 @@ class SkillTreeView {
         element.dataset.mode = this.useGl ? 'webgl' : '2d';
 
         this.icons = new Map();
+        this.landscape = true;
         this.loadIcons(data);
         this.root = this.options.root || element;
         this.bindInput();
@@ -1380,9 +1430,9 @@ class SkillTreeView {
     /** Icons by node id (imgs/skills/<id>.webp) and the trees' emblems (tree-<name>.webp); missing ones are left out. */
     loadIcons(data) {
         const base = this.options.iconBase || '/imgs/skills/';
-        // capstones and passives have no picture of their own: they wear their tree's emblem
-        const want = data.nodes.filter(n => n.kind !== 'passive' && !n.capstone).map(n => [n.id, n.id]);
-        data.trees.forEach((t, i) => want.push(['tree:' + i, 'tree-' + t.name.toLowerCase()]));
+        // capstones and passives without a picture of their own (the page says which have one: icon) wear their tree's emblem
+        const want = data.nodes.filter(n => n.icon || (n.kind !== 'passive' && !n.capstone)).map(n => [n.id, n.id]);
+        data.trees.forEach(t => want.push(['tree:' + t.name, 'tree-' + t.name.toLowerCase()]));
         want.push(['medallion', 'medallion']);
         this.wanted = this.wanted || new Set();
         for (const [key, file] of want) {
@@ -1399,6 +1449,9 @@ class SkillTreeView {
      * on a narrow screen along the bottom). Hidden while nothing is picked.
      */
     setPopover(el) { this.popover = el; this.dirty = true; }
+
+    /** The room kept free round the map changed (another bar lies along the bottom): the next fit and the panel use it. */
+    setInsets(insets) { Object.assign(this.options, insets || {}); this.dirty = true; }
 
     placePopover(w, h) {
         const el = this.popover;
@@ -1424,13 +1477,14 @@ class SkillTreeView {
     update(data, fit) {
         this.data = data;
         if (this.icons) this.loadIcons(data);
-        this.map = layout(data);
+        this.map = layout(data, this.landscape, this.pairWedge);
         for (const n of this.map.nodes) {
             const hub = this.map.hubs[n.tree];
             n.pal = hub ? hub.pal : LEGEND_PAL;
-            n.picture = n.kind === 'passive' || n.capstone ? 'tree:' + n.tree : n.id;
+            n.picture = !n.icon && (n.kind === 'passive' || n.capstone) ? 'tree:' + (hub ? hub.name : '') : n.id;
         }
         if (this.hover && !this.map.byId.has(this.hover)) this.hover = null;
+        if (this.selected && !this.map.byId.has(this.selected)) this.selected = null;
         if (this.highlighted && !this.map.byId.has(this.highlighted)) this.highlighted = null;
         this.gl?.build(this.map);
         if (fit) this.fit();
@@ -1439,8 +1493,28 @@ class SkillTreeView {
 
     /** What the map needs round its middle at a zoom, in screen pixels: the outer ring, the crowns' rays, the names. */
     fitNeeds(zoom, narrow) {
-        const crown = NODE_RADIUS.capstone * zoom * boostOf(zoom) * CROWN_RAYS;
+        const crown = NODE_RADIUS.capstone * this.map.crownScale * zoom * boostOf(zoom) * CROWN_RAYS;
         const size = titleSize(zoom);
+        if (this.map.fans) {
+            // fans: only what their arcs, their crowns and their names reach, so two trees side by side may use the
+            // whole width. The crown's rays are in the fan's middle; its corners are the ring and a level's label.
+            const ring = OUTER_RING * zoom + 18, reach = OUTER_RING * zoom + crown;
+            let w = MEDALLION_RADIUS * 1.4 * zoom, h = w;
+            for (const hub of this.map.hubs) {
+                for (let k = 0; k <= 8; k++) {
+                    const a = hub.angle - this.map.wedge / 2 + this.map.wedge * k / 8;
+                    w = Math.max(w, Math.abs(Math.cos(a)) * ring + 30);
+                    h = Math.max(h, Math.abs(Math.sin(a)) * ring + 30);
+                }
+                w = Math.max(w, Math.abs(hub.cos) * reach + 34);
+                h = Math.max(h, Math.abs(hub.sin) * reach + 30);
+                const box = titleBox(this.g, hub, size);
+                const [dx, dy] = titleOffset(this.map, hub, box, crown);
+                w = Math.max(w, Math.abs(hub.cos * OUTER_RING * zoom + dx) + box.hw + 8);
+                h = Math.max(h, Math.abs(hub.sin * OUTER_RING * zoom + dy) + box.hh + 10);
+            }
+            return { w, h };
+        }
         let hw = 0, hh = 0;
         for (const hub of this.map.hubs) { const box = titleBox(this.g, hub, size); hw = Math.max(hw, box.hw); hh = Math.max(hh, box.hh); }
         const reach = OUTER_RING * zoom + crown;
@@ -1456,12 +1530,32 @@ class SkillTreeView {
         const top = (narrow ? this.options.fitTopNarrow : this.options.fitTop) || 0;
         const bottom = (narrow ? this.options.fitBottomNarrow : this.options.fitBottom) || 0;
         const height = Math.max(200, (r.height || r.width) - top - bottom), width = Math.max(200, r.width);
-        let lo = MIN_ZOOM, hi = 1.5;
-        for (let i = 0; i < 18; i++) {
-            const mid = (lo + hi) / 2;
-            const needs = this.fitNeeds(mid, narrow);
-            if (needs.w * 2 <= width && needs.h * 2 <= height) lo = mid; else hi = mid;
+        const zoomThatFits = () => {
+            let lo = MIN_ZOOM, hi = 1.5;
+            for (let i = 0; i < 18; i++) {
+                const mid = (lo + hi) / 2;
+                const needs = this.fitNeeds(mid, narrow);
+                if (needs.w * 2 <= width && needs.h * 2 <= height) lo = mid; else hi = mid;
+            }
+            return lo;
+        };
+        // two trees: side by side where the view is wide, one above the other where it is tall, their fans as wide as
+        // costs the map no size (a narrower one only when it shows the map clearly bigger)
+        const landscape = width >= height * 1.1;
+        if (this.data && this.data.trees.length === 2) {
+            let best = null;
+            for (const wedge of landscape ? PAIR_WEDGES_WIDE : PAIR_WEDGES_TALL) {
+                this.map = layout(this.data, landscape, wedge);
+                const zoom = zoomThatFits();
+                if (!best || zoom > best.zoom * 1.04) best = { wedge, zoom };
+            }
+            this.landscape = landscape;
+            this.pairWedge = best.wedge;
+            this.update(this.data, false);
+        } else {
+            this.landscape = landscape;
         }
+        const lo = zoomThatFits();
         this.fitted = true;
         this.glideTo(0, (bottom - top) / 2 / lo, lo, glide ? 320 : 0);
     }
@@ -1705,10 +1799,11 @@ class SkillTreeView {
 }
 
 /**
- * Opens the map in an element. data: { trees: [{ name, skill, level, color }], nodes: [{ id, name, tree, tier,
- * kind ('active' | 'passive' | 'special'), capstone, rank, max, state ('learned' | 'maxed' | 'available' | 'open' |
- * 'locked'), slot (loadout slot from 1, or 0), requires }] }. options.mode '2d' forces the plain canvas sky. dotnet
- * gets OnNodeSelected(id).
+ * Opens the map in an element. data: { trees: [{ name, skill, level, color }], nodes: [{ id, name, tree (its index in
+ * trees), tier, kind ('active' | 'passive' | 'special'), capstone, rank, max, state ('learned' | 'maxed' | 'available' |
+ * 'open' | 'locked'), slot (loadout slot from 1, or 0), requires, icon (it has a picture of its own), needs (what a
+ * locked one waits for, when it is not "<the tree's skill> <the tier's level>") }] }. options.mode '2d' forces the plain
+ * canvas sky. dotnet gets OnNodeSelected(id).
  */
 export function open(element, data, dotnet, options) {
     return new SkillTreeView(element, data, dotnet, options);

@@ -10,6 +10,8 @@
     loadout along the bottom. "Planner" in the map's corner tries changes on a copy, with the character's levels or
     others, saved in this browser; nothing in it reaches the character. Chat has !tree, !learn, !loadout and !respec. The
     rules are RavenNest.Combat's; the server saves through SkillTreeManager and tells the game.
+    Combat | Trade on the map switches between the nine combat-side trees and the two trade trees (Gathering and
+    Artisan); the list shows them all, the trade ones last.
 *@
 @if (info == null)
 {
@@ -47,14 +49,15 @@ else
             <div class="rf-trees__grid">
                 @foreach (SkillTree tree in Enum.GetValues(typeof(SkillTree)))
                 {
-                    var skill = RavenNest.Combat.SkillTrees.SkillOf(tree);
+                    // a trade tree is opened by the best of its skills: that one's name and level
+                    var skill = RavenNest.Combat.SkillTrees.BestSkill(tree, levels);
                     var level = levels(skill);
                     <div class="rf-panel rf-trees__tree">
                         <h3 class="rf-panel__title"><img class="rf-trees__tree-icon" src="/imgs/skills/tree-@(tree.ToString().ToLowerInvariant()).webp" alt="" /> @tree <span class="rf-meta">@RavenNest.Combat.SkillTrees.SkillName(skill) @level</span></h3>
                         @foreach (var node in RavenNest.Combat.SkillTrees.Of(tree).OrderBy(n => n.Tier))
                         {
                             var rank = build.Rank(node.Id);
-                            var open = level >= node.RequiredLevel;
+                            var open = RavenNest.Combat.SkillTrees.GateLevel(node, levels) >= node.RequiredLevel;
                             var reason = build.CanRaise(node.Id, levels, info.Earned);
                             <div class="rf-trees__node @(rank > 0 ? "is-learned" : "") @(open ? "" : "is-locked")">
                                 <div class="rf-trees__node-head">
@@ -68,7 +71,7 @@ else
                                 }
                                 <div class="rf-meta">
                                     @if (node.IsActive) { <span>Every @node.Active.Cooldown s. </span> }
-                                    <span>@skill @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
+                                    <span>@RavenNest.Combat.SkillTrees.GateName(node) @node.RequiredLevel, @node.Cost point@(node.Cost == 1 ? "" : "s")@(node.MaxRank > 1 ? " a rank" : "").</span>
                                 </div>
                                 @if (canManage && rank < node.MaxRank)
                                 {
@@ -188,7 +191,7 @@ else
 
     private void PlanLearn(string id)
     {
-        if (plan.Raise(id, PlanLevel, planEarned) != null) return;
+        if (plan.Raise(id, PlanLevel) != null) return;
         var node = RavenNest.Combat.SkillTrees.Get(id);
         if (node.IsActive && plan.Rank(id) == 1) FillFreeSlot(plan, id);
     }

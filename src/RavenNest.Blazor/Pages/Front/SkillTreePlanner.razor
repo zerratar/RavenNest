@@ -6,9 +6,11 @@
 
 @*
     The skill tree planner (combat v2, the game's docs/combat-skills-design.md): anyone, signed in or not, sets the
-    levels they have in mind (the eight combat skills, and Taming for Beastmaster) and tries a build on the same map the character page shows (js/rf-skill-tree.js),
+    levels they have in mind (the eight combat skills, Taming for Beastmaster, and the nine trade skills for the trade
+    trees) and tries a build on the same map the character page shows (js/rf-skill-tree.js),
     with the same rules (RavenNest.Combat.SkillBuild): points from the levels, nodes opened by their tree's level, the
-    loadout. Nothing is saved; the address carries the build and the levels, so a build can be shared as a link.
+    loadout. Nothing is saved; the address carries the build, the levels (eighteen numbers; older links have eight or
+    nine and still open) and the tab, so a build can be shared as a link.
 *@
 <div class="top-section">
     <div class="hero-text">
@@ -20,16 +22,18 @@
 <div class="page-content">
     <div class="section rf-trees">
         <p class="rf-meta">
-            Set the levels you have in mind (Levels, in the map's corner: the eight combat skills, and Taming for the Beastmaster tree), then tap stars to learn them. Nothing here
+            Set the levels you have in mind (Levels, in the map's corner: the eight combat skills, Taming for the Beastmaster tree, and the nine trade skills), then tap stars to learn them.
+            <b>Combat</b> shows the nine trees for fighting, <b>Trade</b> the two for gathering and making things; every level earns into one pool of points that pays for both. Nothing here
             changes a character: Copy link shares the build, Save keeps it in this browser. Signed in, your character page's
             Skill trees tab has the same planner beside your real build.
         </p>
         <div class="rf-trees__wide">
             <SkillTreeStage Build="build" Levels="LevelOf" Earned="earned" CanEdit="true" Planner="true"
                             LevelValues="levelValues" OnLevels="SetLevels" OnReset="Reset" OnLoadPlan="LoadPlan" ShareLink="Link"
+                            StartOnTrade="trade" OnTradeView="SetTrade"
                             OnLearn="Learn" OnLower="Lower" OnSlot="Slot" OnRule="Rule" />
         </div>
-        <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the crowned one at the end of each tree is its capstone for a maxed skill (level 999).</p>
+        <p class="rf-meta rf-trees__hint">Drag to move, scroll or pinch to zoom, tap a star to see its skill. Diamonds are active skills, circles passives, hexagons the special ones, and the crowned one at the end of each tree is its capstone for a maxed skill (level 999). The trade trees are passives only: they work by themselves while you gather, cook, craft and brew.</p>
 
         <div class="rf-panel">
             <h3 class="rf-panel__title">What the build gives</h3>
@@ -50,6 +54,18 @@
                     }
                 </div>
             }
+            @* the trade trees' nodes are no stats of a fight: each by its name and what it is worth now *@
+            @{ var tradeNodes = RavenNest.Combat.SkillTrees.Trees(trade: true).SelectMany(RavenNest.Combat.SkillTrees.Of).Where(n => n.Trade != TradeEffect.None && build.Has(n.Id)).ToList(); }
+            @if (tradeNodes.Count > 0)
+            {
+                <h3 class="rf-panel__title">While gathering and making</h3>
+                <div class="rf-chips">
+                    @foreach (var n in tradeNodes)
+                    {
+                        <span class="rf-chip" title="@n.Description">@n.Name@(n.TradeAmount > 0 && n.MaxRank > 1 ? " " + SkillTexts.Share(n.TradeAmount * build.Rank(n.Id)) : "")</span>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -57,6 +73,9 @@
 @code {
     [SupplyParameterFromQuery(Name = "build")] public string BuildText { get; set; }
     [SupplyParameterFromQuery(Name = "levels")] public string LevelsText { get; set; }
+    [SupplyParameterFromQuery(Name = "tab")] public string Tab { get; set; }
+
+    private bool trade;
 
     private SkillBuild build = new SkillBuild();
     private int[] levelValues = Enumerable.Repeat(100, RavenNest.Combat.SkillTrees.TreeSkills).ToArray();
@@ -67,15 +86,21 @@
     protected override void OnInitialized()
     {
         build = SkillBuild.Parse(BuildText);
+        trade = string.Equals(Tab, "trade", StringComparison.OrdinalIgnoreCase);
         if (!string.IsNullOrEmpty(LevelsText))
         {
             var parts = LevelsText.Split(',');
             // a link from before Beastmaster has eight levels: Taming stays at the planner's 100
             for (var i = 0; i < Math.Min(parts.Length, levelValues.Length); ++i)
                 if (int.TryParse(parts[i], out var v)) levelValues[i] = Math.Clamp(v, 1, 999);
+            // a link from before the trade trees has no trade levels: they count as nothing (level 1, no points),
+            // so the link's points are what they were when it was made
+            for (var i = Math.Max(parts.Length, (int)CombatSkill.Woodcutting); i < levelValues.Length; ++i) levelValues[i] = 1;
         }
         Recount();
     }
+
+    private void SetTrade(bool on) { trade = on; Changed(); }
 
     private void Recount() => earned = RavenNest.Combat.SkillTrees.EarnedPoints(levelValues);
 
@@ -83,6 +108,7 @@
     {
         ["build"] = build.Spent > 0 ? build.ToString() : null,
         ["levels"] = string.Join(",", levelValues),
+        ["tab"] = trade ? "trade" : null,
     });
 
     private void Changed()
@@ -94,7 +120,7 @@
 
     private void Learn(string id)
     {
-        if (build.Raise(id, LevelOf, earned) != null) return;
+        if (build.Raise(id, LevelOf) != null) return;
         var node = RavenNest.Combat.SkillTrees.Get(id);
         if (node.IsActive && build.Rank(id) == 1) RavenNest.Blazor.Components.PlayerSkillTrees.FillFreeSlot(build, id);
         Changed();
