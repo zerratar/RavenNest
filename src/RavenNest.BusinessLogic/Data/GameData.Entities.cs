@@ -480,6 +480,8 @@ namespace RavenNest.BusinessLogic.Data
                     RawGiantSquid = GetOrCreateItem(i, "Raw Giant Squid", "Tentacles longer than the boat that caught it.", ItemCategory.Resource, ItemType.Fishing),
                     RawSeaSerpent = GetOrCreateItem(i, "Raw Sea Serpent", "The thing sailors swear they saw. Now you have seen it too.", ItemCategory.Resource, ItemType.Fishing),
                     MessageInABottle = GetOrCreateItem(i, "Message in a Bottle", "A rolled up note inside reads: \"If found, please return to zerratar. Or keep it, I have more bottles.\"", ItemCategory.Resource, ItemType.Fishing),
+                    // sometimes the bottle holds a map instead (v0.9.7, BottleManager): the island it marks is in the stack's tag
+                    TreasureMap = GetOrCreateItem(i, "Treasure Map", "A soggy map with a big red X. Someone drew a skull next to it, crossed the skull out and drew a smiley instead. Dig on the right island with !use treasure map.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // the Mangrove island (docs/banana-island.md in the game): bananas only grow there, the rest
                     // comes from its pirates' treasure
@@ -663,6 +665,7 @@ namespace RavenNest.BusinessLogic.Data
                 UpgradeItemsAndRemoveDrops(typedItems, obsoleteItems);
                 EnsureDungeonAndRaidDrops(typedItems);
                 EnsureResourceDropRates(typedItems);
+                EnsureTreasureMap(typedItems);
             }
             return typedItems;
         }

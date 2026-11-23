@@ -58,6 +58,8 @@ namespace RavenNest.BusinessLogic.Game
             new Definition { Key = "quitter", Targets = new long[] { 10 }, Hidden = true },
             // knocked out by Nibbles the Vicious, floor 1's bunny (run away!)
             new Definition { Key = "nibbled", Targets = new long[] { 1 }, Hidden = true },
+            // a rare find in a Treasure Map's treasure (BottleManager): "the Treasure Hunter"
+            new Definition { Key = BottleManager.TreasureAchievement, Targets = new long[] { 1 }, Hidden = true, Mode = Mode.Highest },
         };
 
         private static Definition Tiers(string key, long bronze, long silver, long gold) =>

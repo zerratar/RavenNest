@@ -40,6 +40,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IIntegrityChecker integrityChecker;
         private readonly ITwitchExtensionConnectionProvider extensionWsConnectionProvider;
         private readonly MarketPriceIndex marketPrices;
+        private readonly BottleManager bottleManager;
 
         private readonly ConcurrentDictionary<Guid, HashSet<Guid>> playerRemoveRequests = new ConcurrentDictionary<Guid, HashSet<Guid>>();
 
@@ -52,7 +53,8 @@ namespace RavenNest.BusinessLogic.Game
             GameData gameData,
             IIntegrityChecker integrityChecker,
             ITwitchExtensionConnectionProvider extensionWsConnectionProvider,
-            MarketPriceIndex marketPrices)
+            MarketPriceIndex marketPrices,
+            BottleManager bottleManager)
         {
             this.logger = logger;
             this.ravenbotApi = ravenbotApi;
@@ -63,6 +65,7 @@ namespace RavenNest.BusinessLogic.Game
             this.integrityChecker = integrityChecker;
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
             this.marketPrices = marketPrices;
+            this.bottleManager = bottleManager;
             this.AutoJoinSpending = new AutoJoinSpending(gameData);
             this.outfits = new OutfitManager(gameData, inventoryProvider);
         }
@@ -912,6 +915,12 @@ namespace RavenNest.BusinessLogic.Game
             if (book != null)
             {
                 return UseExperienceBook(character, inventory, item, inventoryItemId, book, arg);
+            }
+
+            // a Message in a Bottle (a note, or now and then a Treasure Map) and the Treasure Map (dug up on its island)
+            if (bottleManager.Handles(item.Item))
+            {
+                return bottleManager.Use(gameData.GetSession(sessionToken.SessionId), character, inventoryItemId);
             }
 
             var knownItems = gameData.GetKnownItems();

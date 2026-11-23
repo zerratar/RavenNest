@@ -5810,6 +5810,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item SeaSerpent;
         public Item BurnedSeaSerpent;
         public Item MessageInABottle;
+        public Item TreasureMap;
         public Item Banana;
         public Item GoldenBanana;
         public Item BananaBread;
