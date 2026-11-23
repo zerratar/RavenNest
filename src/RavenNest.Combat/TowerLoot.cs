@@ -110,6 +110,16 @@ namespace RavenNest.Combat
             return Gems.FormatSockets(sockets);
         }
 
+        /// <summary>
+        ///     A boss's trophies (<see cref="TowerBoss.Trophies"/>, the Gardener's Dark Fortress weapons and hat): on the
+        ///     stream's first clear of the floor each player who fought has this chance of one, so a group of five
+        ///     usually sees one or two.
+        /// </summary>
+        public const double TrophyChance = 0.25;
+
+        /// <summary>Does a roll in [0, 1) give a player one of the boss's trophies (only on the stream's first clear).</summary>
+        public static bool Trophy(bool firstClearByStream, double roll) => firstClearByStream && roll < TrophyChance;
+
         /// <summary>One of <paramref name="count"/> things from a roll in [0, 1): 0 to count - 1.</summary>
         public static int Pick(int count, double roll)
         {

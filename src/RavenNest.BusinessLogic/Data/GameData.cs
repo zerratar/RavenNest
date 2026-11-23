@@ -673,6 +673,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 MergeInventoryItems();
                 EnsureClassGear(); // before the prices: a piece is worth what it is made of
+                EnsureDarkFortress(); // the same, for the Dreadforged pieces
                 ApplyVendorPrices();
                 //ConvertUserResources();
 

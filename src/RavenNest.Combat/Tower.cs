@@ -297,6 +297,14 @@ namespace RavenNest.Combat
             var redMetalon = new TowerEnemy { Id = "hall-metalon-red", Name = "Blight Metalon", Model = "home-metalon-red", Family = EnemyFamily.Insect, LevelOffset = 4, AttackInterval = 1.3 };
             var skeleton = new TowerEnemy { Id = "hall-skeleton", Name = "Rootbound Skeleton", Model = "ravebridge-skeleton", Family = EnemyFamily.Undead };
             var cow = new TowerEnemy { Id = "hall-cow", Name = "Suspicious Cow", Model = "home-cow", Family = EnemyFamily.Beast, LevelOffset = -1, AttackInterval = 1.5 };
+            // the undead of the Dark Fortress (2026-11-23, the game's docs/dark-fortress-design.md): Synty's POLYGON Dark
+            // Fortress characters on the humanoid enemy animations, in the crypt and the marsh
+            var risen = new TowerEnemy { Id = "crypt-risen", Name = "Risen Dead", Model = "df-undead", Family = EnemyFamily.Undead };
+            var risenSoldier = new TowerEnemy { Id = "crypt-risen-soldier", Name = "Risen Soldier", Model = "df-undead-soldier", Family = EnemyFamily.Undead, LevelOffset = 1, AttackInterval = 1.1 };
+            var corpse = new TowerEnemy { Id = "crypt-corpse", Name = "Shambling Corpse", Model = "df-corpse", Family = EnemyFamily.Undead, LevelOffset = -1, AttackInterval = 1.3 };
+            var plague = new TowerEnemy { Id = "marsh-plague", Name = "Plague Walker", Model = "df-plague", Family = EnemyFamily.Undead, LevelOffset = 1, AttackInterval = 1.1 };
+            var cryptWraith = new TowerEnemy { Id = "crypt-wraith", Name = "Crypt Wraith", Model = "df-wraith", Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, LevelOffset = 1, AttackInterval = 1.4 };
+            var graveKnight = new TowerEnemy { Id = "crypt-grave-knight", Name = "Grave Knight", Model = "df-grave-knight", Family = EnemyFamily.Undead, LevelOffset = 3, AttackInterval = 1.2 };
 
             var list = new List<TowerFloorDefinition>
             {
@@ -310,7 +318,7 @@ namespace RavenNest.Combat
                     new[] { greenMetalon, goblin }, Defeat(greenMetalon, 35), Defeat(goblin, 25),
                     new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsCount = 4 }),
                 Floor(4, "Hall of Bones", "The roots grew through the old graves, and the graves did not like it.",
-                    new[] { skeleton, greenMetalon }, Defeat(skeleton, 40), Defeat(greenMetalon, 30),
+                    new[] { skeleton, risen, risenSoldier }, Defeat(skeleton, 40), Defeat(risen, 30),
                     new TowerBoss { Name = "The Rootbound King", Model = "ravebridge-skeleton", Scale = 2.3f, Family = EnemyFamily.Undead, PowerScale = 1.1 }),
                 Floor(5, "Thornwood", "The trees here have thorns as long as swords, and so do the Metalons.",
                     new[] { purpleMetalon, goblin }, Defeat(purpleMetalon, 40), Defeat(goblin, 30),
@@ -319,14 +327,17 @@ namespace RavenNest.Combat
                     new[] { cow, bunny }, Defeat(cow, 40), Defeat(bunny, 40),
                     new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Element = Element.Poison, ElementShare = 0.6, SpitEvery = 4, Line = "Moooo." }),
                 Floor(7, "Goblin Keep", "Every goblin you met so far had a cousin. They all live here.",
-                    new[] { goblin, skeleton }, Defeat(goblin, 50), Defeat(skeleton, 35),
+                    new[] { goblin, skeleton, graveKnight }, Defeat(goblin, 50), Defeat(skeleton, 35),
                     new TowerBoss { Name = "King Grubnose the Second", Model = "ravebridge-goblin", Scale = 2.6f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "My brother was the warchief. I am the king." }),
-                Floor(8, "Blighted Grove", "The rot starts here. The red Metalons carry it.",
-                    new[] { redMetalon, purpleMetalon }, Defeat(redMetalon, 40), Defeat(purpleMetalon, 40),
+                Floor(8, "Blighted Grove", "The rot starts here. The red Metalons carry it, and the dead walk in it.",
+                    new[] { redMetalon, plague, purpleMetalon }, Defeat(redMetalon, 40), Defeat(plague, 40),
                     new TowerBoss { Name = "Redshell the Blighted", Model = "home-metalon-red", Scale = 3f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.6, HealthPool = 1.1, SpitEvery = 3 }),
-                Floor(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide.",
-                    new[] { redMetalon, skeleton, goblin }, Defeat(redMetalon, 45), Defeat(skeleton, 45),
-                    new TowerBoss { Name = "The Gardener", Model = "ravebridge-skeleton", Scale = 2.8f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Everything grows. Even you, in time." }),
+                // the Gardener is the Behemoth since 2026-11-23 (the Dark Fortress test boss): the same fight, numbers and
+                // line as when it was a big skeleton, a body that fits the rot, and trophies
+                Floor(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide, and something down here tends to it.",
+                    new[] { corpse, cryptWraith, redMetalon }, Defeat(corpse, 45), Defeat(cryptWraith, 45),
+                    new TowerBoss { Name = "The Gardener", Model = "df-behemoth", Scale = 2.3f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Everything grows. Even you, in time.",
+                        Trophies = new[] { "Gardeners Bonesaw", "Rotreaper", "Plague Mitre" } }),
                 Floor(10, "The Verdant Throne", "At the top of the halls, on a throne of moss, sleeps the one who made it all grow.",
                     new[] { redMetalon, purpleMetalon }, Defeat(redMetalon, 50), Defeat(purpleMetalon, 50),
                     new TowerBoss { Name = "Viridia, the Verdant Wyrm", Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
@@ -640,6 +651,12 @@ namespace RavenNest.Combat
         /// <summary>Its swing time and its power once enraged, as shares of what they were.</summary>
         public double EnrageInterval = 0.6;
         public double EnragePower = 1.5;
+
+        /// <summary>
+        ///     Items only this boss gives (by name; the server knows them): on the stream's first clear of its floor each
+        ///     player who fought has <see cref="TowerLoot.TrophyChance"/> of one of them. Empty for none.
+        /// </summary>
+        public string[] Trophies = Array.Empty<string>();
     }
 
     /// <summary>

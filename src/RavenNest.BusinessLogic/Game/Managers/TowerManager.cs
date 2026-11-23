@@ -207,6 +207,9 @@ namespace RavenNest.BusinessLogic.Game
             // everyone who fought on the stream's first clear of the floor
             var gear = gameManager.RollTowerGear(session, floor, ids, streamFirst);
             if (gear.Length > 0) rewards = rewards.Concat(gear).ToArray();
+            // and the boss's own trophies, if it has any (the Gardener's Dark Fortress pieces)
+            var trophies = gameManager.RollTowerTrophies(session, floor, ids, streamFirst);
+            if (trophies.Length > 0) rewards = rewards.Concat(trophies).ToArray();
             gameData.Touch();
 
             return new TowerClearResult

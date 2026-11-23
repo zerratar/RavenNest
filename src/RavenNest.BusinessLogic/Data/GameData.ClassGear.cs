@@ -36,6 +36,11 @@ namespace RavenNest.BusinessLogic.Data
             public HeadMask Mask;
             /// <summary>The tiers that look different from tier 1 (a plume, a pouch on the belt): see <see cref="From"/>.</summary>
             public readonly List<ClassGearLook> Looks = new List<ClassGearLook>();
+            /// <summary>
+            ///     The first tier that has this piece (1 for every tier). The Dark Fortress head pieces (the game's
+            ///     docs/dark-fortress-design.md) are a third head look of a few lines from a high tier on.
+            /// </summary>
+            public int MinTier = 1;
 
             /// <summary>
             ///     From this tier on the piece is these parts (and this mask; the piece's own when none is given). The
@@ -44,6 +49,23 @@ namespace RavenNest.BusinessLogic.Data
             public ClassGearPiece From(int tier, string models, HeadMask? mask = null, string femaleModels = null)
             {
                 Looks.Add(new ClassGearLook { Tier = tier, MaleModels = models, FemaleModels = femaleModels ?? models, Mask = mask ?? Mask });
+                return this;
+            }
+
+            /// <summary>
+            ///     From this tier on the piece is a model of its own (a Resources prefab under the head bone, the
+            ///     GenericPrefab column) with this mask, in place of character parts. Only for head pieces.
+            /// </summary>
+            public ClassGearPiece FromPrefab(int tier, string prefab, HeadMask? mask = null)
+            {
+                Looks.Add(new ClassGearLook { Tier = tier, MaleModels = "", FemaleModels = "", Mask = mask ?? Mask, Prefab = prefab });
+                return this;
+            }
+
+            /// <summary>The piece exists from <paramref name="tier"/> on only.</summary>
+            public ClassGearPiece Starting(int tier)
+            {
+                MinTier = tier;
                 return this;
             }
 
@@ -65,6 +87,8 @@ namespace RavenNest.BusinessLogic.Data
             public string MaleModels;
             public string FemaleModels;
             public HeadMask Mask;
+            /// <summary>A model of its own (the item's GenericPrefab), or null for character parts.</summary>
+            public string Prefab;
         }
 
         private static ClassGearPiece Piece(ItemLine line, string key, ItemType type, string name, string models, HeadMask mask = HeadMask.None, string femaleModels = null)
@@ -181,7 +205,34 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Beastmaster, "gloves", ItemType.Gloves, "Handler Gloves", "6,16"),
             Piece(ItemLine.Beastmaster, "leggings", ItemType.Leggings, "Hide Breeches", "27").From(2, "27,10,11", HeadMask.NoKneePads).From(4, "27,10,11,2", HeadMask.NoKneePads),
             Piece(ItemLine.Beastmaster, "boots", ItemType.Boots, "Tracking Boots", "7"),
+
+            // Dark Fortress head pieces (2026-11-23, the game's docs/dark-fortress-design.md): a third head look for a few
+            // lines from a high tier on, each a model of its own on the head bone (Resources prefabs of the local
+            // POLYGON Dark Fortress pack). Their model ids are empty: games before 0.9.7 have no such prefab and draw
+            // no head piece for them. Same stats as the line's other head pieces of the tier.
+            Piece(ItemLine.Melee, "head3", ItemType.Helmet, "Kettle Helm", "").Starting(4)
+                .FromPrefab(4, DarkFortressHead + "Helmet 02", HeadMask.Hair | HeadMask.Ears),
+            Piece(ItemLine.DarkKnight, "head3", ItemType.Helmet, "Fortress Helm", "").Starting(6)
+                .FromPrefab(6, DarkFortressHead + "Helmet 06", DarkFortressClosed)
+                .FromPrefab(7, DarkFortressHead + "Helmet 03", DarkFortressClosed)
+                .FromPrefab(8, DarkFortressHead + "Helmet 08", DarkFortressClosed),
+            Piece(ItemLine.Paladin, "head3", ItemType.Helmet, "Closed Helm", "").Starting(5)
+                .FromPrefab(5, DarkFortressHead + "Helmet 07", DarkFortressClosed),
+            Piece(ItemLine.WitchHunter, "head3", ItemType.Helmet, "Inquisitor Helm", "").Starting(5)
+                .FromPrefab(5, DarkFortressHead + "Helmet 09", DarkFortressClosed),
+            Piece(ItemLine.Barbarian, "head3", ItemType.Hat, "Antler Crown", "").Starting(5)
+                .FromPrefab(5, DarkFortressHead + "Crown 03", HeadMask.None)
+                .FromPrefab(8, DarkFortressHead + "Mask 03", HeadMask.Brows | HeadMask.Beard),
+            Piece(ItemLine.Mage, "head3", ItemType.Hat, "Lich Crown", "").Starting(6)
+                .FromPrefab(6, DarkFortressHead + "Mask 01", HeadMask.Brows)
+                .FromPrefab(8, DarkFortressHead + "Mask 02", HeadMask.Brows),
         };
+
+        /// <summary>Where the Dark Fortress head pieces' prefabs are (Assets/Resources in the game).</summary>
+        internal const string DarkFortressHead = "Character/Appearance/Head/DarkFortress/DF ";
+
+        /// <summary>A closed helmet: the face stays (nothing to see through), hair, ears, brows and beard go.</summary>
+        private const HeadMask DarkFortressClosed = HeadMask.Hair | HeadMask.Ears | HeadMask.Brows | HeadMask.Beard;
 
         private enum ClassGearSkill { Magic, Ranged, Attack, Defense, Taming }
 
@@ -469,7 +520,7 @@ namespace RavenNest.BusinessLogic.Data
             if (line == ItemLine.Plate || tier < 1 || tier > ItemLines.Tiers) return slots;
             foreach (var slot in new[] { ItemType.Helmet, ItemType.Chest, ItemType.Gloves, ItemType.Leggings, ItemType.Boots })
             {
-                var ids = ClassGearPieces.Where(p => p.Line == line && ClassGearPlateSlot(p.Type) == slot).Select(p => ClassGearItemId(line, tier, p.Key)).ToArray();
+                var ids = ClassGearPieces.Where(p => p.Line == line && p.MinTier <= tier && ClassGearPlateSlot(p.Type) == slot).Select(p => ClassGearItemId(line, tier, p.Key)).ToArray();
                 if (ids.Length > 0) slots.Add(ids);
             }
             return slots;
@@ -524,7 +575,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var info = ClassGearLines.First(x => x.Line == piece.Line);
                 var factor = ItemLines.ArmorFactor(piece.Line);
-                for (var tier = 1; tier <= ItemLines.Tiers; ++tier)
+                for (var tier = piece.MinTier; tier <= ItemLines.Tiers; ++tier)
                 {
                     var material = ItemLines.Material(piece.Line, tier);
                     var level = ItemLines.TierLevels[tier - 1];
@@ -573,11 +624,11 @@ namespace RavenNest.BusinessLogic.Data
                     Fix(item.MaleModelId, look.MaleModels, v => item.MaleModelId = v);
                     Fix(item.FemaleModelId, look.FemaleModels, v => item.FemaleModelId = v);
                     Fix(item.HeadMask, (int)look.Mask, v => item.HeadMask = v);
-                    // the parts and the tier's material are the look: no prefabs
-                    Fix(item.GenericPrefab, null, v => item.GenericPrefab = v);
+                    // the parts and the tier's material are the look, or a model of its own (the Dark Fortress heads)
+                    Fix(item.GenericPrefab, look.Prefab, v => item.GenericPrefab = v);
                     Fix(item.MalePrefab, null, v => item.MalePrefab = v);
                     Fix(item.FemalePrefab, null, v => item.FemalePrefab = v);
-                    Fix(item.IsGenericModel, false, v => item.IsGenericModel = v);
+                    Fix(item.IsGenericModel, look.Prefab != null, v => item.IsGenericModel = v);
                     Fix(item.ArmorPower, armor, v => item.ArmorPower = v);
                     Fix(item.WeaponAim, 0, v => item.WeaponAim = v);
                     Fix(item.WeaponPower, 0, v => item.WeaponPower = v);

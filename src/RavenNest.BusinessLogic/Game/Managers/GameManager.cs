@@ -617,6 +617,40 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
+        ///     A tower boss's trophies (RavenNest.Combat.TowerBoss.Trophies, the game's docs/dark-fortress-design.md): on
+        ///     the stream's first clear of the floor, each character who fought has RavenNest.Combat.TowerLoot's chance of
+        ///     one of them, picked at random. The trophies are named Dark Fortress pieces (GameData.DarkFortress).
+        /// </summary>
+        public EventItemReward[] RollTowerTrophies(DataModels.GameSession gameSession, int floor, Guid[] characters, bool firstClearByStream)
+        {
+            var rewards = new List<EventItemReward>();
+            var boss = RavenNest.Combat.Tower.Get(floor)?.Boss;
+            if (gameSession == null || characters == null || boss == null || boss.Trophies == null || boss.Trophies.Length == 0) return rewards.ToArray();
+            var trophies = boss.Trophies.Select(GameData.DarkFortressItemByName).Where(x => x != null && gameData.GetItem(x.Value) != null).Select(x => x.Value).ToArray();
+            if (trophies.Length == 0) return rewards.ToArray();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+            foreach (var id in characters.Distinct())
+            {
+                try
+                {
+                    var character = sessionCharacters.FirstOrDefault(x => x.Id == id);
+                    if (character == null) continue;
+                    if (!RavenNest.Combat.TowerLoot.Trophy(firstClearByStream, rng.NextDouble())) continue;
+                    var itemId = trophies[RavenNest.Combat.TowerLoot.Pick(trophies.Length, rng.NextDouble())];
+                    var stack = inventoryProvider.Get(character.Id).AddItem(itemId, 1).FirstOrDefault();
+                    if (stack == null) continue;
+                    rewards.Add(new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = itemId, InventoryItemId = stack.Id });
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Could not give a tower trophy: " + exc);
+                }
+            }
+            return rewards.ToArray();
+        }
+
+        /// <summary>
         ///     A pet egg now and then (RavenNest.Combat.PetEggs): the source's chance per character, then an egg from its
         ///     table at the tier. Added to the inventory and to the rewards the game shows.
         /// </summary>

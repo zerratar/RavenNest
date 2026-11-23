@@ -171,5 +171,31 @@ namespace RavenNest.Combat.Tests
             var second = Gems.FormatSockets(new Guid?[] { null, Gems.ItemId(GemKind.Emerald, GemTier.Flawless) });
             Assert.Equal("Rune Chest with a Flawless Emerald", Gems.SocketedName("Rune Chest", second));
         }
-    }
+    
+        [Fact]
+        public void BossTrophies_OnlyOnAFirstClear_OneInFour()
+        {
+            Assert.Equal(0.25, TowerLoot.TrophyChance);
+            Assert.True(TowerLoot.Trophy(true, 0.2499));
+            Assert.False(TowerLoot.Trophy(true, 0.25));
+            Assert.False(TowerLoot.Trophy(false, 0.0));
+        }
+
+        [Fact]
+        public void TheGardener_IsTheBehemoth_WithItsTrophies_AndTheCryptHasTheDarkFortressDead()
+        {
+            var floor = Tower.Get(9);
+            Assert.Equal("The Gardener", floor.Boss.Name);
+            Assert.Equal("df-behemoth", floor.Boss.Model);
+            Assert.Equal(3, floor.Boss.Trophies.Length);
+            // the boss calls the floor's first monster as help: one of the fortress's dead
+            Assert.StartsWith("df-", floor.Enemies[0].Model);
+            Assert.Contains(Tower.Get(4).Enemies, e => e.Model == "df-undead");
+            Assert.Contains(Tower.Get(8).Enemies, e => e.Model == "df-plague");
+            // every quest names a monster of its floor
+            foreach (var f in Tower.Floors)
+                foreach (var q in f.Quests)
+                    Assert.Contains(f.Enemies, e => e.Id == q.Target);
+        }
+}
 }
