@@ -58,10 +58,24 @@ const HEAD_TYPES = new Set([Type.Helmet, Type.Mask, Type.Hat, Type.HeadCovering]
 const BODY_KIND = /^Chr_(Torso|ArmUpperRight|ArmUpperLeft|ArmLowerRight|ArmLowerLeft|HandRight|HandLeft|Hips|LegLeft|LegRight)_/;
 
 function modelIds(text) {
-    // "27,20,20,0": the main part first (ItemManager.LoadItemData)
+    // "27,20,20,0": the main part first (the game's ItemManager.ParseModelIds). A token of -1000 or less names a part
+    // games before 0.9.7 do not have: -(1000 * (position + 1) + index) takes that position's place (the Dark Fortress
+    // armor sets on the class gear's tiers 7 and 8)
     if (!text) return [];
-    const ids = String(text).split(',').map(x => parseInt(x, 10));
-    return Number.isNaN(ids[0]) ? [] : ids.map(x => (Number.isNaN(x) ? -1 : x));
+    const raw = String(text).split(',').map(x => parseInt(x, 10));
+    if (Number.isNaN(raw[0])) return [];
+    const ids = [];
+    const newer = [];
+    for (const x of raw) {
+        if (Number.isNaN(x)) ids.push(-1);
+        else if (x <= -1000) newer.push([Math.floor(-x / 1000) - 1, -x % 1000]);
+        else ids.push(x);
+    }
+    for (const [position, index] of newer) {
+        while (ids.length <= position) ids.push(-1);
+        ids[position] = index;
+    }
+    return ids;
 }
 
 /**
@@ -208,6 +222,15 @@ function dress(g, m, a, outfit) {
         worn.push({ file: part.file, mat: part.mat, skin: g.skin.has(part.file), group });
     }
     for (const part of extra) if (!isBody(part.file)) worn.push({ file: part.file, mat: part.mat, skin: g.skin.has(part.file), group: 'extra' });
+    // parts with a picture of their own (the Dark Fortress armor): drawn with it whatever the item's tier, and their
+    // bare skin, a file of its own, with the body's material in the wearer's skin (the game's SetPartMaterials)
+    const own = g.ownParts || {};
+    for (const part of worn.slice()) {
+        const info = own[part.file];
+        if (!info) continue;
+        part.own = info;
+        if (info.skin) worn.push({ file: info.skin, mat: null, skin: false, body: true, group: part.group });
+    }
     return { worn, replaced, hide, props, cape };
 }
 
@@ -537,6 +560,19 @@ export async function attach(designer, stage, onBusy) {
         return materials.get(key);
     };
 
+    // a part's own picture (and glow), shared by every part that has it
+    const ownMaterials = new Map();
+    const ownMaterialOf = info => {
+        const key = info.tex + '|' + (info.glow || '');
+        if (!ownMaterials.has(key)) {
+            const load = file => texture(THREE, BASE + file + '?v=' + g.version, true);
+            const mat = new THREE.MeshStandardMaterial({ map: load(info.tex), roughness: 0.85, metalness: 0 });
+            if (info.glow) { mat.emissiveMap = load(info.glow); mat.emissive = new THREE.Color(1, 1, 1); }
+            ownMaterials.set(key, mat);
+        }
+        return ownMaterials.get(key);
+    };
+
     let capeMaterial = null;
     const capeOf = image => {
         capeMaterial ??= new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
@@ -682,7 +718,11 @@ export async function attach(designer, stage, onBusy) {
         if (d.hide.hair) parts.hair = null;
         else if (d.hide.hairSwap >= 0) parts.hair = m.parts.hairs[d.hide.hairSwap];
 
-        const wanted = d.worn.map(p => ({ key: 'g:' + p.file + '|' + (p.mat || '') + (p.skin ? '|skin' : ''), file: p.file, material: materialOf(p.mat, p.skin) }));
+        const wanted = d.worn.map(p => p.own
+            ? { key: 'g:' + p.file + '|own', file: p.file, material: ownMaterialOf(p.own) }
+            : p.body
+                ? { key: 'g:' + p.file + '|body', file: p.file, material: stage.material }
+                : { key: 'g:' + p.file + '|' + (p.mat || '') + (p.skin ? '|skin' : ''), file: p.file, material: materialOf(p.mat, p.skin) });
         if (d.cape) wanted.push({ key: 'g:' + d.cape + '|cape', file: d.cape, material: capeOf(outfit.capeImage) });
         // the wearer's own skin on the armor that shows skin
         for (const mat of materials.values()) if (mat.userData.skin) mat.userData.uniforms.gSkin.value.set(a.skin);

@@ -115,10 +115,12 @@ namespace RavenNest.BusinessLogic.Data
             //    line, key, type, name, model ids at tier 1, mask; then .From(tier, model ids, mask) for the tiers that have more
             Piece(ItemLine.Mage, "head1", ItemType.Hat, "Wizard Hat", "1").From(3, "1,8").From(6, "1,7"),
             Piece(ItemLine.Mage, "head2", ItemType.HeadCovering, "Hood", "6", HeadMask.Hair | HeadMask.Ears).From(3, "6,8").From(6, "6,7"),
-            Piece(ItemLine.Mage, "chest", ItemType.Chest, "Robe", "27,20,20,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "27,20,20,0,4"),
-            Piece(ItemLine.Mage, "gloves", ItemType.Gloves, "Gloves", "9,18"),
-            Piece(ItemLine.Mage, "leggings", ItemType.Leggings, "Robe Skirt", "9").From(2, "9,10,7", HeadMask.NoKneePads).From(4, "9,10,7,0", HeadMask.NoKneePads),
-            Piece(ItemLine.Mage, "boots", ItemType.Boots, "Boots", "11"),
+            Piece(ItemLine.Mage, "chest", ItemType.Chest, "Robe", "27,20,20,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "27,20,20,0,4")
+                .From(7, "27,20,20,0,-1033,-3025", DarkFortressBody).From(8, "27,20,20,0,-1034,-3026", DarkFortressBody),
+            Piece(ItemLine.Mage, "gloves", ItemType.Gloves, "Gloves", "9,18").From(7, "9,18,-1022,-2023").From(8, "9,18,-1023,-2024"),
+            Piece(ItemLine.Mage, "leggings", ItemType.Leggings, "Robe Skirt", "9").From(2, "9,10,7", HeadMask.NoKneePads).From(4, "9,10,7,0", HeadMask.NoKneePads)
+                .From(7, "9,10,-1033", HeadMask.NoKneePads).From(8, "9,10,-1034", HeadMask.NoKneePads),
+            Piece(ItemLine.Mage, "boots", ItemType.Boots, "Boots", "11").From(7, "11,-1024").From(8, "11,-1025"),
 
             Piece(ItemLine.Healer, "head1", ItemType.HeadCovering, "Cowl", "4", HeadMask.Hair | HeadMask.Ears).From(3, "4,10").From(6, "4,7").From(7, "4,2"),
             Piece(ItemLine.Healer, "head2", ItemType.HeadCovering, "Cap", "0", HeadMask.Hair | HeadMask.Ears).From(3, "0,10").From(6, "0,7").From(7, "0,2"),
@@ -157,10 +159,12 @@ namespace RavenNest.BusinessLogic.Data
 
             Piece(ItemLine.Barbarian, "head1", ItemType.HeadCovering, "Bear Hood", "8", HeadMask.Hair | HeadMask.Ears).From(6, "8,6"),
             Piece(ItemLine.Barbarian, "head2", ItemType.HeadCovering, "Wolf Hood", "9", HeadMask.Hair | HeadMask.Ears).From(6, "9,6"),
-            Piece(ItemLine.Barbarian, "chest", ItemType.Chest, "Harness", "2,5,3,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "2,5,3,0", HeadMask.NoElbowPads).From(6, "2,5,3,0,3", HeadMask.NoElbowPads),
-            Piece(ItemLine.Barbarian, "gloves", ItemType.Gloves, "Bracers", "16,2"),
-            Piece(ItemLine.Barbarian, "leggings", ItemType.Leggings, "Kilt", "1").From(2, "1,10,11", HeadMask.NoKneePads).From(4, "1,10,0,11", HeadMask.NoKneePads),
-            Piece(ItemLine.Barbarian, "boots", ItemType.Boots, "Fur Boots", "9"),
+            Piece(ItemLine.Barbarian, "chest", ItemType.Chest, "Harness", "2,5,3,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "2,5,3,0", HeadMask.NoElbowPads).From(6, "2,5,3,0,3", HeadMask.NoElbowPads)
+                .From(7, "2,5,3,0,-1031,-3023", DarkFortressBody).From(8, "2,5,3,0,-1032,-3024", DarkFortressBody),
+            Piece(ItemLine.Barbarian, "gloves", ItemType.Gloves, "Bracers", "16,2").From(7, "16,2,-1020,-2021").From(8, "16,2,-1021,-2022"),
+            Piece(ItemLine.Barbarian, "leggings", ItemType.Leggings, "Kilt", "1").From(2, "1,10,11", HeadMask.NoKneePads).From(4, "1,10,0,11", HeadMask.NoKneePads)
+                .From(7, "1,10,-1031", HeadMask.NoKneePads).From(8, "1,10,-1032", HeadMask.NoKneePads),
+            Piece(ItemLine.Barbarian, "boots", ItemType.Boots, "Fur Boots", "9").From(7, "9,-1022").From(8, "9,-1023"),
 
             Piece(ItemLine.Samurai, "head1", ItemType.Helmet, "Kabuto", "12", HeadMask.All).From(3, "12,5").From(6, "12,3"),
             Piece(ItemLine.Samurai, "head2", ItemType.HeadCovering, "Jingasa", "2", HeadMask.Hair | HeadMask.Ears).From(6, "2,9"),
@@ -178,10 +182,12 @@ namespace RavenNest.BusinessLogic.Data
 
             Piece(ItemLine.DarkKnight, "head1", ItemType.Helmet, "Dread Helm", "3", HeadMask.All).From(3, "3,1").From(6, "3,6"),
             Piece(ItemLine.DarkKnight, "head2", ItemType.HeadCovering, "Horned Helm", "10", HeadMask.Hair | HeadMask.Ears).From(6, "10,7"),
-            Piece(ItemLine.DarkKnight, "chest", ItemType.Chest, "Chestplate", "21,2,15,5").From(3, "21,7,15,5").From(6, "21,4,15,5,2"),
-            Piece(ItemLine.DarkKnight, "gloves", ItemType.Gloves, "Gauntlets", "1,12"),
-            Piece(ItemLine.DarkKnight, "leggings", ItemType.Leggings, "Legplates", "13,1").From(3, "13,2"),
-            Piece(ItemLine.DarkKnight, "boots", ItemType.Boots, "Warboots", "12"),
+            Piece(ItemLine.DarkKnight, "chest", ItemType.Chest, "Chestplate", "21,2,15,5").From(3, "21,7,15,5").From(6, "21,4,15,5,2")
+                .From(7, "21,4,15,5,-1029,-3021", DarkFortressBody).From(8, "21,4,15,5,-1030,-3022", DarkFortressBody),
+            Piece(ItemLine.DarkKnight, "gloves", ItemType.Gloves, "Gauntlets", "1,12").From(7, "1,12,-1018,-2019").From(8, "1,12,-1019,-2020"),
+            Piece(ItemLine.DarkKnight, "leggings", ItemType.Leggings, "Legplates", "13,1").From(3, "13,2")
+                .From(7, "13,2,-1029", HeadMask.NoKneePads).From(8, "13,2,-1030", HeadMask.NoKneePads),
+            Piece(ItemLine.DarkKnight, "boots", ItemType.Boots, "Warboots", "12").From(7, "12,-1020").From(8, "12,-1021"),
 
             Piece(ItemLine.WitchHunter, "head1", ItemType.Hat, "Buckle Hat", "8").From(3, "8,12").From(6, "8,9"),
             Piece(ItemLine.WitchHunter, "head2", ItemType.Helmet, "Plague Mask", "0", HeadMask.All),
@@ -230,6 +236,19 @@ namespace RavenNest.BusinessLogic.Data
 
         /// <summary>Where the Dark Fortress head pieces' prefabs are (Assets/Resources in the game).</summary>
         internal const string DarkFortressHead = "Character/Appearance/Head/DarkFortress/DF ";
+
+        /// <summary>
+        ///     The Dark Fortress armor sets (the game's docs/dark-fortress-armor-test.md): the pack's Knight, Barbarian
+        ///     and Necromancer, cut into the game's parts, are the Dark Knight, Barbarian and Mage looks of tiers 7 (a
+        ///     colorway of the pack) and 8 (its own colors). Their parts are new in 0.9.7, so their model ids keep the
+        ///     tier 6 look in the positions a 0.9.6 game reads and name the new parts with tokens of -1000 and less
+        ///     (-(1000 * (position + 1) + index), the game's ItemManager.ParseModelIds): 0.9.6 games draw the tier 6
+        ///     look. Their pauldrons and elbows are part of the arm pieces and their knee caps of the hips.
+        ///     Part indices (male and female arrays alike): torso, hips 29 to 34; upper arms 21 to 26; lower arms 19 to
+        ///     24; hands 18 to 23; legs 20 to 25; in the order Knight 7, Knight 8, Barbarian 7, Barbarian 8,
+        ///     Necromancer 7, Necromancer 8 (the game's tools/dark-fortress-armor/armor-sets.cs adds them so).
+        /// </summary>
+        private const HeadMask DarkFortressBody = HeadMask.NoShoulderPads | HeadMask.NoElbowPads;
 
         /// <summary>A closed helmet: the face stays (nothing to see through), hair, ears, brows and beard go.</summary>
         private const HeadMask DarkFortressClosed = HeadMask.Hair | HeadMask.Ears | HeadMask.Brows | HeadMask.Beard;
