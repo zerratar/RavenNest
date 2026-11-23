@@ -291,6 +291,7 @@ namespace RavenNest.Blazor.Services
                 case "cook": return Picture("rb-sauce");
                 case "quester": return Picture("empty-board");
                 case "ferryman": return "/imgs/items/rowboat.png";
+                case "treasure": return "/imgs/items/treasure-map.png"; // the Treasure Hunter, found in a Treasure Map's treasure
                 default: return Picture("ach-" + key);
             }
         }
