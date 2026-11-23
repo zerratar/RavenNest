@@ -182,12 +182,19 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void TheGardener_IsTheBehemoth_WithItsTrophies_AndTheCryptHasTheDarkFortressDead()
+        public void TheDarkFortressBosses_HaveTrophies_AndCallTheirOwnDead()
         {
             var floor = Tower.Get(9);
-            Assert.Equal("The Gardener", floor.Boss.Name);
+            Assert.Equal("Old Rotbelly", floor.Boss.Name);
             Assert.Equal("df-behemoth", floor.Boss.Model);
-            Assert.Equal(3, floor.Boss.Trophies.Length);
+            Assert.Equal(2, floor.Boss.Trophies.Length);
+            // the Necromancer raises Risen Dead, the Plague Lord calls Plague Walkers (help is the floor's first monster)
+            Assert.Equal("df-necromancer", Tower.Get(4).Boss.Model);
+            Assert.Equal("df-undead", Tower.Get(4).Enemies[0].Model);
+            Assert.Equal("df-plague-lord", Tower.Get(8).Boss.Model);
+            Assert.Equal("df-plague", Tower.Get(8).Enemies[0].Model);
+            Assert.Equal("df-colossus", Tower.Get(7).Boss.Model);
+            foreach (var n in new[] { 4, 7, 8, 9 }) Assert.NotEmpty(Tower.Get(n).Boss.Trophies);
             // the boss calls the floor's first monster as help: one of the fortress's dead
             Assert.StartsWith("df-", floor.Enemies[0].Model);
             Assert.Contains(Tower.Get(4).Enemies, e => e.Model == "df-undead");

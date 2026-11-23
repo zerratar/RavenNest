@@ -11,9 +11,9 @@ namespace RavenNest.BusinessLogic.Data
     /// <summary>
     ///     The Dark Fortress gear (v0.9.7, the game's docs/dark-fortress-design.md): weapons, shields and head pieces made
     ///     from Synty's POLYGON Dark Fortress pack. Six crafted "Dreadforged" pieces fill the gap between Atlarus (400)
-    ///     and Elder Bronze (500) on the weapon ladders; the rest are uniques: trophies of the tower's floor 9 boss (the
-    ///     Behemoth, <see cref="RavenNest.Combat.TowerBoss.Trophies"/>) and rare drops of the higher dungeon and tower
-    ///     chests. The head pieces of the class gear lines are in GameData.ClassGear (head3).
+    ///     and Elder Bronze (500) on the weapon ladders; the rest are uniques: trophies of the tower's Dark Fortress bosses
+    ///     on floors 4, 7, 8 and 9 (<see cref="RavenNest.Combat.TowerBoss.Trophies"/>) and rare drops of the higher dungeon
+    ///     and tower chests. The head pieces of the class gear lines are in GameData.ClassGear (head3).
     ///     Like the class gear, the code is the record: a row that differs is put right at the next start, and the ids
     ///     are made from a fixed key, so they are the same in every database.
     /// </summary>
@@ -71,22 +71,39 @@ namespace RavenNest.BusinessLogic.Data
                 Description = "A kite shield of the fortress guard. Whoever strikes it feels it too.",
                 Level = 450, Armor = 226, Extra = "THORNS:4%", CraftingLevel = 464, Recipe = k => Bars(k, 4, 1) },
 
-            // ---- the Gardener's trophies (the tower's floor 9 boss, the Behemoth): at the floor's level
-            new DarkFortressPiece { Key = "gardeners-bonesaw", Name = "Gardeners Bonesaw", Type = ItemType.TwoHandedAxe, Prefab = DarkFortressWeapons + "Saw 01",
-                Description = "The Gardener pruned the Deep Roots with it. Mostly the climbers.",
+            // ---- the tower bosses' trophies (RavenNest.Combat.Tower's Trophies), at their floor's level; some share a
+            //      model with a high level piece (the pack has sixteen weapons)
+            // Old Rotbelly, floor 9 (the Behemoth; the key is from when it was the Gardener)
+            new DarkFortressPiece { Key = "gardeners-bonesaw", Name = "Rotbelly Bonesaw", Type = ItemType.TwoHandedAxe, Prefab = DarkFortressWeapons + "Saw 01",
+                Description = "Old Rotbelly pruned the Deep Roots with it. Mostly the climbers.",
                 Level = 90, Accuracy = 75, Power = 94, Extra = "POISON_DAMAGE:25%", SellPrice = 4000 },
             new DarkFortressPiece { Key = "rotreaper", Name = "Rotreaper", Type = ItemType.TwoHandedStaff, Prefab = DarkFortressWeapons + "Scythe 01",
                 Description = "A scythe for a harvest nobody wanted. Its spells leave a green rot behind.",
                 Level = 90, Accuracy = 86, Power = 86, Extra = "POISON_DAMAGE:25%", SellPrice = 4000 },
             new DarkFortressPiece { Key = "plague-mitre", Name = "Plague Mitre", Category = ItemCategory.Cosmetic, Type = ItemType.Hat, Prefab = DarkFortressHead + "Crown 02",
-                Description = "The Gardener's Sunday hat. It still smells of compost.", SellPrice = 2500 },
+                Description = "Lord Pestilus wore it to every plague. It still smells of one.", SellPrice = 2500 },
+            // Mortimer Bonewhistle, floor 4 (the Necromancer)
+            new DarkFortressPiece { Key = "bonewhistle-staff", Name = "Bonewhistle Staff", Type = ItemType.TwoHandedStaff, Prefab = DarkFortressWeapons + "Staff 01",
+                Description = "Mortimer whistled the dead out of their graves with it. Blow gently.",
+                Level = 40, Accuracy = 34, Power = 34, Extra = "LIFE_STEAL:1.5%", SellPrice = 1500 },
+            // Big Gorp, floor 7 (the Colossus)
+            new DarkFortressPiece { Key = "colossus-cleaver", Name = "Colossus Cleaver", Type = ItemType.TwoHandedSword, Prefab = DarkFortressWeapons + "Sword 02",
+                Description = "Big Gorp used it as a butter knife. You will need both hands.",
+                Level = 70, Accuracy = 70, Power = 72, Extra = "ARMOR_PENETRATION:5%", SellPrice = 2800 },
+            new DarkFortressPiece { Key = "keepward-shield", Name = "Keepward Shield", Category = ItemCategory.Armor, Type = ItemType.Shield, Prefab = DarkFortressWeapons + "Shield 01",
+                Description = "The Goblin Keep's door, more or less. Big Gorp carried it around.",
+                Level = 70, Armor = 50, Extra = "THORNS:3%", SellPrice = 2800 },
+            // Lord Pestilus, floor 8 (the Plague Lord), with the Plague Mitre above
+            new DarkFortressPiece { Key = "blightbone-staff", Name = "Blightbone Staff", Type = ItemType.TwoHandedStaff, Prefab = DarkFortressWeapons + "Staff 02",
+                Description = "A twisted bone that hums with sickness. Spells cast with it leave a green cough behind.",
+                Level = 80, Accuracy = 78, Power = 78, Extra = "POISON_DAMAGE:25%", SellPrice = 3500 },
 
             // ---- rare finds in the dungeon and tower chests (epic tier, by Slayer level)
             new DarkFortressPiece { Key = "skullcrusher", Name = "Skullcrusher", Type = ItemType.OneHandedAxe, Prefab = DarkFortressWeapons + "Club 01",
                 Description = "A club with a skull on the end. Whose skull? Best not to ask.",
                 Level = 300, Accuracy = 150, Power = 170, Extra = "CRIT_DAMAGE:15%", DropTier = 3, DropWeight = 0.01, DropSlayer = 30, SellPrice = 12000 },
             new DarkFortressPiece { Key = "fortress-hand-cannon", Name = "Fortress Hand Cannon", Type = ItemType.TwoHandedBow, Prefab = DarkFortressWeapons + "Cannon 01",
-                Description = "Very loud, very heavy, and somehow it still shoots arrows. Nobody in the fortress knows how either.",
+                Description = "Very loud, very heavy, and it fires cannonballs. Feed it arrows and they come out round. Nobody in the fortress knows how.",
                 Level = 500, Accuracy = 470, Power = 480, Extra = "CRIT_CHANCE:5%", DropTier = 4, DropWeight = 0.01, DropSlayer = 50, SellPrice = 20000 },
             new DarkFortressPiece { Key = "gravebloom-warhammer", Name = "Gravebloom Warhammer", Type = ItemType.OneHandedAxe, Prefab = DarkFortressWeapons + "Hammer 01",
                 Description = "Its green stone grew in a grave. What it hits feels sick for days.",
