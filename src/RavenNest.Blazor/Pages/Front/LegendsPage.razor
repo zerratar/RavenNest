@@ -1,0 +1,91 @@
+@page "/legends"
+@using RavenNest.Combat
+@inject RavenNest.BusinessLogic.Game.LegendaryManager LegendaryManager
+
+@*
+    The Hall of Legends (the game's docs/legendary-design.md, section 7): the Legendary weapons, what each one's power
+    does, who found each one first in the world and every character that has fully awakened one. The rules and numbers
+    come from RavenNest.Combat.Legendary, the same as the game and the server use.
+*@
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Hall of Legends</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section rf-legends">
+        <p class="rf-lead">
+            Five weapons of the Dark Fortress are Legendary: the best weapons in the game, and they stay the best.
+            Each one is worked out from the best normal weapon of its kind, plus a margin, so when better gear comes
+            the Legendaries rise with it. Each has a power no other item has. They cannot be crafted, bought or traded.
+        </p>
+
+        <div class="rf-card rf-legends__rules">
+            <h2 class="rf-legends__heading">How to find one</h2>
+            <ul>
+                <li>Level <b>@Legendary.RequiredLevel</b> in the weapon's skill.</li>
+                <li>You fought in a clear of tower floor <b>@Legendary.TowerFloor</b> or higher.</li>
+                <li>You chose your ending (a capstone) in that skill's tree.</li>
+                <li>Then a top floor tower boss, a Legendary dungeon's boss or a raid boss may drop one for you. It is
+                    very rare, and a little less rare every time it does not.</li>
+            </ul>
+            <p class="rf-table__quiet">A Legendary grows through five ranks as you fight bosses with it on: stronger
+                numbers, a stronger power, more gem sockets and a glow.</p>
+        </div>
+
+        <ol class="rf-legends__list">
+            @foreach (var entry in hall)
+            {
+                var l = entry.Legendary;
+                <li class="rf-card rf-legends__item" style="--legend: @l.Color">
+                    <img class="rf-legends__pic" src="/imgs/items/@(l.Key).png" alt="" loading="lazy" />
+                    <div class="rf-legends__body">
+                        <h3 class="rf-legends__name">@l.Name</h3>
+                        <span class="rf-legends__what">@SkillName(l.Skill) @Legendary.RequiredLevel, the @TreeName(l.Tree) ending</span>
+                        <p class="rf-legends__power"><b>@l.PowerName.</b> @Legendary.Describe(l.Power, 1)</p>
+                        <p class="rf-legends__power rf-legends__power--five">At rank 5: @Legendary.Describe(l.Power, 5)</p>
+                    </div>
+                    <div class="rf-legends__first">
+                        @if (entry.FirstFinder != null)
+                        {
+                            <span class="rf-legends__label">Found first by</span>
+                            <b>@entry.FirstFinder</b>
+                            <span class="rf-table__quiet" title="@entry.FirstFound?.ToString("f")">@entry.FirstFound?.ToString("d MMM yyyy")</span>
+                            <span class="rf-table__quiet">@(entry.Found == 1 ? "The only one so far" : entry.Found + " found in all")</span>
+                        }
+                        else
+                        {
+                            <span class="rf-legends__label">Not found yet</span>
+                            <span class="rf-table__quiet">Nobody has found one.</span>
+                        }
+                    </div>
+                    @if (entry.Awakened.Count > 0)
+                    {
+                        <div class="rf-legends__awakened">
+                            <span class="rf-legends__label">Fully awakened by</span>
+                            @foreach (var a in entry.Awakened)
+                            {
+                                <span class="rf-badge rf-legends__badge" title="@a.Awakened.ToString("f")"><b>@a.Name</b> @a.Awakened.ToString("d MMM yyyy")</span>
+                            }
+                        </div>
+                    }
+                </li>
+            }
+        </ol>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<RavenNest.BusinessLogic.Game.LegendaryManager.HallEntry> hall = new List<RavenNest.BusinessLogic.Game.LegendaryManager.HallEntry>();
+
+    protected override void OnInitialized()
+    {
+        hall = LegendaryManager.Hall();
+    }
+
+    private static string SkillName(LegendarySkill s) => s.ToString();
+
+    private static string TreeName(SkillTree t) => t.ToString();
+}

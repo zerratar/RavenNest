@@ -150,6 +150,9 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Rune Bow");
             Add("Dragon Staff");
             Add("Elder Atlarus Staff");
+            // two Legendaries (docs/legendary-design.md in the game): one half awakened, one fully
+            Add("Soulreaver", tag: RavenNest.Combat.Legendary.Tag(137));
+            Add("Batwing Staff", tag: RavenNest.Combat.Legendary.Tag(400));
             Add("Warlock Robe");
             Add("Conjurer Hood");
             Add("Crusader Helm");
@@ -214,7 +217,7 @@ namespace RavenNest.Blazor.Pages.Dev
             return Gems.FormatSockets(gems.Select(g => g.HasValue ? Gems.ItemId(g.Value.Kind, g.Value.Tier) : (Guid?)null).ToList());
         }
 
-        private void Add(string name, long amount = 1, bool worn = false, string enchantment = null, string sockets = null)
+        private void Add(string name, long amount = 1, bool worn = false, string enchantment = null, string sockets = null, string tag = null)
         {
             // an item this server's data does not have is left out, so the preview never breaks on a renamed item
             if (!byName.TryGetValue(name, out var item)) return;
@@ -226,6 +229,7 @@ namespace RavenNest.Blazor.Pages.Dev
                 Equipped = worn,
                 Enchantment = enchantment,
                 Sockets = sockets,
+                Tag = tag,
                 Soulbound = item.Soulbound,
             });
         }
@@ -760,7 +764,7 @@ namespace RavenNest.Blazor.Pages.Dev
             var item = stack == null ? null : items.GetItem(stack.ItemId);
             if (item == null) return Answer(GemResult.Fail(GemResultStatus.NoSuchItem), stackId);
 
-            var views = GemManager.SocketsOf(item, stack.Sockets);
+            var views = GemManager.SocketsOf(item, stack.Sockets, stack.Tag);
             if (views.Count == 0) return Answer(GemResult.Fail(GemResultStatus.NoSockets), stackId);
             if (socket < 1 || socket > views.Count) return Answer(new GemResult { Status = GemResultStatus.NoSuchSocket, SocketCount = views.Count }, stackId);
 

@@ -2894,3 +2894,44 @@ body.rf-gear-dragging * {
 .rf-gear-pick { flex-wrap: wrap; }
 .rf-gear-pick__text { flex: 1 1 15rem; }
 .rf-gear-pick__acts { flex: 0 1 auto; flex-wrap: wrap; margin-left: auto; }
+
+/* A Legendary (docs/legendary-design.md in the game): its rank, power and awakening, in the Legendary's own color */
+.rf-gear-legend {
+    border-left: 3px solid var(--legend, #d4a24c);
+    padding: 0.35rem 0 0.35rem 0.6rem;
+    margin: 0.4rem 0;
+}
+
+.rf-gear-legend p {
+    margin: 0.2rem 0 0;
+}
+
+.rf-gear-legend__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.rf-gear-legend__head b,
+.rf-gear-legend .rf-gear-block__title {
+    color: var(--legend, #d4a24c);
+}
+
+.rf-gear-legend__awake {
+    color: var(--rf-ink-muted);
+    font-weight: 600;
+}
+
+.rf-gear-legend__bar {
+    height: 0.45rem;
+    margin-top: 0.4rem;
+    border-radius: 999px;
+    background: var(--rf-gold-wash, rgba(212, 162, 76, 0.15));
+    overflow: hidden;
+}
+
+.rf-gear-legend__bar i {
+    display: block;
+    height: 100%;
+    background: var(--legend, #d4a24c);
+}

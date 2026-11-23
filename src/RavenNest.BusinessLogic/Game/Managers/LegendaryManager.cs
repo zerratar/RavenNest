@@ -171,16 +171,27 @@ namespace RavenNest.BusinessLogic.Game
         ///     Development only: the ids in generated-data/legendary-force.txt find one at their next qualifying boss
         ///     kill (the id is taken off the list), so a find can be tested without hundreds of raids.
         /// </summary>
-        private bool Forced(Guid characterId)
+        private bool Forced(Guid characterId) => TakeTestLine("legendary-force.txt", characterId, out _);
+
+        /// <summary>
+        ///     Development only: a line "id kills" in generated-data/legendary-awaken.txt sets the character's worn
+        ///     Legendaries to that many boss kills at its next boss kill (before it counts), so ranks can be tested.
+        /// </summary>
+        private int? TestKills(Guid characterId) => TakeTestLine("legendary-awaken.txt", characterId, out var rest) && int.TryParse(rest, out var n) ? n : (int?)null;
+
+        private static bool TakeTestLine(string file, Guid characterId, out string rest)
         {
+            rest = null;
             try
             {
                 if (!string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)) return false;
-                var path = Path.Combine("generated-data", "legendary-force.txt");
+                var path = Path.Combine("generated-data", file);
                 if (!File.Exists(path)) return false;
                 var lines = File.ReadAllLines(path).Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
-                var mine = lines.FindIndex(x => Guid.TryParse(x, out var g) && g == characterId);
+                var mine = lines.FindIndex(x => Guid.TryParse(x.Split(' ')[0], out var g) && g == characterId);
                 if (mine < 0) return false;
+                var parts = lines[mine].Split(' ', 2);
+                rest = parts.Length > 1 ? parts[1].Trim() : null;
                 lines.RemoveAt(mine);
                 File.WriteAllLines(path, lines);
                 return true;
@@ -197,13 +208,20 @@ namespace RavenNest.BusinessLogic.Game
         private void Awaken(Character character)
         {
             var inventory = inventories.Get(character.Id);
-            foreach (var worn in inventory.GetEquippedItems())
+            var worn = inventory.GetEquippedItems().Where(x => Legendary.IsLegendary(x.ItemId)).ToList();
+            if (worn.Count == 0) return;
+            var testKills = TestKills(character.Id);
+            foreach (var item in worn)
             {
-                var legendary = Legendary.Get(worn.ItemId);
-                if (legendary == null) continue;
-                var stack = inventory.Get(worn);
+                var legendary = Legendary.Get(item.ItemId);
+                var stack = inventory.Get(item);
                 if (stack == null) continue;
                 var before = Legendary.KillsOf(stack.Tag);
+                if (testKills.HasValue)
+                {
+                    before = Math.Max(0, testKills.Value);
+                    logger.LogWarning("Legendary: {Character}'s {Item} set to {Kills} boss kills for a test.", character.Name, legendary.Name, before);
+                }
                 var after = before + 1;
                 stack.Tag = Legendary.Tag(after); // the inventory feed tells the game
                 if (Legendary.RankOf(after) > Legendary.RankOf(before))

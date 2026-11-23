@@ -6789,3 +6789,115 @@ a.rf-badge:hover {
         justify-content: center;
     }
 }
+
+/* The Hall of Legends (/legends, the game's docs/legendary-design.md): a card per Legendary in its own color, its
+   power, who found it first and who fully awakened one */
+.rf-legends__rules ul {
+    margin: 0.4rem 0 0.6rem;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.rf-legends__heading {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.rf-legends__list {
+    list-style: none;
+    margin: 1.2rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.rf-legends__item {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr 13rem;
+    gap: 1rem;
+    align-items: center;
+    border-left: 4px solid var(--legend, #d4a24c);
+}
+
+.rf-legends__pic {
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    background: radial-gradient(circle, color-mix(in srgb, var(--legend, #d4a24c) 35%, transparent) 0%, transparent 70%);
+}
+
+.rf-legends__name {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--legend, #d4a24c);
+}
+
+.rf-legends__what {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--rf-ink-muted);
+}
+
+.rf-legends__power {
+    margin: 0.35rem 0 0;
+}
+
+.rf-legends__power--five {
+    color: var(--rf-ink-muted);
+    font-size: 0.95rem;
+}
+
+.rf-legends__first {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 0.1rem;
+}
+
+.rf-legends__label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--legend, #d4a24c);
+}
+
+.rf-legends__awakened {
+    grid-column: 2 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.rf-legends__badge {
+    border-color: var(--legend, #d4a24c);
+}
+
+@media (max-width: 700px) {
+    .rf-legends__item {
+        grid-template-columns: 4rem 1fr;
+    }
+
+    .rf-legends__pic {
+        width: 4rem;
+        height: 4rem;
+    }
+
+    .rf-legends__first,
+    .rf-legends__awakened {
+        grid-column: 1 / -1;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+.rf-legends__rules p {
+    white-space: normal;
+}

@@ -1576,6 +1576,15 @@ else
                 }
             </div>
 
+            @if (e.Legend != null)
+            {
+                <div class="rf-gear-legend" style="--legend: @e.Legend.Color">
+                    <div class="rf-gear-legend__head"><b>Legendary</b> <span>rank @e.LegendRank of 5</span></div>
+                    <p><b>@e.Legend.PowerName.</b> @RavenNest.Combat.Legendary.Describe(e.Legend.Power, e.LegendRank)</p>
+                    <p class="rf-gear-legend__awake">@RavenNest.Combat.Legendary.DescribeAwakening(e.LegendKills)</p>
+                </div>
+            }
+
             @if (e.Sockets.Count > 0 || enchantments != null || skin != null)
             {
                 <div class="rf-gear-tipcard__more">
@@ -1705,6 +1714,19 @@ else
             @if (!string.IsNullOrEmpty(item.Description))
             {
                 <p class="rf-gear-item__desc">@item.Description</p>
+            }
+
+            @if (e.Legend != null)
+            {
+                var next = RavenNest.Combat.Legendary.NextRankKills(e.LegendKills);
+                var from = RavenNest.Combat.Legendary.RankKills[e.LegendRank - 1];
+                var share = next > 0 ? Math.Clamp((e.LegendKills - from) / (double)(next - from), 0, 1) : 1;
+                <div class="rf-gear-block rf-gear-legend" style="--legend: @e.Legend.Color">
+                    <h4 class="rf-gear-block__title">Legendary: rank @e.LegendRank of 5</h4>
+                    <p><b>@e.Legend.PowerName.</b> @RavenNest.Combat.Legendary.Describe(e.Legend.Power, e.LegendRank)</p>
+                    <div class="rf-gear-legend__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(share * 100))"><i style="width: @((share * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
+                    <p class="rf-gear-legend__awake">@RavenNest.Combat.Legendary.DescribeAwakening(e.LegendKills). Bosses fought with it on awaken it: stronger numbers and power, a 4th gem socket at rank 3, a 5th and a full glow at rank 5.</p>
+                </div>
             }
 
             @if (wornNow != null)

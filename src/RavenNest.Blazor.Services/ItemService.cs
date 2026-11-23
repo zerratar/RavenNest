@@ -351,6 +351,10 @@ namespace RavenNest.Blazor.Services
             if (item == null)
                 return ItemRarityBand.Common;
 
+            // a Legendary (docs/legendary-design.md in the game) is the rarest there is, whatever its material
+            if (RavenNest.Combat.Legendary.IsLegendary(item.Id))
+                return ItemRarityBand.Mythic;
+
             // boats have no material, which made a Brigantine "common": a boat of one's own is rare at least, and the
             // bigger the ship the rarer
             if (item.Type == RavenNest.Models.ItemType.Boat)
@@ -380,6 +384,7 @@ namespace RavenNest.Blazor.Services
 
         public string GetRarityName(RavenNest.Models.Item item)
         {
+            if (item != null && RavenNest.Combat.Legendary.IsLegendary(item.Id)) return "Legendary";
             return ItemRarity.Name(GetRarity(item));
         }
 

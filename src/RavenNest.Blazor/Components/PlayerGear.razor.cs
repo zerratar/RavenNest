@@ -76,6 +76,27 @@ namespace RavenNest.Blazor.Components
             public bool CanSell;
             public string WhyNotSell;
             public long SellValue;
+            /// <summary>A Legendary (docs/legendary-design.md in the game): which, and boss kills worn (its awakening); null for any other piece.</summary>
+            public RavenNest.Combat.LegendaryInfo Legend;
+            public int LegendKills;
+            public int LegendRank => RavenNest.Combat.Legendary.RankOf(LegendKills);
+        }
+
+        private static readonly System.Reflection.MethodInfo cloneItem = typeof(object).GetMethod("MemberwiseClone", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        /// <summary>A Legendary's numbers at its rank: the item row holds rank 1 (RavenNest.Combat.Legendary.AtRank).</summary>
+        private static Item AtRank(Item item, int rank)
+        {
+            if (rank <= 1) return item;
+            var c = (Item)cloneItem.Invoke(item, null);
+            c.WeaponAim = RavenNest.Combat.Legendary.AtRank(item.WeaponAim, rank);
+            c.WeaponPower = RavenNest.Combat.Legendary.AtRank(item.WeaponPower, rank);
+            c.MagicAim = RavenNest.Combat.Legendary.AtRank(item.MagicAim, rank);
+            c.MagicPower = RavenNest.Combat.Legendary.AtRank(item.MagicPower, rank);
+            c.RangedAim = RavenNest.Combat.Legendary.AtRank(item.RangedAim, rank);
+            c.RangedPower = RavenNest.Combat.Legendary.AtRank(item.RangedPower, rank);
+            c.ArmorPower = RavenNest.Combat.Legendary.AtRank(item.ArmorPower, rank);
+            return c;
         }
 
         private enum Dialog { None, Sell, SellSeveral, StashSeveral, Skin, AddItem, Coins }
@@ -310,6 +331,9 @@ namespace RavenNest.Blazor.Components
                 if (item == null || stack.Amount <= 0) continue;
 
                 var token = item.Category == ItemCategory.StreamerToken;
+                var legend = RavenNest.Combat.Legendary.Get(item.Id);
+                var legendKills = legend != null ? RavenNest.Combat.Legendary.KillsOf(stack.Tag) : 0;
+                if (legend != null) item = AtRank(item, RavenNest.Combat.Legendary.RankOf(legendKills));
                 var e = new Entry
                 {
                     Stack = stack,
@@ -323,7 +347,9 @@ namespace RavenNest.Blazor.Components
                     Rarity = ItemService.GetRarity(item),
                     RarityClass = ItemService.GetRarityClass(item),
                     Enchanted = !string.IsNullOrEmpty(stack.Enchantment),
-                    Sockets = GemManager.SocketsOf(item, stack.Sockets),
+                    Sockets = GemManager.SocketsOf(item, stack.Sockets, stack.Tag),
+                    Legend = legend,
+                    LegendKills = legendKills,
                     CanMove = !stack.Equipped,
                     SellValue = item.ShopSellPrice * stack.Amount,
                 };

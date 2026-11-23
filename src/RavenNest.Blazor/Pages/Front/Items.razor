@@ -134,6 +134,10 @@
                                                     {
                                                         <span class="rf-item__desc" title="@item.Description">@item.Description</span>
                                                     }
+                                                    @if (RavenNest.Combat.Legendary.Get(item.Id) is RavenNest.Combat.LegendaryInfo legend)
+                                                    {
+                                                        <span class="rf-item__desc"><b style="color: @legend.Color">Legendary. @legend.PowerName:</b> @RavenNest.Combat.Legendary.Describe(legend.Power, 1) <a href="/legends">Hall of Legends</a></span>
+                                                    }
                                                 </span>
                                             </div>
                                         </td>

@@ -1985,6 +1985,9 @@ namespace RavenNest.BusinessLogic.Data
                 // if items has crafting materials.
                 // calculate vendor price based that.
 
+                // a Legendary sells for a coin (GameData.Legendary): priced here every start, it flipped back and forth
+                if (RavenNest.Combat.Legendary.IsLegendary(item.Id)) continue;
+
                 if ((ItemCategory)item.Category == ItemCategory.Pet)
                 {
                     item.ShopBuyPrice = 5000;

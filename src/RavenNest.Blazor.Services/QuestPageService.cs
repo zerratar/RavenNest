@@ -294,6 +294,7 @@ namespace RavenNest.Blazor.Services
                 case "treasure": return "/imgs/items/treasure-map.png"; // the Treasure Hunter, found in a Treasure Map's treasure
                 case "oddities": return "/imgs/items/old-boot.png"; // the Hoarder, five odd finds while gathering
                 case "penpal": return "/imgs/items/message-in-a-bottle.png"; // zerratar's Pen Pal, bottles opened
+                case "legend": return "/imgs/items/soulreaver.png"; // Legendbearer and Keeper of Legends, Legendaries found
                 default: return Picture("ach-" + key);
             }
         }
