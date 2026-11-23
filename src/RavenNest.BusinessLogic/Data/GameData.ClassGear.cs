@@ -138,7 +138,7 @@ namespace RavenNest.BusinessLogic.Data
 
             Piece(ItemLine.Melee, "head1", ItemType.HeadCovering, "Helm", "1", HeadMask.Hair | HeadMask.Ears).From(3, "1,1").From(6, "1,6"),
             Piece(ItemLine.Melee, "head2", ItemType.HeadCovering, "Coif", "11", HeadMask.Hair | HeadMask.Ears).From(3, "11,8").From(6, "11,7"),
-            Piece(ItemLine.Melee, "chest", ItemType.Chest, "Hauberk", "17,13,19,0", HeadMask.NoElbowPads).From(4, "17,9,19,0").From(7, "17,8,19,0,3"),
+            Piece(ItemLine.Melee, "chest", ItemType.Chest, "Hauberk", "17,13,19,0", HeadMask.NoElbowPads).From(4, "17,9,19,0").From(7, "17,8,19,0,3,-2021"),
             Piece(ItemLine.Melee, "gloves", ItemType.Gloves, "Gauntlets", "5,17"),
             Piece(ItemLine.Melee, "leggings", ItemType.Leggings, "Tassets", "10").From(2, "10,10,0", HeadMask.NoKneePads).From(4, "10,8,0,9"),
             Piece(ItemLine.Melee, "boots", ItemType.Boots, "Boots", "4"),
@@ -152,10 +152,10 @@ namespace RavenNest.BusinessLogic.Data
 
             Piece(ItemLine.Rogue, "head1", ItemType.HeadCovering, "Hood", "12", HeadMask.Hair | HeadMask.Ears),
             Piece(ItemLine.Rogue, "head2", ItemType.Mask, "Mask", "3", HeadMask.Beard),
-            Piece(ItemLine.Rogue, "chest", ItemType.Chest, "Tunic", "7,20,2,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "7,20,2,0,5"),
+            Piece(ItemLine.Rogue, "chest", ItemType.Chest, "Tunic", "7,20,2,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "7,20,2,0,5").From(7, "7,20,2,0,5,-2023", HeadMask.NoElbowPads),
             Piece(ItemLine.Rogue, "gloves", ItemType.Gloves, "Gloves", "4,8"),
             Piece(ItemLine.Rogue, "leggings", ItemType.Leggings, "Breeches", "24").From(2, "24,10,5", HeadMask.NoKneePads).From(3, "24,2,5").From(4, "24,2,5,9"),
-            Piece(ItemLine.Rogue, "boots", ItemType.Boots, "Boots", "18"),
+            Piece(ItemLine.Rogue, "boots", ItemType.Boots, "Boots", "18").From(7, "18,-1026"),
 
             Piece(ItemLine.Barbarian, "head1", ItemType.HeadCovering, "Bear Hood", "8", HeadMask.Hair | HeadMask.Ears).From(6, "8,6"),
             Piece(ItemLine.Barbarian, "head2", ItemType.HeadCovering, "Wolf Hood", "9", HeadMask.Hair | HeadMask.Ears).From(6, "9,6"),
@@ -191,8 +191,8 @@ namespace RavenNest.BusinessLogic.Data
 
             Piece(ItemLine.WitchHunter, "head1", ItemType.Hat, "Buckle Hat", "8").From(3, "8,12").From(6, "8,9"),
             Piece(ItemLine.WitchHunter, "head2", ItemType.Helmet, "Plague Mask", "0", HeadMask.All),
-            Piece(ItemLine.WitchHunter, "chest", ItemType.Chest, "Coat", "4,20,18,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "4,20,18,0,8"),
-            Piece(ItemLine.WitchHunter, "gloves", ItemType.Gloves, "Gloves", "1,14"),
+            Piece(ItemLine.WitchHunter, "chest", ItemType.Chest, "Coat", "4,20,18,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(6, "4,20,18,0,8").From(7, "4,20,18,0,8,-2024", HeadMask.NoElbowPads),
+            Piece(ItemLine.WitchHunter, "gloves", ItemType.Gloves, "Gloves", "1,14").From(7, "1,14,-2025"),
             Piece(ItemLine.WitchHunter, "leggings", ItemType.Leggings, "Coat Skirt", "5").From(2, "5,10,1", HeadMask.NoKneePads).From(4, "5,10,1,10", HeadMask.NoKneePads),
             Piece(ItemLine.WitchHunter, "boots", ItemType.Boots, "Boots", "4"),
 
@@ -207,7 +207,7 @@ namespace RavenNest.BusinessLogic.Data
             Piece(ItemLine.Beastmaster, "head1", ItemType.Hat, "Feathered Hat", "7").From(3, "7,11").From(6, "7,4"),
             // a wolf pelt worn as a hood (the Barbarian's Wolf Hood is the same part): never plain, so the two differ
             Piece(ItemLine.Beastmaster, "head2", ItemType.HeadCovering, "Pelt Hood", "9,12", HeadMask.Hair | HeadMask.Ears).From(3, "9,11").From(6, "9,3"),
-            Piece(ItemLine.Beastmaster, "chest", ItemType.Chest, "Hide Vest", "12,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "12,0,5,0", HeadMask.NoElbowPads).From(6, "12,8,5,0,3", HeadMask.NoElbowPads),
+            Piece(ItemLine.Beastmaster, "chest", ItemType.Chest, "Hide Vest", "12,20,5,0", HeadMask.NoShoulderPads | HeadMask.NoElbowPads).From(3, "12,0,5,0", HeadMask.NoElbowPads).From(6, "12,8,5,0,3", HeadMask.NoElbowPads).From(7, "12,8,5,0,3,-2022", HeadMask.NoElbowPads),
             Piece(ItemLine.Beastmaster, "gloves", ItemType.Gloves, "Handler Gloves", "6,16"),
             Piece(ItemLine.Beastmaster, "leggings", ItemType.Leggings, "Hide Breeches", "27").From(2, "27,10,11", HeadMask.NoKneePads).From(4, "27,10,11,2", HeadMask.NoKneePads),
             Piece(ItemLine.Beastmaster, "boots", ItemType.Boots, "Tracking Boots", "7"),
@@ -247,6 +247,9 @@ namespace RavenNest.BusinessLogic.Data
         ///     Part indices (male and female arrays alike): torso, hips 29 to 34; upper arms 21 to 26; lower arms 19 to
         ///     24; hands 18 to 23; legs 20 to 25; in the order Knight 7, Knight 8, Barbarian 7, Barbarian 8,
         ///     Necromancer 7, Necromancer 8 (the game's tools/dark-fortress-armor/armor-sets.cs adds them so).
+        ///     The single pieces of the pack, on tiers 7 and 8 of other lines: shoulder pads 21 plate guards (Melee), 22
+        ///     fur mantle (Beastmaster), 23 Undead 02's spiked pauldrons (Rogue), 24 the Wraith's fur collar (Witch Hunter);
+        ///     lower arms 25 the Plague Lord's spiked bracers (Witch Hunter gloves); legs 26 Undead 02's spiked boots (Rogue).
         /// </summary>
         private const HeadMask DarkFortressBody = HeadMask.NoShoulderPads | HeadMask.NoElbowPads;
 
