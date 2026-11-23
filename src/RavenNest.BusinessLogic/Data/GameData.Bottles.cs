@@ -23,5 +23,25 @@ namespace RavenNest.BusinessLogic.Data
                 map.Modified = DateTime.UtcNow;
             }
         }
+
+        /// <summary>
+        ///     The odd finds (OddFinds: an Old Boot, a Pet Rock and the rest): junk worth a coin at the vendor, never sold
+        ///     in a shop or crafted. Tradable, so a Pet Rock can be given to a friend.
+        /// </summary>
+        private void EnsureOddFinds(TypedItems items)
+        {
+            foreach (var name in RavenNest.BusinessLogic.Game.OddFinds.Names)
+            {
+                var item = items.OddFind(name);
+                if (item == null) continue;
+                if (item.ShopSellPrice != 1 || item.ShopBuyPrice != 0 || item.Craftable)
+                {
+                    item.ShopSellPrice = 1;
+                    item.ShopBuyPrice = 0;
+                    item.Craftable = false;
+                    item.Modified = DateTime.UtcNow;
+                }
+            }
+        }
     }
 }

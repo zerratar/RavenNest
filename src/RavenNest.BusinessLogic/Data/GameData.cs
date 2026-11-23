@@ -5811,6 +5811,27 @@ namespace RavenNest.BusinessLogic.Data
         public Item BurnedSeaSerpent;
         public Item MessageInABottle;
         public Item TreasureMap;
+        public Item OldBoot;
+        public Item Quackers;
+        public Item PetRock;
+        public Item BirdsNest;
+        public Item LookalikePotato;
+        public Item VeryGoodStick;
+
+        /// <summary>An odd find by its name (OddFinds), or null.</summary>
+        public Item OddFind(string name)
+        {
+            switch (name)
+            {
+                case RavenNest.BusinessLogic.Game.OddFinds.OldBoot: return OldBoot;
+                case RavenNest.BusinessLogic.Game.OddFinds.Quackers: return Quackers;
+                case RavenNest.BusinessLogic.Game.OddFinds.PetRock: return PetRock;
+                case RavenNest.BusinessLogic.Game.OddFinds.BirdsNest: return BirdsNest;
+                case RavenNest.BusinessLogic.Game.OddFinds.LookalikePotato: return LookalikePotato;
+                case RavenNest.BusinessLogic.Game.OddFinds.VeryGoodStick: return VeryGoodStick;
+                default: return null;
+            }
+        }
         public Item Banana;
         public Item GoldenBanana;
         public Item BananaBread;

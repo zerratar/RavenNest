@@ -107,7 +107,7 @@ namespace RavenNest.BusinessLogic.Data
                     AtlarusLight = GetOrCreateItem(i, "Atlarus Light", ItemCategory.Resource, ItemType.Mining),
 
                     OreIngot = GetOrCreateItem(i, "Ore ingot", ItemCategory.Resource, ItemType.Mining),
-                    WoodPlank = GetOrCreateItem(i, "Wood Plank", ItemCategory.Resource, ItemType.Woodcutting),
+                    WoodPlank = GetOrCreateItem(i, "Wood Plank", "A plank. Some would say as thick as one.", ItemCategory.Resource, ItemType.Woodcutting),
                 };
 
                 ItemSet GetOrCreateItemSet(string typeName, int levelRequirement = 0, ItemMaterial material = ItemMaterial.None)
@@ -348,18 +348,18 @@ namespace RavenNest.BusinessLogic.Data
                     // Tokens
                     ChristmasToken = GetOrCreateItem(i, "Christmas Token", "Used for redeeming Christmas Themed items.", ItemCategory.Scroll, ItemType.Scroll),
                     HalloweenToken = GetOrCreateItem(i, "Halloween Token", "Used for redeeming Halloween Themed items.", ItemCategory.Scroll, ItemType.Scroll),
-                    AbraxasToken = GetOrCreateItem(i, "Abraxas Token", "An old token that no longer bears any value.", ItemCategory.Scroll, ItemType.Scroll),
+                    AbraxasToken = GetOrCreateItem(i, "Abraxas Token", "An old token that no longer bears any value. Its sentimental value is not much better.", ItemCategory.Scroll, ItemType.Scroll),
                     RuneToken = GetOrCreateItem(i, "Rune Token", "An old token that no longer bears any value.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // Gathering - Cooking
-                    Water = GetOrCreateItem(i, "Water", "Essential for life and a key ingredient in many recipes.", ItemCategory.Resource, ItemType.Gathering),
-                    Mushroom = GetOrCreateItem(i, "Mushroom", "A versatile fungus that adds flavor to dishes.", ItemCategory.Resource, ItemType.Gathering),
-                    Salt = GetOrCreateItem(i, "Salt", "A mineral that enhances the taste of food.", ItemCategory.Resource, ItemType.Gathering),
+                    Water = GetOrCreateItem(i, "Water", "Wet. Essential for life and a key ingredient in many recipes. Do not let the fish see you take it.", ItemCategory.Resource, ItemType.Gathering),
+                    Mushroom = GetOrCreateItem(i, "Mushroom", "A versatile fungus that adds flavor to dishes. A fun guy at parties.", ItemCategory.Resource, ItemType.Gathering),
+                    Salt = GetOrCreateItem(i, "Salt", "A mineral that enhances the taste of food. Also of tears, after a burned dish.", ItemCategory.Resource, ItemType.Gathering),
                     Yeast = GetOrCreateItem(i, "Yeast", "A key ingredient for bread-making. It feeds on sugars and causes dough to rise, providing bread's fluffy texture.", ItemCategory.Resource, ItemType.Farming),
                     BlackPepper = GetOrCreateItem(i, "Black Pepper", "A spicy seasoning that adds kick to dishes.", ItemCategory.Resource, ItemType.Gathering),
 
                     // Gathering - Alchemy
-                    Sand = GetOrCreateItem(i, "Sand", "Granular material that can be melted to create vials.", ItemCategory.Resource, ItemType.Gathering),
+                    Sand = GetOrCreateItem(i, "Sand", "Coarse, rough and it gets everywhere. Melted, it makes vials.", ItemCategory.Resource, ItemType.Gathering),
                     Hemp = GetOrCreateItem(i, "Hemp", "A fibrous plant material, used for creating strings.", ItemCategory.Resource, ItemType.Gathering),
                     Resin = GetOrCreateItem(i, "Resin", "A sticky substance, often combined with wood pulp to make paper.", ItemCategory.Resource, ItemType.Gathering),
 
@@ -378,16 +378,16 @@ namespace RavenNest.BusinessLogic.Data
                     LemonBalm = GetOrCreateItem(i, "Lemon Balm", "A fragrant herb, known to enhance healing magics.", ItemCategory.Resource, ItemType.Gathering),
 
                     // Farming - Cooking
-                    Cabbage = GetOrCreateItem(i, "Cabbage", "A green leafy vegetable with layers of overlapping leaves. Commonly used in salads and various dishes.", ItemCategory.Resource, ItemType.Farming),
-                    Eggs = GetOrCreateItem(i, "Eggs", "An essential ingredient in many culinary dishes.", ItemCategory.Resource, ItemType.Farming),
+                    Cabbage = GetOrCreateItem(i, "Cabbage", "A green leafy vegetable, layer upon layer of leaves. Nibbles the bunny would like a word.", ItemCategory.Resource, ItemType.Farming),
+                    Eggs = GetOrCreateItem(i, "Eggs", "An essential ingredient in many dishes. Sir Clucksworth does not wish to discuss it.", ItemCategory.Resource, ItemType.Farming),
                     Milk = GetOrCreateItem(i, "Milk", "A creamy liquid, used in cooking and baking.", ItemCategory.Resource, ItemType.Farming),
-                    RawChicken = GetOrCreateItem(i, "Raw Chicken", "Uncooked poultry, ready for the frying pan.", ItemCategory.Resource, ItemType.Farming),
+                    RawChicken = GetOrCreateItem(i, "Raw Chicken", "Uncooked poultry, ready for the frying pan. Please do not show it to Sir Clucksworth.", ItemCategory.Resource, ItemType.Farming),
                     RawChickenLeg = GetOrCreateItem(i, "Raw Chicken Leg", "Uncooked poultry leg, ready to be fried.", ItemCategory.Resource, ItemType.Cooking),
                     RawBeef = GetOrCreateItem(i, "Raw Meat", "Uncooked beef, a staple in many dishes.", ItemCategory.Resource, ItemType.Farming),
                     RawPork = GetOrCreateItem(i, "Raw Pork", "Uncooked pork, waiting to be seasoned and cooked.", ItemCategory.Resource, ItemType.Farming),
-                    Wheat = GetOrCreateItem(i, "Wheat", "Golden grains, the base for many baked goods.", ItemCategory.Resource, ItemType.Farming),
-                    Tomato = GetOrCreateItem(i, "Tomato", "A juicy fruit, essential in salads and sauces.", ItemCategory.Resource, ItemType.Farming),
-                    Potato = GetOrCreateItem(i, "Potato", "A starchy vegetable, versatile in cooking.", ItemCategory.Resource, ItemType.Farming),
+                    Wheat = GetOrCreateItem(i, "Wheat", "Golden grains, the base for many baked goods. Farmers count them to fall asleep.", ItemCategory.Resource, ItemType.Farming),
+                    Tomato = GetOrCreateItem(i, "Tomato", "A juicy fruit, essential in salads and sauces. Yes, a fruit. No, it does not go in a fruit salad.", ItemCategory.Resource, ItemType.Farming),
+                    Potato = GetOrCreateItem(i, "Potato", "A starchy vegetable, versatile in cooking. Some say one of them looks like someone famous.", ItemCategory.Resource, ItemType.Farming),
                     Apple = GetOrCreateItem(i, "Apple", "A sweet and crunchy fruit.", ItemCategory.Resource, ItemType.Farming),
                     Carrots = GetOrCreateItem(i, "Carrots", "A crunchy vegetable, rich in vitamins.", ItemCategory.Resource, ItemType.Farming),
                     Garlic = GetOrCreateItem(i, "Garlic", "A pungent ingredient, adding depth to dishes.", ItemCategory.Resource, ItemType.Farming),
@@ -409,8 +409,8 @@ namespace RavenNest.BusinessLogic.Data
 
                     // Alchemy - Ingredients
                     String = GetOrCreateItem(i, "String", "A sturdy string, often used in crafting and alchemy.", ItemCategory.Resource, ItemType.Alchemy),
-                    Paper = GetOrCreateItem(i, "Paper", "A thin sheet made from pressed plant fibers. Perfect for recording knowledge.", ItemCategory.Resource, ItemType.Alchemy),
-                    Vial = GetOrCreateItem(i, "Vial", "A small container made of glass. Ideal for storing various concoctions.", ItemCategory.Resource, ItemType.Alchemy),
+                    Paper = GetOrCreateItem(i, "Paper", "A thin sheet made from pressed plant fibers. Perfect for recording knowledge, or for putting in bottles.", ItemCategory.Resource, ItemType.Alchemy),
+                    Vial = GetOrCreateItem(i, "Vial", "A small glass container for potions. Not to be confused with a bottle. zerratar has plenty of those.", ItemCategory.Resource, ItemType.Alchemy),
                     WoodPulp = GetOrCreateItem(i, "Wood Pulp", "Mashed wood fibers. Can be processed to make paper.", ItemCategory.Resource, ItemType.Alchemy), // used for creating paper
 
                     // Alchemy - Produced items                    
@@ -438,7 +438,7 @@ namespace RavenNest.BusinessLogic.Data
                     GreatHealingPotion = GetOrCreateItem(i, "Great Healing Potion", "Significantly boosts the effectiveness of healing spells and abilities for an extended duration.", ItemCategory.Potion, ItemType.Potion),
 
                     // Woodcutting
-                    Logs = GetOrCreateItem(i, "Logs", "Basic timber, perfect for simple crafting needs.", ItemCategory.Resource, ItemType.Woodcutting),
+                    Logs = GetOrCreateItem(i, "Logs", "Basic timber, perfect for simple crafting needs. The tree would like it back.", ItemCategory.Resource, ItemType.Woodcutting),
                     BristleLogs = GetOrCreateItem(i, "Bristle Logs", "Rough and rugged logs, ideal for durable crafts.", ItemCategory.Resource, ItemType.Woodcutting),
                     GlowbarkLogs = GetOrCreateItem(i, "Glowbark Logs", "Luminescent logs that emit a soft glow. Used in mystical crafts.", ItemCategory.Resource, ItemType.Woodcutting),
                     MystwoodLogs = GetOrCreateItem(i, "Mystwood Logs", "Enchanted timber known to be favored by wizards.", ItemCategory.Resource, ItemType.Woodcutting),
@@ -457,7 +457,7 @@ namespace RavenNest.BusinessLogic.Data
                     VoidheartLogs = GetOrCreateItem(i, "Voidheart Logs", "The deepest black wood known to exist, harvested from trees that grow at the edge of reality. Said to contain knowledge from beyond.", ItemCategory.Resource, ItemType.Woodcutting),
 
                     // Fishing
-                    RawSprat = GetOrCreateItem(i, "Raw Sprat", "A tiny, silver fish. Great for a quick snack.", ItemCategory.Resource, ItemType.Fishing),
+                    RawSprat = GetOrCreateItem(i, "Raw Sprat", "A tiny, silver fish. Great for a quick snack. The seagulls think so too.", ItemCategory.Resource, ItemType.Fishing),
                     RawShrimp = GetOrCreateItem(i, "Raw Shrimp", "Small and pinkish, they're a popular catch.", ItemCategory.Resource, ItemType.Fishing),
                     RawRedSeaBass = GetOrCreateItem(i, "Raw Red Sea Bass", "A vibrant fish with a strong flavor.", ItemCategory.Resource, ItemType.Fishing),
                     RawBass = GetOrCreateItem(i, "Raw Bass", "A popular freshwater fish with a mild taste.", ItemCategory.Resource, ItemType.Fishing),
@@ -467,7 +467,7 @@ namespace RavenNest.BusinessLogic.Data
                     RawLobster = GetOrCreateItem(i, "Raw Lobster", "A sea delicacy with a tough shell but tender meat.", ItemCategory.Resource, ItemType.Fishing),
                     RawBlueLobster = GetOrCreateItem(i, "Raw Blue Lobster", "A rare and vibrant variation of lobster.", ItemCategory.Resource, ItemType.Fishing),
                     RawSwordfish = GetOrCreateItem(i, "Raw Swordfish", "A powerful fish known for its elongated bill.", ItemCategory.Resource, ItemType.Fishing),
-                    RawPufferFish = GetOrCreateItem(i, "Raw Puffer Fish", "Inflates when threatened. Handle with care!", ItemCategory.Resource, ItemType.Fishing),
+                    RawPufferFish = GetOrCreateItem(i, "Raw Puffer Fish", "Inflates when threatened. Handle with care, and do not tell it scary stories.", ItemCategory.Resource, ItemType.Fishing),
                     RawOctopus = GetOrCreateItem(i, "Raw Octopus", "Eight-armed creature of the deep. Slippery and smart.", ItemCategory.Resource, ItemType.Fishing),
                     RawMantaRay = GetOrCreateItem(i, "Raw Manta Ray", "Graceful glider of the ocean. Beware its tail.", ItemCategory.Resource, ItemType.Fishing),
                     RawKraken = GetOrCreateItem(i, "Raw Kraken", "Mythical sea monster known to pull ships under.", ItemCategory.Resource, ItemType.Fishing),
@@ -482,6 +482,15 @@ namespace RavenNest.BusinessLogic.Data
                     MessageInABottle = GetOrCreateItem(i, "Message in a Bottle", "A rolled up note inside reads: \"If found, please return to zerratar. Or keep it, I have more bottles.\"", ItemCategory.Resource, ItemType.Fishing),
                     // sometimes the bottle holds a map instead (v0.9.7, BottleManager): the island it marks is in the stack's tag
                     TreasureMap = GetOrCreateItem(i, "Treasure Map", "A soggy map with a big red X. Someone drew a skull next to it, crossed the skull out and drew a smiley instead. Dig on the right island with !use treasure map.", ItemCategory.Scroll, ItemType.Scroll),
+
+                    // odd finds (v0.9.7, OddFinds and the game's docs/easter-eggs.md): now and then one turns up while
+                    // gathering instead of nothing in particular. A coin at the vendor; the game has a line for !use
+                    OldBoot = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.OldBoot, "A soggy left boot, fished out of the sea. A note inside reads: \"Wrong boot. - the Pirates of Away\"", ItemCategory.Resource, ItemType.None),
+                    Quackers = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.Quackers, "A rubber duck with QUACKERS written on the bottom. Someone out there sent a bottle looking for him. Squeak.", ItemCategory.Resource, ItemType.None),
+                    PetRock = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.PetRock, "A suspiciously round rock. It does not eat, it does not bark and it never runs away. The perfect pet.", ItemCategory.Resource, ItemType.None),
+                    BirdsNest = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.BirdsNest, "An empty bird's nest. The bird left a note: \"Gone south for the winter. Do not wait up.\"", ItemCategory.Resource, ItemType.None),
+                    LookalikePotato = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.LookalikePotato, "A potato that looks a bit like someone famous. You cannot quite place who. It is on the tip of your tongue.", ItemCategory.Resource, ItemType.None),
+                    VeryGoodStick = GetOrCreateItem(i, RavenNest.BusinessLogic.Game.OddFinds.VeryGoodStick, "It is a stick. But it is a really, really good one. Every pet in the village wants it.", ItemCategory.Resource, ItemType.None),
 
                     // the Mangrove island (docs/banana-island.md in the game): bananas only grow there, the rest
                     // comes from its pirates' treasure
@@ -517,7 +526,7 @@ namespace RavenNest.BusinessLogic.Data
                     ChocolateChipCookies = GetOrCreateItem(i, "Chocolate Chip Cookies", "Sweet bites filled with gooey chocolate.", ItemCategory.Food, ItemType.Food),
                     ApplePie = GetOrCreateItem(i, "Apple Pie", "A warm slice of home. Flaky crust with sweet filling.", ItemCategory.Food, ItemType.Food),
                     Bread = GetOrCreateItem(i, "Bread", "Baked daily. Crunchy crust with soft center.", ItemCategory.Food, ItemType.Food),
-                    HamSandwich = GetOrCreateItem(i, "Ham Sandwich", "Layered with ham and fresh vegetables.", ItemCategory.Food, ItemType.Food),
+                    HamSandwich = GetOrCreateItem(i, "Ham Sandwich", "Layered with ham and fresh vegetables. Keep it away from seagulls. Trust us.", ItemCategory.Food, ItemType.Food),
                     Skewers = GetOrCreateItem(i, "Skewers", "Grilled delights on a stick.", ItemCategory.Food, ItemType.Food),
                     Steak = GetOrCreateItem(i, "Steak", "Succulent and perfectly seared.", ItemCategory.Food, ItemType.Food),
 
@@ -603,10 +612,10 @@ namespace RavenNest.BusinessLogic.Data
                     Topaz = GetOrCreateItem(i, "Topaz", "A translucent gem varying from yellow to blue, representing both the warmth of the sun and the coolness of the sky.", ItemCategory.Resource, ItemType.Mining),
                     PhilosophersStone = GetOrCreateItem(i, "Philosophers Stone", "An elusive stone surrounded by myths, said to have the power to turn any metal into gold.", ItemCategory.Resource, ItemType.Mining),
 
-                    CopperOre = GetOrCreateItem(i, "Copper Ore", "A reddish-brown mineral used for creating bronze.", ItemCategory.Resource, ItemType.Mining),
-                    TinOre = GetOrCreateItem(i, "Tin Ore", "Soft and malleable, this metal is combined with copper ore to produce bronze.", ItemCategory.Resource, ItemType.Mining),
+                    CopperOre = GetOrCreateItem(i, "Copper Ore", "A reddish-brown mineral used for creating bronze. Every great adventure starts with about four thousand of these.", ItemCategory.Resource, ItemType.Mining),
+                    TinOre = GetOrCreateItem(i, "Tin Ore", "Soft and malleable; combined with copper ore it makes bronze. On its own it mostly feels left out.", ItemCategory.Resource, ItemType.Mining),
                     IronOre = GetOrCreateItem(i, "Iron Ore", "A commonly found metal ore.", ItemCategory.Resource, ItemType.Mining),
-                    Coal = GetOrCreateItem(i, "Coal", "Dark and dusty, it's a primary source of energy for various industries.", ItemCategory.Resource, ItemType.Mining),
+                    Coal = GetOrCreateItem(i, "Coal", "Dark and dusty, the forges run on it. Naughty adventurers find it in their stockings.", ItemCategory.Resource, ItemType.Mining),
                     Silver = GetOrCreateItem(i, "Silver", "A shiny and ductile metal, often associated with luxury and wealth.", ItemCategory.Resource, ItemType.Mining),
                     Gold = GetOrCreateItem(i, "Gold Nugget", "A small chunk of this precious metal known for its distinct shine and value.", ItemCategory.Resource, ItemType.Mining),
                     MithrilOre = GetOrCreateItem(i, "Mithril Ore", "A rare, silver-like metal known for its strength and lightweight properties. Found deep within mountain cores.", ItemCategory.Resource, ItemType.Mining),
@@ -666,6 +675,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureDungeonAndRaidDrops(typedItems);
                 EnsureResourceDropRates(typedItems);
                 EnsureTreasureMap(typedItems);
+                EnsureOddFinds(typedItems);
             }
             return typedItems;
         }

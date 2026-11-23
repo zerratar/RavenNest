@@ -21,6 +21,9 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The achievement (hidden, one tier) whose title is "the Treasure Hunter".</summary>
         public const string TreasureAchievement = "treasure";
 
+        /// <summary>The achievement (hidden, one tier) for bottles opened: "zerratar's Pen Pal".</summary>
+        public const string PenPalAchievement = "penpal";
+
         private readonly GameData gameData;
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly BoatManager boats;
@@ -67,6 +70,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (!inventory.RemoveItem(bottle, 1)) return null;
             var result = Result(inventory, inventoryItemId);
+            QuestTracker.Achievements?.Add(character, PenPalAchievement, 1);
 
             if (!contents.Map)
             {

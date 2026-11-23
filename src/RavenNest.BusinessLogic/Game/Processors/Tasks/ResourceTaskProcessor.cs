@@ -205,7 +205,28 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             if (bonus.Eggs && Random.NextDouble() < ItemDropRateSettings.NestEggChance)
                 GiveNestEgg(gameData, inventory, session, character);
 
+            if (OddFinds.Rolls(Random.NextDouble()))
+                GiveOddFind(gameData, inventory, session, character, skill);
+
             return found;
+        }
+
+        /// <summary>
+        ///     An odd find (OddFinds, the game's docs/easter-eggs.md): an Old Boot, a Pet Rock and the like, at most one a
+        ///     character every few hours. Into the inventory, counted for the hidden "oddities" achievement, and the game
+        ///     is told so it can show it.
+        /// </summary>
+        private void GiveOddFind(GameData gameData, PlayerInventory inventory, DataModels.GameSession session, DataModels.Character character, Skill skill)
+        {
+            var state = gameData.GetCharacterState(character.StateId);
+            var island = state != null && TryGetIsland(state.Island, out var on) ? on : Island.None;
+            var name = OddFinds.Pick(skill, island, Random.NextDouble());
+            var item = name != null ? gameData.GetKnownItems().OddFind(name) : null;
+            if (item == null || !OddFinds.TryTake(character.Id, DateTime.UtcNow)) return;
+            IncrementItemStack(gameData, inventory, session, character, item.Id);
+            QuestTracker.Achievements?.Add(character, OddFinds.Achievement, 1);
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.OddFind, session,
+                new OddFind { CharacterId = character.Id, ItemId = item.Id, Item = item.Name, Skill = (int)skill }));
         }
 
         /// <summary>

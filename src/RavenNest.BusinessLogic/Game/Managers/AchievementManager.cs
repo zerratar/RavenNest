@@ -60,6 +60,10 @@ namespace RavenNest.BusinessLogic.Game
             new Definition { Key = "nibbled", Targets = new long[] { 1 }, Hidden = true },
             // a rare find in a Treasure Map's treasure (BottleManager): "the Treasure Hunter"
             new Definition { Key = BottleManager.TreasureAchievement, Targets = new long[] { 1 }, Hidden = true, Mode = Mode.Highest },
+            // five odd finds while gathering (OddFinds: an Old Boot, a Pet Rock...): "the Hoarder"
+            new Definition { Key = OddFinds.Achievement, Targets = new long[] { 5 }, Hidden = true },
+            // messages in bottles opened (BottleManager): "zerratar's Pen Pal"
+            new Definition { Key = BottleManager.PenPalAchievement, Targets = new long[] { 25 }, Hidden = true },
         };
 
         private static Definition Tiers(string key, long bronze, long silver, long gold) =>

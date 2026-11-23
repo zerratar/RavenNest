@@ -173,6 +173,20 @@ namespace RavenNest.Models
         public string Egg { get; set; }
     }
 
+    /// <summary>
+    /// A character found something odd while gathering (v0.9.7, the game's docs/easter-eggs.md): the item is in the
+    /// inventory already; the game shows it and words it.
+    /// </summary>
+    public class OddFind
+    {
+        public Guid CharacterId { get; set; }
+        public Guid ItemId { get; set; }
+        /// <summary>The item's name ("Old Boot").</summary>
+        public string Item { get; set; }
+        /// <summary>The skill it was found with (RavenNest.Models.Skill).</summary>
+        public int Skill { get; set; }
+    }
+
     public class QuestCompleted
     {
         public Guid CharacterId { get; set; }

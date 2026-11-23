@@ -117,5 +117,8 @@
 
         /// <summary>A character's outfits per skill were changed somewhere else (the website): the outfits, and the stable when a pet went out (OutfitsChanged).</summary>
         OutfitsChanged = 60,
+
+        /// <summary>A character found something odd while gathering: an Old Boot, a Pet Rock (OddFind; in the inventory already).</summary>
+        OddFind = 61,
     }
 }

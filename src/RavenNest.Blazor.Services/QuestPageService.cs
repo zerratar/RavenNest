@@ -292,6 +292,8 @@ namespace RavenNest.Blazor.Services
                 case "quester": return Picture("empty-board");
                 case "ferryman": return "/imgs/items/rowboat.png";
                 case "treasure": return "/imgs/items/treasure-map.png"; // the Treasure Hunter, found in a Treasure Map's treasure
+                case "oddities": return "/imgs/items/old-boot.png"; // the Hoarder, five odd finds while gathering
+                case "penpal": return "/imgs/items/message-in-a-bottle.png"; // zerratar's Pen Pal, bottles opened
                 default: return Picture("ach-" + key);
             }
         }
