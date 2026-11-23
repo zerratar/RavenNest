@@ -210,6 +210,9 @@ namespace RavenNest.BusinessLogic.Game
             // and the boss's own trophies, if it has any (the Gardener's Dark Fortress pieces)
             var trophies = gameManager.RollTowerTrophies(session, floor, ids, streamFirst);
             if (trophies.Length > 0) rewards = rewards.Concat(trophies).ToArray();
+            // and the Legendaries (docs/legendary-design.md): worn ones awaken, a top band boss may give one
+            var legends = gameManager.TowerBossFell(session, floor, ids);
+            if (legends.Length > 0) rewards = rewards.Concat(legends).ToArray();
             gameData.Touch();
 
             return new TowerClearResult

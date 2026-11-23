@@ -89,6 +89,9 @@ namespace RavenNest.Combat
         /// <summary>The share of a melee blow taken that hurts the attacker back.</summary>
         public double Thorns;
 
+        /// <summary>Iron Aegis (the Spiked Bulwark): above 0, thorns answer ranged and magic blows too.</summary>
+        public double ThornsAllStyles;
+
         /// <summary>The share of damage dealt that heals the attacker.</summary>
         public double LifeSteal;
 

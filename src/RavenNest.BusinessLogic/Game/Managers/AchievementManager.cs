@@ -64,6 +64,8 @@ namespace RavenNest.BusinessLogic.Game
             new Definition { Key = OddFinds.Achievement, Targets = new long[] { 5 }, Hidden = true },
             // messages in bottles opened (BottleManager): "zerratar's Pen Pal"
             new Definition { Key = BottleManager.PenPalAchievement, Targets = new long[] { 25 }, Hidden = true },
+            // different Legendaries found (LegendaryManager): "Legendbearer" at one, "Keeper of Legends" at all of them
+            new Definition { Key = LegendaryManager.Achievement, Targets = new long[] { 1, RavenNest.Combat.Legendary.Count }, Hidden = true, Mode = Mode.Highest },
         };
 
         private static Definition Tiers(string key, long bronze, long silver, long gold) =>

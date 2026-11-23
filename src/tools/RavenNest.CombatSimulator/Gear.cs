@@ -97,6 +97,12 @@ namespace RavenNest.CombatSimulator
 
         public int Count => items.Count;
 
+        /// <summary>The best normal item of a type, by its main numbers (what a Legendary is worked out from); the Legendaries themselves are left out.</summary>
+        public ItemData BestOfType(int type) => items
+            .Where(x => x.Type == type && !Legendary.All.Any(l => string.Equals(l.Name, x.Name, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(x => x.WeaponAim + x.WeaponPower + x.MagicAim + x.MagicPower + x.RangedAim + x.RangedPower + x.ArmorPower * 2)
+            .FirstOrDefault();
+
         /// <summary>The best melee kit (weapon, shield and armour) wearable at <paramref name="level"/> in every combat skill.</summary>
         public Loadout Melee(int level)
         {

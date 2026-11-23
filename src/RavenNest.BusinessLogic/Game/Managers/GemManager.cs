@@ -149,7 +149,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
                 if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
                 if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
-                var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
+                var count = SocketCount(item, slot);
                 if (count == 0) return new GemResult { Status = GemResultStatus.NoSockets, ItemName = NameOf(item) };
 
                 var sockets = Gems.ParseSockets(item.Sockets, count);
@@ -221,7 +221,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
                 if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
                 if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
-                var count = Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
+                var count = SocketCount(item, slot);
                 var sockets = Gems.ParseSockets(item.Sockets, count);
                 var index = socket - 1;
                 if (socket <= 0)
@@ -291,6 +291,10 @@ namespace RavenNest.BusinessLogic.Game
 
         // an item of more than one splits: one of them gets the gems, the rest stay a plain stack.
         // Returns the stack that holds the sockets now (null when nothing was set).
+        /// <summary>An inventory item's sockets: by its level, or a Legendary's by its awakening rank (docs/legendary-design.md).</summary>
+        private static int SocketCount(ReadOnlyInventoryItem item, GemSlot slot) =>
+            Legendary.IsLegendary(item.ItemId) ? Legendary.Sockets(Legendary.RankOfTag(item.Tag)) : Gems.Sockets(GameMath.GetItemLevel(item.Item), slot);
+
         private DataModels.InventoryItem SetSockets(PlayerInventory inventory, DataModels.InventoryItem stack, string sockets)
         {
             if (stack == null) return null;
@@ -390,11 +394,12 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>An item's sockets, first to last; none for an item that cannot have any (or not yet, by its level).</summary>
-        public static System.Collections.Generic.List<SocketView> SocketsOf(RavenNest.Models.Item item, string sockets)
+        public static System.Collections.Generic.List<SocketView> SocketsOf(RavenNest.Models.Item item, string sockets, string tag = null)
         {
             var views = new System.Collections.Generic.List<SocketView>();
             if (!TryGetSlot(item, out var slot)) return views;
-            var count = Gems.Sockets(Gems.ItemLevel(item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, item.Level), slot);
+            var count = Legendary.IsLegendary(item.Id) ? Legendary.Sockets(Legendary.RankOfTag(tag))
+                : Gems.Sockets(Gems.ItemLevel(item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel, item.Level), slot);
             var parsed = Gems.ParseSockets(sockets, count);
             for (var s = 0; s < parsed.Length; ++s)
             {
@@ -413,10 +418,10 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>An item's sockets for showing: ("Socket 1", "Flawless Ruby: +18% Fire Damage") or ("Socket 2", "empty").</summary>
-        public static System.Collections.Generic.List<(string Label, string Value)> SocketLines(RavenNest.Models.Item item, string sockets)
+        public static System.Collections.Generic.List<(string Label, string Value)> SocketLines(RavenNest.Models.Item item, string sockets, string tag = null)
         {
             var lines = new System.Collections.Generic.List<(string, string)>();
-            foreach (var socket in SocketsOf(item, sockets))
+            foreach (var socket in SocketsOf(item, sockets, tag))
             {
                 lines.Add(("Socket " + socket.Number, socket.Empty ? "empty" : socket.Name + ": " + socket.Bonus));
             }

@@ -83,6 +83,10 @@ namespace RavenNest.CombatSimulator
                     // docs/taming-gear-design.md); "taminggear 200 PET_POWER=3:40" tries other numbers
                     TamingGearScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tg) ? tg : 200, args.Skip(2).ToArray());
                     return 0;
+                case "legendary":
+                    // the Legendaries against the best normal item of their type, rank 1 and rank 5 (docs/legendary-design.md)
+                    LegendaryScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var lr) ? lr : 200, args.Skip(2).ToArray());
+                    return 0;
                 default:
                     Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], paths [runs] [tree], pets [runs] [armour share] [offence share], tower [attempts]");
                     return 1;

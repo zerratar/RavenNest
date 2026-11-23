@@ -17,6 +17,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly SessionManager sessionManager;
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly GameData gameData;
+        private readonly LegendaryManager legendaries;
 
         private readonly Guid expScrollId;
         private readonly Guid dungeonScrollId;
@@ -28,13 +29,15 @@ namespace RavenNest.BusinessLogic.Game
             IServerManager serverManager,
             SessionManager sessionManager,
             PlayerInventoryProvider inventoryProvider,
-            GameData gameData)
+            GameData gameData,
+            LegendaryManager legendaries)
         {
             this.logger = logger;
             this.serverManager = serverManager;
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
+            this.legendaries = legendaries;
 
             var items = gameData.GetKnownItems();
 
@@ -448,6 +451,9 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                // the Legendaries (docs/legendary-design.md): every boss awakens the worn ones; a heroic dungeon's may find one
+                rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.DungeonCounts(tier) ? RavenNest.Combat.LegendarySource.Dungeon : (RavenNest.Combat.LegendarySource?)null));
+
                 PayVillage(gameSession, VillageCoinRewards.ForDungeon(tier, CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();
             }
@@ -616,6 +622,10 @@ namespace RavenNest.BusinessLogic.Game
             return rewards.ToArray();
         }
 
+        /// <summary>A tower boss fell (TowerManager): the worn Legendaries awaken, and a boss of the top band may give one.</summary>
+        public EventItemReward[] TowerBossFell(DataModels.GameSession gameSession, int floor, Guid[] characters)
+            => legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.TowerCounts(floor) ? RavenNest.Combat.LegendarySource.Tower : (RavenNest.Combat.LegendarySource?)null);
+
         /// <summary>
         ///     A tower boss's trophies (RavenNest.Combat.TowerBoss.Trophies, the game's docs/dark-fortress-design.md): on
         ///     the stream's first clear of the floor, each character who fought has RavenNest.Combat.TowerLoot's chance of
@@ -766,6 +776,9 @@ namespace RavenNest.BusinessLogic.Game
                         });
                     }
                 }
+
+                // the Legendaries: every raid boss awakens the worn ones and may find one
+                rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.LegendarySource.Raid));
 
                 PayVillage(gameSession, VillageCoinRewards.ForRaid(CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();

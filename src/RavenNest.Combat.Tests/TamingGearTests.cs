@@ -17,7 +17,8 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(0.15, GearStats.Parse(stats.ToString())[GearStat.TameChance], 6);
             // the stats before it keep their numbers: saved texts name them, but the values array is in this order
             Assert.Equal(GearStat.PetSafeGathering + 1, GearStat.TameChance);
-            Assert.Equal((int)GearStat.TameChance + 1, GearStats.Count);
+            Assert.Equal(GearStat.TameChance + 1, GearStat.ThornsAllStyles); // the Legendaries (2026-11-23) come after it
+            Assert.Equal((int)GearStat.ThornsAllStyles + 1, GearStats.Count);
         }
 
         [Fact]

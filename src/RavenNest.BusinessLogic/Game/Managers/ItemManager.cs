@@ -129,6 +129,7 @@ namespace RavenNest.BusinessLogic.Game
             entity.Modified = DateTime.UtcNow;
 
             gameData.Add(entity);
+            gameData.EnsureLegendaries(); // a better weapon raises the Legendaries with it
             InvalidateCache();
         }
 
@@ -178,6 +179,7 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.Type = (int)item.Type;
             dataItem.Modified = DateTime.UtcNow;
 
+            gameData.EnsureLegendaries(); // a better weapon raises the Legendaries with it
             InvalidateCache();
         }
 

@@ -98,13 +98,15 @@ namespace RavenNest.BusinessLogic.Data
                 Description = "A twisted bone that hums with sickness. Spells cast with it leave a green cough behind.",
                 Level = 80, Accuracy = 78, Power = 78, Extra = "POISON_DAMAGE:25%", SellPrice = 3500 },
 
-            // ---- rare finds in the dungeon and tower chests (epic tier, by Slayer level)
+            // ---- rare finds in the dungeon and tower chests (epic tier, by Slayer level). Since 2026-11-23 five of them
+            //      are Legendaries (the game's docs/legendary-design.md): no chest, found by the strongest from the hardest
+            //      bosses, their numbers worked out from the catalog by GameData.Legendary; the numbers here are not used.
             new DarkFortressPiece { Key = "skullcrusher", Name = "Skullcrusher", Type = ItemType.OneHandedAxe, Prefab = DarkFortressWeapons + "Club 01",
                 Description = "A club with a skull on the end. Whose skull? Best not to ask.",
                 Level = 300, Accuracy = 150, Power = 170, Extra = "CRIT_DAMAGE:15%", DropTier = 3, DropWeight = 0.01, DropSlayer = 30, SellPrice = 12000 },
             new DarkFortressPiece { Key = "fortress-hand-cannon", Name = "Fortress Hand Cannon", Type = ItemType.TwoHandedBow, Prefab = DarkFortressWeapons + "Cannon 01",
                 Description = "Very loud, very heavy, and it fires cannonballs. Feed it arrows and they come out round. Nobody in the fortress knows how.",
-                Level = 500, Accuracy = 470, Power = 480, Extra = "CRIT_CHANCE:5%", DropTier = 4, DropWeight = 0.01, DropSlayer = 50, SellPrice = 20000 },
+                Level = 500, Accuracy = 470, Power = 480, Extra = "CRIT_CHANCE:5%", SellPrice = 1 /* Legendary: GameData.Legendary sets its numbers */ },
             new DarkFortressPiece { Key = "gravebloom-warhammer", Name = "Gravebloom Warhammer", Type = ItemType.OneHandedAxe, Prefab = DarkFortressWeapons + "Hammer 01",
                 Description = "Its green stone grew in a grave. What it hits feels sick for days.",
                 Level = 650, Accuracy = 357, Power = 404, Extra = "POISON_DAMAGE:35%", DropTier = 4, DropWeight = 0.01, DropSlayer = 65, SellPrice = 27000 },
@@ -113,16 +115,16 @@ namespace RavenNest.BusinessLogic.Data
                 Level = 700, Accuracy = 585, Power = 585, Extra = "HEALING_POWER_BONUS:10%;UNDEAD_DAMAGE:15%", DropTier = 4, DropWeight = 0.01, DropSlayer = 70, SellPrice = 32000 },
             new DarkFortressPiece { Key = "hellhorn-mace", Name = "Hellhorn Mace", Type = ItemType.OneHandedAxe, Prefab = DarkFortressWeapons + "Mace 01",
                 Description = "Horned, red hot at the tips, and never quite cool to hold.",
-                Level = 750, Accuracy = 386, Power = 436, Extra = "FIRE_DAMAGE:35%", DropTier = 4, DropWeight = 0.01, DropSlayer = 75, SellPrice = 41000 },
+                Level = 750, Accuracy = 386, Power = 436, Extra = "FIRE_DAMAGE:15%" /* 35% before it was a Legendary: the simulator */, SellPrice = 1 /* Legendary: GameData.Legendary sets its numbers */ },
             new DarkFortressPiece { Key = "batwing-staff", Name = "Batwing Staff", Type = ItemType.TwoHandedStaff, Prefab = DarkFortressWeapons + "Staff 01",
                 Description = "The Necromancer's staff. The skull on top grins wider every time it takes a life.",
-                Level = 800, Accuracy = 608, Power = 608, Extra = "LIFE_STEAL:3%", DropTier = 4, DropWeight = 0.01, DropSlayer = 80, SellPrice = 51000 },
+                Level = 800, Accuracy = 608, Power = 608, Extra = "LIFE_STEAL:3%", SellPrice = 1 /* Legendary: GameData.Legendary sets its numbers */ },
             new DarkFortressPiece { Key = "spiked-bulwark", Name = "Spiked Bulwark", Category = ItemCategory.Armor, Type = ItemType.Shield, Prefab = DarkFortressWeapons + "Shield 01",
                 Description = "A black shield bristling with spikes. Hitting it is a mistake you make once.",
-                Level = 850, Armor = 380, Extra = "THORNS:8%", DropTier = 4, DropWeight = 0.01, DropSlayer = 85, SellPrice = 40000 },
+                Level = 850, Armor = 380, Extra = "THORNS:8%", SellPrice = 1 /* Legendary: GameData.Legendary sets its numbers */ },
             new DarkFortressPiece { Key = "soulreaver", Name = "Soulreaver", Type = ItemType.TwoHandedSword, Prefab = DarkFortressWeapons + "Sword 01",
                 Description = "The fortress lord's greatsword. Its pale blade glows brighter with every soul it takes.",
-                Level = 900, Accuracy = 711, Power = 711, Extra = "LIFE_STEAL:3%", DropTier = 4, DropWeight = 0.01, DropSlayer = 90, SellPrice = 94000 },
+                Level = 900, Accuracy = 711, Power = 711, Extra = "LIFE_STEAL:3%", SellPrice = 1 /* Legendary: GameData.Legendary sets its numbers */ },
             new DarkFortressPiece { Key = "thorn-crown", Name = "Thorn Crown", Category = ItemCategory.Cosmetic, Type = ItemType.Hat, Prefab = DarkFortressHead + "Crown 01",
                 Description = "A crown of black iron spikes. Uncomfortable, but very regal.", DropTier = 3, DropWeight = 0.01, SellPrice = 2500 },
             new DarkFortressPiece { Key = "grinning-skull", Name = "Grinning Skull", Category = ItemCategory.Cosmetic, Type = ItemType.Mask, Prefab = DarkFortressHead + "Mask 04",
@@ -202,13 +204,15 @@ namespace RavenNest.BusinessLogic.Data
                 var armor = category == ItemCategory.Armor;
                 var melee = category == ItemCategory.Weapon && !magic && !ranged;
 
+                // a Legendary's numbers, requirement, price and binding are GameData.Legendary's (from the catalog)
+                var legendary = RavenNest.Combat.Legendary.IsLegendary(id);
                 Fix(item.Name, piece.Name, v => item.Name = v);
                 Fix(item.Description, piece.Description, v => item.Description = v);
                 Fix(item.Category, (int)category, v => item.Category = v);
                 Fix(item.Type, (int)piece.Type, v => item.Type = v);
                 Fix(item.Material, (int)ItemMaterial.None, v => item.Material = v);
                 // a crafted piece's level is its recipe's (the recipe sets it; fixing it here too would flip it every start)
-                Fix(item.Level, Math.Max(1, piece.Recipe != null ? piece.CraftingLevel : piece.Level), v => item.Level = v);
+                if (!legendary) Fix(item.Level, Math.Max(1, piece.Recipe != null ? piece.CraftingLevel : piece.Level), v => item.Level = v);
                 Fix(item.MaleModelId, null, v => item.MaleModelId = v);
                 Fix(item.FemaleModelId, null, v => item.FemaleModelId = v);
                 Fix(item.HeadMask, 0, v => item.HeadMask = v);
@@ -216,22 +220,28 @@ namespace RavenNest.BusinessLogic.Data
                 Fix(item.MalePrefab, null, v => item.MalePrefab = v);
                 Fix(item.FemalePrefab, null, v => item.FemalePrefab = v);
                 Fix(item.IsGenericModel, true, v => item.IsGenericModel = v);
-                Fix(item.ArmorPower, piece.Armor, v => item.ArmorPower = v);
-                Fix(item.WeaponAim, melee ? piece.Accuracy : 0, v => item.WeaponAim = v);
-                Fix(item.WeaponPower, melee ? piece.Power : 0, v => item.WeaponPower = v);
-                Fix(item.MagicAim, magic ? piece.Accuracy : 0, v => item.MagicAim = v);
-                Fix(item.MagicPower, magic ? piece.Power : 0, v => item.MagicPower = v);
-                Fix(item.RangedAim, ranged ? piece.Accuracy : 0, v => item.RangedAim = v);
-                Fix(item.RangedPower, ranged ? piece.Power : 0, v => item.RangedPower = v);
+                if (!legendary)
+                {
+                    Fix(item.ArmorPower, piece.Armor, v => item.ArmorPower = v);
+                    Fix(item.WeaponAim, melee ? piece.Accuracy : 0, v => item.WeaponAim = v);
+                    Fix(item.WeaponPower, melee ? piece.Power : 0, v => item.WeaponPower = v);
+                    Fix(item.MagicAim, magic ? piece.Accuracy : 0, v => item.MagicAim = v);
+                    Fix(item.MagicPower, magic ? piece.Power : 0, v => item.MagicPower = v);
+                    Fix(item.RangedAim, ranged ? piece.Accuracy : 0, v => item.RangedAim = v);
+                    Fix(item.RangedPower, ranged ? piece.Power : 0, v => item.RangedPower = v);
+                }
                 Fix(item.ExtraStats, piece.Extra, v => item.ExtraStats = v);
-                Fix(item.RequiredAttackLevel, melee ? piece.Level : 0, v => item.RequiredAttackLevel = v);
-                Fix(item.RequiredMagicLevel, magic ? piece.Level : 0, v => item.RequiredMagicLevel = v);
-                Fix(item.RequiredRangedLevel, ranged ? piece.Level : 0, v => item.RequiredRangedLevel = v);
-                Fix(item.RequiredDefenseLevel, armor ? piece.Level : 0, v => item.RequiredDefenseLevel = v);
+                if (!legendary)
+                {
+                    Fix(item.RequiredAttackLevel, melee ? piece.Level : 0, v => item.RequiredAttackLevel = v);
+                    Fix(item.RequiredMagicLevel, magic ? piece.Level : 0, v => item.RequiredMagicLevel = v);
+                    Fix(item.RequiredRangedLevel, ranged ? piece.Level : 0, v => item.RequiredRangedLevel = v);
+                    Fix(item.RequiredDefenseLevel, armor ? piece.Level : 0, v => item.RequiredDefenseLevel = v);
+                }
                 Fix(item.RequiredSlayerLevel, 0, v => item.RequiredSlayerLevel = v);
                 Fix(item.ShopBuyPrice, 0L, v => item.ShopBuyPrice = v);
-                if (piece.Recipe == null && piece.SellPrice > 0) Fix(item.ShopSellPrice, piece.SellPrice, v => item.ShopSellPrice = v);
-                Fix(item.Soulbound, false, v => item.Soulbound = v);
+                if (piece.Recipe == null && piece.SellPrice > 0 && !legendary) Fix(item.ShopSellPrice, piece.SellPrice, v => item.ShopSellPrice = v);
+                if (!legendary) Fix(item.Soulbound, false, v => item.Soulbound = v);
                 Fix(item.Hidden, false, v => item.Hidden = v);
 
                 if (isNew)

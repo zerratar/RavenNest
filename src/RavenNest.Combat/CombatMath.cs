@@ -41,7 +41,7 @@ namespace RavenNest.Combat
         /// <summary>The element effects that triggered (burn, chill, shock, poison), for the status effect system.</summary>
         public List<ElementProc> Procs = new List<ElementProc>();
 
-        /// <summary>Thorns: what the blow does back to the attacker (melee blows only).</summary>
+        /// <summary>Thorns: what the blow does back to the attacker (melee blows only, every blow with Iron Aegis).</summary>
         public int Reflected;
 
         /// <summary>Life steal: what the blow heals the attacker.</summary>
@@ -282,7 +282,7 @@ namespace RavenNest.Combat
             result.Total = result.Immune ? 0 : Math.Max(1, (int)Math.Round(total));
             if (result.Total > 0)
             {
-                if (style == AttackStyle.Melee && defender.Thorns > 0)
+                if ((style == AttackStyle.Melee || defender.ThornsAllStyles > 0) && defender.Thorns > 0)
                     result.Reflected = (int)Math.Round(result.Total * Math.Min(defender.Thorns, MaxThorns));
                 if (attacker.LifeSteal > 0)
                     result.Healed = (int)Math.Round(result.Total * Math.Min(attacker.LifeSteal, MaxLifeSteal));
