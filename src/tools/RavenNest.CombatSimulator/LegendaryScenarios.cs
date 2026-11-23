@@ -82,6 +82,7 @@ namespace RavenNest.CombatSimulator
             Console.WriteLine($"Legendaries: a level {Level} player in the standard kit, {Seconds:0} s a fight, {runs} runs. Each cell is the Legendary as a multiple of the best normal item of its type in the same kit.");
             Console.WriteLine("one / pack / boss: damage dealt (held at 90% health). room: sixteen to clear four at a time at 30% power, health not held: time to clear, damage taken after shields, falls (the normal weapon's in brackets).");
             Console.WriteLine();
+            Finds();
             var standard = all.Standard();
             foreach (var legendary in Legendary.All)
             {
@@ -111,6 +112,56 @@ namespace RavenNest.CombatSimulator
                 }
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        ///     The finds (section 3 of the design): a dedicated player (3 heroic dungeons and 8 raids a day) who qualifies
+        ///     for all five, over two years: the day of each find, then Legend's Echoes (+10 boss kills on the least
+        ///     awakened one) and, with all five at rank 5, Flawless gems. Awakening from the bosses themselves is left out,
+        ///     so the echoes' gems come later here than in play.
+        /// </summary>
+        private static void Finds()
+        {
+            const int Players = 5000, Days = 730;
+            var rng = new Random(11);
+            var nth = new List<int>[Legendary.Count];
+            for (var i = 0; i < nth.Length; ++i) nth[i] = new List<int>();
+            double echoes = 0, gems = 0, echoDays = 0;
+            for (var p = 0; p < Players; ++p)
+            {
+                var owned = 0;
+                var pity = 0;
+                var kills = new List<int>();
+                var fifth = -1;
+                for (var day = 1; day <= Days; ++day)
+                {
+                    foreach (var s in Enumerable.Repeat(LegendarySource.Dungeon, 3).Concat(Enumerable.Repeat(LegendarySource.Raid, 8)))
+                    {
+                        if (!Legendary.Found(s, pity, rng.NextDouble())) { pity++; continue; }
+                        pity = 0;
+                        if (owned < Legendary.Count)
+                        {
+                            nth[owned].Add(day);
+                            owned++;
+                            kills.Add(0);
+                            if (owned == Legendary.Count) fifth = day;
+                            continue;
+                        }
+                        var t = Legendary.EchoTarget(kills);
+                        if (t >= 0) { kills[t] += Legendary.EchoKills; echoes++; }
+                        else gems++;
+                    }
+                }
+                if (fifth > 0) echoDays += Days - fifth;
+            }
+            Console.WriteLine($"Finds: a dedicated player qualifying for all five ({Players} players, {Days} days; median day of each find)");
+            for (var i = 0; i < nth.Length; ++i)
+            {
+                var list = nth[i].OrderBy(x => x).ToList();
+                Console.WriteLine($"  find {i + 1}: day {(list.Count > 0 ? list[list.Count / 2] : -1)} ({list.Count * 100.0 / Players:0}% within {Days} days)");
+            }
+            Console.WriteLine($"  after all five: {(echoes + gems) / Math.Max(1, echoDays) * 30:0.00} Legend's Echoes a month ({gems / Math.Max(1, echoes + gems) * 100:0}% of them gems)");
+            Console.WriteLine();
         }
 
         private static string Cell(Outcome n, Outcome l, Fight fight)

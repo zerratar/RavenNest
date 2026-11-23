@@ -117,6 +117,66 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void The_hellhorn_mace_is_found_by_strength_and_worn_with_attack()
+        {
+            var mace = Legendary.GetByKey("hellhorn-mace");
+            Assert.Equal(LegendarySkill.Attack, mace.Skill);
+            Assert.Equal(LegendarySkill.Strength, mace.FindSkill);
+            Assert.Equal(SkillTree.Might, mace.Tree);
+            Assert.Contains(SkillTrees.Capstones(SkillTree.Might), n => n.Id == "colossus");
+            // no two Legendaries share a finding skill and tree any more
+            Assert.Equal(Legendary.Count, Legendary.All.Select(x => (x.FindSkill, x.Tree)).Distinct().Count());
+            var soulreaver = Legendary.GetByKey("soulreaver");
+            Assert.Equal(LegendarySkill.Attack, soulreaver.FindSkill);
+        }
+
+        [Fact]
+        public void Legends_echo_awakens_the_least_awakened_then_gives_a_gem()
+        {
+            Assert.Equal(1, Legendary.EchoTarget(new[] { 120, 30, 400 }));
+            Assert.Equal(0, Legendary.EchoTarget(new[] { 10, 10 })); // the first on a tie
+            Assert.Equal(1, Legendary.EchoTarget(new[] { 400, 399 }));
+            Assert.Equal(-1, Legendary.EchoTarget(new[] { 400, 999 })); // every one at rank 5: a gem
+            Assert.Equal(-1, Legendary.EchoTarget(new int[0]));
+            Assert.Equal(10, Legendary.EchoKills);
+            Assert.Equal(GemTier.Flawless, Legendary.EchoGemTier);
+        }
+
+        /// <summary>
+        ///     A dedicated player who qualifies for all five, over two years: five finds, then Legend's Echoes (rare: the
+        ///     find odds with the bad-luck count) that awaken the least awakened one, then Flawless gems.
+        /// </summary>
+        [Fact]
+        public void A_dedicated_player_finds_all_five_then_echoes_now_and_then()
+        {
+            var rng = new Random(7);
+            var allFive = new List<int>();
+            var echoes = new List<int>();
+            for (var player = 0; player < 2000; ++player)
+            {
+                int owned = 0, pity = 0, echo = 0, day = 0, fifth = -1;
+                for (day = 1; day <= 730; ++day)
+                {
+                    var sources = Enumerable.Repeat(LegendarySource.Dungeon, 3).Concat(Enumerable.Repeat(LegendarySource.Raid, 8));
+                    foreach (var s in sources)
+                    {
+                        if (!Legendary.Found(s, pity, rng.NextDouble())) { pity++; continue; }
+                        pity = 0;
+                        if (owned < Legendary.Count) { owned++; if (owned == Legendary.Count) fifth = day; }
+                        else echo++;
+                    }
+                }
+                if (fifth > 0) { allFive.Add(fifth); echoes.Add(echo); }
+            }
+            allFive.Sort();
+            var median = allFive[allFive.Count / 2];
+            var perMonth = echoes.Sum() / (double)allFive.Zip(echoes, (f, e) => 730 - f).Sum() * 30;
+            output.WriteLine($"all five: median day {median} ({allFive.Count} of 2000 within two years); echoes after that: {perMonth:0.00} a month");
+            Assert.InRange(median, 70, 160); // about four months for all five
+            Assert.InRange(perMonth, 0.8, 2.5); // rare: one or two a month
+        }
+
+        [Fact]
         public void Ranks_come_from_boss_kills_worn()
         {
             Assert.Equal(1, Legendary.RankOf(0));

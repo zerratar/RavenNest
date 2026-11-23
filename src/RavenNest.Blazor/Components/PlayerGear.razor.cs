@@ -79,6 +79,8 @@ namespace RavenNest.Blazor.Components
             /// <summary>A Legendary (docs/legendary-design.md in the game): which, and boss kills worn (its awakening); null for any other piece.</summary>
             public RavenNest.Combat.LegendaryInfo Legend;
             public int LegendKills;
+            /// <summary>Why it cannot leave this character (a Legendary stays with its finder), null when it can.</summary>
+            public string WhyStays;
             public int LegendRank => RavenNest.Combat.Legendary.RankOf(LegendKills);
         }
 
@@ -350,7 +352,9 @@ namespace RavenNest.Blazor.Components
                     Sockets = GemManager.SocketsOf(item, stack.Sockets, stack.Tag),
                     Legend = legend,
                     LegendKills = legendKills,
-                    CanMove = !stack.Equipped,
+                    // a Legendary never leaves the character that found it: no stash, no other character, no vendor
+                    CanMove = !stack.Equipped && legend == null,
+                    WhyStays = legend != null ? "A Legendary stays with the character that found it." : null,
                     SellValue = item.ShopSellPrice * stack.Amount,
                 };
                 e.Classic = GearRules.Classic(item, e.Enchanted ? ItemService.GetItemEnchantments(stack) : null);
@@ -358,6 +362,7 @@ namespace RavenNest.Blazor.Components
                 e.CanWear = e.Slot != EquipmentSlot.None && e.Blocked == null && RavenNest.BusinessLogic.Game.PlayerInventory.CanEquipItem(item, player);
                 e.CanSell = e.CanMove && stack.TransmogrificationId == null && !token;
                 e.WhyNotSell = token ? "The vendor does not take streamer tokens."
+                    : legend != null ? "Legendaries can't be sold."
                     : stack.TransmogrificationId != null ? "Remove the skin before selling this." : null;
 
                 entries.Add(e);

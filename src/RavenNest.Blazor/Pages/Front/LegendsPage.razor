@@ -25,14 +25,17 @@
         <div class="rf-card rf-legends__rules">
             <h2 class="rf-legends__heading">How to find one</h2>
             <ul>
-                <li>Level <b>@Legendary.RequiredLevel</b> in the weapon's skill.</li>
+                <li>Level <b>@Legendary.RequiredLevel</b> in its skill (the Hellhorn Mace: Strength).</li>
                 <li>You fought in a clear of tower floor <b>@Legendary.TowerFloor</b> or higher.</li>
                 <li>You chose your ending (a capstone) in that skill's tree.</li>
                 <li>Then a top floor tower boss, a Legendary dungeon's boss or a raid boss may drop one for you. It is
                     very rare, and a little less rare every time it does not.</li>
             </ul>
             <p class="rf-table__quiet">A Legendary grows through five ranks as you fight bosses with it on: stronger
-                numbers, a stronger power, more gem sockets and a glow.</p>
+                numbers, a stronger power, more gem sockets and a glow. It stays with the character that found it: it
+                cannot be traded, stashed, sold or given away. Own every one you can find, and a find becomes a Legend's
+                Echo instead: ten boss kills of awakening for the least awakened one, or a Flawless gem once all are at
+                rank 5.</p>
         </div>
 
         <ol class="rf-legends__list">
@@ -43,7 +46,7 @@
                     <img class="rf-legends__pic" src="/imgs/items/@(l.Key).png" alt="" loading="lazy" />
                     <div class="rf-legends__body">
                         <h3 class="rf-legends__name">@l.Name</h3>
-                        <span class="rf-legends__what">@SkillName(l.Skill) @Legendary.RequiredLevel, the @TreeName(l.Tree) ending</span>
+                        <span class="rf-legends__what">@SkillName(l.FindSkill) @Legendary.RequiredLevel, the @TreeName(l.Tree) ending@(l.FindSkill != l.Skill ? ". Worn with " + SkillName(l.Skill) + " " + Legendary.RequiredLevel : "")</span>
                         <p class="rf-legends__power"><b>@l.PowerName.</b> @Legendary.Describe(l.Power, 1)</p>
                         <p class="rf-legends__power rf-legends__power--five">At rank 5: @Legendary.Describe(l.Power, 5)</p>
                     </div>

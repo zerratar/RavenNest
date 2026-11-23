@@ -2444,7 +2444,9 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>The vendor's own rule, on top of <see cref="TryTake"/>.</summary>
         private static bool VendorAccepts(DataModels.Item item)
         {
-            return item.Category != (int)DataModels.ItemCategory.StreamerToken;
+            // a Legendary is never sold: for a coin it would take its awakening with it, and a bulk sell would do it
+            // by accident (the game's docs/legendary-design.md)
+            return item.Category != (int)DataModels.ItemCategory.StreamerToken && !RavenNest.Combat.Legendary.IsLegendary(item.Id);
         }
 
         public bool SellItemToVendor(Guid characterId, ItemFilter filter, IReadOnlyList<RavenNest.Models.InventoryItem> items)
@@ -2783,6 +2785,8 @@ namespace RavenNest.BusinessLogic.Game
             var sourceInventory = inventoryProvider.Get(character.Id);
             var targetInventory = inventoryProvider.Get(otherCharacter.Id);
             var stack = gameData.GetInventoryItem(item.Id);
+            // a Legendary stays with the character that found it (its awakening, one of each per character)
+            if (stack == null || RavenNest.Combat.Legendary.IsLegendary(stack.ItemId)) return false;
 
             if (!sourceInventory.RemoveItem(stack, amount))
             {
@@ -2840,7 +2844,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var inventory = inventoryProvider.Get(gifter.Id);
             var item = inventory.Get(inventoryItemId);
-            if (item.IsNull() || item.Soulbound || item.TransmogrificationId != null) return GiftItemResult.SoulboundItem;
+            if (item.IsNull() || item.Soulbound || item.TransmogrificationId != null || RavenNest.Combat.Legendary.IsLegendary(item.ItemId)) return GiftItemResult.SoulboundItem;
             var gift = item;
             if (inventory.IsLocked(gift.Id)) return GiftItemResult.InventoryError;
             var recvInventory = inventoryProvider.Get(receiver.Id);
@@ -2924,6 +2928,8 @@ namespace RavenNest.BusinessLogic.Game
             if (inventory.IsLocked(invItemInput.Id)) return false;
             var stack = gameData.GetInventoryItem(invItemInput.Id);
             if (stack == null) return false;
+            // a Legendary stays with the character that found it, never in the shared stash
+            if (RavenNest.Combat.Legendary.IsLegendary(stack.ItemId)) return false;
             if (inventory.RemoveItem(stack, amount))
             {
                 // Check whether or not this item can be stacked.
@@ -2980,6 +2986,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 if (inventory.IsLocked(u.Id)) continue;
+                if (RavenNest.Combat.Legendary.IsLegendary(u.ItemId)) continue; // stays with its finder
                 var stack = gameData.GetInventoryItem(u.Id);
                 var amount = stack.Amount.GetValueOrDefault();
                 if (inventory.RemoveItem(stack, amount))

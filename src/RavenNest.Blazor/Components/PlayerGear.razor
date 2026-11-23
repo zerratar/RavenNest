@@ -1866,7 +1866,7 @@ else
                         {
                             <div class="rf-gear-facts__row">
                                 <span>Vendor price</span>
-                                <b>@Coins(item.ShopSellPrice)@(e.Stack.Amount > 1 ? " each" : "")</b>
+                                <b>@(e.Legend != null ? "Never sold" : Coins(item.ShopSellPrice) + (e.Stack.Amount > 1 ? " each" : ""))</b>
                             </div>
                         }
                     </div>
@@ -1908,13 +1908,14 @@ else
                         </button>
                     }
 
-                    <button type="button" class="rf-btn" @onclick="() => SendToStash(e)">
+                    @* a Legendary stays with its finder: the buttons are there, off, and say why *@
+                    <button type="button" class="rf-btn" disabled="@(e.WhyStays != null)" title="@e.WhyStays" @onclick="() => SendToStash(e)">
                         <i class="fa-solid fa-box-archive" aria-hidden="true"></i> Send to stash
                     </button>
                     @foreach (var other in OtherCharacters)
                     {
                         var to = other;
-                        <button type="button" class="rf-btn" @onclick="() => SendToCharacter(e, to)">
+                        <button type="button" class="rf-btn" disabled="@(e.WhyStays != null)" title="@e.WhyStays" @onclick="() => SendToCharacter(e, to)">
                             <i class="fa-solid fa-user-group" aria-hidden="true"></i> Send to @to.Name (@to.Alias)
                         </button>
                     }
@@ -1937,6 +1938,10 @@ else
                         <button type="button" class="rf-btn rf-btn--danger" @onclick="() => OpenSell(e)">
                             <i class="fa-solid fa-coins" aria-hidden="true"></i> Sell
                         </button>
+                    }
+                    else if (e.WhyStays != null)
+                    {
+                        <p class="rf-gear-acts__note">@e.WhyStays @e.WhyNotSell</p>
                     }
                     else if (!e.Stack.Equipped && e.WhyNotSell != null)
                     {

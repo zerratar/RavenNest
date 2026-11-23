@@ -87,12 +87,19 @@ namespace RavenNest.BusinessLogic.Game
                 case LegendarySkill.Attack: return skills.AttackLevel;
                 case LegendarySkill.Defense: return skills.DefenseLevel;
                 case LegendarySkill.Magic: return skills.MagicLevel;
+                case LegendarySkill.Strength: return skills.StrengthLevel;
                 default: return skills.RangedLevel;
             }
         }
 
         /// <summary>The Legendaries a character could find now (section 2 of the design).</summary>
-        public IReadOnlyList<LegendaryInfo> Findable(Character character)
+        public IReadOnlyList<LegendaryInfo> Findable(Character character) => Qualified(character, false);
+
+        /// <summary>
+        ///     The Legendaries a character qualifies for: its skill, the tower and the ending; with
+        ///     <paramref name="evenOwned"/> those it owns already count too (Legend's Echo).
+        /// </summary>
+        public IReadOnlyList<LegendaryInfo> Qualified(Character character, bool evenOwned)
         {
             var list = new List<LegendaryInfo>();
             if (character == null) return list;
@@ -102,7 +109,7 @@ namespace RavenNest.BusinessLogic.Game
             var owned = inventories.Get(character.Id).GetAllItems().Select(x => x.ItemId).ToHashSet();
             foreach (var l in Legendary.All)
             {
-                if (Legendary.Qualifies(LevelOf(skills, l.Skill), floor, build?.CapstoneOf(l.Tree) != null, owned.Contains(l.ItemId)))
+                if (Legendary.Qualifies(LevelOf(skills, l.FindSkill), floor, build?.CapstoneOf(l.Tree) != null, !evenOwned && owned.Contains(l.ItemId)))
                     list.Add(l);
             }
             return list;
@@ -112,8 +119,10 @@ namespace RavenNest.BusinessLogic.Game
 
         private EventItemReward Roll(Character character, LegendarySource source)
         {
+            // a character rolls when it qualifies for any Legendary; a find of one it owns already is a Legend's Echo
+            var qualified = Qualified(character, true);
+            if (qualified.Count == 0) return null; // nothing to find: the bad-luck count stands still
             var findable = Findable(character);
-            if (findable.Count == 0) return null; // nothing to find: the bad-luck count stands still
 
             LegendaryInfo legendary;
             lock (mutex)
@@ -134,15 +143,49 @@ namespace RavenNest.BusinessLogic.Game
                     return null;
                 }
 
-                legendary = findable[Math.Min(findable.Count - 1, (int)(rng.NextDouble() * findable.Count))];
-                logger.LogWarning("Legendary: {Character} found the {Item} from a {Source} after {Kills} qualifying kill(s){Forced}.",
-                    character.Name, legendary.Name, source, row.Kills + 1, forced ? " (forced for a test)" : "");
+                legendary = findable.Count > 0 ? findable[Math.Min(findable.Count - 1, (int)(rng.NextDouble() * findable.Count))] : null;
+                logger.LogWarning("Legendary: {Character} found {What} from a {Source} after {Kills} qualifying kill(s){Forced}.",
+                    character.Name, legendary != null ? "the " + legendary.Name : "a Legend's Echo", source, row.Kills + 1, forced ? " (forced for a test)" : "");
                 row.Kills = 0;
                 row.Finds++;
                 row.Updated = DateTime.UtcNow;
             }
 
-            return Give(character, legendary, (int)source);
+            return legendary != null ? Give(character, legendary, (int)source) : Echo(character, qualified);
+        }
+
+        /// <summary>
+        ///     Legend's Echo (section 3 of the design): the character owns every Legendary it qualifies for, so the find
+        ///     awakens the least awakened of those by <see cref="Legendary.EchoKills"/> boss kills (the game sees the tag
+        ///     and says so over the character, quietly); when every one is at rank 5, a Flawless gem instead.
+        /// </summary>
+        private EventItemReward Echo(Character character, IReadOnlyList<LegendaryInfo> qualified)
+        {
+            var inventory = inventories.Get(character.Id);
+            var ids = qualified.Select(x => x.ItemId).ToHashSet();
+            var stacks = inventory.GetAllItems().Where(x => ids.Contains(x.ItemId)).ToList();
+            var target = Legendary.EchoTarget(stacks.Select(x => Legendary.KillsOf(x.Tag)).ToList());
+            if (target >= 0)
+            {
+                var stack = inventory.Get(stacks[target]);
+                if (stack == null) return null;
+                var before = Legendary.KillsOf(stack.Tag);
+                var after = before + Legendary.EchoKills;
+                stack.Tag = Legendary.Tag(after); // the inventory feed tells the game
+                var legendary = Legendary.Get(stack.ItemId);
+                logger.LogInformation("Legendary: Legend's Echo, {Character}'s {Item} {Before} to {After} boss kills.", character.Name, legendary?.Name, before, after);
+                if (legendary != null && Legendary.RankOf(after) >= Legendary.MaxRank && Legendary.RankOf(before) < Legendary.MaxRank)
+                    FullyAwakened(character, legendary, stack.Id);
+                return null;
+            }
+
+            var kinds = Enum.GetValues(typeof(GemKind));
+            var kind = (GemKind)kinds.GetValue(rng.Next(kinds.Length));
+            var gemId = Gems.ItemId(kind, Legendary.EchoGemTier);
+            var gem = inventory.AddItem(gemId, 1).FirstOrDefault();
+            if (gem == null) return null;
+            logger.LogInformation("Legendary: Legend's Echo, {Character} has every Legendary at rank 5: a {Gem}.", character.Name, Gems.Name(kind, Legendary.EchoGemTier));
+            return new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = gemId, InventoryItemId = gem.Id };
         }
 
         /// <summary>

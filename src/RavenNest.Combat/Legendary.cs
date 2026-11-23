@@ -32,13 +32,15 @@ namespace RavenNest.Combat
         Raid,
     }
 
-    /// <summary>The skill a Legendary asks for (its item requirement and the first rule of finding one).</summary>
+    /// <summary>A skill a Legendary asks for: to wear it (the item's requirement) or to find it.</summary>
     public enum LegendarySkill
     {
         Attack,
         Defense,
         Magic,
         Ranged,
+        /// <summary>Only to find one: items have no Strength requirement (the Hellhorn Mace is worn with Attack).</summary>
+        Strength,
     }
 
     /// <summary>One Legendary: which item, what it asks for and what it does.</summary>
@@ -50,6 +52,9 @@ namespace RavenNest.Combat
         /// <summary>RavenNest.Models.ItemType: what it is compared with to stay the best.</summary>
         public int ItemType;
         public LegendarySkill Skill;
+        /// <summary>The skill that must be 950 to find it, and whose tree's ending counts; null: <see cref="Skill"/>.</summary>
+        public LegendarySkill? Finder;
+        public LegendarySkill FindSkill => Finder ?? Skill;
         /// <summary>The combat tree whose ending (one of its three capstones) a character must have chosen.</summary>
         public SkillTree Tree;
         public LegendaryPower Power;
@@ -114,8 +119,15 @@ namespace RavenNest.Combat
         public const double BaseMargin = 0.10;
         public const double MarginPerRank = 0.025;
 
-        /// <summary>What a Legendary sells to a vendor for.</summary>
+        /// <summary>The item's vendor price (it is never sold: the vendor refuses a Legendary).</summary>
         public const long SellPrice = 1;
+
+        /// <summary>
+        ///     Legend's Echo: a find for a character that already owns every Legendary it qualifies for adds this many boss
+        ///     kills to its least awakened one instead; when all of those are at rank 5, a gem of <see cref="EchoGemTier"/>.
+        /// </summary>
+        public const int EchoKills = 10;
+        public const GemTier EchoGemTier = GemTier.Flawless;
 
         /// <summary>The awakening count on the inventory item's tag: "legend:37".</summary>
         public const string TagPrefix = "legend:";
@@ -124,7 +136,9 @@ namespace RavenNest.Combat
         {
             new LegendaryInfo { Key = "soulreaver", Name = "Soulreaver", ItemType = 1, Skill = LegendarySkill.Attack, Tree = SkillTree.Precision,
                 Power = LegendaryPower.SoulHarvest, PowerName = "Soul Harvest", Color = "#9fd8ff" },
-            new LegendaryInfo { Key = "hellhorn-mace", Name = "Hellhorn Mace", ItemType = 4, Skill = LegendarySkill.Attack, Tree = SkillTree.Precision,
+            // worn with Attack like every one handed weapon, found by Strength and the Might ending (2026-11-23: so it is not
+            // a second Precision find beside the Soulreaver)
+            new LegendaryInfo { Key = "hellhorn-mace", Name = "Hellhorn Mace", ItemType = 4, Skill = LegendarySkill.Attack, Finder = LegendarySkill.Strength, Tree = SkillTree.Might,
                 Power = LegendaryPower.Dread, PowerName = "Dread", Color = "#ff5a2a" },
             new LegendaryInfo { Key = "batwing-staff", Name = "Batwing Staff", ItemType = 5, Skill = LegendarySkill.Magic, Tree = SkillTree.Elements,
                 Power = LegendaryPower.BatSwarm, PowerName = "Bat Swarm", Color = "#b06bff" },
@@ -198,6 +212,22 @@ namespace RavenNest.Combat
         /// </summary>
         public static bool Qualifies(int skillLevel, int highestClearFought, bool endingChosen, bool owned) =>
             skillLevel >= RequiredLevel && highestClearFought >= TowerFloor && endingChosen && !owned;
+
+        /// <summary>
+        ///     Legend's Echo: of the owned Legendaries' boss kills, the one to awaken (the least awakened below rank 5,
+        ///     the first on a tie), or -1 when every one is at rank 5 (then a gem).
+        /// </summary>
+        public static int EchoTarget(System.Collections.Generic.IReadOnlyList<int> kills)
+        {
+            var best = -1;
+            if (kills == null) return best;
+            for (var i = 0; i < kills.Count; ++i)
+            {
+                if (RankOf(kills[i]) >= MaxRank) continue;
+                if (best < 0 || kills[i] < kills[best]) best = i;
+            }
+            return best;
+        }
 
         /// <summary>Does a tower floor's boss count as a source.</summary>
         public static bool TowerCounts(int floor) => floor >= TowerFloor;

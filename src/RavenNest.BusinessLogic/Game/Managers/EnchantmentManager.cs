@@ -48,7 +48,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (inventory.RemoveItem(item, 1))
                 {
-                    var disenchantedItem = inventory.AddItem(item.ItemId, amount: 1, equipped: item.Equipped).FirstOrDefault();
+                    // everything but the enchantment stays: a Legendary's awakening (the tag), the gems, the look, the name
+                    var disenchantedItem = inventory.AddItem(item.ItemId, amount: 1, equipped: item.Equipped, tag: invItem.Tag, soulbound: invItem.Soulbound,
+                        name: invItem.Name, transmogrificationId: invItem.TransmogrificationId, flags: invItem.Flags, sockets: invItem.Sockets).FirstOrDefault();
                     return new ItemEnchantmentResult
                     {
                         EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(disenchantedItem),
