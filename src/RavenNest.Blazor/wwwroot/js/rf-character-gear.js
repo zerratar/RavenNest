@@ -106,6 +106,13 @@ function dress(g, m, a, outfit) {
             if (t === Type.Shield && (style !== 'melee' || (hasMelee && !oneHanded))) continue;
             if (t === Type.TwoHandedBow && style !== 'ranged') continue;
             if (t === Type.TwoHandedStaff && style !== 'magic' && style !== 'healing') continue;
+            // a head piece of armor that is a model of its own (the Dark Fortress helmets): it takes the head piece's
+            // place and hides what its mask says (the game's SyntyPlayerAppearance.EquipModelHeadPiece); the helmet
+            // switch hides it and what it hid comes back
+            if (piece.armor && HEAD_TYPES.has(t)) {
+                if (outfit.helmet === false) continue;
+                head = { file: null, mat: null, hides: (piece.mask | 0) & Hides.All, hat: -1, attachments: [], flatHair: true };
+            }
             props.push({ path, bone: BONE[t], type: t, slot: piece.slot });
             continue;
         }
@@ -174,7 +181,7 @@ function dress(g, m, a, outfit) {
     const hide = { head: false, brows: false, beard: false, hair: false, hairSwap: -1 };
     // the helmet toggle (!toggle helmet): a head piece that is switched off shows nothing and hides nothing
     if (head && outfit.helmet !== false) {
-        groups.set('head', { file: head.file, mat: head.mat });
+        if (head.file) groups.set('head', { file: head.file, mat: head.mat });
         for (const f of head.attachments) extra.push({ file: f, mat: head.mat });
         hide.head = !!(head.hides & Hides.Head);
         hide.brows = !!(head.hides & Hides.Brows);
@@ -182,7 +189,11 @@ function dress(g, m, a, outfit) {
         hide.hair = !!(head.hides & Hides.Hair);
         // a hat hides nothing, and many hair styles come through it: those are swapped for a flat one while it shows
         const through = g.hair && g.hair.through ? g.hair.through[String(head.hat)] : null;
-        if (!hide.hair && through && through.includes(a.hair) && m.parts.hairs[a.hair]) {
+        // under a head piece that is a model (a crown, the Lich Crown) every style is laid flat (the game's HairUnder)
+        if (!hide.hair && head.flatHair && m.parts.hairs[a.hair]) {
+            const flat = g.hair.long.includes(a.hair) ? g.hair.flatLong : g.hair.flatShort;
+            if (flat !== a.hair && m.parts.hairs[flat]) hide.hairSwap = flat;
+        } else if (!hide.hair && through && through.includes(a.hair) && m.parts.hairs[a.hair]) {
             const flat = g.hair.long.includes(a.hair) ? g.hair.flatLong : g.hair.flatShort;
             if (m.parts.hairs[flat]) hide.hairSwap = flat;
         }
