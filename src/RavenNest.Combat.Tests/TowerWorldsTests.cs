@@ -375,8 +375,9 @@ namespace RavenNest.Combat.Tests
             {
                 var fixedBoss = Tower.Boss(part);
                 var boss = Tower.Boss(part, 1.0);
-                Assert.Equal(fixedBoss.Health, boss.Health);
-                Assert.Equal(1.0, boss.DamageScale, 9);
+                // its pool (a floor boss's is longer since knocked out players come back) and the blows of its floor
+                Assert.Equal(part.IsFloorBoss ? TowerPressure.Scale(fixedBoss.Health, TowerPressure.FloorBossPool) : fixedBoss.Health, boss.Health);
+                Assert.Equal(TowerPressure.Fury(part.Floor, part.IsFloorBoss), boss.DamageScale, 9);
                 Assert.Equal(Tower.Enemy(part, part.Enemies[0]).Health, Tower.Enemy(part, part.Enemies[0], 1.0).Health);
                 Assert.Equal(part.Boss.AddsCount, TowerPressure.Helpers(part.Boss.AddsCount, part.Floor, 1.0));
             }
@@ -390,12 +391,19 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(8, Tower.FloorBossGroup);
             // eight fresh players meet a floor boss's fixed numbers; five meet a smaller fight, softened helpers too
             var boss = Tower.Get(10);
-            Assert.Equal(Tower.Boss(boss).Health, Tower.Boss(boss, TowerPressure.Of(8, 1.0, Tower.BossGroup(boss))).Health);
+            var eight = Tower.Boss(boss, TowerPressure.Of(8, 1.0, Tower.BossGroup(boss)));
+            Assert.Equal(TowerPressure.Scale(Tower.Boss(boss).Health, TowerPressure.FloorBossPool), eight.Health);
             var five = TowerPressure.Of(5, 1.0, Tower.BossGroup(boss));
             Assert.Equal(0.625, five, 9);
-            Assert.True(Tower.Boss(boss, five).Health < Tower.Boss(boss).Health);
-            Assert.True(Tower.Boss(boss, five).DamageScale < 1);
-            Assert.Equal(Tower.Boss(boss, five).DamageScale, Tower.Enemy(boss, boss.Enemies[0], five, true).DamageScale, 9);
+            Assert.True(Tower.Boss(boss, five).Health < eight.Health);
+            // five are a full group for the part: the softened blows of a group under eight, times all of the floor's fury
+            Assert.True(TowerPressure.BossBlows(boss.Floor, five) < 1);
+            Assert.Equal(TowerPressure.BossBlows(boss.Floor, five) * TowerPressure.Fury(boss.Floor, true), Tower.Boss(boss, five).DamageScale, 9);
+            Assert.True(Tower.Boss(boss, five).DamageScale < eight.DamageScale);
+            // two players meet two fifths of the fury, and of the longer pool
+            var two = TowerPressure.Of(2, 1.0, Tower.BossGroup(boss));
+            Assert.Equal(TowerPressure.BossBlows(boss.Floor, two) * (1 + (TowerPressure.Fury(boss.Floor, true) - 1) * 0.4), Tower.Boss(boss, two).DamageScale, 9);
+            Assert.Equal(TowerPressure.BossBlows(boss.Floor, five), Tower.Enemy(boss, boss.Enemies[0], five, true).DamageScale, 9);
             // helpers of a full group or a crowd strike as always, and a part's own monsters always do
             Assert.Equal(1.0, Tower.Enemy(boss, boss.Enemies[0], 3.0, true).DamageScale, 9);
             Assert.Equal(1.0, Tower.Enemy(boss, boss.Enemies[0], 0.4).DamageScale, 9);
@@ -481,7 +489,16 @@ namespace RavenNest.Combat.Tests
             var boss = Tower.Boss(part);
             var crowd = Tower.Boss(part, TowerPressure.Of(30, 1.0));
             Assert.Equal(TowerPressure.Scale(boss.Health, 5.0), crowd.Health);
-            Assert.InRange(crowd.DamageScale, 1.01, 1 + TowerPressure.MaxBlows);
+            Assert.InRange(crowd.DamageScale / TowerPressure.Fury(part.Floor, false), 1.01, 1 + TowerPressure.MaxBlows);
+            // the fury of a floor: more than nothing everywhere, and a rule beyond the floors that exist
+            for (var floor = 1; floor <= 12; floor++)
+            {
+                Assert.InRange(TowerPressure.Fury(floor, false), 1.2, 2.6);
+                Assert.InRange(TowerPressure.Fury(floor, true), 1.2, 2.2);
+                if (floor >= 3) Assert.True(TowerPressure.Fury(floor + 1, false) >= TowerPressure.Fury(floor, false));
+            }
+            Assert.Equal(0.4, TowerPressure.FuryShare(0.4), 9);
+            Assert.Equal(1.0, TowerPressure.FuryShare(6), 9);
             Assert.True(TowerPressure.Helpers(part.Boss.AddsCount, part.Floor, 6) > part.Boss.AddsCount);
             // helpers: half of the scaling in their number, half in their health
             var helper = Tower.Enemy(part, part.Enemies[0], 6, true);

@@ -1,4 +1,4 @@
-using RavenNest.Combat;
+﻿using RavenNest.Combat;
 using System;
 using System.IO;
 using System.Linq;
@@ -79,6 +79,21 @@ namespace RavenNest.CombatSimulator
                     // "tower": scaling by pressure (groups of 2, 5, 10 and 30, veterans); "tower 200 fixed": the fixed numbers for any group;
                     // "tower 200 norecover": knocked out players stay out of the attempt, as before TowerRecovery
                     if (args.Contains("norecover")) TowerScenarios.Recovery = false;
+                    // "FURY=1.1,1.2,1.3", "SLAM=1.2,1.4", "FBP=1.5": other guardian numbers to try (TowerScenarios)
+                    {
+                        var inv2 = System.Globalization.CultureInfo.InvariantCulture;
+                        double[] Numbers(string key)
+                        {
+                            var a = args.FirstOrDefault(x => x.StartsWith(key + "="));
+                            return a == null ? null : a.Substring(key.Length + 1).Split(',').Select(x => double.Parse(x, inv2)).ToArray();
+                        }
+                        TowerScenarios.TryFury = Numbers("FURY");
+                        TowerScenarios.TrySlam = Numbers("SLAM");
+                        var pool = Numbers("FBP");
+                        if (pool != null && pool.Length > 0) TowerScenarios.TryFloorBossPool = pool[0];
+                        var fbf = Numbers("FBF");
+                        if (fbf != null && fbf.Length > 0) TowerScenarios.TryFloorBossFury = fbf[0];
+                    }
                     // "REC=60:0.5": other recovery numbers to try (seconds, health back)
                     var rec = args.FirstOrDefault(a => a.StartsWith("REC="));
                     if (rec != null)

@@ -329,6 +329,11 @@ namespace RavenNest.Combat
             var d = Boss(floor);
             d.Health = TowerPressure.Scale(d.Health, TowerPressure.BossHealth(floor.Floor, pressure));
             d.DamageScale = TowerPressure.BossBlows(floor.Floor, pressure);
+            // since knocked out players come back (TowerRecovery): harder blows, and a floor boss that lasts; a
+            // group smaller than the part's suggested one meets a share of both
+            var share = TowerPressure.FuryShare(pressure * BossGroup(floor) / SuggestedGroup);
+            d.DamageScale *= 1 + (TowerPressure.Fury(floor.Floor, floor.IsFloorBoss) - 1) * share;
+            if (floor.IsFloorBoss) d.Health = TowerPressure.Scale(d.Health, 1 + (TowerPressure.FloorBossPool - 1) * share);
             return d;
         }
 

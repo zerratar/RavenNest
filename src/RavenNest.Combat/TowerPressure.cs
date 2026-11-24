@@ -130,6 +130,39 @@ namespace RavenNest.Combat
         }
 
         /// <summary>
+        ///     How much harder a guardian strikes since knocked out players come back into the fight
+        ///     (<see cref="TowerRecovery"/>, 2026-11-24). A fight is then only lost when nobody stands at the same
+        ///     moment, and with the old blows a fresh group of five never lost one: the risk has to come from what
+        ///     makes a group fall together, the guardian's blows and its slam (which is a share of a blow), not from
+        ///     its health. Tuned in the simulator ("tower 200") for fresh synced players without healers or skills:
+        ///     five win a mini boss about 9 times in 10 on floor 1, 8 in 10 on floor 2, 7 in 10 on floor 3, and a
+        ///     floor boss 8 to 9 times in 10. Floor 2's guardians were the softest for their floor, so their number
+        ///     is the biggest. From floor 4 on there are no guardians to measure yet: floor 3's number, and a tenth
+        ///     more with every floor (to be measured when a floor is made).
+        ///     A group smaller than the part's suggested one meets a share of it (<see cref="FuryShare"/>): two
+        ///     players, who have two health pools to lose, get 40% of the extra.
+        /// </summary>
+        public static double Fury(int floor, bool floorBoss)
+        {
+            if (floorBoss) return floor <= 1 ? 1.5 : floor == 2 ? 1.65 : Math.Min(2.2, 1.45 + 0.1 * (floor - 3));
+            return floor <= 1 ? 1.45 : floor == 2 ? 2.2 : Math.Min(2.6, 1.8 + 0.1 * (floor - 3));
+        }
+
+        /// <summary>
+        ///     A floor boss's health against a full group, on top of its pool: its fight is clearly longer than a mini
+        ///     boss's (about 4.5 minutes for five against 3 to 4). A smaller group meets a share of it, as of
+        ///     <see cref="Fury"/>, so two players do not run into the time limit.
+        /// </summary>
+        public const double FloorBossPool = 1.8;
+
+        /// <summary>
+        ///     The share of <see cref="Fury"/> and <see cref="FloorBossPool"/> a group meets:
+        ///     <paramref name="partPressure"/> is its pressure against the part's suggested group (not the floor
+        ///     boss's bigger one), all of it from a full group on.
+        /// </summary>
+        public static double FuryShare(double partPressure) => CombatMath.Clamp(partPressure, 0, 1);
+
+        /// <summary>
         ///     A guardian's helpers: half of the scaling goes to how many it calls and half to their health
         ///     (<see cref="HelperHealth"/>), so a crowd meets more of them and each lasts a little longer.
         /// </summary>

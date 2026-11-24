@@ -1,4 +1,4 @@
-using RavenNest.Combat;
+﻿using RavenNest.Combat;
 using System;
 using System.Linq;
 
@@ -35,6 +35,18 @@ namespace RavenNest.CombatSimulator
         ///     the way back. Below 0: the rule's own (TowerRecovery).
         /// </summary>
         public static double TrySeconds = -1, TryHealth = -1;
+
+        /// <summary>
+        ///     Other guardian numbers to try, on top of the rule's own (TowerPressure.Fury, FloorBossPool):
+        ///     "FURY=1.1,1.2,1.3" multiplies a guardian's blows by floor (the last number for every floor after),
+        ///     "FBF=0.9" a floor boss's again, "SLAM=1.2,1.4,1.6" a slam's share, "FBP=1.5" a floor boss's health; a
+        ///     group under five meets a share of each, as of the rule's. Null or below 0: nothing.
+        /// </summary>
+        public static double[] TryFury, TrySlam;
+        public static double TryFloorBossPool = -1, TryFloorBossFury = -1;
+
+        private static double ByFloor(double[] values, int floor) =>
+            values == null || values.Length == 0 ? 1 : values[Math.Min(values.Length, Math.Max(1, floor)) - 1];
 
         /// <summary>
         ///     Seconds a player spends between kills: walking to the next monster, turning to it, blows wasted on one
@@ -100,6 +112,9 @@ namespace RavenNest.CombatSimulator
                         // the guardian's own fight: against the group it is made for (a floor boss wants more)
                         var bossPressure = TowerPressure.Of(players, strength, Tower.BossGroup(floor));
                         var boss = Tower.Boss(floor, bossPressure);
+                        // numbers to try, on top of the rule's own (TowerPressure.Fury, FloorBossPool)
+                        boss.DamageScale *= 1 + (ByFloor(TryFury, floor.Floor) * (floor.IsFloorBoss && TryFloorBossFury > 0 ? TryFloorBossFury : 1) - 1) * Math.Min(1, pressure);
+                        if (floor.IsFloorBoss && TryFloorBossPool > 0) boss.Health = Math.Max(1, (int)Math.Round(boss.Health * (1 + (TryFloorBossPool - 1) * Math.Min(1, pressure))));
                         var sheet = boss.Sheet();
                         var results = Enumerable.Range(0, fights).Select(_ => Fight(player, players, floor, floor.Boss, sheet, boss.AttackInterval, random, bossPressure)).ToList();
                         var wins = results.Where(r => r.Won).ToList();
@@ -315,7 +330,7 @@ namespace RavenNest.CombatSimulator
                 if (def.SlamEvery > 0 && swings % def.SlamEvery == 0)
                 {
                     for (var i = 0; i < players; ++i)
-                        if (health[i] > 0) health[i] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SlamShare;
+                        if (health[i] > 0) health[i] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SlamShare * ByFloor(TrySlam, floor.Floor);
                 }
                 else if (def.SpitEvery > 0 && swings % def.SpitEvery == 0)
                 {
