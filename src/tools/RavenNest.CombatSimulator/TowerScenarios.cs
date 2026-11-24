@@ -42,6 +42,8 @@ namespace RavenNest.CombatSimulator
             Console.WriteLine($"Tower, scaling by pressure; {fights} runs per cell. Players at each part's sync level in the best gear for it.");
             Console.WriteLine($"Pressure = players / {Tower.SuggestedGroup} x the group's strength ({TowerPressure.MinStrength:0.0} to {TowerPressure.MaxStrength:0.0}).");
             Console.WriteLine("Floor  bite  mercy: " + string.Join("   ", Enumerable.Range(1, 4).Select(f => $"{f}: {TowerPressure.Bite(f):P0} {TowerPressure.Mercy(f):P0}")));
+            Console.WriteLine("A kill is worth (TowerPace), by players on the part: " + string.Join("   ", Enumerable.Range(1, 4).Select(f => $"floor {f}: " + string.Join(" ", new[] { 1, 2, 5, 10, 30 }.Select(g => $"{g}:{TowerPace.KillWeight(f, g).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}")))));
+            Console.WriteLine("A gathering round is worth, by gatherers: " + string.Join(" ", new[] { 1, 2, 4, 8, 12 }.Select(g => $"{g}:{TowerPace.GatherWeight(g).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}")));
             var random = new SeededCombatRandom(11);
             var veteran = SkillBuild.Parse(VeteranBuild);
 
@@ -50,41 +52,63 @@ namespace RavenNest.CombatSimulator
                 Console.WriteLine();
                 Console.WriteLine(vet ? "Veterans (a tree's passives on top of the synced kit):" : "Fresh synced players:");
                 Console.WriteLine($"{"Part",-6} {"Guardian",-30} | " + string.Join(" | ", PressureGroups.Select(g => $"{g + " players",-33}")));
-                Console.WriteLine($"{"",-6} {"",-30} | " + string.Join(" | ", PressureGroups.Select(_ => $"{"press",5} {"part min",8} {"boss HP",8} {"won",4} {"min",4}")));
-                Console.WriteLine(new string('-', 38 + PressureGroups.Length * 36));
+                Console.WriteLine($"{"",-6} {"",-30} | " + string.Join(" | ", PressureGroups.Select(_ => $"{"press",5} {"part min",8} {"x five",6} {"boss HP",8} {"won",4} {"min",4}")));
+                Console.WriteLine(new string('-', 38 + PressureGroups.Length * 43));
+                var sums = new double[PressureGroups.Length];
+                var raws = new double[PressureGroups.Length];
+                var floorOf = 0;
+                void Totals()
+                {
+                    if (floorOf == 0) return;
+                    var five = Array.IndexOf(PressureGroups, Tower.SuggestedGroup);
+                    Console.WriteLine($"{"",-6} {"floor " + floorOf + " in all",-30} | " + string.Join(" | ", PressureGroups.Select((g, i) =>
+                        $"{"",5} {sums[i],8:0} {(five >= 0 ? sums[i] / sums[five] : 0),6:0.00} {"(kills as they are: " + (five >= 0 ? (raws[i] / raws[five]).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "-") + ")",-18}")));
+                    Array.Clear(sums, 0, sums.Length);
+                    Array.Clear(raws, 0, raws.Length);
+                }
                 foreach (var floor in Tower.Floors)
                 {
+                    if (floor.Floor != floorOf) Totals();
+                    floorOf = floor.Floor;
                     var level = Tower.SyncLevel(floor.Number);
                     var kit = gear.Melee(level);
                     var player = Player(level, kit);
                     Tower.Sync(player, floor.Number, kit.ArmorHealth);
                     if (vet) veteran.Passives().ApplyExtras(player, null);
                     var strength = vet ? TowerPressure.Strength(player, AttackStyle.Melee, floor.Number) : 1.0;
+                    var fiveMinutes = PartMinutes(floor, player, Tower.SuggestedGroup, TowerPressure.Of(Tower.SuggestedGroup, strength), new SeededCombatRandom(floor.Number), Math.Max(20, fights / 4), out _);
+                    var column = 0;
                     var cells = PressureGroups.Select(players =>
                     {
                         var pressure = TowerPressure.Of(players, strength);
-                        var minutes = PartMinutes(floor, player, players, pressure, random, Math.Max(20, fights / 4));
+                        var minutes = PartMinutes(floor, player, players, pressure, new SeededCombatRandom(floor.Number), Math.Max(20, fights / 4), out var raw);
+                        sums[column] += minutes;
+                        raws[column] += raw;
+                        column++;
                         // the guardian's own fight: against the group it is made for (a floor boss wants more)
                         var bossPressure = TowerPressure.Of(players, strength, Tower.BossGroup(floor));
                         var boss = Tower.Boss(floor, bossPressure);
                         var sheet = boss.Sheet();
                         var results = Enumerable.Range(0, fights).Select(_ => Fight(player, players, floor, floor.Boss, sheet, boss.AttackInterval, random, bossPressure)).ToList();
                         var wins = results.Where(r => r.Won).ToList();
-                        return $"{pressure,5:0.00} {minutes,8:0} {sheet.MaxHealth,8:N0} {wins.Count / (double)results.Count,4:P0} {(wins.Count > 0 ? (wins.Average(r => r.Time) / 60).ToString("0.0") : "-"),4}";
-                    });
+                        return $"{pressure,5:0.00} {minutes,8:0} {minutes / fiveMinutes,6:0.00} {sheet.MaxHealth,8:N0} {wins.Count / (double)results.Count,4:P0} {(wins.Count > 0 ? (wins.Average(r => r.Time) / 60).ToString("0.0") : "-"),4}";
+                    }).ToList();
                     Console.WriteLine($"{Tower.Short(floor.Number),-6} {(floor.IsFloorBoss ? "* " : "") + floor.Boss.Name,-30} | " + string.Join(" | ", cells) + (vet ? $"  strength {strength:0.00}" : ""));
                 }
+                Totals();
             }
             Console.WriteLine();
-            Console.WriteLine("part min: minutes of fighting to finish the part's kill objectives (the other kinds run beside them). * floor boss.");
+            Console.WriteLine("part min: minutes of fighting to finish the part's kill objectives, each kill worth what TowerPace says for the group (the other kinds run beside them). x five: against five players' minutes. * floor boss.");
         }
 
         /// <summary>
         ///     Minutes a group needs for a part's kill objectives: every player kills one monster after another (its
         ///     health by the pressure), walks to the next, and the part gives no more monsters than its spots bring back.
-        ///     The part's kinds stand on the spots in turn, so each kind is its share of the kills.
+        ///     The part's kinds stand on the spots in turn, so each kind is its share of the kills. Each kill counts what
+        ///     it is worth for the group (TowerPace.KillWeight); <paramref name="raw"/> is the minutes with every kill
+        ///     counting one.
         /// </summary>
-        private static double PartMinutes(TowerFloorDefinition floor, CombatSheet player, int players, double pressure, ICombatRandom random, int runs)
+        private static double PartMinutes(TowerFloorDefinition floor, CombatSheet player, int players, double pressure, ICombatRandom random, int runs, out double raw)
         {
             var swing = PlayerSwing / CombatMath.Clamp(player.AttackSpeed, 0.2, CombatMath.MaxAttackSpeed);
             var perKind = new double[floor.Enemies.Length];
@@ -110,7 +134,8 @@ namespace RavenNest.CombatSimulator
                 if (q.Kind != TowerObjectiveKind.Kill) continue;
                 minutes = Math.Max(minutes, q.Amount / (rate / floor.Enemies.Length));
             }
-            return minutes;
+            raw = minutes;
+            return minutes / TowerPace.KillWeight(floor.Floor, players);
         }
 
         public static void Run(GearPicker gear, int fights)

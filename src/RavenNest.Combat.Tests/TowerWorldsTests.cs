@@ -525,6 +525,173 @@ namespace RavenNest.Combat.Tests
             }
         }
 
+        // ---- a floor's areas (section 13) --------------------------------------------------------------------------
+
+        [Fact]
+        public void EveryPartIsInOneAreaOfItsFloor()
+        {
+            for (var floor = 1; floor <= Tower.FloorCount; ++floor)
+            {
+                var areas = Tower.AreasOf(floor);
+                Assert.NotEmpty(areas);
+                // every part once, each area named, one area per layout
+                var steps = areas.SelectMany(a => a.Steps).ToList();
+                Assert.Equal(Tower.PartsIn(floor), steps.Count);
+                Assert.Equal(steps.Count, steps.Distinct().Count());
+                Assert.Equal(areas.Count, areas.Select(a => a.Layout).Distinct().Count());
+                foreach (var area in areas)
+                {
+                    Assert.Equal(floor, area.Floor);
+                    Assert.False(string.IsNullOrWhiteSpace(area.Name));
+                    Assert.DoesNotContain("Tower_", area.Name);
+                    Assert.Equal(area.Steps.OrderBy(s => s), area.Steps);
+                    foreach (var step in area.Steps)
+                    {
+                        Assert.Equal(area.Layout, Tower.Get(step).Layout);
+                        Assert.Same(area, Tower.AreaOf(step));
+                    }
+                }
+                // in the order the climb reaches them: the floor's first part is in the first area
+                Assert.Equal(Tower.FirstStep(floor), areas[0].FirstStep);
+                for (var i = 1; i < areas.Count; ++i) Assert.True(areas[i].FirstStep > areas[i - 1].FirstStep);
+            }
+            Assert.Empty(Tower.AreasOf(Tower.FloorCount + 1));
+            Assert.Null(Tower.AreaOf(Tower.TopFloor + 1));
+        }
+
+        [Fact]
+        public void TheFirstFloorsAreasAreTheCourtyardTheMarshAndTheCrypt()
+        {
+            var areas = Tower.AreasOf(1);
+            Assert.Equal(new[] { "The Courtyard", "The Drowned Marsh", "The Crypt" }, areas.Select(a => a.Name));
+            Assert.Equal(new[] { 1, 2, 5, 6 }, areas[0].Steps);
+            Assert.Equal(new[] { 3, 8 }, areas[1].Steps);
+            Assert.Equal(new[] { 4, 7, 9, 10 }, areas[2].Steps);
+        }
+
+        // ---- what a kill is worth by the group (section 13) ----------------------------------------------------------
+
+        [Fact]
+        public void AKillByTheSuggestedGroupCountsAsOne()
+        {
+            for (var floor = 1; floor <= 6; ++floor)
+            {
+                Assert.Equal(1, TowerPace.KillWeight(floor, Tower.SuggestedGroup), 6);
+                Assert.Equal(1, TowerPace.KillRate(floor, Tower.SuggestedGroup), 6);
+            }
+            Assert.Equal(1, TowerPace.TimeShare(Tower.SuggestedGroup), 6);
+            Assert.Equal(1, TowerPace.GatherWeight(TowerPace.SuggestedGatherers), 6);
+        }
+
+        [Fact]
+        public void FewPlayersKillsCountForMoreAndACrowdsForLess()
+        {
+            for (var floor = 1; floor <= 6; ++floor)
+            {
+                Assert.InRange(TowerPace.KillWeight(floor, 2), 1.3, 1.6);
+                Assert.InRange(TowerPace.KillWeight(floor, 10), 0.65, 0.95);
+                Assert.InRange(TowerPace.KillWeight(floor, 30), 0.45, 0.95);
+                // a lone player is one head at least, however weak: nothing to gain below it
+                Assert.Equal(TowerPace.KillWeight(floor, 1), TowerPace.KillWeight(floor, 0.25), 6);
+            }
+            // the time aimed for: two players 1.4 times five's, ten about 0.8 times, thirty about 0.6 times
+            Assert.Equal(1.4, TowerPace.TimeShare(2), 2);
+            Assert.InRange(TowerPace.TimeShare(10), 0.78, 0.86);
+            Assert.InRange(TowerPace.TimeShare(30), 0.56, 0.66);
+            Assert.True(TowerPace.GatherWeight(1) > 1.4);
+            Assert.True(TowerPace.GatherWeight(12) < 0.35);
+        }
+
+        [Fact]
+        public void MoreHeadsAlwaysMakeMoreProgressSoNobodyGainsByLeaving()
+        {
+            // what a part gets a minute is the kills a group makes times what each is worth: it must only grow with the
+            // group, on every floor, or leaving a part (or keeping players off it) would speed its objectives up
+            for (var floor = 1; floor <= 8; ++floor)
+            {
+                var before = 0.0;
+                for (var heads = 1.0; heads <= 200; heads += 0.25)
+                {
+                    var progress = TowerPace.KillRate(floor, heads) * TowerPace.KillWeight(floor, heads);
+                    Assert.True(progress > before, $"floor {floor}, {heads} heads: {progress} after {before}");
+                    before = progress;
+                }
+            }
+            var gathered = 0.0;
+            for (var gatherers = 1; gatherers <= 100; ++gatherers)
+            {
+                var progress = gatherers * TowerPace.GatherWeight(gatherers);
+                Assert.True(progress > gathered);
+                gathered = progress;
+            }
+        }
+
+        [Fact]
+        public void HeadsCountAWeakPlayerAsAShareAndNobodyAsMoreThanOne()
+        {
+            Assert.Equal(3, TowerPace.Heads(new[] { 1.0, 1.4, 1.2 }), 6);
+            Assert.Equal(1 + 0.5 + TowerPressure.MinHead, TowerPace.Heads(new[] { 1.0, 0.5, 0.05 }), 6);
+            Assert.Equal(0, TowerPace.Heads(new double[0]));
+        }
+
+        [Fact]
+        public void WeightedKillsCarryWhatIsNotAWholeKillYet()
+        {
+            var part = Tower.Get(1);
+            var kill = part.Objectives.First(q => q.Kind == TowerObjectiveKind.Kill);
+            var progress = Tower.ParseProgress(part, null);
+            var fractions = new Dictionary<string, double>();
+
+            // three kills worth 1.4 each: four whole ones, 0.2 carried
+            Assert.True(Tower.AddReport(part, progress, new Dictionary<string, int> { [kill.Id] = 3 }, 500, fractions, 1.4));
+            Assert.Equal(4, progress[kill.Id]);
+            Assert.Equal(0.2, fractions[kill.Id], 6);
+            // two more worth 0.45 each: 1.1 with what was carried
+            Assert.True(Tower.AddReport(part, progress, new Dictionary<string, int> { [kill.Id] = 2 }, 500, fractions, 0.45));
+            Assert.Equal(5, progress[kill.Id]);
+            Assert.Equal(0.1, fractions[kill.Id], 6);
+
+            // saved and read back: whole numbers for everyone, the rest kept beside them
+            var text = Tower.FormatProgress(progress, fractions);
+            Assert.Contains(kill.Id + ":5.10", text);
+            Assert.Equal(5, Tower.ParseProgress(part, text)[kill.Id]);
+            Assert.Equal(0.1, Tower.ParseFractions(text)[kill.Id], 6);
+            Assert.Equal(5, Tower.ParseCounts(text)[kill.Id]);
+            // progress saved before there were fractions reads as it did
+            Assert.Equal(12, Tower.ParseProgress(part, kill.Id + ":12")[kill.Id]);
+            Assert.Empty(Tower.ParseFractions(kill.Id + ":12"));
+
+            // nothing goes past the amount, and a finished objective carries nothing
+            Assert.True(Tower.AddReport(part, progress, new Dictionary<string, int> { [kill.Id] = 500 }, 500, fractions, 1.4));
+            Assert.Equal(kill.Amount, progress[kill.Id]);
+            Assert.False(fractions.ContainsKey(kill.Id));
+            Assert.False(Tower.AddReport(part, progress, new Dictionary<string, int> { [kill.Id] = 5 }, 500, fractions, 1.4));
+        }
+
+        [Fact]
+        public void FindsAreWholeWhateverAKillIsWorthAndGatheringCarriesItsShare()
+        {
+            var find = Tower.Floors.First(f => f.Objectives.Any(q => q.Kind == TowerObjectiveKind.Find));
+            var thing = find.Objectives.First(q => q.Kind == TowerObjectiveKind.Find);
+            var progress = Tower.ParseProgress(find, null);
+            var fractions = new Dictionary<string, double>();
+            Assert.True(Tower.AddReport(find, progress, new Dictionary<string, int> { [thing.Id] = 1 }, 500, fractions, 0.5));
+            Assert.Equal(1, progress[thing.Id]);
+            Assert.False(fractions.ContainsKey(thing.Id));
+
+            var gather = Tower.Floors.First(f => f.Objectives.Any(q => q.Kind == TowerObjectiveKind.Gather));
+            var material = gather.Objectives.First(q => q.Kind == TowerObjectiveKind.Gather);
+            progress = Tower.ParseProgress(gather, null);
+            fractions.Clear();
+            // five rounds by a lone gatherer, each worth 1.55
+            Assert.True(Tower.AddGathered(gather, progress, material.Skills[0], 5 * TowerPace.GatherWeight(1), fractions));
+            Assert.Equal(7, progress[material.Id]);
+            Assert.InRange(fractions[material.Id], 0.7, 0.8);
+            // and every kill on the part counts for it too, at what a kill is worth
+            Assert.True(Tower.AddReport(gather, progress, new Dictionary<string, int> { [Tower.AllKills] = 10 }, 500, fractions, 0.5));
+            Assert.Equal(12, progress[material.Id]);
+        }
+
         [Fact]
         public void TheMeanHitShareIsWhatTheDiceGive()
         {

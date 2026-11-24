@@ -1,0 +1,112 @@
+@using RavenNest.Combat
+
+@*
+    The map of one floor of the tower (the game's docs/tower-worlds-proposal.md section 13): the floor's town in the
+    middle and its areas to both sides (the courtyard, the marsh, the crypt), each with its parts as numbered tiles,
+    lit once cleared, marked where the climb is, a question mark where nobody has been (parts and areas not reached
+    stay a mystery, as on the rest of the page). The game's tower panel has the same map with the players on each part.
+    Drawn from RavenNest.Combat.Tower.AreasOf, so a floor with any number of areas and parts works.
+
+    ClearedThrough: the highest step cleared (0: none). Reached: the step the climb is on (the part after the highest
+    cleared one, or the top part once everything is cleared).
+*@
+
+@if (band != null && areas.Count > 0)
+{
+    <div class="rf-tmap" role="img" aria-label="@Summary()">
+        <div class="rf-tmap__side rf-tmap__side--left">
+            @for (var i = 0; i < areas.Count; i += 2)
+            {
+                @Area(areas[i])
+            }
+        </div>
+        <div class="rf-tmap__town@(areas.Count > 1 ? " rf-tmap__town--both" : "")">
+            <span class="rf-tmap__townicon" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
+            <b>@(town != null ? town.Name : "Town")</b>
+            <span class="rf-table__quiet">the floor's town</span>
+        </div>
+        <div class="rf-tmap__side rf-tmap__side--right">
+            @for (var i = 1; i < areas.Count; i += 2)
+            {
+                @Area(areas[i])
+            }
+        </div>
+    </div>
+    <ul class="rf-tmap__legend" aria-hidden="true">
+        <li><span class="rf-tmap__tile rf-tmap__tile--cleared rf-tmap__tile--small">1</span> Cleared</li>
+        <li><span class="rf-tmap__tile rf-tmap__tile--climb rf-tmap__tile--small">2</span> @ClimbWord</li>
+        <li><span class="rf-tmap__tile rf-tmap__tile--hidden rf-tmap__tile--small">?</span> Not reached</li>
+        <li><i class="fa-solid fa-crown rf-tmap__crown rf-tmap__crown--legend"></i> Floor boss</li>
+    </ul>
+}
+
+@code {
+    /// <summary>The floor to draw (its number).</summary>
+    [Parameter] public int Floor { get; set; }
+
+    /// <summary>The highest step that is cleared, 0 when none is.</summary>
+    [Parameter] public int ClearedThrough { get; set; }
+
+    /// <summary>The step the climb is on.</summary>
+    [Parameter] public int Reached { get; set; } = 1;
+
+    /// <summary>What the marked part is called in the legend: "The climb", or on the world's page how far any stream has got.</summary>
+    [Parameter] public string ClimbWord { get; set; } = "The climb";
+
+    private TowerBand band;
+    private TowerTownDefinition town;
+    private IReadOnlyList<TowerArea> areas = Array.Empty<TowerArea>();
+
+    protected override void OnParametersSet()
+    {
+        band = Tower.FloorInfo(Floor);
+        town = Tower.Towns.FirstOrDefault(t => t.Band == Floor);
+        areas = Tower.AreasOf(Floor);
+    }
+
+    private bool Cleared(int step) => step <= ClearedThrough;
+    private bool Climb(int step) => step == Reached && !Cleared(step);
+
+    private string Summary()
+    {
+        var cleared = areas.SelectMany(a => a.Steps).Count(Cleared);
+        return $"Map of floor {Floor}, {band.Name}: {cleared} of {band.Parts} parts cleared.";
+    }
+
+    private RenderFragment Area(TowerArea area) => __builder =>
+    {
+        var reached = area.FirstStep <= Reached;
+        var climb = area.Steps.Where(Climb).Select(Tower.Get).FirstOrDefault();
+        <div class="rf-tmap__branch@(reached ? "" : " rf-tmap__branch--hidden")">
+            <div class="rf-card rf-tmap__area@(reached ? "" : " rf-tmap__area--hidden")">
+                <h4 class="rf-tmap__name">@(reached ? area.Name : "Not reached yet")</h4>
+                <div class="rf-tmap__tiles">
+                    @foreach (var step in area.Steps)
+                    {
+                        var part = Tower.PartOf(step);
+                        if (Cleared(step) || Climb(step))
+                        {
+                            var def = Tower.Get(step);
+                            var tip = def.Label + ": " + def.Name + (Cleared(step) ? " (cleared)" : "");
+                            <span class="rf-tmap__tile @(Climb(step) ? "rf-tmap__tile--climb" : "rf-tmap__tile--cleared")" title="@tip">
+                                @if (Tower.IsFloorBoss(step))
+                                {
+                                    <i class="fa-solid fa-crown rf-tmap__crown" aria-hidden="true"></i>
+                                }
+                                @part
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="rf-tmap__tile rf-tmap__tile--hidden" title="Not reached yet">?</span>
+                        }
+                    }
+                </div>
+                @if (climb != null)
+                {
+                    <p class="rf-tmap__climb">@ClimbWord: part @climb.Part, @climb.Name</p>
+                }
+            </div>
+        </div>
+    };
+}

@@ -39,6 +39,16 @@ namespace RavenNest.BusinessLogic.Game
         /// <summary>Gathering rounds kept in memory before they are written to a stream's progress.</summary>
         private const int GatherFlush = 20;
 
+        /// <summary>
+        ///     Minutes a character counts as gathering for a part's objective after its last round for it: how many
+        ///     of the stream's players gather sets what a round is worth (TowerPace.GatherWeight). A round comes about
+        ///     every ten seconds, so this bridges a walk to the next spot or a full bag, not a change of task.
+        /// </summary>
+        private const double GathererMinutes = 2;
+
+        /// <summary>The most heads a game's report is taken to have had on the part (a mistake beyond it).</summary>
+        private const double MaxHeads = 500;
+
         /// <summary>The last hit on a floor boss: the achievement its title comes from (who gets it: Tower.LastHits).</summary>
         public const string LastHitAchievement = "finisher";
 
@@ -47,8 +57,11 @@ namespace RavenNest.BusinessLogic.Game
         private readonly object mutex = new object();
         private readonly ConcurrentDictionary<Guid, DateTime> lastClear = new ConcurrentDictionary<Guid, DateTime>();
         private readonly Dictionary<(Guid Tower, string Objective), DateTime> lastFind = new Dictionary<(Guid, string), DateTime>();
-        // gathering rounds since the last write, per stream and skill (by the skill's name, as the objectives name them)
-        private readonly Dictionary<Guid, Dictionary<string, int>> gathered = new Dictionary<Guid, Dictionary<string, int>>();
+        // gathering since the last write, per stream and skill (by the skill's name, as the objectives name them): the
+        // rounds, and what they are worth together (each by how many of the stream's players were gathering then)
+        private readonly Dictionary<Guid, Dictionary<string, (int Rounds, double Worth)>> gathered = new Dictionary<Guid, Dictionary<string, (int, double)>>();
+        // who of a stream's players gathers for its part's objectives, and when they last did
+        private readonly Dictionary<Guid, Dictionary<Guid, DateTime>> gatherers = new Dictionary<Guid, Dictionary<Guid, DateTime>>();
         private static readonly string[] SkillNames = Enum.GetNames(typeof(Skill));
 
         public TowerManager(GameData gameData, GameManager gameManager)
@@ -66,8 +79,11 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>
         ///     What happened on the stream's part since the game's last report, as counts ("defeat-hall-goblin:3;kills:5;
-        ///     find-boots:1"): kills per kill objective, every kill (gather objectives count them too) and hidden things
-        ///     found. A report from any other part (an old part, a stale report) counts for nothing.
+        ///     find-boots:1;heads:500"): kills per kill objective, every kill (gather objectives count them too), hidden
+        ///     things found, and the heads that were on the part as the kills fell. Each kill is worth more with few
+        ///     heads on the part and less with many (TowerPace.KillWeight; 1 when the game does not say); what is not a
+        ///     whole kill yet is kept with the progress. A report from any other part (an old part, a stale report)
+        ///     counts for nothing.
         /// </summary>
         public TowerState AddProgress(SessionToken token, int floor, string counts)
         {
@@ -89,14 +105,18 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var progress = Tower.ParseProgress(definition, tower.Progress);
+                var fractions = Tower.ParseFractions(tower.Progress);
                 var before = new Dictionary<string, int>(progress);
-                var changed = TakeGathered(tower, definition, progress);
-                changed |= Tower.AddReport(definition, progress, report, MaxKillsPerReport);
+                var changed = TakeGathered(tower, definition, progress, fractions);
+                // what a kill is worth: by the heads the game counted on the part as the kills fell
+                var weight = report.TryGetValue(Tower.Heads, out var heads) && heads > 0
+                    ? TowerPace.KillWeight(definition.Floor, Math.Min(MaxHeads, heads / 100.0)) : 1;
+                changed |= Tower.AddReport(definition, progress, report, MaxKillsPerReport, fractions, weight);
                 if (changed)
                 {
                     foreach (var q in definition.Objectives)
                         if (q.Kind == TowerObjectiveKind.Find && progress[q.Id] > before[q.Id]) lastFind[(tower.Id, q.Id)] = now;
-                    tower.Progress = Tower.FormatProgress(progress);
+                    tower.Progress = Tower.FormatProgress(progress, fractions);
                     tower.Updated = now;
                     gameData.Touch();
                 }
@@ -106,9 +126,12 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>
         ///     A gathering round by a character (QuestTracker.Gathered, on whatever thread the task processors run): when
-        ///     the part of the stream it plays on has a gather objective for the skill, it counts one. Counted, never
-        ///     taken: the character keeps what it gathered. Kept in memory and written every few rounds, and whenever
-        ///     the stream's progress is read or changed.
+        ///     the part of the stream it plays on has a gather objective for the skill, it counts: one with two of the
+        ///     stream's players gathering for the part, more for a lone gatherer, less for a crowd
+        ///     (TowerPace.GatherWeight, by who gathered for it in the last <see cref="GathererMinutes"/> minutes; fixed as
+        ///     the round is made, so nothing is gained by stopping or starting). Counted, never taken: the character
+        ///     keeps what it gathered. Kept in memory and written every few rounds, and whenever the stream's progress is
+        ///     read or changed.
         /// </summary>
         internal void Gathered(Character character, Skill skill)
         {
@@ -123,24 +146,38 @@ namespace RavenNest.BusinessLogic.Game
             if (!Tower.Gathers(definition, name)) return;
             lock (mutex)
             {
-                if (!gathered.TryGetValue(tower.Id, out var counts)) gathered[tower.Id] = counts = new Dictionary<string, int>();
+                // who gathers for the part now: this character, and whoever did in the last minutes
+                var now = DateTime.UtcNow;
+                if (!gatherers.TryGetValue(tower.Id, out var who)) gatherers[tower.Id] = who = new Dictionary<Guid, DateTime>();
+                who[character.Id] = now;
+                var active = 0;
+                List<Guid> gone = null;
+                foreach (var kv in who)
+                {
+                    if ((now - kv.Value).TotalMinutes <= GathererMinutes) active++;
+                    else (gone ??= new List<Guid>()).Add(kv.Key);
+                }
+                if (gone != null) foreach (var id in gone) who.Remove(id);
+
+                if (!gathered.TryGetValue(tower.Id, out var counts)) gathered[tower.Id] = counts = new Dictionary<string, (int, double)>();
                 counts.TryGetValue(name, out var n);
-                counts[name] = n + 1;
-                if (n + 1 < GatherFlush) return;
+                counts[name] = (n.Rounds + 1, n.Worth + TowerPace.GatherWeight(active));
+                if (n.Rounds + 1 < GatherFlush) return;
                 var progress = Tower.ParseProgress(definition, tower.Progress);
-                if (!TakeGathered(tower, definition, progress)) return;
-                tower.Progress = Tower.FormatProgress(progress);
-                tower.Updated = DateTime.UtcNow;
+                var fractions = Tower.ParseFractions(tower.Progress);
+                if (!TakeGathered(tower, definition, progress, fractions)) return;
+                tower.Progress = Tower.FormatProgress(progress, fractions);
+                tower.Updated = now;
                 gameData.Touch();
             }
         }
 
         // the rounds kept in memory go into the progress (the caller holds the lock and saves when this is true)
-        private bool TakeGathered(StreamTower tower, TowerFloorDefinition definition, Dictionary<string, int> progress)
+        private bool TakeGathered(StreamTower tower, TowerFloorDefinition definition, Dictionary<string, int> progress, Dictionary<string, double> fractions)
         {
             if (!gathered.TryGetValue(tower.Id, out var counts) || counts.Count == 0) return false;
             var changed = false;
-            foreach (var kv in counts) changed |= Tower.AddGathered(definition, progress, kv.Key, kv.Value);
+            foreach (var kv in counts) changed |= Tower.AddGathered(definition, progress, kv.Key, kv.Value.Worth, fractions);
             counts.Clear();
             return changed;
         }
@@ -249,6 +286,7 @@ namespace RavenNest.BusinessLogic.Game
                 tower.Attempts = 0;
                 tower.Updated = DateTime.UtcNow;
                 gathered.Remove(tower.Id);
+                gatherers.Remove(tower.Id);
                 lastClear[session.Id] = DateTime.UtcNow;
             }
 
@@ -420,9 +458,10 @@ namespace RavenNest.BusinessLogic.Game
         private Dictionary<string, int> Progress(StreamTower tower, TowerFloorDefinition definition)
         {
             var progress = Tower.ParseProgress(definition, tower.Progress);
-            if (definition != null && TakeGathered(tower, definition, progress))
+            var fractions = Tower.ParseFractions(tower.Progress);
+            if (definition != null && TakeGathered(tower, definition, progress, fractions))
             {
-                tower.Progress = Tower.FormatProgress(progress);
+                tower.Progress = Tower.FormatProgress(progress, fractions);
                 tower.Updated = DateTime.UtcNow;
                 gameData.Touch();
             }

@@ -192,7 +192,9 @@ else
                     <b>@(towerPart.IsFloorBoss ? "Floor boss" : "Mini boss"): @towerPart.Boss.Name</b>
                     <span class="rf-table__quiet">@(tower.BossOpen ? "can be challenged now: !tower boss" : "waits until the objectives above are done")</span>
                 </div>
-                <p class="rf-table__quiet">Everything counts by itself while your stream plays. <a href="/tower">The tower</a> has every part your stream and others have reached.</p>
+                @* the floor your stream is on, as a map: what it has cleared, and where its climb is *@
+                <TowerFloorMap Floor="towerPart.Floor" ClearedThrough="tower.Floor - 1" Reached="tower.Floor" ClimbWord="Your stream's climb" />
+                <p class="rf-table__quiet">Everything counts by itself while your stream plays. Any player can go back to a cleared part to train (<b>!tower part 3</b>). <a href="/tower">The tower</a> has every part your stream and others have reached.</p>
             </div>
         </section>
     }

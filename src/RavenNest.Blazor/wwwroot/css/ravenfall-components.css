@@ -6171,6 +6171,256 @@ a.rf-badge:hover {
     margin: 0;
 }
 
+/* The floor map (Components/TowerFloorMap.razor): the floor's town in the middle, its areas to both sides with their
+   parts as tiles. Each area is joined to the town by a line: a stub from the area to a spine beside the town, and a
+   stub from the town to the spine. Lit lines and tiles for what is reached, dashes and question marks for the rest. */
+.rf-tmap {
+    --tmap-line: #7fb069;
+    --tmap-stub: 1.6rem;
+    --tmap-gap: 0.7rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    margin: 0.4rem 0 0.4rem;
+}
+
+.rf-tmap__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tmap-gap);
+}
+
+.rf-tmap__branch {
+    position: relative;
+}
+
+.rf-tmap__side--left .rf-tmap__branch {
+    padding-right: var(--tmap-stub);
+}
+
+.rf-tmap__side--right .rf-tmap__branch {
+    padding-left: var(--tmap-stub);
+}
+
+/* the stub from an area toward the town */
+.rf-tmap__branch::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: var(--tmap-stub);
+    border-top: 3px solid var(--tmap-line);
+}
+
+.rf-tmap__side--left .rf-tmap__branch::after {
+    right: 0;
+}
+
+.rf-tmap__side--right .rf-tmap__branch::after {
+    left: 0;
+}
+
+.rf-tmap__branch--hidden::after {
+    border-top-style: dashed;
+    border-top-color: var(--rf-line-strong);
+}
+
+/* the spine beside the town: from the first area's stub to the last one's */
+.rf-tmap__branch::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--tmap-gap) / -2);
+    bottom: calc(var(--tmap-gap) / -2);
+    border-left: 3px solid var(--tmap-line);
+}
+
+.rf-tmap__side--left .rf-tmap__branch::before {
+    right: 0;
+}
+
+.rf-tmap__side--right .rf-tmap__branch::before {
+    left: 0;
+}
+
+.rf-tmap__branch:first-child::before {
+    top: 50%;
+}
+
+.rf-tmap__branch:last-child::before {
+    bottom: 50%;
+}
+
+.rf-tmap__branch:only-child::before {
+    display: none;
+}
+
+.rf-tmap__town {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 9.5rem;
+    height: 9.5rem;
+    margin: 0 var(--tmap-stub);
+    border: 3px solid var(--rf-gold);
+    border-radius: 50%;
+    background: var(--rf-surface-2);
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* the town's own stubs to the spines */
+.rf-tmap__town::before,
+.rf-tmap__town--both::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: var(--tmap-stub);
+    border-top: 3px solid var(--tmap-line);
+}
+
+.rf-tmap__town::before {
+    right: 100%;
+    margin-right: 3px;
+}
+
+.rf-tmap__town--both::after {
+    left: 100%;
+    margin-left: 3px;
+}
+
+.rf-tmap__townicon {
+    font-size: 1.8rem;
+    color: var(--rf-gold-bright);
+}
+
+.rf-tmap__area {
+    border-left: 4px solid var(--tmap-line);
+    padding: 0.7rem 0.9rem;
+}
+
+.rf-tmap__area--hidden {
+    border-left-color: var(--rf-line-strong);
+    border-style: dashed;
+    color: var(--rf-ink-muted);
+}
+
+.rf-tmap__name {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+}
+
+.rf-tmap__tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.rf-tmap__tile {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 2px solid var(--rf-line-strong);
+    border-radius: 0.4rem;
+    background: var(--rf-surface-2);
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.rf-tmap__tile--cleared {
+    border-color: #7fb069;
+    background: #26421e;
+    color: #f2ecdd;
+}
+
+.rf-tmap__tile--climb {
+    border-color: var(--rf-gold-bright);
+    border-width: 3px;
+    background: #241b0c;
+    color: var(--rf-gold-bright);
+}
+
+.rf-tmap__tile--hidden {
+    color: var(--rf-ink-muted);
+    border-style: dashed;
+}
+
+.rf-tmap__tile--small {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.8rem;
+    border-width: 2px;
+    border-radius: 0.25rem;
+}
+
+.rf-tmap__crown {
+    position: absolute;
+    top: -0.75rem;
+    left: -0.5rem;
+    font-size: 0.85rem;
+    color: var(--rf-gold-bright);
+}
+
+.rf-tmap__crown--legend {
+    position: static;
+    font-size: 1rem;
+}
+
+.rf-tmap__climb {
+    margin: 0.5rem 0 0;
+    font-weight: 700;
+    color: var(--rf-gold-bright);
+}
+
+.rf-tmap__legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1.4rem;
+    margin: 0.6rem 0 1.2rem;
+    padding: 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-tmap__legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+/* on a phone: the town on top, the areas under it, no lines */
+@media (max-width: 760px) {
+    .rf-tmap {
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+    }
+
+    .rf-tmap__town {
+        order: -1;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 0.7rem;
+        border-radius: 0.6rem;
+    }
+
+    .rf-tmap__side--left .rf-tmap__branch,
+    .rf-tmap__side--right .rf-tmap__branch {
+        padding: 0;
+    }
+
+    .rf-tmap__branch::before,
+    .rf-tmap__branch::after,
+    .rf-tmap__town::before,
+    .rf-tmap__town--both::after {
+        display: none;
+    }
+}
+
 /* ---- Gem sockets and the gem picker --------------------------------------
    A socket in the item details is the control itself: the row says what is in
    it and opens the picker for that socket (Components/GemSocketButton.razor).

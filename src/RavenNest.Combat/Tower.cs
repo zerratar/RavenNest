@@ -636,6 +636,72 @@ namespace RavenNest.Combat
         public const string SkyDocks = "Tower_SkyDocks";
         public const string StormSpire = "Tower_StormSpire";
 
+        // ---- A floor's areas: the places round its town (docs/tower-worlds-proposal.md section 13) ------------------
+        // A floor is a town with areas around it. An area is one layout (the courtyard, the marsh, the crypt) and the
+        // parts fought there; the floor map in the game and on the website is drawn from this. Any number of layouts
+        // and parts works: nothing here counts on three areas or ten parts.
+
+        /// <summary>What players call a layout as a place on the floor map: "The Crypt".</summary>
+        public static string AreaName(string layout)
+        {
+            switch (layout)
+            {
+                case Overgrown: return "The Courtyard";
+                case Marsh: return "The Drowned Marsh";
+                case Crypt: return "The Crypt";
+                case Glacier: return "The Glacier";
+                case FrostVault: return "The Ice Vault";
+                case SkyDocks: return "The Sky Docks";
+                case StormSpire: return "The Spire's Crown";
+                case "Tower_GreatHall": return "The Great Hall";
+            }
+            if (string.IsNullOrEmpty(layout)) return "";
+            return layout.StartsWith("Tower_") ? layout.Substring(6) : layout;
+        }
+
+        private static readonly Dictionary<int, TowerArea[]> areasByFloor = new Dictionary<int, TowerArea[]>();
+
+        /// <summary>
+        ///     The areas of a floor, in the order the climb first reaches them, each with its parts in climbing order.
+        ///     Empty for a floor that does not exist.
+        /// </summary>
+        public static IReadOnlyList<TowerArea> AreasOf(int floor)
+        {
+            lock (areasByFloor)
+            {
+                if (areasByFloor.TryGetValue(floor, out var known)) return known;
+                var band = FloorInfo(floor);
+                var list = new List<TowerArea>();
+                if (band != null)
+                {
+                    var steps = new Dictionary<string, List<int>>();
+                    for (var step = band.FirstFloor; step <= band.LastFloor; step++)
+                    {
+                        var part = Get(step);
+                        if (part == null) continue;
+                        var layout = part.Layout ?? "";
+                        if (!steps.TryGetValue(layout, out var of))
+                        {
+                            steps[layout] = of = new List<int>();
+                            list.Add(new TowerArea { Floor = floor, Layout = layout, Name = AreaName(layout) });
+                        }
+                        of.Add(step);
+                    }
+                    foreach (var area in list) area.Steps = steps[area.Layout].ToArray();
+                }
+                return areasByFloor[floor] = list.ToArray();
+            }
+        }
+
+        /// <summary>The area a step is fought in, or null when the step does not exist.</summary>
+        public static TowerArea AreaOf(int step)
+        {
+            var part = Get(step);
+            if (part == null) return null;
+            foreach (var area in AreasOf(part.Floor)) if (area.Layout == (part.Layout ?? "")) return area;
+            return null;
+        }
+
         private static string LayoutOf(int number)
         {
             switch (number)
@@ -735,6 +801,12 @@ namespace RavenNest.Combat
         /// <summary>In a game's report: every kill on the part, whatever the kind (gather objectives count them too).</summary>
         public const string AllKills = "kills";
 
+        /// <summary>
+        ///     In a game's report: the heads on the part as its kills fell (<see cref="TowerPace.Heads"/>), in hundredths
+        ///     ("heads:500" is five players). What each kill is worth follows from it (<see cref="TowerPace.KillWeight"/>).
+        /// </summary>
+        public const string Heads = "heads";
+
         /// <summary>Kill: defeat a number of one kind of the part's monsters, by whoever trains there.</summary>
         private static TowerObjective Defeat(TowerEnemy enemy, int amount) => new TowerObjective
         {
@@ -764,8 +836,9 @@ namespace RavenNest.Combat
         };
 
         /// <summary>
-        ///     Find: hidden things on the part, one at a time. Players who train near where one lies find it by
-        ///     themselves after a while (<see cref="FindSeconds"/>); nobody has to look for it or click anything.
+        ///     Find: hidden things on the part, one at a time. They lie among the part's monsters, and players who
+        ///     train there find them by themselves after a while (<see cref="FindSeconds"/>); nobody has to look for
+        ///     one or click anything.
         /// </summary>
         private static TowerObjective Find(string id, string thing, string things, int amount, string npc, string story) => new TowerObjective
         {
@@ -780,8 +853,10 @@ namespace RavenNest.Combat
 
         /// <summary>
         ///     Seconds of searching one hidden thing takes: a second counts in full while a player on the part stands
-        ///     within <see cref="FindNearMeters"/> of where it lies, and <see cref="FindFarShare"/> of one while players
-        ///     are anywhere else on the part (so a group that never walks past it still finds it). Longer higher up.
+        ///     where its monsters are (within <see cref="FindNearMeters"/> of one of the part's monster spots), and
+        ///     <see cref="FindFarShare"/> of one while the players on the part are away from them (at the arrival,
+        ///     waiting, getting back up). So a group that fights finds a thing in about this time, wherever on the
+        ///     part it fights. Longer higher up.
         /// </summary>
         public static int FindSeconds(int step) => 240 + 60 * Math.Max(0, FloorOf(step) - 1);
         public const double FindNearMeters = 9;
@@ -814,26 +889,65 @@ namespace RavenNest.Combat
             return result;
         }
 
-        /// <summary>"a:3;b:5" as counts; what is not a count is left out.</summary>
+        /// <summary>
+        ///     "a:3;b:5" as counts; what is not a count is left out. A stream's saved progress can carry the part of a
+        ///     kill that is not a whole one yet ("a:3.25", <see cref="ParseFractions"/>): its whole number is the count.
+        /// </summary>
         public static Dictionary<string, int> ParseCounts(string text)
         {
             var result = new Dictionary<string, int>();
+            foreach (var kv in ParseAmounts(text)) result[kv.Key] = (int)Math.Floor(kv.Value + 1e-9);
+            return result;
+        }
+
+        /// <summary>
+        ///     What a stream's saved progress carries beyond the whole numbers: "a:3.25;b:5" gives a: 0.25. A kill by a
+        ///     small group counts for more than one and a big group's for less (<see cref="TowerPace"/>); the part that
+        ///     is not a whole kill yet is kept here and never shown.
+        /// </summary>
+        public static Dictionary<string, double> ParseFractions(string text)
+        {
+            var result = new Dictionary<string, double>();
+            foreach (var kv in ParseAmounts(text))
+            {
+                var fraction = kv.Value - Math.Floor(kv.Value + 1e-9);
+                if (fraction >= 0.005) result[kv.Key] = fraction;
+            }
+            return result;
+        }
+
+        private static Dictionary<string, double> ParseAmounts(string text)
+        {
+            var result = new Dictionary<string, double>();
             if (string.IsNullOrWhiteSpace(text)) return result;
             foreach (var part in text.Split(';'))
             {
                 var colon = part.IndexOf(':');
                 if (colon <= 0) continue;
                 var id = part.Substring(0, colon).Trim();
-                if (id.Length == 0 || !int.TryParse(part.Substring(colon + 1), out var count)) continue;
-                result[id] = count;
+                if (id.Length == 0) continue;
+                if (!double.TryParse(part.Substring(colon + 1), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var amount)) continue;
+                if (double.IsNaN(amount) || double.IsInfinity(amount) || amount < 0 || amount > int.MaxValue) continue;
+                result[id] = amount;
             }
             return result;
         }
 
-        public static string FormatProgress(Dictionary<string, int> progress)
+        /// <summary>
+        ///     Progress in its text form. With <paramref name="fractions"/>, the part of a kill an objective carries
+        ///     beyond its whole count is written with it ("a:3.25").
+        /// </summary>
+        public static string FormatProgress(Dictionary<string, int> progress, Dictionary<string, double> fractions = null)
         {
             var parts = new List<string>();
-            foreach (var kv in progress) parts.Add(kv.Key + ":" + kv.Value);
+            foreach (var kv in progress)
+            {
+                var fraction = 0.0;
+                if (fractions != null) fractions.TryGetValue(kv.Key, out fraction);
+                parts.Add(kv.Key + ":" + (fraction >= 0.005 && fraction < 1
+                    ? (kv.Value + fraction).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                    : kv.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
             return string.Join(";", parts);
         }
 
@@ -846,14 +960,39 @@ namespace RavenNest.Combat
             return true;
         }
 
+        // An amount (kills or rounds times what each is worth) added to an objective: whole numbers go to its count,
+        // the rest is carried in the fractions for the next time. True when the count or what is carried changed.
+        private static bool Credit(TowerObjective q, Dictionary<string, int> progress, Dictionary<string, double> fractions, double amount)
+        {
+            progress.TryGetValue(q.Id, out var before);
+            if (amount <= 0 || before >= q.Amount) return false;
+            var carried = 0.0;
+            if (fractions != null) fractions.TryGetValue(q.Id, out carried);
+            var total = carried + amount;
+            var whole = (int)Math.Floor(total + 1e-9);
+            var after = Math.Min(q.Amount, before + whole);
+            var left = after >= q.Amount ? 0 : Math.Max(0, total - whole);
+            if (fractions != null)
+            {
+                if (left >= 0.005) fractions[q.Id] = left;
+                else fractions.Remove(q.Id);
+            }
+            progress[q.Id] = after;
+            return after != before || (fractions != null && Math.Abs(left - carried) >= 0.005);
+        }
+
         /// <summary>
         ///     What a game reports from the stream's part since its last report (<see cref="ParseCounts"/>: kills per
         ///     kill objective, <see cref="AllKills"/> for every kill, a find per find objective) added to the part's
         ///     progress. A kill objective takes its own kills, a gather objective every kill (see <see cref="Gather"/>),
-        ///     a find objective one thing a report at most (they are found one at a time). No count goes past
-        ///     <paramref name="maxPerReport"/> a report or past its objective's amount. True when anything changed.
+        ///     a find objective one thing a report at most (they are found one at a time). No count takes more than
+        ///     <paramref name="maxPerReport"/> kills a report or goes past its objective's amount. Each kill counts
+        ///     <paramref name="weight"/> (<see cref="TowerPace.KillWeight"/>: more for a small group, less for a big
+        ///     one); what is not a whole kill yet is carried in <paramref name="fractions"/> (without them it is
+        ///     dropped). Finds are whole and unweighted. True when anything changed.
         /// </summary>
-        public static bool AddReport(TowerFloorDefinition floor, Dictionary<string, int> progress, Dictionary<string, int> report, int maxPerReport)
+        public static bool AddReport(TowerFloorDefinition floor, Dictionary<string, int> progress, Dictionary<string, int> report, int maxPerReport,
+            Dictionary<string, double> fractions = null, double weight = 1)
         {
             if (floor == null || progress == null || report == null) return false;
             var changed = false;
@@ -861,18 +1000,15 @@ namespace RavenNest.Combat
             {
                 if (!q.Counted) continue;
                 var add = 0;
+                var each = weight;
                 switch (q.Kind)
                 {
                     case TowerObjectiveKind.Kill: report.TryGetValue(q.Id, out add); break;
                     case TowerObjectiveKind.Gather: report.TryGetValue(AllKills, out add); break;
-                    case TowerObjectiveKind.Find: report.TryGetValue(q.Id, out add); add = Math.Min(1, add); break;
+                    case TowerObjectiveKind.Find: report.TryGetValue(q.Id, out add); add = Math.Min(1, add); each = 1; break;
                 }
                 if (add <= 0) continue;
-                progress.TryGetValue(q.Id, out var before);
-                var after = Math.Min(q.Amount, before + Math.Min(maxPerReport, add));
-                if (after == before) continue;
-                progress[q.Id] = after;
-                changed = true;
+                changed |= Credit(q, progress, fractions, Math.Min(maxPerReport, add) * Math.Max(0, each));
             }
             return changed;
         }
@@ -888,20 +1024,18 @@ namespace RavenNest.Combat
 
         /// <summary>
         ///     Gathering rounds of a skill by the stream's players, anywhere, added to the part's gather objectives that
-        ///     name the skill. True when anything changed.
+        ///     name the skill: <paramref name="rounds"/> is the rounds times what each was worth
+        ///     (<see cref="TowerPace.GatherWeight"/>); what is not a whole one yet is carried in
+        ///     <paramref name="fractions"/>. True when anything changed.
         /// </summary>
-        public static bool AddGathered(TowerFloorDefinition floor, Dictionary<string, int> progress, string skill, int rounds)
+        public static bool AddGathered(TowerFloorDefinition floor, Dictionary<string, int> progress, string skill, double rounds, Dictionary<string, double> fractions = null)
         {
             if (floor == null || progress == null || rounds <= 0 || string.IsNullOrEmpty(skill)) return false;
             var changed = false;
             foreach (var q in floor.Objectives)
             {
                 if (q.Kind != TowerObjectiveKind.Gather || Array.IndexOf(q.Skills, skill) < 0) continue;
-                progress.TryGetValue(q.Id, out var before);
-                var after = Math.Min(q.Amount, before + rounds);
-                if (after == before) continue;
-                progress[q.Id] = after;
-                changed = true;
+                changed |= Credit(q, progress, fractions, rounds);
             }
             return changed;
         }
@@ -946,6 +1080,24 @@ namespace RavenNest.Combat
     ///     One part of a floor (the name is from when parts were called floors): its place, monsters, objectives and
     ///     guardian.
     /// </summary>
+    /// <summary>
+    ///     One of the places round a floor's town (<see cref="Tower.AreasOf"/>): a layout and the parts fought there.
+    /// </summary>
+    public sealed class TowerArea
+    {
+        /// <summary>The floor it belongs to.</summary>
+        public int Floor;
+        /// <summary>Its layout scene ("Tower_Crypt").</summary>
+        public string Layout = "";
+        /// <summary>What players call it: "The Crypt".</summary>
+        public string Name = "";
+        /// <summary>The steps of its parts, in climbing order.</summary>
+        public int[] Steps = Array.Empty<int>();
+
+        /// <summary>Its first part's step: the area is reached once the stream is on it.</summary>
+        public int FirstStep => Steps.Length > 0 ? Steps[0] : 0;
+    }
+
     public sealed class TowerFloorDefinition
     {
         /// <summary>The part's step: its number counted through the whole tower, what the server stores.</summary>
