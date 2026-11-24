@@ -47,7 +47,29 @@ namespace RavenNest.Combat
         ///     thirty are 6, five veterans with trees and gems about 1.4.
         /// </summary>
         public static double Of(int players, double strength, int groupSize = Tower.SuggestedGroup) =>
-            Math.Max(0, players) / (double)Math.Max(1, groupSize) * CombatMath.Clamp(strength, MinStrength, MaxStrength);
+            WithStrength(Math.Max(0, players) / (double)Math.Max(1, groupSize), CombatMath.Clamp(strength, MinStrength, MaxStrength));
+
+        /// <summary>
+        ///     Under this share of a full group a group's strength does not count at all, and from here it counts more
+        ///     with every head, all of it from a full group on (<see cref="StrengthShare"/>).
+        /// </summary>
+        public const double StrengthFrom = 0.6;
+
+        /// <summary>
+        ///     How much of a group's strength counts as pressure, by its heads against the group the fight is made
+        ///     for: nothing for a small group, all of it from a full group on. A small group's fight is made by the
+        ///     small-group mercy (<see cref="BossBlows"/>, softer blows the fewer heads there are), and strength
+        ///     counted as heads took that mercy away again: two veterans met blows twice as hard as two fresh players
+        ///     and won far fewer fights, and five veterans met a harder floor boss than five fresh players (the
+        ///     simulator, 2026-11-24). A group is never punished for its trees, gems and enchantments: below a full
+        ///     group they are all its own, and from a full group on they mostly buy a longer fight (the guardian's
+        ///     health follows the pressure, its blows hardly do).
+        /// </summary>
+        public static double StrengthShare(double headsPressure) =>
+            CombatMath.Clamp((headsPressure - StrengthFrom) / (1 - StrengthFrom), 0, 1);
+
+        private static double WithStrength(double headsPressure, double strength) =>
+            headsPressure * (1 + (strength - 1) * StrengthShare(headsPressure));
 
         /// <summary>
         ///     A player far below a part (low levels, poor gear) counts as less than one player in the fight, down to
@@ -67,7 +89,7 @@ namespace RavenNest.Combat
             if (strengths == null || strengths.Count == 0) return 0;
             var heads = 0.0;
             foreach (var s in strengths) heads += CombatMath.Clamp(s, MinHead, 1);
-            return heads / Math.Max(1, groupSize) * GroupStrength(strengths);
+            return WithStrength(heads / Math.Max(1, groupSize), GroupStrength(strengths));
         }
 
         /// <summary>A group's average strength beyond fresh synced players: 1 for a group of them, up to <see cref="MaxStrength"/>.</summary>

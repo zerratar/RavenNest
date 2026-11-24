@@ -103,6 +103,17 @@ namespace RavenNest.CombatSimulator
                         if (parts[0].Length > 0) TowerScenarios.TrySeconds = double.Parse(parts[0], inv);
                         if (parts.Length > 1 && parts[1].Length > 0) TowerScenarios.TryHealth = double.Parse(parts[1], inv);
                     }
+                    // "tower why 23,25 300": what makes a part's guardian hard; "tower tune 300": each mini boss's own edge
+                    if (args.Length > 1 && args[1] == "why")
+                    {
+                        TowerScenarios.Why(gear, args.Length > 3 && int.TryParse(args[3], out var wf) ? wf : 300, args.Length > 2 ? args[2].Split(',').Select(int.Parse).ToArray() : new int[0]);
+                        return 0;
+                    }
+                    if (args.Length > 1 && args[1] == "tune")
+                    {
+                        TowerScenarios.Tune(gear, args.Length > 2 && int.TryParse(args[2], out var tn) ? tn : 300);
+                        return 0;
+                    }
                     if (args.Contains("fixed")) TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
                     else TowerScenarios.RunPressure(gear, args.Length > 1 && int.TryParse(args[1], out var tp) ? tp : 200);
                     return 0;

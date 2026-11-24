@@ -333,8 +333,26 @@ namespace RavenNest.Combat.Tests
             Assert.Equal(0.8, four, 9);
             Assert.Equal(0.85, withNewcomer, 9);
             Assert.True(withNewcomer < TowerPressure.Of(new[] { 1.0, 1.0, 1.0, 1.0, 1.0 }));
-            // a mixed group: the heads, times the average of what they have beyond fresh players
-            Assert.Equal(4.5 / 5 * 1.1, TowerPressure.Of(new[] { 1.5, 1.0, 1.0, 1.0, 0.5 }), 9);
+            // a mixed group under a full one: the heads, and three quarters of what they have beyond fresh players
+            // (0.9 of a full group: strength counts from 0.6 of a group on, all of it from a full group)
+            Assert.Equal(0.75, TowerPressure.StrengthShare(0.9), 9);
+            Assert.Equal(4.5 / 5 * (1 + 0.1 * 0.75), TowerPressure.Of(new[] { 1.5, 1.0, 1.0, 1.0, 0.5 }), 9);
+            // a small group's strength is all its own: two veterans meet the fight two fresh players meet, and five
+            // veterans the floor boss five fresh players meet (nearly: a sixteenth of their strength counts)
+            Assert.Equal(0.4, TowerPressure.Of(new[] { 1.4, 1.4 }), 9);
+            Assert.Equal(0.4, TowerPressure.Of(2, 1.5), 9);
+            Assert.Equal(0.0, TowerPressure.StrengthShare(0.6), 9);
+            Assert.Equal(1.0, TowerPressure.StrengthShare(1.0), 9);
+            Assert.Equal(1.0, TowerPressure.StrengthShare(6.0), 9);
+            Assert.InRange(TowerPressure.Of(5, 1.4, Tower.FloorBossGroup), 0.625, 0.65);
+            Assert.Equal(1.4, TowerPressure.Of(5, 1.4), 9);
+            // more heads or more strength never make a smaller fight
+            for (var players = 1; players <= 40; players++)
+                foreach (var strength in new[] { 1.0, 1.2, 1.5 })
+                {
+                    Assert.True(TowerPressure.Of(players + 1, strength) > TowerPressure.Of(players, strength));
+                    Assert.True(TowerPressure.Of(players, strength) >= TowerPressure.Of(players, 1.0));
+                }
             Assert.Equal(1.1, TowerPressure.GroupStrength(new[] { 1.5, 1.0, 1.0, 1.0, 0.5 }), 9);
             Assert.Equal(1.0, TowerPressure.GroupStrength(new double[0]), 9);
             Assert.Equal(0.0, TowerPressure.Of(new double[0]), 9);
@@ -377,7 +395,9 @@ namespace RavenNest.Combat.Tests
                 var boss = Tower.Boss(part, 1.0);
                 // its pool (a floor boss's is longer since knocked out players come back) and the blows of its floor
                 Assert.Equal(part.IsFloorBoss ? TowerPressure.Scale(fixedBoss.Health, TowerPressure.FloorBossPool) : fixedBoss.Health, boss.Health);
-                Assert.Equal(TowerPressure.Fury(part.Floor, part.IsFloorBoss), boss.DamageScale, 9);
+                Assert.Equal(TowerPressure.Fury(part.Floor, part.IsFloorBoss) * part.Boss.Edge, boss.DamageScale, 9);
+                // a guardian's own edge on its floor's fury stays near it
+                Assert.InRange(part.Boss.Edge, 0.7, 1.5);
                 Assert.Equal(Tower.Enemy(part, part.Enemies[0]).Health, Tower.Enemy(part, part.Enemies[0], 1.0).Health);
                 Assert.Equal(part.Boss.AddsCount, TowerPressure.Helpers(part.Boss.AddsCount, part.Floor, 1.0));
             }

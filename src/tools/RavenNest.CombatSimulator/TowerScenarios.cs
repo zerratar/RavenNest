@@ -45,6 +45,104 @@ namespace RavenNest.CombatSimulator
         public static double[] TryFury, TrySlam;
         public static double TryFloorBossPool = -1, TryFloorBossFury = -1;
 
+        // the players of a row: fresh synced ones in the best gear for the part, or veterans (a tree's passives on top)
+        private static (CombatSheet Player, double Strength) Players(TowerFloorDefinition floor, GearPicker gear, bool vet)
+        {
+            var level = Tower.SyncLevel(floor.Number);
+            var kit = gear.Melee(level);
+            var player = Player(level, kit);
+            Tower.Sync(player, floor.Number, kit.ArmorHealth);
+            if (vet) SkillBuild.Parse(VeteranBuild).Passives().ApplyExtras(player, null);
+            return (player, vet ? TowerPressure.Strength(player, AttackStyle.Melee, floor.Number) : 1.0);
+        }
+
+        private static (double Won, double Minutes) Rate(TowerFloorDefinition floor, CombatSheet player, double strength, int players, int fights, int seed)
+        {
+            var bossPressure = TowerPressure.Of(players, strength, Tower.BossGroup(floor));
+            var boss = Tower.Boss(floor, bossPressure);
+            var sheet = boss.Sheet();
+            var random = new SeededCombatRandom(seed);
+            var wins = 0;
+            var time = 0.0;
+            for (var i = 0; i < fights; ++i)
+            {
+                var result = Fight(player, players, floor, floor.Boss, sheet, boss.AttackInterval, random, bossPressure);
+                if (!result.Won) continue;
+                wins++;
+                time += result.Time;
+            }
+            return (wins / (double)fights, wins > 0 ? time / wins / 60 : 0);
+        }
+
+        /// <summary>The wins of 100 a part's mini boss is aimed at for five fresh players: the floor's (90, 80, 70), five more on its first part and five fewer on its ninth.</summary>
+        public static double Target(TowerFloorDefinition floor)
+        {
+            var aim = floor.Floor <= 1 ? 0.90 : floor.Floor == 2 ? 0.80 : 0.70;
+            var part = Tower.PartOf(floor.Number);
+            return aim + 0.05 - 0.10 * Math.Min(1, Math.Max(0, (part - 1) / 8.0));
+        }
+
+        /// <summary>
+        ///     "tower why 23,25 300": for each part, what five and two fresh players win of its guardian as it is, and
+        ///     with one thing taken away at a time (its slam, its spit, its helpers, its element, its own power, its
+        ///     own attack speed, its own health): what makes it hard.
+        /// </summary>
+        public static void Why(GearPicker gear, int fights, int[] steps)
+        {
+            foreach (var step in steps)
+            {
+                var floor = Tower.Get(step);
+                if (floor == null) continue;
+                var b = floor.Boss;
+                var (player, strength) = Players(floor, gear, false);
+                string Row(string what)
+                {
+                    var five = Rate(floor, player, strength, 5, fights, step);
+                    var two = Rate(floor, player, strength, 2, fights, step);
+                    return $"  {what,-22} five {five.Won,5:P0} {five.Minutes,4:0.0} min   two {two.Won,5:P0} {two.Minutes,4:0.0} min";
+                }
+                Console.WriteLine($"{Tower.Short(step)} {b.Name}: power {b.PowerScale:0.00} every {b.AttackInterval:0.0}s, pool {b.HealthPool:0.00}, slam every {b.SlamEvery} x{b.SlamShare:0.0}, spit every {b.SpitEvery} x{b.SpitShare:0.0}, helpers {b.AddsCount} at {(b.AddsAt == null ? "-" : string.Join("/", b.AddsAt))}, element {b.Element} {b.ElementShare:0.0}, edge {b.Edge:0.00}; aim {Target(floor):P0}");
+                Console.WriteLine(Row("as it is"));
+                { var was = b.SlamEvery; b.SlamEvery = 0; Console.WriteLine(Row("without its slam")); b.SlamEvery = was; }
+                if (b.SpitEvery > 0) { var was = b.SpitEvery; b.SpitEvery = 0; Console.WriteLine(Row("without its spit")); b.SpitEvery = was; }
+                if (b.AddsCount > 0 && b.AddsAt != null) { var was = b.AddsCount; b.AddsCount = 0; Console.WriteLine(Row("without its helpers")); b.AddsCount = was; }
+                if (b.Element != Element.Physical) { var was = b.ElementShare; var el = b.Element; b.Element = Element.Physical; b.ElementShare = 0; Console.WriteLine(Row("without its element")); b.Element = el; b.ElementShare = was; }
+                if (Math.Abs(b.PowerScale - 1) > 0.001) { var was = b.PowerScale; b.PowerScale = 1; Console.WriteLine(Row("with a plain power")); b.PowerScale = was; }
+                if (Math.Abs(b.AttackInterval - 2.5) > 0.001) { var was = b.AttackInterval; b.AttackInterval = 2.5; Console.WriteLine(Row("striking every 2.5 s")); b.AttackInterval = was; }
+                if (Math.Abs(b.HealthPool - 1) > 0.001) { var was = b.HealthPool; b.HealthPool = 1; Console.WriteLine(Row("with a plain pool")); b.HealthPool = was; }
+                if (b.Style != AttackStyle.Melee) { var was = b.Style; b.Style = AttackStyle.Melee; Console.WriteLine(Row("striking with a weapon")); b.Style = was; }
+            }
+        }
+
+        /// <summary>
+        ///     "tower tune 300": for every mini boss, the edge (TowerBoss.Edge) that brings five fresh players to its
+        ///     part's aim (<see cref="Target"/>), found by halving, and what five and two fresh players win with it.
+        /// </summary>
+        public static void Tune(GearPicker gear, int fights)
+        {
+            Console.WriteLine($"{"Part",-6} {"Guardian",-30} {"aim",4} {"edge now",8} {"five now",8} {"edge",5} {"five",5} {"two",5}");
+            foreach (var floor in Tower.Floors)
+            {
+                if (floor.IsFloorBoss) continue;
+                var b = floor.Boss;
+                var (player, strength) = Players(floor, gear, false);
+                var aim = Target(floor);
+                var was = b.Edge;
+                var now = Rate(floor, player, strength, 5, fights, floor.Number).Won;
+                double lo = 0.3, hi = 2.0;
+                for (var i = 0; i < 9; ++i)
+                {
+                    b.Edge = (lo + hi) / 2;
+                    if (Rate(floor, player, strength, 5, fights, floor.Number).Won > aim) lo = b.Edge; else hi = b.Edge;
+                }
+                b.Edge = Math.Round((lo + hi) / 2 / 0.05) * 0.05;
+                var five = Rate(floor, player, strength, 5, fights, floor.Number + 1000).Won;
+                var two = Rate(floor, player, strength, 2, fights, floor.Number + 1000).Won;
+                Console.WriteLine($"{Tower.Short(floor.Number),-6} {b.Name,-30} {aim,4:P0} {was,8:0.00} {now,8:P0} {b.Edge,5:0.00} {five,5:P0} {two,5:P0}");
+                b.Edge = was;
+            }
+        }
+
         private static double ByFloor(double[] values, int floor) =>
             values == null || values.Length == 0 ? 1 : values[Math.Min(values.Length, Math.Max(1, floor)) - 1];
 
