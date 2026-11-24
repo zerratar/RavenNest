@@ -76,7 +76,18 @@ namespace RavenNest.CombatSimulator
                     PathScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var pr) ? pr : 100, args.Length > 2 ? args[2] : null, args.Skip(3).ToArray());
                     return 0;
                 case "tower":
-                    // "tower": scaling by pressure (groups of 2, 5, 10 and 30, veterans); "tower 200 fixed": the fixed numbers for any group
+                    // "tower": scaling by pressure (groups of 2, 5, 10 and 30, veterans); "tower 200 fixed": the fixed numbers for any group;
+                    // "tower 200 norecover": knocked out players stay out of the attempt, as before TowerRecovery
+                    if (args.Contains("norecover")) TowerScenarios.Recovery = false;
+                    // "REC=60:0.5": other recovery numbers to try (seconds, health back)
+                    var rec = args.FirstOrDefault(a => a.StartsWith("REC="));
+                    if (rec != null)
+                    {
+                        var inv = System.Globalization.CultureInfo.InvariantCulture;
+                        var parts = rec.Substring(4).Split(':');
+                        if (parts[0].Length > 0) TowerScenarios.TrySeconds = double.Parse(parts[0], inv);
+                        if (parts.Length > 1 && parts[1].Length > 0) TowerScenarios.TryHealth = double.Parse(parts[1], inv);
+                    }
                     if (args.Contains("fixed")) TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
                     else TowerScenarios.RunPressure(gear, args.Length > 1 && int.TryParse(args[1], out var tp) ? tp : 200);
                     return 0;

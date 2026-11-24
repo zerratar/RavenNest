@@ -25,6 +25,18 @@ namespace RavenNest.CombatSimulator
         private static readonly int[] PressureGroups = { 2, 5, 10, 30 };
 
         /// <summary>
+        ///     Knocked out players recover and come back into the fight (TowerRecovery); "tower 200 norecover" fights
+        ///     as before it, to compare: out for the rest of the attempt.
+        /// </summary>
+        public static bool Recovery = true;
+
+        /// <summary>
+        ///     Other numbers to try, "tower 200 REC=60:0.5": the seconds a knockout takes and the share of health on
+        ///     the way back. Below 0: the rule's own (TowerRecovery).
+        /// </summary>
+        public static double TrySeconds = -1, TryHealth = -1;
+
+        /// <summary>
         ///     Seconds a player spends between kills: walking to the next monster, turning to it, blows wasted on one
         ///     that others are already finishing. Set so that five players make the 12 kills a minute measured in the
         ///     game on floor 1, part 6 (2026-11-24); the simulator's own fights would say 20.
@@ -208,6 +220,9 @@ namespace RavenNest.CombatSimulator
             var nextBoss = bossSwing;
             var swings = 0;
             var time = 0.0;
+            // knocked out players recover by the entrance and come back (TowerRecovery): when each is back
+            var backAt = new double[players];
+            var down = new bool[players];
 
             // the adds: the floor's first monster at its level, called at each share of the boss's health
             var addDef = pressure < 0 ? Tower.Enemy(floor, floor.Enemies[0]) : Tower.Enemy(floor, floor.Enemies[0], pressure, true);
@@ -227,6 +242,24 @@ namespace RavenNest.CombatSimulator
                     enragedBoss = boss.Copy();
                     enragedBoss.Melee.Power = (int)(boss.Melee.Power * def.EnragePower);
                     enragedBoss.Magic.Power = (int)(boss.Magic.Power * def.EnragePower);
+                }
+
+                // whoever has recovered is back, at a share of their health, after the walk to the guardian; whoever
+                // just fell starts to recover (everyone down at the same moment was the loss, where it happened)
+                for (var i = 0; i < players; ++i)
+                {
+                    if (health[i] > 0) continue;
+                    if (!down[i])
+                    {
+                        down[i] = true;
+                        backAt[i] = time + (TrySeconds > 0 ? TrySeconds : TowerRecovery.Seconds);
+                    }
+                    else if (Recovery && time >= backAt[i])
+                    {
+                        down[i] = false;
+                        health[i] = player.MaxHealth * (TryHealth > 0 ? TryHealth : TowerRecovery.ReturnHealth);
+                        nextSwing[i] = time + TowerRecovery.WalkBackSeconds;
+                    }
                 }
 
                 // the next thing to happen: a player's swing, the boss's or an add's
