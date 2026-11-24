@@ -4,11 +4,17 @@ using System.Collections.Generic;
 namespace RavenNest.Combat
 {
     /// <summary>
-    ///     The tower (the game's docs/tower-design.md): a climb of floors that a stream makes together. Every floor has
-    ///     a few stream quests (defeat its monsters) and a boss; the boss opens when the quests are done and can be
-    ///     tried as often as the stream likes. Floors come in bands of ten, each band its own biome, element and town.
-    ///     Shared by the server (progress, rewards), the game (the floor's enemies and boss, the quest text) and the
-    ///     simulator (tuning the bosses). Floors 1 to 30 (three bands) so far; more bands keep coming.
+    ///     The tower (the game's docs/tower-design.md and docs/tower-worlds-proposal.md section 12): a climb that a
+    ///     stream makes together. What players see: the tower has floors, each floor a world with its own town, biome
+    ///     and element, and each floor has parts. Every part has objectives (defeat its monsters, gather, find hidden
+    ///     things) and a guardian: a mini boss, or on the floor's last part the floor boss, which opens the next floor.
+    ///     The names in this code are older than those words: a <see cref="TowerBand"/> is a floor, a
+    ///     <see cref="TowerFloorDefinition"/> is one part, and its <see cref="TowerFloorDefinition.Number"/> is the
+    ///     part's step, counted from 1 through every floor (what the server stores: StreamTower.Floor, TowerClear.Floor).
+    ///     The mapping between steps and floors with parts is here (<see cref="FloorOf"/>, <see cref="PartOf"/>,
+    ///     <see cref="StepOf"/>, <see cref="Label"/>), and nothing may assume a number of floors or parts in a floor.
+    ///     Shared by the server (progress, rewards), the game (the part's enemies and boss, the objectives' text) and
+    ///     the simulator (tuning the bosses and the scaling). Three floors of ten parts so far; more keep coming.
     /// </summary>
     public static class Tower
     {
@@ -39,7 +45,7 @@ namespace RavenNest.Combat
             return null;
         }
 
-        /// <summary>The town a stream can visit: the one of the band its current floor is in.</summary>
+        /// <summary>The town a stream can visit: the one of the floor its current step is on.</summary>
         public static TowerTownDefinition TownFor(int floor)
         {
             var band = BandOf(Math.Max(1, Math.Min(floor, TopFloor)));
@@ -104,6 +110,117 @@ namespace RavenNest.Combat
         {
             foreach (var band in bands) if (floor >= band.FirstFloor && floor <= band.LastFloor) return band;
             return null;
+        }
+
+        // ---- Floors and parts: what players see (docs/tower-worlds-proposal.md section 12) -------------------------
+        // A step is a part's number counted through the whole tower (1, 2, 3...); the server keeps steps. A floor is a
+        // band; its parts are the band's steps. Every caller asks here, so floors may have any number of parts.
+
+        /// <summary>How many floors exist so far.</summary>
+        public static int FloorCount => bands.Count;
+
+        /// <summary>The floor (a world with its town) by its number, or null.</summary>
+        public static TowerBand FloorInfo(int floor)
+        {
+            foreach (var band in bands) if (band.Number == floor) return band;
+            return null;
+        }
+
+        /// <summary>The floor a step is on, 0 when the step does not exist.</summary>
+        public static int FloorOf(int step) => BandOf(step)?.Number ?? 0;
+
+        /// <summary>The part of its floor a step is (1 is the floor's first), 0 when the step does not exist.</summary>
+        public static int PartOf(int step)
+        {
+            var band = BandOf(step);
+            return band != null ? step - band.FirstFloor + 1 : 0;
+        }
+
+        /// <summary>How many parts a floor has, 0 when the floor does not exist.</summary>
+        public static int PartsIn(int floor) => FloorInfo(floor)?.Parts ?? 0;
+
+        /// <summary>The step of a floor's part, 0 when there is no such part.</summary>
+        public static int StepOf(int floor, int part)
+        {
+            var band = FloorInfo(floor);
+            return band != null && part >= 1 && part <= band.Parts ? band.FirstFloor + part - 1 : 0;
+        }
+
+        /// <summary>The step of a floor's first and last part (the last is the floor boss's), 0 when the floor does not exist.</summary>
+        public static int FirstStep(int floor) => FloorInfo(floor)?.FirstFloor ?? 0;
+        public static int LastStep(int floor) => FloorInfo(floor)?.LastFloor ?? 0;
+
+        /// <summary>The guardian of this step is its floor's boss (the last part); every other part's is a mini boss.</summary>
+        public static bool IsFloorBoss(int step)
+        {
+            var band = BandOf(step);
+            return band != null && step == band.LastFloor;
+        }
+
+        /// <summary>
+        ///     The latest part of a floor a stream on <paramref name="streamStep"/> has reached, as a step: the stream's
+        ///     own part on its own floor, the last part of a floor below it, 0 for a floor above it.
+        /// </summary>
+        public static int LatestStep(int floor, int streamStep)
+        {
+            var band = FloorInfo(floor);
+            if (band == null || streamStep < band.FirstFloor) return 0;
+            return Math.Min(streamStep, band.LastFloor);
+        }
+
+        /// <summary>Floors whose boss has fallen once every step up to <paramref name="clearedStep"/> is cleared.</summary>
+        public static int FloorsCleared(int clearedStep)
+        {
+            var count = 0;
+            foreach (var band in bands) if (clearedStep >= band.LastFloor) count++;
+            return count;
+        }
+
+        /// <summary>"Floor 2, part 4": a step in the players' words (for a step past the top: the top's).</summary>
+        public static string Label(int step)
+        {
+            var band = BandOf(Math.Max(1, Math.Min(step, TopFloor)));
+            if (band == null) return "";
+            var s = Math.Max(band.FirstFloor, Math.Min(step, band.LastFloor));
+            return "Floor " + band.Number + ", part " + (s - band.FirstFloor + 1);
+        }
+
+        /// <summary>"2-4": a step the short way, as chat takes it (!tower 2-4).</summary>
+        public static string Short(int step)
+        {
+            var band = BandOf(step);
+            return band != null ? band.Number + "-" + (step - band.FirstFloor + 1) : "";
+        }
+
+        /// <summary>
+        ///     What a player typed after !tower as a place: "2-4", "2 4", "floor 2 part 4", "floor 2" (part 0: the floor
+        ///     as a whole), "part 4" or "4" alone (floor 0: the floor the group is on). False when it is none of these.
+        /// </summary>
+        public static bool TryParsePlace(string text, out int floor, out int part)
+        {
+            floor = 0; part = 0;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            var words = text.Trim().ToLowerInvariant().Split(new[] { ' ', '-', ',', '.', ':', '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var numbers = new List<int>();
+            var sawFloor = false; var sawPart = false; var partFirst = false;
+            foreach (var w in words)
+            {
+                if (w == "floor" || w == "f") { sawFloor = true; continue; }
+                if (w == "part" || w == "p") { if (!sawFloor && numbers.Count == 0) partFirst = true; sawPart = true; continue; }
+                if (!int.TryParse(w, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n)) return false;
+                numbers.Add(n);
+            }
+            if (numbers.Count == 0 || numbers.Count > 2) return false;
+            if (numbers.Count == 2)
+            {
+                // "part 4 floor 2" is the only order with the part first
+                if (partFirst && sawFloor) { part = numbers[0]; floor = numbers[1]; }
+                else { floor = numbers[0]; part = numbers[1]; }
+                return floor > 0 && part > 0;
+            }
+            if (sawFloor && !sawPart) floor = numbers[0];
+            else part = numbers[0];
+            return numbers[0] > 0;
         }
 
         /// <summary>
@@ -189,6 +306,32 @@ namespace RavenNest.Combat
         public static int PowerAt(int level) => 15 + (int)(0.22 * level);
         public static int AccuracyAt(int level) => 12 + (int)(0.18 * level);
 
+        /// <summary>
+        ///     One of the part's monsters under a fight's pressure (<see cref="TowerPressure"/>): its health by the
+        ///     pressure, everything else as always. <paramref name="helper"/>: one a guardian called.
+        /// </summary>
+        public static EnemyDefinition Enemy(TowerFloorDefinition floor, TowerEnemy enemy, double pressure, bool helper = false)
+        {
+            var d = Enemy(floor, enemy);
+            var scale = helper ? TowerPressure.HelperHealth(floor.Floor, pressure) : TowerPressure.MonsterHealth(floor.Floor, pressure);
+            d.Health = TowerPressure.Scale(d.Health, scale);
+            // a small group's mercy reaches the guardian's helpers too: they strike as softly as it does
+            if (helper && pressure < 1) d.DamageScale = TowerPressure.BossBlows(floor.Floor, pressure);
+            return d;
+        }
+
+        /// <summary>
+        ///     The part's guardian under a fight's pressure: its health by the pressure and its blows a little; a full
+        ///     group of fresh players (pressure 1) meets the fixed numbers, and never less.
+        /// </summary>
+        public static EnemyDefinition Boss(TowerFloorDefinition floor, double pressure)
+        {
+            var d = Boss(floor);
+            d.Health = TowerPressure.Scale(d.Health, TowerPressure.BossHealth(floor.Floor, pressure));
+            d.DamageScale = TowerPressure.BossBlows(floor.Floor, pressure);
+            return d;
+        }
+
         /// <summary>One of the floor's monsters at the floor's level: its look and style from the game, its numbers from here.</summary>
         public static EnemyDefinition Enemy(TowerFloorDefinition floor, TowerEnemy enemy)
         {
@@ -198,7 +341,7 @@ namespace RavenNest.Combat
             {
                 Id = "tower-" + enemy.Id,
                 Name = enemy.Name,
-                Area = "Tower floor " + floor.Number,
+                Area = "Tower " + Short(floor.Number),
                 Family = enemy.Family,
                 Attack = level,
                 Strength = level,
@@ -216,7 +359,10 @@ namespace RavenNest.Combat
             return d;
         }
 
-        /// <summary>The floor's boss: fixed numbers for its floor, so climbing is a real progression.</summary>
+        /// <summary>
+        ///     The part's guardian (a mini boss, or the floor boss on the floor's last part) for the suggested group:
+        ///     fixed numbers for its part, so climbing is a real progression.
+        /// </summary>
         public static EnemyDefinition Boss(TowerFloorDefinition floor)
         {
             var band = BandOf(floor.Number);
@@ -226,7 +372,7 @@ namespace RavenNest.Combat
             {
                 Id = "tower-boss-" + floor.Number,
                 Name = b.Name,
-                Area = "Tower floor " + floor.Number,
+                Area = "Tower " + Short(floor.Number),
                 Family = b.Family,
                 Attack = level,
                 Strength = level,
@@ -310,50 +456,60 @@ namespace RavenNest.Combat
             var antlerReaver = new TowerEnemy { Id = "hall-antler-reaver", Name = "Antlered Reaver", Model = "df-barbarian", Family = EnemyFamily.Humanoid, LevelOffset = 2, AttackInterval = 1.1 };
             var fallenInquisitor = new TowerEnemy { Id = "crypt-fallen-inquisitor", Name = "Fallen Inquisitor", Model = "df-inquisitor", Family = EnemyFamily.Humanoid, Style = AttackStyle.Magic, LevelOffset = 3, AttackInterval = 1.3 };
 
+            // The parts' objectives (docs/tower-worlds-proposal.md section 12): two kill objectives each, the simplest
+            // case, and on a few parts of every floor a gather or a find that one of the floor's townspeople asks for
+            // (after the boss in the call). The amounts set the pace: see the table in section 12.
             var list = new List<TowerFloorDefinition>
             {
-                Floor(1, "The Burrows", "Something has been digging under the first hall. A lot of somethings.",
-                    new[] { bunny, goblin }, Defeat(bunny, 30), Defeat(goblin, 20),
+                Part(1, "The Burrows", "Something has been digging under the first hall. A lot of somethings.",
+                    new[] { bunny, goblin }, Defeat(bunny, 240), Defeat(goblin, 190),
                     new TowerBoss { Name = "Nibbles the Vicious", Model = "home-bunny", Scale = 4f, Family = EnemyFamily.Beast, Line = "Run away! Run away!" }),
-                Floor(2, "Goblin Market", "The goblins trade in stolen boots and very old cheese.",
-                    new[] { goblin, bunny }, Defeat(goblin, 40), Defeat(bunny, 25),
-                    new TowerBoss { Name = "Warchief Grubnose", Model = "ravebridge-goblin", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.15 }),
-                Floor(3, "The Nest", "Eggs the size of barrels, and the mothers who laid them.",
-                    new[] { greenMetalon, goblin, bogApothecary }, Defeat(greenMetalon, 35), Defeat(goblin, 25),
-                    new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsCount = 4 }),
-                Floor(4, "Hall of Bones", "The roots grew through the old graves, and the graves did not like it.",
-                    new[] { risen, skeleton, risenSoldier }, Defeat(skeleton, 40), Defeat(risen, 30),
+                Part(2, "Goblin Market", "The goblins trade in stolen boots and very old cheese.",
+                    new[] { goblin, bunny }, Defeat(goblin, 360), Defeat(bunny, 290),
+                    new TowerBoss { Name = "Warchief Grubnose", Model = "ravebridge-goblin", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.15 },
+                    Find("boots", "Stolen Boot", "Stolen Boots", 3, "mossbeard", "The goblins trade in boots, and half of them came off the feet of Old Mossbeard's guests. He wants them back before anyone goes home barefoot.")),
+                Part(3, "The Nest", "Eggs the size of barrels, and the mothers who laid them.",
+                    new[] { greenMetalon, goblin, bogApothecary }, Defeat(greenMetalon, 240), Defeat(goblin, 190),
+                    new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsCount = 4 },
+                    Gather("herbs", "herbs", 1100, "bramble", "Bramble brews antivenom for everyone the Brood Mother's children bite. She takes any herbs and greens the stream brings in.", "Gathering", "Farming")),
+                Part(4, "Hall of Bones", "The roots grew through the old graves, and the graves did not like it.",
+                    new[] { risen, skeleton, risenSoldier }, Defeat(skeleton, 320), Defeat(risen, 260),
                     // the Dark Fortress's Necromancer (2026-11-23, was the Rootbound King): a caster who raises the dead,
                     // three Risen Dead at three quarters, half and a quarter of its health
                     new TowerBoss { Name = "Mortimer Bonewhistle", Model = "df-necromancer", Scale = 2.2f, Family = EnemyFamily.Humanoid, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 3, SlamEvery = 0, SpitEvery = 5, Line = "Rise, my darlings. Supper has arrived.",
                         Trophies = new[] { "Bonewhistle Staff", "Grinning Skull" } }),
-                Floor(5, "Thornwood", "The trees here have thorns as long as swords, and so do the Metalons.",
-                    new[] { purpleMetalon, goblin, antlerReaver }, Defeat(purpleMetalon, 40), Defeat(goblin, 30),
-                    new TowerBoss { Name = "Old Thornback", Model = "home-metalon-purple", Scale = 2.8f, Family = EnemyFamily.Insect, HealthPool = 1.1 }),
-                Floor(6, "The Pasture", "A peaceful meadow with cows. The cows are watching you.",
-                    new[] { cow, bunny }, Defeat(cow, 40), Defeat(bunny, 40),
-                    new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Element = Element.Poison, ElementShare = 0.6, SpitEvery = 4, Line = "Moooo." }),
-                Floor(7, "Goblin Keep", "Every goblin you met so far had a cousin. They all live here.",
-                    new[] { goblin, skeleton, graveKnight }, Defeat(goblin, 50), Defeat(skeleton, 35),
+                Part(5, "Thornwood", "The trees here have thorns as long as swords, and so do the Metalons.",
+                    new[] { purpleMetalon, goblin, antlerReaver }, Defeat(purpleMetalon, 270), Defeat(goblin, 220),
+                    new TowerBoss { Name = "Old Thornback", Model = "home-metalon-purple", Scale = 2.8f, Family = EnemyFamily.Insect, HealthPool = 1.1 },
+                    Gather("timber", "timber", 1200, "elm", "The thorns have eaten the stair to the pasture. Warden Elm wants timber to lay a new one over them.", "Woodcutting")),
+                Part(6, "The Pasture", "A peaceful meadow with cows. The cows are watching you.",
+                    new[] { cow, bunny }, Defeat(cow, 550), Defeat(bunny, 425),
+                    new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Element = Element.Poison, ElementShare = 0.6, SpitEvery = 4, Line = "Moooo." },
+                    Find("carrots", "Lost Carrot", "Lost Carrots", 4, "pip", "Pip left carrots all over the meadow in case Nibbles came back. The cows have not found them all yet.")),
+                Part(7, "Goblin Keep", "Every goblin you met so far had a cousin. They all live here.",
+                    new[] { goblin, skeleton, graveKnight }, Defeat(goblin, 300), Defeat(skeleton, 240),
                     // the Dark Fortress's Colossus (2026-11-23, was King Grubnose the Second): slow, heavy swings and a
                     // ground slam every third one; the keep's goblins come running at half its health
                     new TowerBoss { Name = "Big Gorp, the Keep Colossus", Model = "df-colossus", Scale = 2.4f, Family = EnemyFamily.Humanoid, PowerScale = 1.15, HealthPool = 1.0, AttackInterval = 3, SlamEvery = 3, SlamShare = 0.6, AddsAt = new[] { 0.5 }, AddsCount = 4, Line = "King Grubnose says: no visitors.",
-                        Trophies = new[] { "Colossus Cleaver", "Keepward Shield" } }),
-                Floor(8, "Blighted Grove", "The rot starts here. The red Metalons carry it, and the dead walk in it.",
-                    new[] { plague, redMetalon, purpleMetalon }, Defeat(redMetalon, 40), Defeat(plague, 40),
+                        Trophies = new[] { "Colossus Cleaver", "Keepward Shield" } },
+                    Gather("iron", "iron ore", 1350, "elm", "The keep's gate is goblin work and will not hold. Warden Elm wants iron to bar it behind the climbers.", "Mining")),
+                Part(8, "Blighted Grove", "The rot starts here. The red Metalons carry it, and the dead walk in it.",
+                    new[] { plague, redMetalon, purpleMetalon }, Defeat(redMetalon, 400), Defeat(plague, 320),
                     // the Dark Fortress's Plague Lord (2026-11-23, was Redshell the Blighted): poison clouds every third
                     // swing (the spit's marked circle), and its Plague Walkers at half its health
                     new TowerBoss { Name = "Lord Pestilus", Model = "df-plague-lord", Scale = 2.3f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.9, Element = Element.Poison, ElementShare = 0.6, HealthPool = 1.1, SpitEvery = 3, SpitShare = 1.3, AddsAt = new[] { 0.5 }, Line = "Breathe deep, little ones. It is good for you.",
-                        Trophies = new[] { "Plague Mitre", "Blightbone Staff" } }),
+                        Trophies = new[] { "Plague Mitre", "Blightbone Staff" } },
+                    Find("samples", "Blight Sample", "Blight Samples", 3, "bramble", "Bramble wants to know what the rot is before it reaches her garden. Somebody has to bring her a few jars of it.")),
                 // the Behemoth since 2026-11-23 (was the Gardener, a big skeleton): the same fight and numbers, a body
                 // that fits the rot, a name and a line of its own, and trophies
-                Floor(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide, and something down here tends to it.",
-                    new[] { corpse, cryptWraith, redMetalon }, Defeat(corpse, 45), Defeat(cryptWraith, 45),
+                Part(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide, and something down here tends to it.",
+                    new[] { corpse, cryptWraith, redMetalon }, Defeat(corpse, 340), Defeat(cryptWraith, 270),
                     new TowerBoss { Name = "Old Rotbelly", Model = "df-behemoth", Scale = 2.3f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Fresh compost! Come closer. Closer.",
-                        Trophies = new[] { "Rotbelly Bonesaw", "Rotreaper" } }),
-                Floor(10, "The Verdant Throne", "At the top of the halls, on a throne of moss, sleeps the one who made it all grow.",
-                    new[] { redMetalon, purpleMetalon, fallenInquisitor }, Defeat(redMetalon, 50), Defeat(purpleMetalon, 50),
-                    new TowerBoss { Name = "Viridia, the Verdant Wyrm", Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
+                        Trophies = new[] { "Rotbelly Bonesaw", "Rotreaper" } },
+                    Gather("provisions", "provisions", 1500, "mossbeard", "Nobody faces what sleeps above on an empty stomach. Old Mossbeard is cooking for the whole climb and needs fish and crops.", "Fishing", "Farming")),
+                Part(10, "The Verdant Throne", "At the top of the halls, on a throne of moss, sleeps the one who made it all grow.",
+                    new[] { redMetalon, purpleMetalon, fallenInquisitor }, Defeat(redMetalon, 450), Defeat(purpleMetalon, 350),
+                    new TowerBoss { Name = "Viridia, the Verdant Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
             };
 
             // the second band, the Frozen Vault (2026-11-10): ice, weak to fire
@@ -369,36 +525,43 @@ namespace RavenNest.Combat
 
             list.AddRange(new[]
             {
-                Floor(11, "The Frostgate", "The stairs come out into the cold. Somebody has built a gate here, and somebody else is raiding it.",
-                    new[] { raider, hare }, Defeat(raider, 35), Defeat(hare, 30),
+                Part(11, "The Frostgate", "The stairs come out into the cold. Somebody has built a gate here, and somebody else is raiding it.",
+                    new[] { raider, hare }, Defeat(raider, 775), Defeat(hare, 625),
                     new TowerBoss { Name = "Jarl Rimebeard", Model = "iceheim-viking-chief", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "Shut the door! You are letting the warm in." }),
-                Floor(12, "Hare Hollow", "Burrows in the snow, and the hares have heard what happened on the first floor.",
-                    new[] { hare, raider }, Defeat(hare, 45), Defeat(raider, 25),
-                    new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." }),
-                Floor(13, "The Bone Glacier", "The ice is full of bones. Some of them are still moving.",
-                    new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 40), Defeat(wraith, 30),
-                    new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 }),
-                Floor(14, "Hall of Whispers", "Every sound comes back colder than it left.",
-                    new[] { wraith, frozenSkeleton }, Defeat(wraith, 45), Defeat(frozenSkeleton, 35),
+                Part(12, "Hare Hollow", "Burrows in the snow, and the hares have heard what happened on the first floor.",
+                    new[] { hare, raider }, Defeat(hare, 800), Defeat(raider, 650),
+                    new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." },
+                    Find("feathers", "Duck Feather", "Duck Feathers", 3, "ylva", "Ylva's duck flew up the tower and left feathers behind. Each one found tells her he came this way.")),
+                Part(13, "The Bone Glacier", "The ice is full of bones. Some of them are still moving.",
+                    new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 675), Defeat(wraith, 550),
+                    new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 },
+                    Gather("coal", "coal and ore", 2000, "hilda", "The cold up here cracks steel. Hilda needs coal and ore to keep the forge lit and the climbers' blades whole.", "Mining")),
+                Part(14, "Hall of Whispers", "Every sound comes back colder than it left.",
+                    new[] { wraith, frozenSkeleton }, Defeat(wraith, 875), Defeat(frozenSkeleton, 700),
                     new TowerBoss { Name = "The Wailing Matron", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, AddsAt = new[] { 0.66, 0.33 }, Line = "Shhhhh." }),
-                Floor(15, "The Frozen Pond", "A pond frozen solid, and on it a lot of very small ducks with very sharp beaks.",
-                    new[] { quackling, hare }, Defeat(quackling, 40), Defeat(hare, 40),
-                    new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." }),
-                Floor(16, "Raiders' Mead Hall", "The raiders' long hall. The mead is warm, the welcome is not.",
-                    new[] { raider, thane }, Defeat(raider, 50), Defeat(thane, 30),
-                    new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "Mead first. Then I break you." }),
-                Floor(17, "The Drake Roost", "Nests of ice on every ledge. The drakes do not share.",
-                    new[] { drake, quackling }, Defeat(drake, 40), Defeat(quackling, 35),
-                    new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 }),
-                Floor(18, "The Shiver Mines", "Old mines cut into the ice, and something frozen in the deepest shaft is waking up.",
-                    new[] { ronin, frozenSkeleton }, Defeat(ronin, 40), Defeat(frozenSkeleton, 45),
-                    new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.25, Line = "A thousand winters I waited for a worthy duel. You will have to do." }),
-                Floor(19, "Cold Storage", "Somebody keeps their cows up here. To keep them fresh. They did not stay fresh.",
-                    new[] { frostCow, drake }, Defeat(frostCow, 45), Defeat(drake, 40),
-                    new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Element = Element.Ice, ElementShare = 0.6, SpitEvery = 4, Line = "Mooooo. Brrrr." }),
-                Floor(20, "The Rime Throne", "At the top of the vault, on a throne of ice, the cold itself has a name.",
-                    new[] { drake, thane }, Defeat(drake, 50), Defeat(thane, 45),
-                    new TowerBoss { Name = "Glacius, the Winter Wyrm", Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
+                Part(15, "The Frozen Pond", "A pond frozen solid, and on it a lot of very small ducks with very sharp beaks.",
+                    new[] { quackling, hare }, Defeat(quackling, 725), Defeat(hare, 575),
+                    new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." },
+                    Gather("fish", "fish", 2150, "tove", "Old Tove says the ducks have scared every fish out of the pond. He needs fish from anywhere to stock Rimeholt for the winter.", "Fishing")),
+                Part(16, "Raiders' Mead Hall", "The raiders' long hall. The mead is warm, the welcome is not.",
+                    new[] { raider, thane }, Defeat(raider, 925), Defeat(thane, 750),
+                    new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "Mead first. Then I break you." },
+                    Find("barrels", "Mead Barrel", "Mead Barrels", 4, "gunnhild", "The raiders drink Big Gunnhild's mead, and they did not pay for it. She wants her barrels back, full or not.")),
+                Part(17, "The Drake Roost", "Nests of ice on every ledge. The drakes do not share.",
+                    new[] { drake, quackling }, Defeat(drake, 775), Defeat(quackling, 625),
+                    new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
+                    Gather("firewood", "firewood", 2300, "gunnhild", "Drake breath has frozen every hearth below the roost. Big Gunnhild needs firewood to thaw the mead hall out.", "Woodcutting")),
+                Part(18, "The Shiver Mines", "Old mines cut into the ice, and something frozen in the deepest shaft is waking up.",
+                    new[] { ronin, frozenSkeleton }, Defeat(ronin, 1000), Defeat(frozenSkeleton, 800),
+                    new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.25, Line = "A thousand winters I waited for a worthy duel. You will have to do." },
+                    Find("lanterns", "Miner's Lantern", "Miner's Lanterns", 4, "hilda", "Hilda's grandfather dug these mines and never came out. His crew's lanterns are still down there somewhere.")),
+                Part(19, "Cold Storage", "Somebody keeps their cows up here. To keep them fresh. They did not stay fresh.",
+                    new[] { frostCow, drake }, Defeat(frostCow, 825), Defeat(drake, 650),
+                    new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Element = Element.Ice, ElementShare = 0.6, SpitEvery = 4, Line = "Mooooo. Brrrr." },
+                    Gather("stew", "food for the stew", 2450, "tove", "Before the last climb of the vault, Old Tove makes his stew. It takes a lot of crops, and anything that grows wild.", "Farming", "Gathering")),
+                Part(20, "The Rime Throne", "At the top of the vault, on a throne of ice, the cold itself has a name.",
+                    new[] { drake, thane }, Defeat(drake, 1050), Defeat(thane, 850),
+                    new TowerBoss { Name = "Glacius, the Winter Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
             });
 
             // the third band, the Storm Spire (2026-11-19): lightning, weak to poison; sky pirates, storm ninjas, the arena
@@ -416,36 +579,43 @@ namespace RavenNest.Combat
 
             list.AddRange(new[]
             {
-                Floor(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbor of planks and rope. The ships moored here are not friendly.",
-                    new[] { skyPirate, staticHare }, Defeat(skyPirate, 35), Defeat(staticHare, 30),
+                Part(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbor of planks and rope. The ships moored here are not friendly.",
+                    new[] { skyPirate, staticHare }, Defeat(skyPirate, 1150), Defeat(staticHare, 900),
                     new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
-                Floor(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",
-                    new[] { staticHare, skyPirate }, Defeat(staticHare, 45), Defeat(skyPirate, 25),
-                    new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." }),
-                Floor(23, "The Wind Bridges", "Stone bridges between drifting rocks, and on every one of them someone who wants you off it.",
-                    new[] { stormNinja, skyPirate }, Defeat(stormNinja, 40), Defeat(skyPirate, 30),
-                    new TowerBoss { Name = "Master Kaze", Model = "kyojin-ninja", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.15, AttackInterval = 2, Line = "You cannot hit the wind." }),
-                Floor(24, "The Wisp Gallery", "A long hall inside the spire where the lightning lives. It hums. It hums back.",
-                    new[] { wisp, stormNinja }, Defeat(wisp, 45), Defeat(stormNinja, 35),
-                    new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." }),
-                Floor(25, "The Duck Deck", "A ship's deck moored on a cloud, crewed entirely by ducks. They have a captain.",
-                    new[] { duckling, corsair }, Defeat(duckling, 40), Defeat(corsair, 30),
-                    new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "Arr. QUACK." }),
-                Floor(26, "The Arena of Winds", "A ring of stone open to the storm, and a crowd that came to see you lose.",
-                    new[] { gladiator, sentinel }, Defeat(gladiator, 45), Defeat(sentinel, 30),
+                Part(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",
+                    new[] { staticHare, skyPirate }, Defeat(staticHare, 1150), Defeat(skyPirate, 925),
+                    new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." },
+                    Find("wool", "Tuft of Wool", "Tufts of Wool", 4, "tessa", "Woolly floated through here on his cloud and the hares kept what he shed. Tessa wants every tuft.")),
+                Part(23, "The Wind Bridges", "Stone bridges between drifting rocks, and on every one of them someone who wants you off it.",
+                    new[] { stormNinja, skyPirate }, Defeat(stormNinja, 950), Defeat(skyPirate, 775),
+                    new TowerBoss { Name = "Master Kaze", Model = "kyojin-ninja", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.15, AttackInterval = 2, Line = "You cannot hit the wind." },
+                    Gather("planks", "planks", 2900, "brisa", "Half the bridges end in mid-air. Captain Brisa wants timber to plank them before somebody walks off one.", "Woodcutting")),
+                Part(24, "The Wisp Gallery", "A long hall inside the spire where the lightning lives. It hums. It hums back.",
+                    new[] { wisp, stormNinja }, Defeat(wisp, 1250), Defeat(stormNinja, 975),
+                    new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." },
+                    Find("bottles", "Lightning Bottle", "Lightning Bottles", 4, "volt", "Tinker Volt left bottles in the gallery to catch the wisps' sparks. He would like them back, carefully.")),
+                Part(25, "The Duck Deck", "A ship's deck moored on a cloud, crewed entirely by ducks. They have a captain.",
+                    new[] { duckling, corsair }, Defeat(duckling, 1000), Defeat(corsair, 800),
+                    new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, HealthPool = 1.1, SpitEvery = 4, Line = "Arr. QUACK." },
+                    Gather("rations", "rations", 3000, "hob", "A crew of ducks eats a ship's stores in a day. Skipper Hob needs fish and crops to feed the climbers instead.", "Fishing", "Farming")),
+                Part(26, "The Arena of Winds", "A ring of stone open to the storm, and a crowd that came to see you lose.",
+                    new[] { gladiator, sentinel }, Defeat(gladiator, 1300), Defeat(sentinel, 1050),
                     new TowerBoss { Name = "Champion Voltus", Model = "atria-gladiator", Scale = 2.4f, Family = EnemyFamily.Humanoid, PowerScale = 1.2, Line = "The crowd wants a show. Try not to disappoint them." }),
-                Floor(27, "The Drake Eyrie", "Nests on the floating rocks, and drakes that dive out of the thunderclouds.",
-                    new[] { stormDrake, duckling }, Defeat(stormDrake, 40), Defeat(duckling, 35),
-                    new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 }),
-                Floor(28, "The Sentinel Spire", "The last stair inside the spire, held by elves who swore the storm an oath.",
-                    new[] { sentinel, gladiator }, Defeat(sentinel, 45), Defeat(gladiator, 40),
-                    new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." }),
-                Floor(29, "The Lightning Pasture", "Somebody grazes cows on a cloud. The lightning found them first.",
-                    new[] { chargedCow, stormDrake }, Defeat(chargedCow, 45), Defeat(stormDrake, 40),
-                    new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." }),
-                Floor(30, "The Eye of the Storm", "At the very top of the spire the storm turns around one point, and something lives in it.",
-                    new[] { stormDrake, gladiator }, Defeat(stormDrake, 50), Defeat(gladiator, 45),
-                    new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
+                Part(27, "The Drake Eyrie", "Nests on the floating rocks, and drakes that dive out of the thunderclouds.",
+                    new[] { stormDrake, duckling }, Defeat(stormDrake, 1050), Defeat(duckling, 850),
+                    new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
+                    Gather("copper", "copper ore", 3150, "volt", "Tinker Volt wants lightning rods on every rock of the eyrie, so the drakes get the storm and you do not. Rods take copper.", "Mining")),
+                Part(28, "The Sentinel Spire", "The last stair inside the spire, held by elves who swore the storm an oath.",
+                    new[] { sentinel, gladiator }, Defeat(sentinel, 1350), Defeat(gladiator, 1100),
+                    new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." },
+                    Find("stones", "Oath Stone", "Oath Stones", 5, "brisa", "The sentinels swore their oath on five stones. Captain Brisa thinks the storm will let you pass if you carry them up.")),
+                Part(29, "The Lightning Pasture", "Somebody grazes cows on a cloud. The lightning found them first.",
+                    new[] { chargedCow, stormDrake }, Defeat(chargedCow, 1100), Defeat(stormDrake, 875),
+                    new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." },
+                    Gather("fodder", "fodder", 3300, "tessa", "Charged cows calm down when they eat. Tessa needs hay and herbs, a lot of both.", "Farming", "Gathering")),
+                Part(30, "The Eye of the Storm", "At the very top of the spire the storm turns around one point, and something lives in it.",
+                    new[] { stormDrake, gladiator }, Defeat(stormDrake, 1400), Defeat(gladiator, 1150),
+                    new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
             });
             return list;
         }
@@ -480,57 +650,182 @@ namespace RavenNest.Combat
             }
         }
 
-        private static TowerFloorDefinition Floor(int number, string name, string description, TowerEnemy[] enemies, TowerQuest q1, TowerQuest q2, TowerBoss boss)
+        /// <summary>
+        ///     One part: its monsters, its guardian and its objectives. The two kill objectives come first (the simplest
+        ///     case), then whatever else the part asks for (<see cref="Gather"/>, <see cref="Find"/>), and last, added
+        ///     here, the guardian itself, which opens when the others are done.
+        /// </summary>
+        private static TowerFloorDefinition Part(int number, string name, string description, TowerEnemy[] enemies, TowerObjective q1, TowerObjective q2, TowerBoss boss, params TowerObjective[] more)
         {
             if (boss.Id == null) boss.Id = "boss-" + number;
+            var objectives = new List<TowerObjective> { q1, q2 };
+            if (more != null) objectives.AddRange(more);
+            objectives.Add(new TowerObjective
+            {
+                Id = GuardianId,
+                Kind = TowerObjectiveKind.Guardian,
+                Target = boss.Id,
+                Amount = 1,
+                Text = "Defeat " + boss.Name,
+            });
             return new TowerFloorDefinition
             {
                 Number = number,
                 Name = name,
                 Description = description,
                 Level = Level(number),
-                GroupSize = 5,
+                GroupSize = SuggestedGroup,
                 Layout = LayoutOf(number),
                 Enemies = enemies,
-                Quests = new[] { q1, q2 },
+                Objectives = objectives.ToArray(),
                 Boss = boss,
             };
         }
 
-        private static TowerQuest Defeat(TowerEnemy enemy, int amount) => new TowerQuest
+        /// <summary>The group a part and its guardian are made for; scaling by pressure measures a group against it.</summary>
+        public const int SuggestedGroup = 5;
+
+        /// <summary>
+        ///     The group a floor boss is made for. Its fixed numbers were set (2026-11-08) so that five players at its
+        ///     level lose and eight win, so its fight is measured against eight: eight or more meet at least the fixed
+        ///     numbers, and a group under eight gets the floor's mercy, which is what lets a small stream past the end
+        ///     of a floor at all. (Measured against five, nine mixed bots met 30% more health and lost on floor 1, and
+        ///     in the simulator neither two nor five fresh players could ever win.)
+        /// </summary>
+        public const int FloorBossGroup = 8;
+
+        /// <summary>
+        ///     The group a part's guardian is made for: the boss's own (<see cref="TowerBoss.Group"/>: a floor boss's
+        ///     <see cref="FloorBossGroup"/>) or the part's. Pressure measures the guardian's fight against it.
+        /// </summary>
+        public static int BossGroup(TowerFloorDefinition floor) =>
+            floor == null ? SuggestedGroup : floor.Boss != null && floor.Boss.Group > 0 ? floor.Boss.Group : Math.Max(1, floor.GroupSize);
+
+        /// <summary>Items in a part's chest for each player: two from a floor boss and from every fifth part of a floor, one otherwise.</summary>
+        public static int ChestItems(int step) => IsFloorBoss(step) || (PartOf(step) > 0 && PartOf(step) % 5 == 0) ? 2 : 1;
+
+        /// <summary>How many characters can share a floor boss's last hit when their blows landed together.</summary>
+        public const int MaxLastHits = 3;
+
+        /// <summary>
+        ///     Who gets the last hit on a floor boss (a title, nothing else), from what the game reports: the characters
+        ///     whose blows landed as it fell, the one that took its last health first. Only characters who were in the
+        ///     attempt count, each once, and at most <paramref name="max"/> share it: blows that land in the same moment
+        ///     are a tie, and a tie is shared rather than decided by which blow the game happened to work out first.
+        ///     Nobody valid means nobody gets it (it fell to thorns or a pet, or the report names no one).
+        /// </summary>
+        public static Guid[] LastHits(IReadOnlyList<Guid> reported, IReadOnlyCollection<Guid> participants, int max = MaxLastHits)
+        {
+            var result = new List<Guid>();
+            if (reported == null || participants == null) return result.ToArray();
+            foreach (var id in reported)
+            {
+                if (result.Count >= max) break;
+                if (id == Guid.Empty || result.Contains(id)) continue;
+                var took = false;
+                foreach (var p in participants) if (p == id) { took = true; break; }
+                if (took) result.Add(id);
+            }
+            return result.ToArray();
+        }
+
+        /// <summary>The id of every part's guardian objective.</summary>
+        public const string GuardianId = "guardian";
+
+        /// <summary>In a game's report: every kill on the part, whatever the kind (gather objectives count them too).</summary>
+        public const string AllKills = "kills";
+
+        /// <summary>Kill: defeat a number of one kind of the part's monsters, by whoever trains there.</summary>
+        private static TowerObjective Defeat(TowerEnemy enemy, int amount) => new TowerObjective
         {
             Id = "defeat-" + enemy.Id,
+            Kind = TowerObjectiveKind.Kill,
             Target = enemy.Id,
             Amount = amount,
-            Text = "Defeat " + amount + " " + Plural(enemy.Name),
+            Text = "Defeat " + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " " + Plural(enemy.Name),
         };
+
+        /// <summary>
+        ///     Gather: materials the stream's players gather anyway, wherever they train: every gathering round of one of
+        ///     <paramref name="skills"/> by a player of the stream counts one (counted by the server, never taken from
+        ///     anyone's bag). So that a stream with nobody training those skills is never stuck, every monster defeated
+        ///     on the part counts one too (what it carried).
+        /// </summary>
+        private static TowerObjective Gather(string id, string what, int amount, string npc, string story, params string[] skills) => new TowerObjective
+        {
+            Id = "gather-" + id,
+            Kind = TowerObjectiveKind.Gather,
+            Target = what,
+            Amount = amount,
+            Skills = skills,
+            Npc = npc,
+            Story = story,
+            Text = "Gather " + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " " + what,
+        };
+
+        /// <summary>
+        ///     Find: hidden things on the part, one at a time. Players who train near where one lies find it by
+        ///     themselves after a while (<see cref="FindSeconds"/>); nobody has to look for it or click anything.
+        /// </summary>
+        private static TowerObjective Find(string id, string thing, string things, int amount, string npc, string story) => new TowerObjective
+        {
+            Id = "find-" + id,
+            Kind = TowerObjectiveKind.Find,
+            Target = thing,
+            Amount = amount,
+            Npc = npc,
+            Story = story,
+            Text = "Find " + amount + " " + things,
+        };
+
+        /// <summary>
+        ///     Seconds of searching one hidden thing takes: a second counts in full while a player on the part stands
+        ///     within <see cref="FindNearMeters"/> of where it lies, and <see cref="FindFarShare"/> of one while players
+        ///     are anywhere else on the part (so a group that never walks past it still finds it). Longer higher up.
+        /// </summary>
+        public static int FindSeconds(int step) => 240 + 60 * Math.Max(0, FloorOf(step) - 1);
+        public const double FindNearMeters = 9;
+        public const double FindFarShare = 0.25;
 
         private static string Plural(string name)
         {
             if (name.EndsWith("y") && !name.EndsWith("ey")) return name.Substring(0, name.Length - 1) + "ies";
-            if (name.EndsWith("s") || name.EndsWith("Ronin")) return name;
+            // "Risen Dead", "Frozen Ronin": the same for one and many
+            if (name.EndsWith("s") || name.EndsWith("Ronin") || name.EndsWith("Dead")) return name;
             return name + "s";
         }
 
         /// <summary>
-        ///     Quest progress in its text form: "defeat-hall-goblin:12;defeat-hall-bunny:30". Unknown ids are kept out,
-        ///     each count is capped at its quest's amount.
+        ///     A part's objective progress in its text form: "defeat-hall-goblin:12;gather-timber:30;find-boots:1". Every
+        ///     counted objective of the part is in the result (the guardian is not: it is done when the part is
+        ///     cleared); unknown ids are kept out, each count is capped at its objective's amount.
         /// </summary>
         public static Dictionary<string, int> ParseProgress(TowerFloorDefinition floor, string text)
         {
             var result = new Dictionary<string, int>();
             if (floor == null) return result;
-            foreach (var q in floor.Quests) result[q.Id] = 0;
+            foreach (var q in floor.Objectives) if (q.Counted) result[q.Id] = 0;
+            foreach (var kv in ParseCounts(text))
+            {
+                if (!result.ContainsKey(kv.Key)) continue;
+                var objective = Array.Find(floor.Objectives, q => q.Id == kv.Key);
+                result[kv.Key] = Math.Max(0, Math.Min(objective.Amount, kv.Value));
+            }
+            return result;
+        }
+
+        /// <summary>"a:3;b:5" as counts; what is not a count is left out.</summary>
+        public static Dictionary<string, int> ParseCounts(string text)
+        {
+            var result = new Dictionary<string, int>();
             if (string.IsNullOrWhiteSpace(text)) return result;
             foreach (var part in text.Split(';'))
             {
                 var colon = part.IndexOf(':');
                 if (colon <= 0) continue;
                 var id = part.Substring(0, colon).Trim();
-                if (!result.ContainsKey(id)) continue;
-                if (!int.TryParse(part.Substring(colon + 1), out var count)) continue;
-                var quest = Array.Find(floor.Quests, q => q.Id == id);
-                result[id] = Math.Max(0, Math.Min(quest.Amount, count));
+                if (id.Length == 0 || !int.TryParse(part.Substring(colon + 1), out var count)) continue;
+                result[id] = count;
             }
             return result;
         }
@@ -542,21 +837,91 @@ namespace RavenNest.Combat
             return string.Join(";", parts);
         }
 
-        public static bool QuestsDone(TowerFloorDefinition floor, Dictionary<string, int> progress)
+        /// <summary>Every counted objective of the part is done: its guardian can be challenged.</summary>
+        public static bool ObjectivesDone(TowerFloorDefinition floor, Dictionary<string, int> progress)
         {
             if (floor == null) return false;
-            foreach (var q in floor.Quests)
-                if (!progress.TryGetValue(q.Id, out var count) || count < q.Amount) return false;
+            foreach (var q in floor.Objectives)
+                if (q.Counted && (!progress.TryGetValue(q.Id, out var count) || count < q.Amount)) return false;
             return true;
+        }
+
+        /// <summary>
+        ///     What a game reports from the stream's part since its last report (<see cref="ParseCounts"/>: kills per
+        ///     kill objective, <see cref="AllKills"/> for every kill, a find per find objective) added to the part's
+        ///     progress. A kill objective takes its own kills, a gather objective every kill (see <see cref="Gather"/>),
+        ///     a find objective one thing a report at most (they are found one at a time). No count goes past
+        ///     <paramref name="maxPerReport"/> a report or past its objective's amount. True when anything changed.
+        /// </summary>
+        public static bool AddReport(TowerFloorDefinition floor, Dictionary<string, int> progress, Dictionary<string, int> report, int maxPerReport)
+        {
+            if (floor == null || progress == null || report == null) return false;
+            var changed = false;
+            foreach (var q in floor.Objectives)
+            {
+                if (!q.Counted) continue;
+                var add = 0;
+                switch (q.Kind)
+                {
+                    case TowerObjectiveKind.Kill: report.TryGetValue(q.Id, out add); break;
+                    case TowerObjectiveKind.Gather: report.TryGetValue(AllKills, out add); break;
+                    case TowerObjectiveKind.Find: report.TryGetValue(q.Id, out add); add = Math.Min(1, add); break;
+                }
+                if (add <= 0) continue;
+                progress.TryGetValue(q.Id, out var before);
+                var after = Math.Min(q.Amount, before + Math.Min(maxPerReport, add));
+                if (after == before) continue;
+                progress[q.Id] = after;
+                changed = true;
+            }
+            return changed;
+        }
+
+        /// <summary>Does a gathering round of <paramref name="skill"/> (its name: "Woodcutting") count for any objective of the part.</summary>
+        public static bool Gathers(TowerFloorDefinition floor, string skill)
+        {
+            if (floor == null || string.IsNullOrEmpty(skill)) return false;
+            foreach (var q in floor.Objectives)
+                if (q.Kind == TowerObjectiveKind.Gather && Array.IndexOf(q.Skills, skill) >= 0) return true;
+            return false;
+        }
+
+        /// <summary>
+        ///     Gathering rounds of a skill by the stream's players, anywhere, added to the part's gather objectives that
+        ///     name the skill. True when anything changed.
+        /// </summary>
+        public static bool AddGathered(TowerFloorDefinition floor, Dictionary<string, int> progress, string skill, int rounds)
+        {
+            if (floor == null || progress == null || rounds <= 0 || string.IsNullOrEmpty(skill)) return false;
+            var changed = false;
+            foreach (var q in floor.Objectives)
+            {
+                if (q.Kind != TowerObjectiveKind.Gather || Array.IndexOf(q.Skills, skill) < 0) continue;
+                progress.TryGetValue(q.Id, out var before);
+                var after = Math.Min(q.Amount, before + rounds);
+                if (after == before) continue;
+                progress[q.Id] = after;
+                changed = true;
+            }
+            return changed;
         }
     }
 
-    /// <summary>Ten floors with one biome, element and town (the town opens the band).</summary>
+    /// <summary>
+    ///     A floor of the tower as players see it: a world with one biome, element and town (the town opens it), and
+    ///     its parts, the steps <see cref="FirstFloor"/> to <see cref="LastFloor"/>. (The name is from when these were
+    ///     called bands of ten floors.)
+    /// </summary>
     public sealed class TowerBand
     {
+        /// <summary>The floor's number, as shown: 1, 2, 3.</summary>
         public int Number;
+        /// <summary>The step of the floor's first part.</summary>
         public int FirstFloor;
+        /// <summary>The step of the floor's last part, whose guardian is the floor boss.</summary>
         public int LastFloor;
+        /// <summary>How many parts the floor has.</summary>
+        public int Parts => LastFloor - FirstFloor + 1;
         public string Name = "";
         /// <summary>The biome's kit in the game: "forest", later "ice", "forge", "storm", "crypt".</summary>
         public string Biome = "";
@@ -577,9 +942,20 @@ namespace RavenNest.Combat
         }
     }
 
+    /// <summary>
+    ///     One part of a floor (the name is from when parts were called floors): its place, monsters, objectives and
+    ///     guardian.
+    /// </summary>
     public sealed class TowerFloorDefinition
     {
+        /// <summary>The part's step: its number counted through the whole tower, what the server stores.</summary>
         public int Number;
+        /// <summary>The floor it is on and which part of it, as shown ("Floor 2, part 4").</summary>
+        public int Floor => Tower.FloorOf(Number);
+        public int Part => Tower.PartOf(Number);
+        /// <summary>Its guardian is the floor boss: the floor's last part.</summary>
+        public bool IsFloorBoss => Tower.IsFloorBoss(Number);
+        public string Label => Tower.Label(Number);
         public string Name = "";
         public string Description = "";
         /// <summary>The combat level the floor is made for.</summary>
@@ -589,7 +965,8 @@ namespace RavenNest.Combat
         /// <summary>The floor's scene in the game; floors of a band share a few layouts.</summary>
         public string Layout = "";
         public TowerEnemy[] Enemies = Array.Empty<TowerEnemy>();
-        public TowerQuest[] Quests = Array.Empty<TowerQuest>();
+        /// <summary>What the stream does to open the guardian, and last the guardian itself; all of it counts by itself from normal play.</summary>
+        public TowerObjective[] Objectives = Array.Empty<TowerObjective>();
         public TowerBoss Boss;
     }
 
@@ -609,14 +986,45 @@ namespace RavenNest.Combat
         public float Scale = 1f;
     }
 
-    /// <summary>A floor quest for the whole stream: defeat a number of one kind of the floor's monsters.</summary>
-    public sealed class TowerQuest
+    /// <summary>
+    ///     The kinds of objective a part can have (docs/tower-worlds-proposal.md section 12). All of them are passive:
+    ///     they count from what the stream's players do anyway, and nothing asks anyone to click or hand something in.
+    /// </summary>
+    public enum TowerObjectiveKind
+    {
+        /// <summary>Defeat a number of one kind of the part's monsters.</summary>
+        Kill = 0,
+        /// <summary>Materials the stream's players gather while training anywhere (counted, never taken).</summary>
+        Gather = 1,
+        /// <summary>Hidden things on the part that players near them find by themselves.</summary>
+        Find = 2,
+        /// <summary>The part's guardian: a mini boss, or the floor boss on the floor's last part.</summary>
+        Guardian = 3,
+        /// <summary>An item only a gate drops (v0.9.8, with the gates); no part uses it yet.</summary>
+        GateItem = 4,
+    }
+
+    /// <summary>One objective of a part, for the whole stream.</summary>
+    public sealed class TowerObjective
     {
         public string Id = "";
+        public TowerObjectiveKind Kind;
+        /// <summary>What the tower panel shows: "Defeat 300 Feral Bunnies", "Gather 250 timber", "Find 3 Stolen Boots".</summary>
         public string Text = "";
-        /// <summary>The <see cref="TowerEnemy.Id"/> to defeat.</summary>
+        /// <summary>
+        ///     Kill: the <see cref="TowerEnemy.Id"/> to defeat. Gather: what is gathered, in words ("timber"). Find: one
+        ///     of the hidden things ("Stolen Boot"). Guardian: the boss's id.
+        /// </summary>
         public string Target = "";
         public int Amount;
+        /// <summary>Gather: the skills whose gathering rounds count, by name ("Woodcutting", "Mining").</summary>
+        public string[] Skills = Array.Empty<string>();
+        /// <summary>The person of the floor's town who asks for it (<see cref="TowerNpc.Key"/>), or null.</summary>
+        public string Npc;
+        /// <summary>Who wants it and why, in a line (the website shows it).</summary>
+        public string Story = "";
+        /// <summary>Counts toward opening the guardian: everything but the guardian itself.</summary>
+        public bool Counted => Kind != TowerObjectiveKind.Guardian;
     }
 
     public sealed class TowerBoss
@@ -628,6 +1036,12 @@ namespace RavenNest.Combat
         public float Scale = 2.5f;
         public EnemyFamily Family;
         public AttackStyle Style = AttackStyle.Melee;
+        /// <summary>
+        ///     The group its fight is made for when that is not the part's (<see cref="Tower.BossGroup"/>): a floor
+        ///     boss's is <see cref="Tower.FloorBossGroup"/>; 0: the part's. Its health pool does not follow this, only
+        ///     what pressure measures a group against.
+        /// </summary>
+        public int Group;
         /// <summary>Its level as a share of the floor's.</summary>
         public double LevelScale = 1.0;
         /// <summary>Its share of the standard boss pool (<see cref="Tower.BossPool"/>): 1.25 for a tougher one.</summary>

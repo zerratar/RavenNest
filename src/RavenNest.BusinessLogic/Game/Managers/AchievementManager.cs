@@ -52,11 +52,15 @@ namespace RavenNest.BusinessLogic.Game
             new Definition { Key = "ferryman", Targets = new long[] { 50, 500 } },
             new Definition { Key = "allround", Targets = new long[] { 50, 200, 999 }, Mode = Mode.Highest },
             new Definition { Key = "storyteller", Targets = new long[] { 1, 3, 5 }, Mode = Mode.Highest },
-            // the highest tower floor whose boss fell with the character there (more tiers come with the next bands)
-            new Definition { Key = "climber", Targets = new long[] { 1, 5, 10, 15, 20, 25, 30 }, Mode = Mode.Highest },
+            // the highest part of the tower whose guardian fell with the character there, as a step (the part's number
+            // through every floor): floor 1 part 1, 1-5, floor 1 cleared, 2-5, floor 2 cleared, 3-5, floor 3 cleared
+            // (ClimberSteps; more tiers come with the next floors)
+            new Definition { Key = "climber", Targets = ClimberSteps, Mode = Mode.Highest },
+            // last blows landed on floor bosses (TowerManager): "the Finisher", "the Last Word", "the Curtain Call"
+            new Definition { Key = TowerManager.LastHitAchievement, Targets = new long[] { 1, 3, 10 } },
             new Definition { Key = "wrong", Targets = new long[] { 5 }, Hidden = true },
             new Definition { Key = "quitter", Targets = new long[] { 10 }, Hidden = true },
-            // knocked out by Nibbles the Vicious, floor 1's bunny (run away!)
+            // knocked out by Nibbles the Vicious, the bunny of floor 1, part 1 (run away!)
             new Definition { Key = "nibbled", Targets = new long[] { 1 }, Hidden = true },
             // a rare find in a Treasure Map's treasure (BottleManager): "the Treasure Hunter"
             new Definition { Key = BottleManager.TreasureAchievement, Targets = new long[] { 1 }, Hidden = true, Mode = Mode.Highest },
@@ -67,6 +71,25 @@ namespace RavenNest.BusinessLogic.Game
             // different Legendaries found (LegendaryManager): "Legendbearer" at one, "Keeper of Legends" at all of them
             new Definition { Key = LegendaryManager.Achievement, Targets = new long[] { 1, RavenNest.Combat.Legendary.Count }, Hidden = true, Mode = Mode.Highest },
         };
+
+        /// <summary>
+        ///     The climber's tiers as steps: the first part, the middle part of each floor and each floor's boss. Worked
+        ///     out from the floors that exist, so the titles earned before floors had parts (at steps 1, 5, 10, 15, 20,
+        ///     25, 30) keep their meaning and a new floor only needs its two titles' words.
+        /// </summary>
+        public static readonly long[] ClimberSteps = MakeClimberSteps();
+
+        private static long[] MakeClimberSteps()
+        {
+            var steps = new System.Collections.Generic.List<long> { 1 };
+            foreach (var floor in RavenNest.Combat.Tower.Bands)
+            {
+                var middle = floor.FirstFloor + floor.Parts / 2 - 1;
+                if (middle > steps[steps.Count - 1]) steps.Add(middle);
+                if (floor.LastFloor > steps[steps.Count - 1]) steps.Add(floor.LastFloor);
+            }
+            return steps.ToArray();
+        }
 
         private static Definition Tiers(string key, long bronze, long silver, long gold) =>
             new Definition { Key = key, Targets = new[] { bronze, silver, gold } };

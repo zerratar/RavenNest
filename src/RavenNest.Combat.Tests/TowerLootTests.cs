@@ -199,10 +199,10 @@ namespace RavenNest.Combat.Tests
             Assert.StartsWith("df-", floor.Enemies[0].Model);
             Assert.Contains(Tower.Get(4).Enemies, e => e.Model == "df-undead");
             Assert.Contains(Tower.Get(8).Enemies, e => e.Model == "df-plague");
-            // every quest names a monster of its floor
+            // every kill objective names a monster of its part
             foreach (var f in Tower.Floors)
-                foreach (var q in f.Quests)
-                    Assert.Contains(f.Enemies, e => e.Id == q.Target);
+                foreach (var q in f.Objectives)
+                    if (q.Kind == TowerObjectiveKind.Kill) Assert.Contains(f.Enemies, e => e.Id == q.Target);
         }
 }
 }

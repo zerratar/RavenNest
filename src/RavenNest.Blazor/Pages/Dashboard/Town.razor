@@ -6,6 +6,7 @@
 @using RavenNest.BusinessLogic.Net
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.TownService TownService
+@inject RavenNest.BusinessLogic.Game.TowerManager TowerManager
 @inject NavigationManager NavigationManager
 
 @*
@@ -162,6 +163,46 @@ else
             </dd>
         </dl>
     </section>
+
+    @*
+        The stream's climb of the tower (the game's docs/tower-worlds-proposal.md section 12): where it is, and how
+        far the part's objectives are. Its own progress, so nothing here is a spoiler; shown once the stream has been
+        in the tower.
+    *@
+    @if (tower != null && towerPart != null)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Your stream's climb of the tower</h2>
+            <div class="rf-tower__climb">
+                <div>
+                    <b>@towerPart.Label: @towerPart.Name</b>
+                    <span class="rf-table__quiet">in @(RavenNest.Combat.Tower.BandOf(towerPart.Number)?.Name), @tower.Cleared @(tower.Cleared == 1 ? "part" : "parts") cleared so far</span>
+                </div>
+                @foreach (var q in towerPart.Objectives.Where(x => x.Counted))
+                {
+                    var progress = tower.Objectives?.FirstOrDefault(x => x.Id == q.Id);
+                    var count = progress?.Count ?? 0;
+                    <div class="rf-tower__progress @(count >= q.Amount ? "rf-tower__progress--done" : "")">
+                        <b>@q.Text</b>
+                        <span>@(count >= q.Amount ? "Done" : count.ToString("N0") + " / " + q.Amount.ToString("N0"))</span>
+                        <div class="rf-tower__meter"><span style="width: @((q.Amount > 0 ? Math.Min(100.0, count * 100.0 / q.Amount) : 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span></div>
+                    </div>
+                }
+                <div>
+                    <b>@(towerPart.IsFloorBoss ? "Floor boss" : "Mini boss"): @towerPart.Boss.Name</b>
+                    <span class="rf-table__quiet">@(tower.BossOpen ? "can be challenged now: !tower boss" : "waits until the objectives above are done")</span>
+                </div>
+                <p class="rf-table__quiet">Everything counts by itself while your stream plays. <a href="/tower">The tower</a> has every part your stream and others have reached.</p>
+            </div>
+        </section>
+    }
+    else if (tower != null)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Your stream's climb of the tower</h2>
+            <p>Every floor there is has been cleared, @tower.Cleared parts in all. More floors come with later updates.</p>
+        </section>
+    }
 
     @if (actionResult != null)
     {
@@ -812,8 +853,17 @@ else
 
         town = await TownService.GetMyTownAsync(session.UserId);
         decor = town != null ? await TownService.GetDecorAsync(session.UserId) : null;
+        // the stream's climb, once it has been in the tower
+        if (TowerManager.StepOf(session.UserId) > 0)
+        {
+            tower = TowerManager.State(session.UserId);
+            towerPart = RavenNest.Combat.Tower.Get(tower.Floor);
+        }
         loading = false;
     }
+
+    private RavenNest.Models.TowerState tower;
+    private RavenNest.Combat.TowerFloorDefinition towerPart;
 
     protected override void OnAfterRender(bool firstRender)
     {

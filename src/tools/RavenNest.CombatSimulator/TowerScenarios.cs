@@ -10,11 +10,108 @@ namespace RavenNest.CombatSimulator
     ///     attempt, and the attempt is lost after Tower.BossTimeLimitSeconds. The boss swings at one player (the first
     ///     standing: the one holding it) and every SlamEvery swings hits everyone at SlamShare of a hit.
     ///     Players swing every 1.5 s. Each cell: the share of attempts won, and the minutes a win took.
+    ///     "tower" runs the scaling by pressure (RavenNest.Combat.TowerPressure, docs/tower-worlds-proposal.md section
+    ///     12): groups of 2, 5, 10 and 30 fresh synced players, and veterans (a skill tree's passives), against typical
+    ///     parts and their guardians, the monsters' health, the guardian's health, helpers and blows all by the fight's
+    ///     pressure. "tower fixed" runs the old table: the fixed numbers for any group.
     /// </summary>
     public static class TowerScenarios
     {
         private static readonly int[] Groups = { 1, 3, 5, 8, 15 };
         private const double PlayerSwing = 1.5;
+
+        // ---- Scaling by pressure ----------------------------------------------------------------------------------
+
+        private static readonly int[] PressureGroups = { 2, 5, 10, 30 };
+
+        /// <summary>
+        ///     Seconds a player spends between kills: walking to the next monster, turning to it, blows wasted on one
+        ///     that others are already finishing. Set so that five players make the 12 kills a minute measured in the
+        ///     game on floor 1, part 6 (2026-11-24); the simulator's own fights would say 20.
+        /// </summary>
+        private const double WalkSeconds = 14;
+
+        /// <summary>Monster spots on a part (the layouts have about this many).</summary>
+        private const int Spots = 24;
+
+        /// <summary>A veteran: every point of a tree's passives a level 999 character has (the Might tree's, a damage dealer's).</summary>
+        private const string VeteranBuild = "brute-force:5;rend:5;executioner:5;titan:1;keen-eye:5;sharp-edge:5;deadly:5;swift:5";
+
+        public static void RunPressure(GearPicker gear, int fights)
+        {
+            Console.WriteLine($"Tower, scaling by pressure; {fights} runs per cell. Players at each part's sync level in the best gear for it.");
+            Console.WriteLine($"Pressure = players / {Tower.SuggestedGroup} x the group's strength ({TowerPressure.MinStrength:0.0} to {TowerPressure.MaxStrength:0.0}).");
+            Console.WriteLine("Floor  bite  mercy: " + string.Join("   ", Enumerable.Range(1, 4).Select(f => $"{f}: {TowerPressure.Bite(f):P0} {TowerPressure.Mercy(f):P0}")));
+            var random = new SeededCombatRandom(11);
+            var veteran = SkillBuild.Parse(VeteranBuild);
+
+            foreach (var vet in new[] { false, true })
+            {
+                Console.WriteLine();
+                Console.WriteLine(vet ? "Veterans (a tree's passives on top of the synced kit):" : "Fresh synced players:");
+                Console.WriteLine($"{"Part",-6} {"Guardian",-30} | " + string.Join(" | ", PressureGroups.Select(g => $"{g + " players",-33}")));
+                Console.WriteLine($"{"",-6} {"",-30} | " + string.Join(" | ", PressureGroups.Select(_ => $"{"press",5} {"part min",8} {"boss HP",8} {"won",4} {"min",4}")));
+                Console.WriteLine(new string('-', 38 + PressureGroups.Length * 36));
+                foreach (var floor in Tower.Floors)
+                {
+                    var level = Tower.SyncLevel(floor.Number);
+                    var kit = gear.Melee(level);
+                    var player = Player(level, kit);
+                    Tower.Sync(player, floor.Number, kit.ArmorHealth);
+                    if (vet) veteran.Passives().ApplyExtras(player, null);
+                    var strength = vet ? TowerPressure.Strength(player, AttackStyle.Melee, floor.Number) : 1.0;
+                    var cells = PressureGroups.Select(players =>
+                    {
+                        var pressure = TowerPressure.Of(players, strength);
+                        var minutes = PartMinutes(floor, player, players, pressure, random, Math.Max(20, fights / 4));
+                        // the guardian's own fight: against the group it is made for (a floor boss wants more)
+                        var bossPressure = TowerPressure.Of(players, strength, Tower.BossGroup(floor));
+                        var boss = Tower.Boss(floor, bossPressure);
+                        var sheet = boss.Sheet();
+                        var results = Enumerable.Range(0, fights).Select(_ => Fight(player, players, floor, floor.Boss, sheet, boss.AttackInterval, random, bossPressure)).ToList();
+                        var wins = results.Where(r => r.Won).ToList();
+                        return $"{pressure,5:0.00} {minutes,8:0} {sheet.MaxHealth,8:N0} {wins.Count / (double)results.Count,4:P0} {(wins.Count > 0 ? (wins.Average(r => r.Time) / 60).ToString("0.0") : "-"),4}";
+                    });
+                    Console.WriteLine($"{Tower.Short(floor.Number),-6} {(floor.IsFloorBoss ? "* " : "") + floor.Boss.Name,-30} | " + string.Join(" | ", cells) + (vet ? $"  strength {strength:0.00}" : ""));
+                }
+            }
+            Console.WriteLine();
+            Console.WriteLine("part min: minutes of fighting to finish the part's kill objectives (the other kinds run beside them). * floor boss.");
+        }
+
+        /// <summary>
+        ///     Minutes a group needs for a part's kill objectives: every player kills one monster after another (its
+        ///     health by the pressure), walks to the next, and the part gives no more monsters than its spots bring back.
+        ///     The part's kinds stand on the spots in turn, so each kind is its share of the kills.
+        /// </summary>
+        private static double PartMinutes(TowerFloorDefinition floor, CombatSheet player, int players, double pressure, ICombatRandom random, int runs)
+        {
+            var swing = PlayerSwing / CombatMath.Clamp(player.AttackSpeed, 0.2, CombatMath.MaxAttackSpeed);
+            var perKind = new double[floor.Enemies.Length];
+            var seconds = 0.0;
+            for (var k = 0; k < floor.Enemies.Length; ++k)
+            {
+                var sheet = Tower.Enemy(floor, floor.Enemies[k], pressure).Sheet();
+                var swings = 0.0;
+                for (var r = 0; r < runs; ++r)
+                {
+                    var health = (double)sheet.MaxHealth;
+                    while (health > 0) { health -= CombatMath.Attack(player, AttackStyle.Melee, sheet, random).Total; swings++; }
+                }
+                perKind[k] = swings / runs * swing + WalkSeconds;
+                seconds += perKind[k];
+            }
+            // kills a minute: what the players can do, and what the spots give
+            var cycle = seconds / floor.Enemies.Length;
+            var rate = Math.Min(players * 60.0 / cycle, Spots * 60.0 / TowerPressure.RespawnSeconds(floor.Floor, pressure));
+            var minutes = 0.0;
+            foreach (var q in floor.Objectives)
+            {
+                if (q.Kind != TowerObjectiveKind.Kill) continue;
+                minutes = Math.Max(minutes, q.Amount / (rate / floor.Enemies.Length));
+            }
+            return minutes;
+        }
 
         public static void Run(GearPicker gear, int fights)
         {
@@ -73,16 +170,24 @@ namespace RavenNest.CombatSimulator
         {
             var player = Player(level, kit);
             if (syncLevel > 0) Tower.Sync(player, floor.Number);
+            return Fight(player, players, floor, def, boss, bossSwing, random, -1);
+        }
+
+        /// <param name="pressure">The fight's pressure for the helpers (their number and health); below 0: the fixed numbers.</param>
+        private static Result Fight(CombatSheet player, int players, TowerFloorDefinition floor, TowerBoss def, CombatSheet boss, double bossSwing, ICombatRandom random, double pressure)
+        {
+            var playerSwing = PlayerSwing / CombatMath.Clamp(player.AttackSpeed, 0.2, CombatMath.MaxAttackSpeed);
             var health = Enumerable.Repeat((double)player.MaxHealth, players).ToArray();
-            var nextSwing = Enumerable.Range(0, players).Select(i => PlayerSwing * i / players).ToArray();
+            var nextSwing = Enumerable.Range(0, players).Select(i => playerSwing * i / players).ToArray();
             var bossHealth = (double)boss.MaxHealth;
             var nextBoss = bossSwing;
             var swings = 0;
             var time = 0.0;
 
             // the adds: the floor's first monster at its level, called at each share of the boss's health
-            var addDef = Tower.Enemy(floor, floor.Enemies[0]);
+            var addDef = pressure < 0 ? Tower.Enemy(floor, floor.Enemies[0]) : Tower.Enemy(floor, floor.Enemies[0], pressure, true);
             var add = addDef.Sheet();
+            var addsCount = pressure < 0 ? def.AddsCount : TowerPressure.Helpers(def.AddsCount, floor.Floor, pressure);
             var adds = new System.Collections.Generic.List<(double Health, double Next)>();
             var calls = 0;
             var enraged = false;
@@ -140,10 +245,10 @@ namespace RavenNest.CombatSimulator
                         while (def.AddsAt != null && calls < def.AddsAt.Length && bossHealth <= boss.MaxHealth * def.AddsAt[calls])
                         {
                             calls++;
-                            for (var a = 0; a < def.AddsCount; ++a) adds.Add((add.MaxHealth, time + addDef.AttackInterval * (1 + a * 0.2)));
+                            for (var a = 0; a < addsCount; ++a) adds.Add((add.MaxHealth, time + addDef.AttackInterval * (1 + a * 0.2)));
                         }
                     }
-                    nextSwing[who] = time + PlayerSwing;
+                    nextSwing[who] = time + playerSwing;
                     continue;
                 }
 

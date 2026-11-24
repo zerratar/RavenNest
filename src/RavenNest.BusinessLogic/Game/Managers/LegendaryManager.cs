@@ -72,7 +72,7 @@ namespace RavenNest.BusinessLogic.Game
 
         // ---- who qualifies --------------------------------------------------------------------------------------------
 
-        /// <summary>The highest tower floor whose clear the character fought (the climber achievement), 0 for none.</summary>
+        /// <summary>The highest part of the tower whose clear the character fought, as a step (the climber achievement), 0 for none.</summary>
         public int HighestClearFought(Guid characterId)
         {
             var climber = gameData.GetCharacterAchievements(characterId)?.FirstOrDefault(a => a.Key == "climber");

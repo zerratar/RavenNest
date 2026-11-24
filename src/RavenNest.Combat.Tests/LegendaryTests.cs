@@ -57,8 +57,11 @@ namespace RavenNest.Combat.Tests
             Assert.True(Legendary.DungeonCounts(4));
             Assert.True(Legendary.DungeonCounts(5));
             // the top band is built: floor 21 is a floor of the tower's last band
-            Assert.True(Tower.TopFloor >= Legendary.TowerFloor);
-            Assert.Equal(3, Tower.BandOf(Legendary.TowerFloor).Number);
+            Assert.True(Tower.FloorCount >= Legendary.TowerFloor);
+            Assert.Equal(3, Legendary.TowerFloor);
+            Assert.Equal(21, Legendary.TowerStep);
+            Assert.Equal(Legendary.TowerFloor, Tower.FloorOf(Legendary.TowerStep));
+            Assert.Equal(1, Tower.PartOf(Legendary.TowerStep));
         }
 
         [Fact]

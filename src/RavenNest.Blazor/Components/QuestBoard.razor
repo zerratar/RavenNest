@@ -730,15 +730,15 @@ else
                 }
                 else if (a.Next > 0)
                 {
-                    <div class="qp-ach__count">@a.Progress.ToString("N0") / @a.Next.ToString("N0")</div>
+                    <div class="qp-ach__count">@(a.ProgressText ?? a.Progress.ToString("N0")) / @(a.NextText ?? a.Next.ToString("N0"))</div>
                     @Bar(a.Share)
-                    <p class="qp-ach__next">Next title: @a.TierTitles[Math.Min(a.Tier, 2)]</p>
+                    <p class="qp-ach__next">Next title: @a.TierTitles[Math.Min(a.Tier, a.TierTitles.Length - 1)]</p>
                 }
                 else
                 {
-                    <div class="qp-ach__count">@a.Progress.ToString("N0")</div>
+                    <div class="qp-ach__count">@(a.ProgressText ?? a.Progress.ToString("N0"))</div>
                     @Bar(1, "is-done")
-                    <p class="qp-ach__next">@(tiers == 1 ? "Done" : "All three tiers"): @a.TierTitles[Math.Min(tiers, 3) - 1]</p>
+                    <p class="qp-ach__next">@(tiers == 1 ? "Done" : tiers == 3 ? "All three tiers" : "All " + tiers + " tiers"): @a.TierTitles[Math.Min(tiers, a.TierTitles.Length) - 1]</p>
                 }
             </div>
         </article>

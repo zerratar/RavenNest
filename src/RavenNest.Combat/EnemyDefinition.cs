@@ -74,6 +74,12 @@ namespace RavenNest.Combat
         public bool IsBoss;
 
         /// <summary>
+        ///     Its blows times this (the tower's guardians under pressure, RavenNest.Combat.TowerPressure); 1, or 0 in
+        ///     a definition saved before this was here, changes nothing.
+        /// </summary>
+        public double DamageScale = 1;
+
+        /// <summary>
         ///     Its levels are set by the encounter (dungeon and raid scaling), not by this definition; style, element,
         ///     resistances and skills still come from here.
         /// </summary>
@@ -119,6 +125,7 @@ namespace RavenNest.Combat
             sheet.Resistance = Resistance;
             sheet.IsBoss = IsBoss;
             sheet.Family = Family;
+            if (DamageScale > 0 && DamageScale != 1) sheet.DamageMultiplier *= DamageScale;
             if (Element != Element.Physical && ElementShare > 0)
             {
                 var share = ElementShare > 1 ? 1 : ElementShare;

@@ -5933,7 +5933,8 @@ a.rf-badge:hover {
 }
 
 
-/* The tower page (/tower): bands of floors, a card per floor with its number, and the first clear on the right */
+/* The tower page (/tower): floors, each with its town and a card per part (its number, its objectives), and the
+   first clear on the right */
 .rf-tower__rules {
     color: var(--rf-ink-muted);
 }
@@ -6030,7 +6031,118 @@ a.rf-badge:hover {
     white-space: normal;
 }
 
-/* the town between the bands, and the floors no stream has reached yet */
+/* a part's objectives: a row each, the kind in a small label, then what it asks and who asks for it */
+.rf-tower__objectives {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.rf-tower__objective {
+    display: grid;
+    grid-template-columns: 5.6rem 1fr;
+    gap: 0.6rem;
+    align-items: baseline;
+}
+
+.rf-tower__kind {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rf-ink-muted);
+}
+
+.rf-tower__objective--guardian .rf-tower__kind {
+    color: #d4a24c;
+}
+
+.rf-tower__what {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+/* who asks and how it counts: quiet, and wrapped inside the card (a long line pushed the first clear out of it) */
+.rf-tower__note {
+    color: var(--rf-ink-muted);
+    font-size: 0.92rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.rf-tower__body {
+    min-width: 0;
+}
+
+.rf-tower__place {
+    margin-left: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+.rf-tower__worldfirst {
+    margin: 0.7rem 0 0;
+}
+
+.rf-tower__worldfirst .rf-tower__firstlabel {
+    margin-right: 0.4rem;
+}
+
+.rf-tower__town {
+    margin-bottom: 0.8rem;
+}
+
+/* the stream's own climb on its town page */
+.rf-tower__climb {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rf-tower__meter {
+    position: relative;
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background: rgba(127, 127, 127, 0.25);
+    overflow: hidden;
+}
+
+.rf-tower__meter span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: #d4a24c;
+}
+
+.rf-tower__progress {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem 0.8rem;
+    align-items: baseline;
+}
+
+.rf-tower__progress .rf-tower__meter {
+    grid-column: 1 / -1;
+}
+
+.rf-tower__progress--done b {
+    color: var(--rf-ink-muted);
+}
+
+@media (max-width: 700px) {
+    .rf-tower__objective {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
+/* the town of a floor, and the parts no stream has reached yet */
 .rf-tower__people {
     list-style: none;
     margin: 0.6rem 0 0;

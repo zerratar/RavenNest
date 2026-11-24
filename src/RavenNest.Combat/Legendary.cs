@@ -24,7 +24,7 @@ namespace RavenNest.Combat
     /// <summary>Where a Legendary can be found (section 3).</summary>
     public enum LegendarySource
     {
-        /// <summary>A tower boss of floor <see cref="Legendary.TowerFloor"/> and up, on the stream's clear.</summary>
+        /// <summary>A guardian of a part on tower floor <see cref="Legendary.TowerFloor"/> or above, on the stream's clear.</summary>
         Tower,
         /// <summary>The boss of a Legendary (heroic) dungeon, tier 4.</summary>
         Dungeon,
@@ -94,10 +94,15 @@ namespace RavenNest.Combat
         public const int RequiredLevel = 950;
 
         /// <summary>
-        ///     The tower floor a character must have fought a clear of (the "climber" achievement): the first floor of
-        ///     band 3, the Storm Spire, the top band on 2026-11-23. A constant, so a new band does not lock everyone out.
+        ///     The tower floor a character must have fought on: a clear of any of its parts, or of a floor above it
+        ///     (the "climber" achievement keeps the highest part's step). Floor 3, the Storm Spire, the top floor on
+        ///     2026-11-23 (when floors were called bands this was "floor 21", the same part: floor 3, part 1). A
+        ///     constant, so a new floor does not lock everyone out.
         /// </summary>
-        public const int TowerFloor = 21;
+        public const int TowerFloor = 3;
+
+        /// <summary>The first part of <see cref="TowerFloor"/> as a step (what the server and the climber achievement count in).</summary>
+        public static int TowerStep => Math.Max(1, Tower.FirstStep(TowerFloor));
 
         /// <summary>A find's base chance per qualifying boss kill.</summary>
         public const double TowerChance = 0.04;
@@ -206,12 +211,12 @@ namespace RavenNest.Combat
         public static bool Found(LegendarySource source, int kills, double roll) => roll < Chance(source, kills);
 
         /// <summary>
-        ///     Does a character qualify for a Legendary (section 2): 950 in its skill, a clear of floor
-        ///     <see cref="TowerFloor"/> or higher fought (the climber achievement's highest floor), the ending of its
-        ///     tree chosen, and not owning it already.
+        ///     Does a character qualify for a Legendary (section 2): 950 in its skill, a clear on floor
+        ///     <see cref="TowerFloor"/> or higher fought (<paramref name="highestClearFought"/>: the climber
+        ///     achievement's highest part, as a step), the ending of its tree chosen, and not owning it already.
         /// </summary>
         public static bool Qualifies(int skillLevel, int highestClearFought, bool endingChosen, bool owned) =>
-            skillLevel >= RequiredLevel && highestClearFought >= TowerFloor && endingChosen && !owned;
+            skillLevel >= RequiredLevel && highestClearFought >= TowerStep && endingChosen && !owned;
 
         /// <summary>
         ///     Legend's Echo: of the owned Legendaries' boss kills, the one to awaken (the least awakened below rank 5,
@@ -229,8 +234,8 @@ namespace RavenNest.Combat
             return best;
         }
 
-        /// <summary>Does a tower floor's boss count as a source.</summary>
-        public static bool TowerCounts(int floor) => floor >= TowerFloor;
+        /// <summary>Does the guardian of a tower part (by its step) count as a source: every part of floor <see cref="TowerFloor"/> and up.</summary>
+        public static bool TowerCounts(int step) => step >= TowerStep;
 
         /// <summary>Does a dungeon of this tier count as a source.</summary>
         public static bool DungeonCounts(int tier) => tier >= DungeonTier;

@@ -3,10 +3,13 @@
 @inject RavenNest.BusinessLogic.Game.TowerManager TowerManager
 
 @*
-    The tower (the game's docs/tower-design.md, section 6): the floors some stream has reached, each with its quests, its
-    boss and the level it is made for, the first stream in the world to clear it, and the streams that have climbed
-    highest. Floors nobody has reached stay hidden (no spoilers, Zerratar 2026-11-07): they show once a stream gets
-    there. The floors are read from RavenNest.Combat.Tower, the same list the game and the server use.
+    The tower (the game's docs/tower-design.md section 6 and docs/tower-worlds-proposal.md section 12): the floors some
+    stream has reached, each a world with its town, and the floor's parts with their objectives, their guardian and
+    the level they are made for, who cleared them first, and the streams that have climbed highest (by floor, then by
+    part). Floors and parts nobody has reached stay hidden (no spoilers, Zerratar 2026-11-07): they show once a stream
+    gets there, and a floor's boss is named only once its last part is reached. Everything is read from
+    RavenNest.Combat.Tower, the same list the game and the server use; the server counts in steps and Tower maps them
+    to floors and parts.
 *@
 <div class="top-section">
     <div class="hero-text">
@@ -18,47 +21,47 @@
 <div class="page-content">
     <div class="section rf-tower">
         <p class="rf-lead">
-            A climb the whole stream makes together. Type <b>!tower</b> to go up to your stream's floor and fight its
-            monsters; the players who stay behind keep training as usual. Every floor has quests for everyone in the
-            stream. When they are done, its <b>boss</b> can be challenged with <b>!tower boss</b>: the streamer or a
-            moderator starts it, or any player in the tower votes for it (it starts a minute later, or at once when most of the players who are there vote too), and everyone has a minute to join. A boss
-            has fixed numbers for its floor and can be tried again and again. Beat it and the floor is cleared for good,
-            the next one opens, and everyone who fought gets coins and a chest.
+            A climb the whole stream makes together. The tower has <b>floors</b>, each a world of its own with a town,
+            and every floor has <b>parts</b>. Type <b>!tower</b> to go to the part your stream is on and fight its
+            monsters; the players who stay behind keep training as usual. Every part has <b>objectives</b> for the whole
+            stream, and all of them count by themselves while you play: its monsters defeated, materials the stream's
+            players gather wherever they train, hidden things found by whoever trains near them. When they are done, the
+            part's <b>guardian</b> can be challenged with <b>!tower boss</b>: the streamer or a moderator starts it, or
+            any player in the tower votes for it (it starts a minute later, or at once when most of the players who are
+            there vote too), and everyone has a minute to join. Most guardians are <b>mini bosses</b>; the guardian of a
+            floor's last part is the <b>floor boss</b>, and beating it opens the next floor and its town.
         </p>
         <p class="rf-tower__rules">
-            <b>Level sync:</b> on a floor everyone fights as if at most a tenth above the floor's level: skill levels, health
+            <b>Level sync:</b> on a part everyone fights as if at most a tenth above the part's level: skill levels, health
             and gear count only up to that, while skill trees, gems, crits and elements count in full. A stream of veterans
             climbs the same tower as a new one.
+            <b>The fights follow the group:</b> a part is made for @Tower.SuggestedGroup players, a floor boss for @Tower.FloorBossGroup. With more in the fight, or
+            with players made stronger by their skill trees and gems, its monsters and guardians have more health, a
+            guardian calls more helpers and hits a little harder; a smaller group meets a smaller fight. The first floor
+            follows the group only a little, every floor above it more.
             A boss attempt lasts at most @(Tower.BossTimeLimitSeconds / 60) minutes. Whoever falls is out of the attempt;
             if everyone falls, the stream regroups for @(Tower.BossRetrySeconds / 60) minutes before the next try.
-            Floors come out a band of ten at a time. A floor stays a mystery until some stream reaches it.
+            Whoever lands the last blow on a floor boss earns a title.
+            A floor, and each of its parts, stays a mystery until some stream reaches it.
         </p>
-
-        @foreach (var town in Tower.Towns.Where(t => Tower.Bands.Any(b => b.Number == t.Band && b.FirstFloor <= revealed)))
-        {
-            <h2 class="rf-tower__band">The town of @town.Name</h2>
-            <div class="rf-card rf-tower__town">
-                <p class="rf-tower__text">@town.Description Type <b>!tower town</b> to go there, and <b>!tower talk</b> to
-                    hear what its people have to say. Most of them have a quest chain of their own for every player, with a
-                    reward found nowhere else. After every cleared floor everyone goes down to the town to rest and train;
-                    <b>!tower climb</b> takes everyone up to the next floor, <b>!tower leave</b> takes only you out of the
-                    tower, and <b>!tower close</b> ends the climb for now. A town further down needs its name:
-                    <b>!tower town mossgate</b>.</p>
-                <ul class="rf-tower__people">
-                    @foreach (var npc in town.People)
-                    {
-                        <li><b>@npc.Name</b><span class="rf-table__quiet">@npc.Role</span></li>
-                    }
-                </ul>
-            </div>
-        }
+        <p class="rf-tower__rules">
+            <b>In chat:</b> <b>!tower</b> goes in, <b>!tower info</b> says where the stream is, <b>!tower boss</b> challenges
+            the guardian, <b>!tower climb</b> goes on up from the town, <b>!tower town</b> goes to the floor's town,
+            <b>!tower part 3</b> takes everyone to a part already reached to train there (<b>!tower 1-3</b> names the floor
+            too, <b>!tower floor 1</b> goes to a floor's latest part), <b>!tower leave</b> takes only you out and
+            <b>!tower close</b> ends the climb for now.
+        </p>
 
         @foreach (var band in Tower.Bands.Where(b => b.FirstFloor <= revealed))
         {
-            <h2 class="rf-tower__band" style="--element: @ElementColor(band.Element)">Floors @band.FirstFloor to @band.LastFloor: @band.Name</h2>
+            var town = Tower.Towns.FirstOrDefault(t => t.Band == band.Number);
+            var bossStep = band.LastFloor;
+            var bossFirst = firsts.TryGetValue(bossStep, out var bf) ? bf : null;
+            <h2 class="rf-tower__band" style="--element: @ElementColor(band.Element)">Floor @band.Number: @band.Name</h2>
             <div class="rf-tower__bandinfo">
                 <p>@band.Description</p>
                 <div class="rf-badges">
+                    <span class="rf-badge">@band.Parts parts</span>
                     <span class="rf-badge" style="--element: @ElementColor(band.Element)">Its monsters strike with @band.Element.ToString().ToLowerInvariant()</span>
                     @foreach (var weak in Weaknesses(band.Resistance))
                     {
@@ -69,27 +72,79 @@
                         <span class="rf-badge rf-badge--warn">Resists @strong</span>
                     }
                 </div>
+                @if (bossFirst != null)
+                {
+                    <p class="rf-tower__worldfirst">
+                        <span class="rf-tower__firstlabel">World first</span>
+                        <b>@bossFirst.Name</b> beat the floor boss, @Tower.Get(bossStep).Boss.Name, first, on
+                        <span title="@bossFirst.Cleared.ToString("f")">@bossFirst.Cleared.ToString("d MMM yyyy")</span>
+                        with @bossFirst.Players @(bossFirst.Players == 1 ? "player" : "players")@(bossFirst.LastHitBy != null ? ". The last blow was " + bossFirst.LastHitBy + "'s" : "").
+                    </p>
+                }
             </div>
 
+            @if (town != null)
+            {
+                <div class="rf-card rf-tower__town">
+                    <h3 class="rf-card__title">The town of @town.Name</h3>
+                    <p class="rf-tower__text">@town.Description Type <b>!tower town</b> to go there, and <b>!tower talk</b> to
+                        hear what its people have to say. Most of them have a quest chain of their own for every player, with a
+                        reward found nowhere else, and some ask the whole stream for help with a part of the floor. After every
+                        cleared part everyone goes down to the town to rest and train; <b>!tower climb</b> takes everyone up to
+                        the next part. A town further down needs its name: <b>!tower town mossgate</b>.</p>
+                    <ul class="rf-tower__people">
+                        @foreach (var npc in town.People)
+                        {
+                            <li><b>@npc.Name</b><span class="rf-table__quiet">@npc.Role</span></li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <ol class="rf-tower__floors">
-                @foreach (var floor in Tower.Floors.Where(f => f.Number >= band.FirstFloor && f.Number <= band.LastFloor && f.Number <= revealed))
+                @foreach (var part in Tower.Floors.Where(f => f.Number >= band.FirstFloor && f.Number <= band.LastFloor && f.Number <= revealed))
                 {
-                    var first = firsts.TryGetValue(floor.Number, out var f) ? f : default;
-                    <li class="rf-card rf-tower__floor@(floor.Number % 5 == 0 ? " rf-tower__floor--milestone" : "")">
-                        <div class="rf-tower__number">@floor.Number</div>
+                    var first = firsts.TryGetValue(part.Number, out var f) ? f : null;
+                    <li class="rf-card rf-tower__floor@(part.IsFloorBoss ? " rf-tower__floor--milestone" : "")">
+                        <div class="rf-tower__number" title="@part.Label">@part.Part</div>
                         <div class="rf-tower__body">
-                            <h3 class="rf-card__title">@floor.Name</h3>
-                            <p class="rf-tower__text">@floor.Description</p>
+                            <h3 class="rf-card__title">@part.Name <span class="rf-tower__place">@part.Label</span></h3>
+                            <p class="rf-tower__text">@part.Description</p>
                             <div class="rf-tower__facts">
-                                <span><b>Made for</b> combat level @floor.Level, @floor.GroupSize players (synced to level @Tower.SyncLevel(floor.Number))</span>
-                                <span><b>Quests</b> @string.Join(", ", floor.Quests.Select(q => q.Text))</span>
-                                <span><b>Boss</b> @floor.Boss.Name</span>
+                                <span><b>Made for</b> combat level @part.Level, @part.GroupSize players@(Tower.BossGroup(part) != part.GroupSize ? ", its boss for " + Tower.BossGroup(part) : "") (synced to level @Tower.SyncLevel(part.Number))</span>
                             </div>
+                            <ul class="rf-tower__objectives">
+                                @foreach (var q in part.Objectives)
+                                {
+                                    <li class="rf-tower__objective rf-tower__objective--@q.Kind.ToString().ToLowerInvariant()">
+                                        <span class="rf-tower__kind">@KindName(q, part)</span>
+                                        <span class="rf-tower__what">
+                                            <b>@q.Text</b>
+                                            @if (!string.IsNullOrEmpty(q.Story))
+                                            {
+                                                <span class="rf-tower__note">@q.Story</span>
+                                            }
+                                            @if (q.Kind == TowerObjectiveKind.Gather)
+                                            {
+                                                <span class="rf-tower__note">Counts what the stream's players gather with @Skills(q), wherever they train (nothing is taken from anyone), and every monster defeated on this part.</span>
+                                            }
+                                            else if (q.Kind == TowerObjectiveKind.Find)
+                                            {
+                                                <span class="rf-tower__note">Hidden on this part. Whoever trains near one finds it after a while.</span>
+                                            }
+                                            else if (q.Kind == TowerObjectiveKind.Guardian)
+                                            {
+                                                <span class="rf-tower__note">@(part.IsFloorBoss ? "Opens when the part's other objectives are done. Beating it clears the floor." : "Opens when the part's other objectives are done.")</span>
+                                            }
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
                         </div>
                         <div class="rf-tower__first">
-                            @if (first.Name != null)
+                            @if (first != null)
                             {
-                                <span class="rf-tower__firstlabel">First clear</span>
+                                <span class="rf-tower__firstlabel">@(part.IsFloorBoss ? "World first" : "First clear")</span>
                                 <b>@first.Name</b>
                                 <span class="rf-table__quiet" title="@first.Cleared.ToString("f")">@first.Cleared.ToString("d MMM yyyy")</span>
                             }
@@ -103,22 +158,24 @@
             </ol>
             @if (band.LastFloor > revealed)
             {
+                var from = Tower.PartOf(revealed) + 1;
                 <div class="rf-card rf-tower__hidden">
                     <span class="rf-tower__number">?</span>
-                    <p>Floors @(revealed + 1) to @band.LastFloor are still hidden: no stream has reached them yet.
-                        Clear floor @revealed to see what waits above.</p>
+                    <p>@(from == band.Parts ? "Part " + from : "Parts " + from + " to " + band.Parts) of floor @band.Number
+                        @(from == band.Parts ? "is" : "are") still hidden, and so is the floor's boss: no stream has got
+                        that far yet. Clear part @Tower.PartOf(revealed) to see what waits beyond.</p>
                 </div>
             }
         }
         @if (Tower.Bands.Any(b => b.FirstFloor > revealed))
         {
-            <p class="rf-table__quiet">More bands lie above, unseen.</p>
+            <p class="rf-table__quiet">More floors lie above, unseen.</p>
         }
 
         <h2 class="rf-tower__band">The highest climbs</h2>
         @if (leaders.Count == 0)
         {
-            <p class="rf-table__quiet">No stream has cleared a floor yet. Be the first.</p>
+            <p class="rf-table__quiet">No stream has cleared a part yet. Be the first.</p>
         }
         else
         {
@@ -127,7 +184,8 @@
                     <tr>
                         <th scope="col" class="rf-table__num">#</th>
                         <th scope="col">Stream</th>
-                        <th scope="col" class="rf-table__num">Highest floor cleared</th>
+                        <th scope="col">Highest part cleared</th>
+                        <th scope="col" class="rf-table__num">Floors cleared</th>
                         <th scope="col">When</th>
                     </tr>
                 </thead>
@@ -138,7 +196,8 @@
                         <tr>
                             <td class="rf-table__num" data-label="#">@(i + 1)</td>
                             <td data-label="Stream"><b>@l.Name</b></td>
-                            <td class="rf-table__num" data-label="Highest floor">@l.Floor</td>
+                            <td data-label="Highest part">Floor @l.Floor, part @l.Part</td>
+                            <td class="rf-table__num" data-label="Floors cleared">@l.FloorsCleared</td>
                             <td class="rf-table__quiet" data-label="When" title="@l.Cleared.ToString("f")">@l.Cleared.ToString("d MMM yyyy")</td>
                         </tr>
                     }
@@ -150,8 +209,8 @@
 
 @code {
     private int revealed = 1;
-    private IReadOnlyDictionary<int, (string Name, DateTime Cleared)> firsts = new Dictionary<int, (string, DateTime)>();
-    private IReadOnlyList<(Guid UserId, string Name, int Floor, DateTime Cleared)> leaders = new List<(Guid, string, int, DateTime)>();
+    private IReadOnlyDictionary<int, RavenNest.BusinessLogic.Game.TowerManager.FirstClear> firsts = new Dictionary<int, RavenNest.BusinessLogic.Game.TowerManager.FirstClear>();
+    private IReadOnlyList<RavenNest.BusinessLogic.Game.TowerManager.Leader> leaders = new List<RavenNest.BusinessLogic.Game.TowerManager.Leader>();
 
     protected override void OnInitialized()
     {
@@ -159,6 +218,18 @@
         firsts = TowerManager.FirstClears();
         leaders = TowerManager.Leaderboard(25);
     }
+
+    private static string KindName(TowerObjective q, TowerFloorDefinition part) => q.Kind switch
+    {
+        TowerObjectiveKind.Kill => "Monsters",
+        TowerObjectiveKind.Gather => "Materials",
+        TowerObjectiveKind.Find => "Hidden",
+        TowerObjectiveKind.Guardian => part.IsFloorBoss ? "Floor boss" : "Mini boss",
+        _ => "",
+    };
+
+    private static string Skills(TowerObjective q) =>
+        q.Skills.Length <= 1 ? string.Join("", q.Skills) : string.Join(", ", q.Skills.Take(q.Skills.Length - 1)) + " or " + q.Skills[q.Skills.Length - 1];
 
     private static string ElementColor(Element e) => e switch
     {

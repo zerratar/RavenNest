@@ -158,6 +158,8 @@ namespace RavenNest.Blazor.Services
         {
             var targets = a.Targets ?? Array.Empty<long>();
             var next = a.Tier < targets.Length ? targets[a.Tier] : 0;
+            // the climber counts the tower's parts as steps: shown as the floor and part they are
+            var climber = string.Equals(a.Key, "climber", StringComparison.OrdinalIgnoreCase);
             return new QuestPageAchievement
             {
                 Key = a.Key,
@@ -165,10 +167,12 @@ namespace RavenNest.Blazor.Services
                 Tier = a.Tier,
                 Progress = a.Progress,
                 Next = next,
+                ProgressText = climber ? (a.Progress > 0 ? RavenNest.Combat.Tower.Label((int)Math.Min(int.MaxValue, a.Progress)) : "Not in the tower yet") : null,
+                NextText = climber && next > 0 ? RavenNest.Combat.Tower.Label((int)Math.Min(int.MaxValue, next)) : null,
                 Targets = targets,
                 Hidden = a.Hidden,
                 Picture = AchievementPicture(a.Key),
-                TierTitles = Enumerable.Range(1, 3).Select(t => TitleText(a.Key + "_" + t)).ToArray(),
+                TierTitles = Enumerable.Range(1, Math.Max(3, targets.Length)).Select(t => TitleText(a.Key + "_" + t)).ToArray(),
             };
         }
 
@@ -360,7 +364,7 @@ namespace RavenNest.Blazor.Services
                     return string.IsNullOrEmpty(q.Target)
                         ? Format(GameTexts.Get("UI_QUEST_TOWER_KILL", "Defeat {0} monsters in the tower"), amount)
                         : Format(GameTexts.Get("UI_QUEST_TOWER_KILL_KIND", "Defeat {0} {1} in the tower"), amount, TowerMonsterName(q.Target, q.Amount));
-                case "tower_clear": return Format(GameTexts.Get(q.Amount == 1 ? "UI_QUEST_TOWER_CLEAR_ONE" : "UI_QUEST_TOWER_CLEAR", "Help beat {0} tower floor bosses"), amount);
+                case "tower_clear": return Format(GameTexts.Get(q.Amount == 1 ? "UI_QUEST_TOWER_CLEAR_ONE" : "UI_QUEST_TOWER_CLEAR", "Help beat {0} tower bosses"), amount);
                 case "tame": return Format(GameTexts.Get(q.Amount == 1 ? "UI_QUEST_TAME_ONE" : "UI_QUEST_TAME", "Tame {0} creatures"), amount);
                 case "talk":
                     {
@@ -527,6 +531,9 @@ namespace RavenNest.Blazor.Services
         public long Progress { get; set; }
         /// <summary>The next tier's target, or 0 at gold.</summary>
         public long Next { get; set; }
+        /// <summary>The progress and the next target in words, when plain numbers would not say it (the climber: "Floor 2, part 4"); null otherwise.</summary>
+        public string ProgressText { get; set; }
+        public string NextText { get; set; }
         public long[] Targets { get; set; }
         public bool Hidden { get; set; }
         public string Picture { get; set; }

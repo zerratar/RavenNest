@@ -3,8 +3,8 @@ using System;
 namespace RavenNest.Models
 {
     /// <summary>
-    ///     Kills on tower floors since the last report, per character and kind of monster: the characters' own quests
-    ///     (the Mossgate chains) count them. The stream's floor quests are reported apart (api/tower/{floor}/progress).
+    ///     Kills in the tower since the last report, per character and kind of monster: the characters' own quests
+    ///     (the Mossgate chains) count them. The stream's part objectives are reported apart (api/tower/{step}/progress).
     /// </summary>
     public class TowerKillReport
     {
@@ -16,7 +16,7 @@ namespace RavenNest.Models
     public class TowerCharacterFall
     {
         public System.Guid CharacterId { get; set; }
-        /// <summary>The floor whose boss attempt it was.</summary>
+        /// <summary>The step (the part) whose boss attempt it was.</summary>
         public int Floor { get; set; }
     }
 
@@ -29,32 +29,51 @@ namespace RavenNest.Models
     }
 
     /// <summary>
-    ///     A stream's place in the tower as the server has it (the game's docs/tower-design.md): the floor it is on, its
-    ///     quests and how far they are, whether the boss is open, and how many floors the stream has cleared. The floors
-    ///     themselves (names, enemies, bosses) are in RavenNest.Combat.Tower, shared by the game and the server.
+    ///     A stream's place in the tower as the server has it (the game's docs/tower-design.md and
+    ///     docs/tower-worlds-proposal.md section 12): the part it is on, the part's objectives and how far they are,
+    ///     whether the guardian is open, and how many parts the stream has cleared. Players see floors with parts;
+    ///     the server counts steps (a part's number through every floor), and RavenNest.Combat.Tower maps between the
+    ///     two and holds the parts themselves (names, enemies, guardians), shared by the game and the server.
     /// </summary>
     public class TowerState
     {
-        /// <summary>The floor the stream is on: the lowest one it has not cleared. Above TopFloor when all are cleared.</summary>
+        /// <summary>The step the stream is on: the lowest part it has not cleared. Above TopFloor when all are cleared.</summary>
         public int Floor { get; set; }
-        /// <summary>The highest floor that exists so far.</summary>
+        /// <summary>The highest step that exists so far.</summary>
         public int TopFloor { get; set; }
-        public TowerQuestProgress[] Quests { get; set; }
-        /// <summary>The floor's quests are done, so the boss can be challenged.</summary>
+        /// <summary>The part's counted objectives (kills, gathering, finds) and where they stand; the guardian is not among them.</summary>
+        public TowerObjectiveProgress[] Objectives { get; set; }
+        /// <summary>The part's objectives are done, so its guardian can be challenged.</summary>
         public bool BossOpen { get; set; }
-        /// <summary>Boss attempts made on this floor.</summary>
+        /// <summary>Boss attempts made on this part.</summary>
         public int Attempts { get; set; }
-        /// <summary>Floors cleared by this stream.</summary>
+        /// <summary>Parts cleared by this stream.</summary>
         public int Cleared { get; set; }
-        /// <summary>The stream that cleared this floor first in the world, if any has.</summary>
+        /// <summary>The stream that cleared this part first in the world, if any has.</summary>
         public string FirstClearBy { get; set; }
     }
 
-    public class TowerQuestProgress
+    public class TowerObjectiveProgress
     {
         public string Id { get; set; }
+        /// <summary>RavenNest.Combat.TowerObjectiveKind: 0 kill, 1 gather, 2 find.</summary>
+        public int Kind { get; set; }
         public int Count { get; set; }
         public int Amount { get; set; }
+    }
+
+    /// <summary>
+    ///     What the game reports when a guardian falls: who took part, who landed the last blow, and how strong the
+    ///     group was (for the record of the clear). The server decides everything that follows from it.
+    /// </summary>
+    public class TowerClearReport
+    {
+        /// <summary>Everyone in the attempt.</summary>
+        public System.Guid[] Characters { get; set; }
+        /// <summary>The characters whose blows landed as the guardian fell: the one that took its last health first, then any other that struck in the same moment.</summary>
+        public System.Guid[] LastHits { get; set; }
+        /// <summary>The group's average strength beyond a fresh level-synced player (RavenNest.Combat.TowerPressure), 1 when not known.</summary>
+        public double Strength { get; set; }
     }
 
     /// <summary>The answer to a boss attempt that was won: the rewards, and the stream's state after it.</summary>
@@ -62,12 +81,21 @@ namespace RavenNest.Models
     {
         public bool Success { get; set; }
         public string Message { get; set; }
+        /// <summary>The step that was cleared.</summary>
         public int Floor { get; set; }
-        /// <summary>No stream in the world had cleared this floor before.</summary>
+        /// <summary>The guardian was the floor's boss: the next floor is open.</summary>
+        public bool FloorBoss { get; set; }
+        /// <summary>A floor boss, and no stream in the world had beaten it before: the world first that is announced.</summary>
         public bool WorldFirst { get; set; }
+        /// <summary>No stream in the world had cleared this part before (kept for the website; coins are doubled).</summary>
+        public bool PartFirst { get; set; }
         /// <summary>Coins each player who took part got.</summary>
         public long Coins { get; set; }
         public EventItemReward[] Rewards { get; set; }
+        /// <summary>The characters who got the floor boss's last hit title (nobody for a mini boss): usually one, more when blows landed together.</summary>
+        public System.Guid[] LastHitBy { get; set; }
+        /// <summary>The pressure the server worked out for the clear (the group against the suggested one, times its strength).</summary>
+        public double Pressure { get; set; }
         public TowerState State { get; set; }
     }
 }

@@ -481,6 +481,8 @@ namespace RavenNest.Blazor
             app.ApplicationServices.GetService<QuestManager>();
             app.ApplicationServices.GetService<StreamQuestManager>();
             app.ApplicationServices.GetService<AchievementManager>();
+            // the tower counts gathering for its parts' objectives from the first round on (QuestTracker.Tower)
+            app.ApplicationServices.GetService<RavenNest.BusinessLogic.Game.TowerManager>();
             app.ApplicationServices.GetService<StreamerQuestManager>();
             app.ApplicationServices.GetService<VillageStoryManager>();
             // made now, so the fishing processor knows the own boats' guests (the captain's cut)

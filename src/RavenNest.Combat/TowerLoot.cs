@@ -88,13 +88,14 @@ namespace RavenNest.Combat
         }
 
         /// <summary>
-        ///     The gem's tier grows with the floor, along the tower's milestone floors: Chipped to floor 10, Flawed to
-        ///     25, Polished to 50, Flawless to 75, Perfect above. A band's last floor (every tenth) gives one better.
+        ///     The gem's tier grows with the climb, by the part's step (its number counted through every floor): Chipped
+        ///     to step 10, Flawed to 25, Polished to 50, Flawless to 75, Perfect above. A floor boss (the last part of a
+        ///     floor) gives one better; for a step that does not exist yet, every tenth does.
         /// </summary>
         public static GemTier GemTier(int floor)
         {
             var tier = floor <= 10 ? 0 : floor <= 25 ? 1 : floor <= 50 ? 2 : floor <= 75 ? 3 : 4;
-            if (floor > 0 && floor % 10 == 0) tier++;
+            if (floor > 0 && (Tower.BandOf(floor) != null ? Tower.IsFloorBoss(floor) : floor % 10 == 0)) tier++;
             return (GemTier)Math.Min(Gems.TierCount - 1, tier);
         }
 

@@ -11,8 +11,9 @@ using RavenNest.Sessions;
 namespace RavenNest.Controllers
 {
     /// <summary>
-    ///     The tower for the game (the game's docs/tower-design.md): the stream's floor and quests, kills on the floor,
-    ///     boss attempts and clears. Always the calling game session's stream.
+    ///     The tower for the game (the game's docs/tower-design.md): the stream's part and its objectives, what happens
+    ///     on the part, boss attempts and clears. Always the calling game session's stream. "floor" in the routes is
+    ///     the part's step (from when parts were called floors).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -42,7 +43,7 @@ namespace RavenNest.Controllers
             return tower.GetState(token);
         }
 
-        /// <summary>Kills on the floor since the last report: "defeat-hall-goblin:3;defeat-hall-bunny:5".</summary>
+        /// <summary>What happened on the part since the last report: "defeat-hall-goblin:3;kills:5;find-boots:1".</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{floor}/progress/{counts}")]
         public TowerState Progress(int floor, string counts)
@@ -52,7 +53,7 @@ namespace RavenNest.Controllers
             return tower.AddProgress(token, floor, Uri.UnescapeDataString(counts ?? ""));
         }
 
-        /// <summary>Kills per character and kind on the tower's floors, for the characters' own quests.</summary>
+        /// <summary>Kills per character and kind in the tower, for the characters' own quests.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("kills")]
         public bool Kills([FromBody] TowerKillReport report)
@@ -72,14 +73,14 @@ namespace RavenNest.Controllers
             return tower.BossStarted(token, floor);
         }
 
-        /// <summary>The boss fell: everyone who took part.</summary>
+        /// <summary>The guardian fell: everyone who took part, and whose blows landed last.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{floor}/cleared")]
-        public TowerClearResult Cleared(int floor, Many<Guid> characterIds)
+        public TowerClearResult Cleared(int floor, [FromBody] TowerClearReport report)
         {
             var token = GetSessionToken();
             AssertSessionTokenValidity(token);
-            return tower.BossWon(token, floor, characterIds?.Values);
+            return tower.BossWon(token, floor, report);
         }
     }
 }

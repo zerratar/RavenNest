@@ -6,35 +6,56 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.Combat;
 using RavenNest.DataModels;
 using RavenNest.Models;
+using Skill = RavenNest.Models.Skill;
 
 namespace RavenNest.BusinessLogic.Game
 {
     /// <summary>
-    ///     The tower on the server (the game's docs/tower-design.md): which floor each stream is on, its quest progress,
-    ///     boss attempts, clears and their rewards. Progress belongs to the stream (the streamer's user), like the village:
-    ///     everyone playing there climbs together, and a floor once cleared stays cleared. The floors are
-    ///     RavenNest.Combat.Tower's, shared with the game, which reports what happens on them.
+    ///     The tower on the server (the game's docs/tower-design.md and docs/tower-worlds-proposal.md section 12): which
+    ///     part each stream is on, the progress of the part's objectives, boss attempts, clears and their rewards.
+    ///     Progress belongs to the stream (the streamer's user), like the village: everyone playing there climbs
+    ///     together, and a part once cleared stays cleared. Players see floors with parts; here everything is a step
+    ///     (a part's number through every floor: StreamTower.Floor, TowerClear.Floor), and RavenNest.Combat.Tower maps
+    ///     between the two. The parts are RavenNest.Combat.Tower's, shared with the game, which reports what happens on
+    ///     them; gathering is counted here from what the server sees the stream's players gather anyway.
     /// </summary>
     public class TowerManager
     {
-        /// <summary>Kills one report may add to a quest: a game reports every few seconds, so more is a mistake.</summary>
+        /// <summary>Kills one report may add to an objective: a game reports every few seconds, so more is a mistake.</summary>
         private const int MaxKillsPerReport = 500;
 
-        /// <summary>Coins per floor number for each player in a won attempt; twice that for the world's first clear.</summary>
+        /// <summary>Coins per step for each player in a won attempt; twice that for the world's first clear of the part.</summary>
         private const long CoinsPerFloor = 250;
 
-        /// <summary>Village coins per floor number when a floor is cleared.</summary>
+        /// <summary>Village coins per step when a part is cleared.</summary>
         private const long VillageCoinsPerFloor = 1000;
+
+        /// <summary>
+        ///     Seconds between two finds of one objective at least: the game finds a hidden thing after minutes of
+        ///     searching (Tower.FindSeconds), so finds any faster than this are not from a game playing by the rules.
+        /// </summary>
+        private const int MinFindSeconds = 45;
+
+        /// <summary>Gathering rounds kept in memory before they are written to a stream's progress.</summary>
+        private const int GatherFlush = 20;
+
+        /// <summary>The last hit on a floor boss: the achievement its title comes from (who gets it: Tower.LastHits).</summary>
+        public const string LastHitAchievement = "finisher";
 
         private readonly GameData gameData;
         private readonly GameManager gameManager;
         private readonly object mutex = new object();
         private readonly ConcurrentDictionary<Guid, DateTime> lastClear = new ConcurrentDictionary<Guid, DateTime>();
+        private readonly Dictionary<(Guid Tower, string Objective), DateTime> lastFind = new Dictionary<(Guid, string), DateTime>();
+        // gathering rounds since the last write, per stream and skill (by the skill's name, as the objectives name them)
+        private readonly Dictionary<Guid, Dictionary<string, int>> gathered = new Dictionary<Guid, Dictionary<string, int>>();
+        private static readonly string[] SkillNames = Enum.GetNames(typeof(Skill));
 
         public TowerManager(GameData gameData, GameManager gameManager)
         {
             this.gameData = gameData;
             this.gameManager = gameManager;
+            QuestTracker.Tower = this;
         }
 
         public TowerState GetState(SessionToken token)
@@ -44,8 +65,9 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        ///     Kills on the stream's current floor, as deltas in the quests' text form ("defeat-hall-goblin:3;..."). Kills on
-        ///     any other floor (an old floor, a stale report) count for nothing.
+        ///     What happened on the stream's part since the game's last report, as counts ("defeat-hall-goblin:3;kills:5;
+        ///     find-boots:1"): kills per kill objective, every kill (gather objectives count them too) and hidden things
+        ///     found. A report from any other part (an old part, a stale report) counts for nothing.
         /// </summary>
         public TowerState AddProgress(SessionToken token, int floor, string counts)
         {
@@ -57,28 +79,25 @@ namespace RavenNest.BusinessLogic.Game
                 var definition = Tower.Get(tower.Floor);
                 if (definition == null || floor != tower.Floor) return State(session.UserId);
 
-                var progress = Tower.ParseProgress(definition, tower.Progress);
-                var added = Tower.ParseProgress(definition, null);
-                foreach (var part in (counts ?? "").Split(';'))
+                var report = Tower.ParseCounts(counts);
+                // hidden things are found minutes apart: a find too soon after the last waits for a later report
+                var now = DateTime.UtcNow;
+                foreach (var q in definition.Objectives)
                 {
-                    var colon = part.IndexOf(':');
-                    if (colon <= 0 || !int.TryParse(part.Substring(colon + 1), out var n) || n <= 0) continue;
-                    var id = part.Substring(0, colon).Trim();
-                    if (!added.ContainsKey(id)) continue;
-                    added[id] = Math.Min(MaxKillsPerReport, n);
+                    if (q.Kind != TowerObjectiveKind.Find || !report.TryGetValue(q.Id, out var n) || n <= 0) continue;
+                    if (lastFind.TryGetValue((tower.Id, q.Id), out var last) && (now - last).TotalSeconds < MinFindSeconds) report.Remove(q.Id);
                 }
 
-                var changed = false;
-                foreach (var quest in definition.Quests)
-                {
-                    var before = progress[quest.Id];
-                    var after = Math.Min(quest.Amount, before + added[quest.Id]);
-                    if (after != before) { progress[quest.Id] = after; changed = true; }
-                }
+                var progress = Tower.ParseProgress(definition, tower.Progress);
+                var before = new Dictionary<string, int>(progress);
+                var changed = TakeGathered(tower, definition, progress);
+                changed |= Tower.AddReport(definition, progress, report, MaxKillsPerReport);
                 if (changed)
                 {
+                    foreach (var q in definition.Objectives)
+                        if (q.Kind == TowerObjectiveKind.Find && progress[q.Id] > before[q.Id]) lastFind[(tower.Id, q.Id)] = now;
                     tower.Progress = Tower.FormatProgress(progress);
-                    tower.Updated = DateTime.UtcNow;
+                    tower.Updated = now;
                     gameData.Touch();
                 }
                 return State(session.UserId);
@@ -86,8 +105,49 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        ///     Kills per character and kind on any tower floor, for the characters' own quests (QuestTracker.TowerKills):
-        ///     characters of this session only, each count capped like a floor report.
+        ///     A gathering round by a character (QuestTracker.Gathered, on whatever thread the task processors run): when
+        ///     the part of the stream it plays on has a gather objective for the skill, it counts one. Counted, never
+        ///     taken: the character keeps what it gathered. Kept in memory and written every few rounds, and whenever
+        ///     the stream's progress is read or changed.
+        /// </summary>
+        internal void Gathered(Character character, Skill skill)
+        {
+            var stream = character?.UserIdLock;
+            if (stream == null) return;
+            var tower = gameData.GetStreamTower(stream.Value);
+            if (tower == null) return;
+            var definition = Tower.Get(tower.Floor);
+            var index = (int)skill;
+            if (definition == null || index < 0 || index >= SkillNames.Length) return;
+            var name = SkillNames[index];
+            if (!Tower.Gathers(definition, name)) return;
+            lock (mutex)
+            {
+                if (!gathered.TryGetValue(tower.Id, out var counts)) gathered[tower.Id] = counts = new Dictionary<string, int>();
+                counts.TryGetValue(name, out var n);
+                counts[name] = n + 1;
+                if (n + 1 < GatherFlush) return;
+                var progress = Tower.ParseProgress(definition, tower.Progress);
+                if (!TakeGathered(tower, definition, progress)) return;
+                tower.Progress = Tower.FormatProgress(progress);
+                tower.Updated = DateTime.UtcNow;
+                gameData.Touch();
+            }
+        }
+
+        // the rounds kept in memory go into the progress (the caller holds the lock and saves when this is true)
+        private bool TakeGathered(StreamTower tower, TowerFloorDefinition definition, Dictionary<string, int> progress)
+        {
+            if (!gathered.TryGetValue(tower.Id, out var counts) || counts.Count == 0) return false;
+            var changed = false;
+            foreach (var kv in counts) changed |= Tower.AddGathered(definition, progress, kv.Key, kv.Value);
+            counts.Clear();
+            return changed;
+        }
+
+        /// <summary>
+        ///     Kills per character and kind on any part of the tower, for the characters' own quests
+        ///     (QuestTracker.TowerKills): characters of this session only, each count capped like a part's report.
         /// </summary>
         public void AddCharacterKills(SessionToken token, TowerKillReport report)
         {
@@ -102,7 +162,7 @@ namespace RavenNest.BusinessLogic.Game
                 QuestTracker.TowerKills(character, k.Kind, Math.Min(MaxKillsPerReport, k.Count));
             }
 
-            // knocked out by a boss: only the stream's own floor counts (Nibbles is floor 1's, for the hidden "nibbled")
+            // knocked out by a guardian: only the stream's own part counts (Nibbles is the first part's, for the hidden "nibbled")
             var floor = GetOrCreate(session.UserId).Floor;
             foreach (var f in (report.Falls ?? Array.Empty<TowerCharacterFall>()).Take(200))
             {
@@ -112,7 +172,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        /// <summary>A boss attempt starts on the stream's floor: counted, if the floor's quests are done.</summary>
+        /// <summary>A boss attempt starts on the stream's part: counted, if the part's objectives are done.</summary>
         public TowerState BossStarted(SessionToken token, int floor)
         {
             var session = gameData.GetSession(token.SessionId);
@@ -121,7 +181,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var tower = GetOrCreate(session.UserId);
                 var definition = Tower.Get(tower.Floor);
-                if (definition != null && floor == tower.Floor && Tower.QuestsDone(definition, Tower.ParseProgress(definition, tower.Progress)))
+                if (definition != null && floor == tower.Floor && Tower.ObjectivesDone(definition, Progress(tower, definition)))
                 {
                     tower.Attempts++;
                     tower.Updated = DateTime.UtcNow;
@@ -132,42 +192,55 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        ///     The stream beat its floor's boss: the floor is cleared, the next one opens, and everyone who took part (in the
-        ///     session) gets coins and a chest. Refused when it is not the stream's floor or its quests are not done.
+        ///     The stream beat its part's guardian: the part is cleared, the next one opens, and everyone who took part
+        ///     (in the session) gets coins and a chest. A mini boss pays the usual; a floor boss (the last part of a
+        ///     floor) is the world first that is announced, opens the next floor and gives whoever landed the last blow
+        ///     their title. Refused when it is not the stream's part or its objectives are not done.
         /// </summary>
-        public TowerClearResult BossWon(SessionToken token, int floor, Guid[] characterIds)
+        public TowerClearResult BossWon(SessionToken token, int floor, TowerClearReport report)
         {
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return new TowerClearResult { Message = "No game session." };
             if (lastClear.TryGetValue(session.Id, out var last) && DateTime.UtcNow - last < TimeSpan.FromSeconds(30))
-                return new TowerClearResult { Message = "A floor was cleared moments ago.", State = State(session.UserId) };
+                return new TowerClearResult { Message = "A part was cleared moments ago.", State = State(session.UserId) };
 
+            var characterIds = (report?.Characters ?? Array.Empty<Guid>()).Distinct().ToArray();
             TowerClear clear;
-            bool worldFirst;
+            bool partFirst;
             bool streamFirst;
+            bool floorBoss;
+            double pressure;
+            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
+            // only characters of this session count, for the rewards and for the last blow
+            var ids = characterIds.Where(id => sessionCharacters.Any(c => c.Id == id)).ToArray();
+            Guid[] lastHits;
             lock (mutex)
             {
                 var tower = GetOrCreate(session.UserId);
                 var definition = Tower.Get(tower.Floor);
                 if (definition == null || floor != tower.Floor)
-                    return new TowerClearResult { Message = "That is not the floor the stream is on.", State = State(session.UserId) };
-                if (!Tower.QuestsDone(definition, Tower.ParseProgress(definition, tower.Progress)))
-                    return new TowerClearResult { Message = "The floor's quests are not done.", State = State(session.UserId) };
+                    return new TowerClearResult { Message = "That is not the part the stream is on.", State = State(session.UserId) };
+                if (!Tower.ObjectivesDone(definition, Progress(tower, definition)))
+                    return new TowerClearResult { Message = "The part's objectives are not done.", State = State(session.UserId) };
 
-                worldFirst = !gameData.GetTowerClears().Any(x => x.Floor == floor);
-                // the stream's own first clear of the floor. Today always: a stream clears a floor once, then it is on
-                // the next. Asked anyway, so class gear's chance stays right if a floor can ever be cleared again.
+                floorBoss = definition.IsFloorBoss;
+                partFirst = !gameData.GetTowerClears().Any(x => x.Floor == floor);
+                // the stream's own first clear of the part. Today always: a stream clears a part once, then it is on
+                // the next. Asked anyway, so class gear's chance stays right if a part can ever be cleared again.
                 streamFirst = !gameData.GetTowerClears(session.UserId).Any(x => x.Floor == floor);
-                var characters = gameData.GetActiveSessionCharacters(session);
-                var players = (characterIds ?? Array.Empty<Guid>()).Distinct().Count(id => characters.Any(c => c.Id == id));
+                var strength = report != null && report.Strength > 0 ? CombatMath.Clamp(report.Strength, TowerPressure.MinStrength, TowerPressure.MaxStrength) : TowerPressure.MinStrength;
+                pressure = TowerPressure.Of(ids.Length, strength, Tower.BossGroup(definition));
+                lastHits = floorBoss ? Tower.LastHits(report?.LastHits, ids, Tower.MaxLastHits) : Array.Empty<Guid>();
                 clear = new TowerClear
                 {
                     Id = Guid.NewGuid(),
                     UserId = session.UserId,
                     Floor = floor,
                     Cleared = DateTime.UtcNow,
-                    Players = players,
+                    Players = ids.Length,
                     Attempts = Math.Max(1, tower.Attempts),
+                    Strength = strength,
+                    LastHitCharacterId = lastHits.Length > 0 ? lastHits[0] : (Guid?)null,
                 };
                 gameData.Add(clear);
 
@@ -175,14 +248,13 @@ namespace RavenNest.BusinessLogic.Game
                 tower.Progress = null;
                 tower.Attempts = 0;
                 tower.Updated = DateTime.UtcNow;
+                gathered.Remove(tower.Id);
                 lastClear[session.Id] = DateTime.UtcNow;
             }
 
-            // the rewards: coins for each player, a chest from the dungeon table by the floor (floor 10's tier is epic),
-            // two items on every fifth floor; the village gets its share
-            var ids = (characterIds ?? Array.Empty<Guid>()).Distinct().ToArray();
-            var coins = CoinsPerFloor * floor * (worldFirst ? 2 : 1);
-            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
+            // the rewards: coins for each player, a chest from the dungeon table by the step (step 10's tier is epic),
+            // two items from a floor boss and from every fifth part; the village gets its share
+            var coins = CoinsPerFloor * floor * (partFirst ? 2 : 1);
             foreach (var id in ids)
             {
                 var character = sessionCharacters.FirstOrDefault(c => c.Id == id);
@@ -194,23 +266,30 @@ namespace RavenNest.BusinessLogic.Game
             var villageResources = village != null ? gameData.GetResources(village.ResourcesId) : null;
             if (villageResources != null) villageResources.Coins += VillageCoinsPerFloor * floor;
 
-            // the characters' own quests count the clear (Mossgate's chains)
+            // the characters' own quests count the clear (the towns' chains), the climber keeps the highest step
             foreach (var id in ids)
             {
                 var character = sessionCharacters.FirstOrDefault(c => c.Id == id);
                 if (character != null) QuestTracker.TowerCleared(character, floor);
             }
 
+            // the last blow on a floor boss: a title, nothing else (cosmetic, so nobody fights over it)
+            foreach (var id in lastHits)
+            {
+                var character = sessionCharacters.FirstOrDefault(c => c.Id == id);
+                if (character != null) QuestTracker.TowerLastHit(character);
+            }
+
             var tier = Math.Min(4, (floor - 1) / 3);
-            var rewards = gameManager.RollTowerChest(session, tier, ids, floor % 5 == 0 ? 2 : 1);
-            // and class gear made for the floor, with a gem of the band's element in it (RavenNest.Combat.TowerLoot):
-            // everyone who fought on the stream's first clear of the floor
+            var rewards = gameManager.RollTowerChest(session, tier, ids, Tower.ChestItems(floor));
+            // and class gear made for the part, with a gem of the floor's element in it (RavenNest.Combat.TowerLoot):
+            // everyone who fought on the stream's first clear of the part
             var gear = gameManager.RollTowerGear(session, floor, ids, streamFirst);
             if (gear.Length > 0) rewards = rewards.Concat(gear).ToArray();
-            // and the boss's own trophies, if it has any (the Gardener's Dark Fortress pieces)
+            // and the guardian's own trophies, if it has any (the Gardener's Dark Fortress pieces)
             var trophies = gameManager.RollTowerTrophies(session, floor, ids, streamFirst);
             if (trophies.Length > 0) rewards = rewards.Concat(trophies).ToArray();
-            // and the Legendaries (docs/legendary-design.md): worn ones awaken, a top band boss may give one
+            // and the Legendaries (docs/legendary-design.md): worn ones awaken, a guardian on the top floors may give one
             var legends = gameManager.TowerBossFell(session, floor, ids);
             if (legends.Length > 0) rewards = rewards.Concat(legends).ToArray();
             gameData.Touch();
@@ -219,27 +298,58 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Success = true,
                 Floor = floor,
-                WorldFirst = worldFirst,
+                FloorBoss = floorBoss,
+                WorldFirst = floorBoss && partFirst,
+                PartFirst = partFirst,
                 Coins = coins,
                 Rewards = rewards,
+                LastHitBy = lastHits,
+                Pressure = pressure,
                 State = State(session.UserId),
             };
         }
 
-        /// <summary>The highest floor each stream has cleared, for the website: best first, earlier first on a tie.</summary>
-        public IReadOnlyList<(Guid UserId, string Name, int Floor, DateTime Cleared)> Leaderboard(int count)
+        /// <summary>A stream's place on the leaderboard: the highest part it has cleared (as a step, and as its floor and part).</summary>
+        public sealed class Leader
+        {
+            public Guid UserId;
+            public string Name;
+            /// <summary>The highest step cleared.</summary>
+            public int Step;
+            public int Floor;
+            public int Part;
+            /// <summary>Floors whose boss the stream has beaten.</summary>
+            public int FloorsCleared;
+            public DateTime Cleared;
+        }
+
+        /// <summary>
+        ///     The highest part each stream has cleared, for the website: by floor, then by part, earlier first on a tie
+        ///     (which is the order of the steps).
+        /// </summary>
+        public IReadOnlyList<Leader> Leaderboard(int count)
         {
             return gameData.GetTowerClears()
+                .Where(x => Tower.Get(x.Floor) != null)
                 .GroupBy(x => x.UserId)
                 .Select(g => g.OrderByDescending(x => x.Floor).First())
-                .OrderByDescending(x => x.Floor).ThenBy(x => x.Cleared)
+                .OrderByDescending(x => Tower.FloorOf(x.Floor)).ThenByDescending(x => Tower.PartOf(x.Floor)).ThenBy(x => x.Cleared)
                 .Take(count)
-                .Select(x => (x.UserId, gameData.GetUser(x.UserId)?.UserName ?? "?", x.Floor, x.Cleared))
+                .Select(x => new Leader
+                {
+                    UserId = x.UserId,
+                    Name = gameData.GetUser(x.UserId)?.UserName ?? "?",
+                    Step = x.Floor,
+                    Floor = Tower.FloorOf(x.Floor),
+                    Part = Tower.PartOf(x.Floor),
+                    FloorsCleared = Tower.FloorsCleared(x.Floor),
+                    Cleared = x.Cleared,
+                })
                 .ToList();
         }
 
         /// <summary>
-        ///     The highest floor the website shows in full (no spoilers, Zerratar 2026-11-07): the highest floor any stream
+        ///     The highest step the website shows in full (no spoilers, Zerratar 2026-11-07): the highest part any stream
         ///     has reached, the one after the highest cleared anywhere.
         /// </summary>
         public int Revealed()
@@ -248,35 +358,75 @@ namespace RavenNest.BusinessLogic.Game
             return Tower.Revealed(clears.Count == 0 ? 0 : clears.Max(x => x.Floor));
         }
 
-        /// <summary>Each floor's first clear in the world: who and when.</summary>
-        public IReadOnlyDictionary<int, (string Name, DateTime Cleared)> FirstClears()
+        /// <summary>A part's first clear in the world.</summary>
+        public sealed class FirstClear
+        {
+            public string Name;
+            public DateTime Cleared;
+            public int Players;
+            public int Attempts;
+            /// <summary>Who landed the last blow (a floor boss's clear), or null.</summary>
+            public string LastHitBy;
+        }
+
+        /// <summary>
+        ///     Each part's first clear in the world, by step: who, when, with how many. A floor boss's is the world first
+        ///     that was announced; the others are the quieter record for the website.
+        /// </summary>
+        public IReadOnlyDictionary<int, FirstClear> FirstClears()
         {
             return gameData.GetTowerClears()
                 .GroupBy(x => x.Floor)
                 .ToDictionary(g => g.Key, g =>
                 {
                     var first = g.OrderBy(x => x.Cleared).First();
-                    return (gameData.GetUser(first.UserId)?.UserName ?? "?", first.Cleared);
+                    return new FirstClear
+                    {
+                        Name = gameData.GetUser(first.UserId)?.UserName ?? "?",
+                        Cleared = first.Cleared,
+                        Players = first.Players,
+                        Attempts = first.Attempts,
+                        LastHitBy = first.LastHitCharacterId != null ? gameData.GetCharacter(first.LastHitCharacterId.Value)?.Name : null,
+                    };
                 });
         }
+
+        /// <summary>The stream's step, or 0 when it has never been in the tower (for the website's town page).</summary>
+        public int StepOf(Guid userId) => gameData.GetStreamTower(userId)?.Floor ?? 0;
 
         public TowerState State(Guid userId)
         {
             var tower = gameData.GetStreamTower(userId);
             var floor = tower?.Floor ?? 1;
             var definition = Tower.Get(floor);
-            var progress = Tower.ParseProgress(definition, tower?.Progress);
+            Dictionary<string, int> progress;
+            lock (mutex) progress = tower != null ? Progress(tower, definition) : Tower.ParseProgress(definition, null);
             var first = gameData.GetTowerClears().Where(x => x.Floor == floor).OrderBy(x => x.Cleared).FirstOrDefault();
             return new TowerState
             {
                 Floor = floor,
                 TopFloor = Tower.TopFloor,
-                Quests = definition?.Quests.Select(q => new TowerQuestProgress { Id = q.Id, Count = progress[q.Id], Amount = q.Amount }).ToArray() ?? Array.Empty<TowerQuestProgress>(),
-                BossOpen = definition != null && Tower.QuestsDone(definition, progress),
+                Objectives = definition?.Objectives.Where(q => q.Counted)
+                    .Select(q => new TowerObjectiveProgress { Id = q.Id, Kind = (int)q.Kind, Count = progress[q.Id], Amount = q.Amount }).ToArray() ?? Array.Empty<TowerObjectiveProgress>(),
+                BossOpen = definition != null && Tower.ObjectivesDone(definition, progress),
                 Attempts = tower?.Attempts ?? 0,
                 Cleared = gameData.GetTowerClears(userId).Count,
                 FirstClearBy = first != null ? gameData.GetUser(first.UserId)?.UserName : null,
             };
+        }
+
+        // the part's progress with the gathering kept in memory counted in (and written when it changed anything);
+        // the caller holds the lock
+        private Dictionary<string, int> Progress(StreamTower tower, TowerFloorDefinition definition)
+        {
+            var progress = Tower.ParseProgress(definition, tower.Progress);
+            if (definition != null && TakeGathered(tower, definition, progress))
+            {
+                tower.Progress = Tower.FormatProgress(progress);
+                tower.Updated = DateTime.UtcNow;
+                gameData.Touch();
+            }
+            return progress;
         }
 
         private StreamTower GetOrCreate(Guid userId)

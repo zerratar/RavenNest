@@ -88,7 +88,7 @@ namespace RavenNest.Blazor.Services.Announcements
                         Id = release.Id,
                         Title = source.Title,
                         Summary = source.Summary,
-                        Body = (source.Body ?? "").Replace("{top}", RavenNest.Combat.Tower.TopFloor.ToString()),
+                        Body = (source.Body ?? "").Replace("{top}", RavenNest.Combat.Tower.FloorCount.ToString()),
                         Author = source.Author,
                         Kind = source.Kind,
                         Pinned = release.Pinned,

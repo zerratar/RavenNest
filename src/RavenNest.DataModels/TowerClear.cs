@@ -4,8 +4,11 @@ using System;
 namespace RavenNest.DataModels
 {
     /// <summary>
-    ///     A tower floor a stream cleared (the game's docs/tower-design.md): when, with how many players and after how
-    ///     many attempts. The earliest clear of a floor is the world's first, named in chat and on the website.
+    ///     A part of the tower a stream cleared (the game's docs/tower-design.md; "floor" is the part's step, from when
+    ///     parts were called floors): when, with how many players, how strong they were and after how many attempts.
+    ///     The earliest clear of a part is the world's first; a floor boss's (the last part of a floor) is named in
+    ///     chat and on the website, the others are kept for the website. A floor boss's clear also names who landed
+    ///     the last blow.
     /// </summary>
     public partial class TowerClear : Entity<TowerClear>
     {
@@ -14,5 +17,7 @@ namespace RavenNest.DataModels
         [PersistentData] private DateTime cleared;
         [PersistentData] private int players;
         [PersistentData] private int attempts;
+        [PersistentData] private double? strength;
+        [PersistentData] private Guid? lastHitCharacterId;
     }
 }

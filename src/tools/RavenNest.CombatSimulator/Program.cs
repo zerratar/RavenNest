@@ -76,7 +76,9 @@ namespace RavenNest.CombatSimulator
                     PathScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var pr) ? pr : 100, args.Length > 2 ? args[2] : null, args.Skip(3).ToArray());
                     return 0;
                 case "tower":
-                    TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
+                    // "tower": scaling by pressure (groups of 2, 5, 10 and 30, veterans); "tower 200 fixed": the fixed numbers for any group
+                    if (args.Contains("fixed")) TowerScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tf) ? tf : 200);
+                    else TowerScenarios.RunPressure(gear, args.Length > 1 && int.TryParse(args[1], out var tp) ? tp : 200);
                     return 0;
                 case "taminggear":
                     // the Beastmaster line against each style's damage line, with a damage pet and without (the game's
@@ -88,7 +90,7 @@ namespace RavenNest.CombatSimulator
                     LegendaryScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var lr) ? lr : 200, args.Skip(2).ToArray());
                     return 0;
                 default:
-                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], paths [runs] [tree], pets [runs] [armour share] [offence share], tower [attempts]");
+                    Console.WriteLine("Commands: parity [blows], enemies [fights], elements [fights], bosses [fights], enemygear [fights] [share], builds [runs], paths [runs] [tree], pets [runs] [armour share] [offence share], tower [attempts] [fixed]");
                     return 1;
             }
         }
