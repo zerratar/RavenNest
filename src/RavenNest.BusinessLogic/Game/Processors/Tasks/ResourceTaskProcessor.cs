@@ -108,6 +108,26 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 [Skill.Farming] = 1,
                 [Skill.Mining] = 1,
             };
+
+            // the islet at the tower's foot: a calm place open to every level. Nothing grows there, but nobody loses
+            // training time by visiting (the owner's rule): what a character was gathering goes on as on the main island
+            islandLevelRequirements[Island.Tower] = new ConcurrentDictionary<Skill, int>
+            {
+                [Skill.Woodcutting] = 1,
+                [Skill.Gathering] = 1,
+                [Skill.Fishing] = 1,
+                [Skill.Farming] = 1,
+                [Skill.Mining] = 1,
+            };
+        }
+
+        /// <summary>
+        ///     The level an island asks for a gathering skill; 1 for an island this table does not know (out at sea, or
+        ///     one a newer game names: asking the table itself for it threw and stopped the session's whole round).
+        /// </summary>
+        protected int RequiredLevel(Island island, Skill skill)
+        {
+            return islandLevelRequirements.TryGetValue(island, out var skills) && skills.TryGetValue(skill, out var level) ? level : 1;
         }
 
         /// <summary>

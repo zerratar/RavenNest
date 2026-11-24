@@ -76,6 +76,24 @@ namespace RavenNest.Models
         public double Strength { get; set; }
     }
 
+    /// <summary>
+    ///     One of a stream's best climbers, for the stone and the statue at the foot of the tower in the main world
+    ///     (the game's docs/world-tower.md): a name and a look, which the game and the website show of any character
+    ///     anyway, and its part in this stream's climb.
+    /// </summary>
+    public class TowerClimberInfo
+    {
+        public System.Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        /// <summary>How many of the stream's clears the character fought in: the measure the list is ordered by.</summary>
+        public int Clears { get; set; }
+        /// <summary>The highest part among them, as a step.</summary>
+        public int Highest { get; set; }
+        /// <summary>Floor bosses of this stream that fell to its blow.</summary>
+        public int LastHits { get; set; }
+        public SyntyAppearance Appearance { get; set; }
+    }
+
     /// <summary>The answer to a boss attempt that was won: the rewards, and the stream's state after it.</summary>
     public class TowerClearResult
     {

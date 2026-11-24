@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.Combat;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -318,6 +319,9 @@ namespace RavenNest.BusinessLogic.Game
                 if (character != null) QuestTracker.TowerLastHit(character);
             }
 
+            // and each one's part in this stream's climb, for the stone at the tower's foot
+            RecordClimbers(session.UserId, ids, floor, lastHits);
+
             var tier = Math.Min(4, (floor - 1) / 3);
             var rewards = gameManager.RollTowerChest(session, tier, ids, Tower.ChestItems(floor));
             // and class gear made for the part, with a gem of the floor's element in it (RavenNest.Combat.TowerLoot):
@@ -359,6 +363,62 @@ namespace RavenNest.BusinessLogic.Game
             /// <summary>Floors whose boss the stream has beaten.</summary>
             public int FloorsCleared;
             public DateTime Cleared;
+        }
+
+        /// <summary>How many climbers the game is given for the stone.</summary>
+        public const int ClimbersShown = 5;
+
+        // a clear counts once for each character that fought in it, on the stream it was fought on
+        private void RecordClimbers(Guid userId, Guid[] characterIds, int step, Guid[] lastHits)
+        {
+            lock (mutex)
+            {
+                var known = gameData.GetTowerClimbers(userId);
+                foreach (var id in characterIds)
+                {
+                    var climber = known.FirstOrDefault(x => x.CharacterId == id);
+                    if (climber == null)
+                    {
+                        climber = new TowerClimber { Id = Guid.NewGuid(), UserId = userId, CharacterId = id };
+                        gameData.Add(climber);
+                    }
+                    climber.Clears++;
+                    if (step > climber.Highest) climber.Highest = step;
+                    if (lastHits != null && lastHits.Contains(id)) climber.LastHits++;
+                    climber.Updated = DateTime.UtcNow;
+                }
+            }
+        }
+
+        /// <summary>
+        ///     The stream's best climbers, for the game (the stone and the statue at the tower's foot): the characters
+        ///     that fought in most of this stream's clears; on a tie the one that was there for the higher part, then
+        ///     the one with more last blows, then the one that got there first. Names and looks only, which the game
+        ///     and the website show of any character.
+        /// </summary>
+        public TowerClimberInfo[] Climbers(SessionToken token, int count = ClimbersShown)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null) return Array.Empty<TowerClimberInfo>();
+            var list = new List<TowerClimberInfo>();
+            foreach (var x in gameData.GetTowerClimbers(session.UserId)
+                .Where(x => x.Clears > 0)
+                .OrderByDescending(x => x.Clears).ThenByDescending(x => x.Highest).ThenByDescending(x => x.LastHits).ThenBy(x => x.Updated))
+            {
+                var character = gameData.GetCharacter(x.CharacterId);
+                if (character == null) continue;
+                list.Add(new TowerClimberInfo
+                {
+                    CharacterId = character.Id,
+                    Name = character.Name,
+                    Clears = x.Clears,
+                    Highest = x.Highest,
+                    LastHits = x.LastHits,
+                    Appearance = ModelMapper.MapAppearance(gameData, character),
+                });
+                if (list.Count >= count) break;
+            }
+            return list.ToArray();
         }
 
         /// <summary>

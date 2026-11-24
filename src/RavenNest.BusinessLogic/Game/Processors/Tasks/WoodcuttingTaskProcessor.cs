@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                 var level = skills.WoodcuttingLevel + inventory.GetWoodcuttingBonus();
                 if (!IslandOpen(gameData, session, island)) return; // the mangrove island, where it is not unlocked
-                if (islandLevelRequirements[island][RavenNest.Models.Skill.Woodcutting] > level)
+                if (RequiredLevel(island, RavenNest.Models.Skill.Woodcutting) > level)
                     return;
 
                 session.Updated = DateTime.UtcNow;

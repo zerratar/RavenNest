@@ -43,6 +43,16 @@ namespace RavenNest.Controllers
             return tower.GetState(token);
         }
 
+        /// <summary>The stream's best climbers, for the stone and the statue at the tower's foot in the main world.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("climbers")]
+        public TowerClimberInfo[] Climbers()
+        {
+            var token = GetSessionToken();
+            AssertSessionTokenValidity(token);
+            return tower.Climbers(token);
+        }
+
         /// <summary>What happened on the part since the last report: "defeat-hall-goblin:3;kills:5;find-boots:1".</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{floor}/progress/{counts}")]

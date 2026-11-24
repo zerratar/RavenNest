@@ -83,7 +83,7 @@ namespace RavenNest.Blazor.Services.Assistant
         /// </summary>
         private static readonly string[] Islands =
         {
-            "Home", "Away", "Ironhill", "Kyo", "Heim", "Atria", "Eldara"
+            "Home", "Away", "Ironhill", "Kyo", "Heim", "Atria", "Eldara", "Tower"
         };
 
         public static IEnumerable<string> IslandNames => Islands;

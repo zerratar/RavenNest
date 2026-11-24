@@ -133,6 +133,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<CharacterSkillBuild> characterSkillBuilds;
         private readonly EntitySet<StreamTower> streamTowers;
         private readonly EntitySet<TowerClear> towerClears;
+        private readonly EntitySet<TowerClimber> towerClimbers;
         private readonly EntitySet<CharacterLegendary> characterLegendaries;
         private readonly EntitySet<LegendaryFind> legendaryFinds;
         private readonly EntitySet<ClanPost> clanPosts;
@@ -255,6 +256,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(CharacterSkillBuild),
                 typeof(StreamTower),
                 typeof(TowerClear),
+                typeof(TowerClimber),
                 typeof(CharacterLegendary),
                 typeof(LegendaryFind),
                 typeof(ClanPost),
@@ -456,6 +458,8 @@ namespace RavenNest.BusinessLogic.Data
                     streamTowers.RegisterLookupGroup(nameof(User), x => x.UserId);
                     towerClears = new EntitySet<TowerClear>(ctx.TowerClear.ToList());
                     towerClears.RegisterLookupGroup(nameof(User), x => x.UserId);
+                    towerClimbers = new EntitySet<TowerClimber>(ctx.TowerClimber.ToList());
+                    towerClimbers.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characterLegendaries = new EntitySet<CharacterLegendary>(ctx.CharacterLegendary.ToList());
                     characterLegendaries.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     legendaryFinds = new EntitySet<LegendaryFind>(ctx.LegendaryFind.ToList());
@@ -591,7 +595,7 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties, vendorTransaction,
                         userBankItems,
                         clanBankItems, clanBankLog, clanBankLimits, clanJoinRequests, clanPageSettings, clanPosts, clanPostReports,
-                        characterSkillBuilds, streamTowers, towerClears,
+                        characterSkillBuilds, streamTowers, towerClears, towerClimbers,
                         characterLegendaries, legendaryFinds,
                         streamerShopListings, streamerShopTransactions,
                         clanImages,
@@ -3226,6 +3230,7 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(CharacterSkillBuild item) => Update(() => characterSkillBuilds.Add(item));
         public AddEntityResult Add(StreamTower item) => Update(() => streamTowers.Add(item));
         public AddEntityResult Add(TowerClear item) => Update(() => towerClears.Add(item));
+        public AddEntityResult Add(TowerClimber item) => Update(() => towerClimbers.Add(item));
         public AddEntityResult Add(CharacterLegendary item) => Update(() => characterLegendaries.Add(item));
         public AddEntityResult Add(LegendaryFind item) => Update(() => legendaryFinds.Add(item));
         public AddEntityResult Add(ClanPost item) => Update(() => clanPosts.Add(item));
@@ -3818,6 +3823,8 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<StreamTower> GetStreamTowers() => streamTowers.Entities.ToList();
         public IReadOnlyList<TowerClear> GetTowerClears(Guid userId) => towerClears[nameof(User), userId].ToList();
         public IReadOnlyList<TowerClear> GetTowerClears() => towerClears.Entities.ToList();
+        /// <summary>The characters that fought in a stream's clears of the tower, each with its count.</summary>
+        public IReadOnlyList<TowerClimber> GetTowerClimbers(Guid userId) => towerClimbers[nameof(User), userId].ToList();
         public CharacterLegendary GetCharacterLegendary(Guid characterId) => characterLegendaries[nameof(Character), characterId].FirstOrDefault();
         public IReadOnlyList<LegendaryFind> GetLegendaryFinds(Guid characterId) => legendaryFinds[nameof(Character), characterId].ToList();
         public IReadOnlyList<LegendaryFind> GetLegendaryFinds() => legendaryFinds.Entities.ToList();
