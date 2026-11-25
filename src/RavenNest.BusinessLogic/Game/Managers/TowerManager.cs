@@ -369,9 +369,8 @@ namespace RavenNest.BusinessLogic.Game
         private Guid[] WornLooks(Guid characterId)
         {
             var looks = new List<Guid>();
-            foreach (var worn in gameData.GetInventoryItems(characterId))
+            foreach (var worn in gameData.GetEquippedItems(characterId))
             {
-                if (!worn.Equipped) continue;
                 var item = gameData.GetItem(worn.ItemId);
                 if (item == null || item.Type == (int)RavenNest.Models.ItemType.Pet || item.Type == (int)RavenNest.Models.ItemType.Boat) continue;
                 looks.Add(worn.TransmogrificationId ?? worn.ItemId);
