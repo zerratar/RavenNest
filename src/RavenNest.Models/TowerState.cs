@@ -92,6 +92,12 @@ namespace RavenNest.Models
         /// <summary>Floor bosses of this stream that fell to its blow.</summary>
         public int LastHits { get; set; }
         public SyntyAppearance Appearance { get; set; }
+        /// <summary>
+        ///     What the character wears, for dressing its statue when it is not in the game: the item each worn piece
+        ///     looks like (its look where it has been given one, else itself). Pets and boats are left out. The same
+        ///     the game and the website show of any character.
+        /// </summary>
+        public System.Guid[] Gear { get; set; }
     }
 
     /// <summary>The answer to a boss attempt that was won: the rewards, and the stream's state after it.</summary>

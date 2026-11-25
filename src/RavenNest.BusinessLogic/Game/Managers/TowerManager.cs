@@ -365,6 +365,20 @@ namespace RavenNest.BusinessLogic.Game
             public DateTime Cleared;
         }
 
+        // what a character wears, as the items it looks like: for its statue (no pets, no boats)
+        private Guid[] WornLooks(Guid characterId)
+        {
+            var looks = new List<Guid>();
+            foreach (var worn in gameData.GetInventoryItems(characterId))
+            {
+                if (!worn.Equipped) continue;
+                var item = gameData.GetItem(worn.ItemId);
+                if (item == null || item.Type == (int)RavenNest.Models.ItemType.Pet || item.Type == (int)RavenNest.Models.ItemType.Boat) continue;
+                looks.Add(worn.TransmogrificationId ?? worn.ItemId);
+            }
+            return looks.ToArray();
+        }
+
         /// <summary>How many climbers the game is given for the stone.</summary>
         public const int ClimbersShown = 5;
 
@@ -415,6 +429,7 @@ namespace RavenNest.BusinessLogic.Game
                     Highest = x.Highest,
                     LastHits = x.LastHits,
                     Appearance = ModelMapper.MapAppearance(gameData, character),
+                    Gear = WornLooks(character.Id),
                 });
                 if (list.Count >= count) break;
             }
