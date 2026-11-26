@@ -333,6 +333,7 @@ export function detach(root) {
         window.removeEventListener('pointerup', s.up);
         window.removeEventListener('pointercancel', s.cancel);
         window.removeEventListener('keydown', s.key);
+        if (s.cols) s.cols.disconnect();
         attachedRoots.delete(root);
     }
     document.body.classList.remove('rf-gear-dragging');
@@ -434,6 +435,59 @@ export function pref(name) {
 
 export function setPref(name, value) {
     try { localStorage.setItem('rf.' + name, value); } catch { /* a private window: it lasts for this visit only */ }
+}
+
+/** Several of the viewer's choices at once (the Inventory tab's layout), each null when none. */
+export function prefs(names) {
+    return (names || []).map(pref);
+}
+
+// ---- The Inventory tab's parts ----------------------------------------------------------------------------------
+// A part shows its first two rows; how many tiles a row holds depends on the width and the tile size, which only the
+// browser knows. The page keeps a hidden empty grid with the same columns as the tiles' grids, and this tells the page
+// how many columns it has: now, and again whenever its width changes.
+
+const columnsOf = grid => {
+    if (!grid || !grid.isConnected) return 0;
+    const tracks = getComputedStyle(grid).gridTemplateColumns;
+    if (!tracks || tracks === 'none') return 0;
+    return tracks.trim().split(/\s+/).length;
+};
+
+/** Starts telling the page (InvColumns) when the hidden grid's column count changes; answers the count now. */
+export function watchColumns(root, probe) {
+    const s = root ? attachedRoots.get(root) : null;
+    const now = columnsOf(probe);
+    if (!s || !probe) return now;
+    if (s.cols) s.cols.disconnect();
+    s.cols = null;
+    s.colsLast = now;
+    if (typeof ResizeObserver === 'function') {
+        s.cols = new ResizeObserver(() => {
+            const n = columnsOf(probe);
+            if (n > 0 && n !== s.colsLast) {
+                s.colsLast = n;
+                s.dotnet.invokeMethodAsync('InvColumns', n).catch(() => { });
+            }
+        });
+        s.cols.observe(probe);
+    }
+    return now;
+}
+
+/** The column count after the tile size changed (the width did not, so the watch above does not hear of it). */
+export function columns(root, probe) {
+    const s = root ? attachedRoots.get(root) : null;
+    const now = columnsOf(probe);
+    if (s) s.colsLast = now;
+    return now;
+}
+
+/** A part went back to two rows: when its top is above the screen now, it is scrolled back into sight. */
+export function revealSection(root, id) {
+    const el = id ? document.getElementById(id) : null;
+    if (!el || (root && !root.contains(el))) return;
+    if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
 export function dropFigure() {

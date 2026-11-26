@@ -132,6 +132,39 @@ namespace RavenNest.Blazor.Pages.Dev
 
         private void FillBag()
         {
+            // &bag=small: a character just starting out, a handful of stacks
+            if (Option("bag") == "small")
+            {
+                Add("Priest Gloves");
+                Add("Rune Sword");
+                Add("Ruby Ring");
+                Add("Chipped Topaz", 4);
+                Add("Bread", 29);
+                Add("Rune Ore", 128);
+                Add("Wheat", 1450);
+                return;
+            }
+
+            FillUsualBag();
+
+            // &bag=big: a long-time player's bag, 200 and more stacks (the Inventory tab's parts and "Show all")
+            if (Option("bag") == "big")
+            {
+                var have = new HashSet<Guid>(bag.Select(x => x.ItemId));
+                var all = byName.Values.Where(x => !have.Contains(x.Id) && x.Category != ItemCategory.StreamerToken)
+                    .OrderBy(x => x.Name, StringComparer.Ordinal).ToList();
+                // spread over the whole list, so every kind gets some
+                var step = Math.Max(1, all.Count / 180);
+                for (var i = 0; i < all.Count && i / step < 180; i += step)
+                {
+                    var item = all[i];
+                    Add(item.Name, GearRules.SlotOf(item) == EquipmentSlot.None ? 1 + (i * 37) % 400 : 1);
+                }
+            }
+        }
+
+        private void FillUsualBag()
+        {
             // pieces to wear: an upgrade, pieces of other lines, ones the character cannot wear yet, looks
             Add("Priest Gloves");
             Add("Priest Boots");

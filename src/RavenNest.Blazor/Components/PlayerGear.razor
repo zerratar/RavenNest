@@ -624,22 +624,48 @@ else
             var visible = VisibleEntries();
             var pickedEntry = PickedEntry;
 
-            <div class="rf-gear-inv @(pickedEntry != null && !several ? "has-pick" : "")">
+            <div class="rf-gear-inv @(pickedEntry != null && !several ? "has-pick" : "") @(bigTiles ? "is-big" : "")">
                 <section class="rf-panel rf-gear-invmain" aria-label="Inventory">
+                    @* two halves that wrap as wholes: finding (search, sort) and looking (layout, tile size, coins) *@
                     <div class="rf-gear-invtools">
-                        <SearchBox Placeholder="Search items" AriaLabel="Search the inventory by item name"
-                                   Value="@search" ValueChanged="OnSearch" ClearSignal="@clearSignal" />
-                        <label class="rf-gear-sort">
-                            <span>Sort</span>
-                            <select class="rf-input" value="@sort" @onchange="e => sort = e.Value?.ToString() ?? sort">
-                                <option value="best">Best first</option>
-                                <option value="name">Name</option>
-                                <option value="amount">Amount</option>
-                                <option value="value">Vendor value</option>
-                                <option value="kind">Kind</option>
-                            </select>
-                        </label>
-                        @CoinsLine()
+                        <div class="rf-gear-invtools__find">
+                            <SearchBox Placeholder="Search items" AriaLabel="Search the inventory by item name"
+                                       Value="@search" ValueChanged="OnSearch" ClearSignal="@clearSignal" />
+                            <label class="rf-gear-sort">
+                                <span>Sort</span>
+                                <select class="rf-input" value="@sort" @onchange="e => sort = e.Value?.ToString() ?? sort">
+                                    <option value="best">Best first</option>
+                                    <option value="name">Name</option>
+                                    <option value="amount">Amount</option>
+                                    <option value="value">Vendor value</option>
+                                    <option value="kind">Kind</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="rf-gear-invtools__view">
+                            @* how the bag is laid out and how big its tiles are: the viewer's own, kept in this browser *@
+                            <div class="rf-gear-seg" role="group" aria-label="Layout">
+                                <button type="button" class="rf-gear-seg__btn @(!everything ? "is-on" : "")" aria-pressed="@(!everything)"
+                                        title="A part for each kind, two rows each to start with" @onclick="() => SetEverything(false)">
+                                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Grouped</span>
+                                </button>
+                                <button type="button" class="rf-gear-seg__btn @(everything ? "is-on" : "")" aria-pressed="@everything"
+                                        title="Every item in one grid" @onclick="() => SetEverything(true)">
+                                    <i class="fa-solid fa-grip" aria-hidden="true"></i><span>Everything</span>
+                                </button>
+                            </div>
+                            <div class="rf-gear-seg" role="group" aria-label="Tile size">
+                                <button type="button" class="rf-gear-seg__btn @(!bigTiles ? "is-on" : "")" aria-pressed="@(!bigTiles)"
+                                        title="Small tiles: more on a row" aria-label="Small tiles" @onclick="() => SetBig(false)">
+                                    <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="rf-gear-seg__btn @(bigTiles ? "is-on" : "")" aria-pressed="@bigTiles"
+                                        title="Big tiles: fewer on a row" aria-label="Big tiles" @onclick="() => SetBig(true)">
+                                    <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            @CoinsLine()
+                        </div>
                     </div>
 
                     <div class="rf-gear-chips" role="group" aria-label="Filter items by kind">
@@ -686,6 +712,83 @@ else
                             }
                         </div>
                     }
+                    else if (Grouped)
+                    {
+                        @*
+                            One part a kind, each with its first two rows and "Show all" (a Discord player found the one
+                            grid of everything too much at once). The hidden grid on top is only measured: how many
+                            tiles a row holds at this width and tile size, so "two rows" is two rows on any screen.
+                        *@
+                        <div class="rf-gear-invsecs">
+                            <div class="rf-gear-grid rf-gear-grid--inv rf-gear-invprobe" aria-hidden="true" @ref="invProbe"></div>
+                            @foreach (var section in Sections(visible))
+                            {
+                                var kind = section.Kind;
+                                var count = section.Entries.Count;
+                                var closed = IsClosed(kind);
+                                var shown = closed ? 0 : Cap(kind, count);
+                                var label = GearRules.KindLabel(kind);
+                                <section class="rf-gear-invsec @(closed ? "is-closed" : "")" id="rf-invsec-@kind" aria-label="@label">
+                                    <div class="rf-gear-invsec__head">
+                                        @if (Searching)
+                                        {
+                                            <h3 class="rf-gear-invsec__title">
+                                                <i class="rf-gear-invsec__icon @GearRules.KindIcon(kind)" aria-hidden="true"></i>
+                                                <span>@label</span>
+                                                <b class="rf-gear-invsec__count">@count</b>
+                                            </h3>
+                                        }
+                                        else
+                                        {
+                                            <h3 class="rf-gear-invsec__title">
+                                                <button type="button" class="rf-gear-invsec__toggle" aria-expanded="@(!closed)"
+                                                        title="@(closed ? "Show the " + label.ToLowerInvariant() : "Hide the " + label.ToLowerInvariant())"
+                                                        @onclick="() => ToggleSection(kind)">
+                                                    <i class="rf-gear-invsec__chev fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                                    <i class="rf-gear-invsec__icon @GearRules.KindIcon(kind)" aria-hidden="true"></i>
+                                                    <span>@label</span>
+                                                    <b class="rf-gear-invsec__count">@count</b>
+                                                </button>
+                                            </h3>
+                                        }
+                                        @if (several)
+                                        {
+                                            var movable = section.Entries.Where(x => x.CanMove).ToList();
+                                            var picked = movable.Count(x => selected.Contains(x.Stack.Id));
+                                            if (movable.Count > 0)
+                                            {
+                                                <span class="rf-gear-invsec__picked">@(picked > 0 ? picked + " picked" : "")</span>
+                                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => PickSection(movable, picked < movable.Count)">
+                                                    @(picked < movable.Count ? "Pick all " + movable.Count : "Pick none")
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                    @if (!closed)
+                                    {
+                                        <div class="rf-gear-grid rf-gear-grid--inv">
+                                            @foreach (var e in section.Entries.Take(shown))
+                                            {
+                                                @Tile(e, false)
+                                            }
+                                        </div>
+                                        @if (shown < count)
+                                        {
+                                            <button type="button" class="rf-gear-invsec__more" @onclick="() => ToggleMore(kind)">
+                                                Show all @count <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                        else if (!Searching && openKinds.Contains(kind) && IsLong(count))
+                                        {
+                                            <button type="button" class="rf-gear-invsec__more" @onclick="() => ToggleMore(kind)">
+                                                Show fewer <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                                            </button>
+                                        }
+                                    }
+                                </section>
+                            }
+                        </div>
+                    }
                     else
                     {
                         <div class="rf-gear-grid rf-gear-grid--inv">
@@ -705,7 +808,7 @@ else
                                 <span>@Plural(chosen.Sum(x => x.Stack.Amount), "item"), worth @Coins(chosen.Where(x => x.CanSell).Sum(x => x.SellValue)) at the vendor</span>
                             </div>
                             <div class="rf-gear-invfoot__acts">
-                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => SelectAll(visible)">Pick all @visible.Count(x => x.CanMove) shown</button>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => SelectAll(visible)">Pick all @visible.Count(x => x.CanMove)@(Grouped ? "" : " shown")</button>
                                 <button type="button" class="rf-btn rf-btn--small" disabled="@(chosen.Count == 0)" @onclick="() => selected.Clear()">Pick none</button>
                                 <button type="button" class="rf-btn rf-btn--small" disabled="@(chosen.Count == 0)" @onclick="() => OpenSeveral(false)">
                                     <i class="fa-solid fa-box-archive" aria-hidden="true"></i> Send to stash
@@ -761,7 +864,7 @@ else
                                 <li><span class="rf-gear-mark rf-gear-mark--up"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></span> better than what is worn</li>
                                 <li><span class="rf-gear-mark rf-gear-mark--ench"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span> enchanted</li>
                                 <li><span class="rf-gear-mark rf-gear-mark--skin"><i class="fa-solid fa-mask" aria-hidden="true"></i></span> wears a skin</li>
-                                <li><span class="rf-gear-dots"><i class="rf-gear-dot is-gem-ruby"></i><i class="rf-gear-dot"></i></span> gem sockets</li>
+                                <li><span class="rf-gear-dots"><i class="rf-gear-dot is-gem-ruby"></i><i class="rf-gear-dot"></i></span> gem sockets: shown when filled or picked</li>
                             </ul>
                         </div>
                     }
@@ -1242,7 +1345,7 @@ else
     {
         if (e.Sockets.Count > 0)
         {
-            <span class="rf-gear-dots" title="@SocketsTitle(e)">
+            <span class="rf-gear-dots @(e.Sockets.Any(x => !x.Empty) ? "has-gem" : "")" title="@SocketsTitle(e)">
                 @foreach (var socket in e.Sockets)
                 {
                     <i class="rf-gear-dot @(socket.Empty ? "" : "is-gem-" + socket.Kind.ToString().ToLowerInvariant())"></i>

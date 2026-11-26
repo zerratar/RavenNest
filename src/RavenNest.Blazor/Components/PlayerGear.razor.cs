@@ -280,6 +280,8 @@ namespace RavenNest.Blazor.Components
                     figureState = "is-loading";
                     await module.InvokeVoidAsync("dropFigure");
                 }
+
+                if (ActiveView == "inventory") await SectionsAfterRenderAsync();
             }
             catch (JSDisconnectedException)
             {

@@ -1951,6 +1951,18 @@ body.rf-gear-dragging * {
 
 .rf-gear-invtools .rf-search { flex-basis: 14rem; }
 
+.rf-gear-invtools__find,
+.rf-gear-invtools__view {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.rf-gear-invtools__find { flex: 3 1 24rem; }
+.rf-gear-invtools__view { flex: 1 1 auto; }
+
 .rf-gear-sort {
     display: inline-flex;
     align-items: center;
@@ -2010,6 +2022,249 @@ body.rf-gear-dragging * {
     display: flex;
     gap: var(--rf-space-2);
     flex-wrap: wrap;
+}
+
+/* ---- Layout and tile size switches ------------------------------------------ */
+.rf-gear-seg {
+    display: inline-flex;
+    flex: none;
+    padding: 3px;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-gear-seg__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45em;
+    min-width: 2.6rem;
+    min-height: 2.4rem;
+    padding: 0 var(--rf-space-3);
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-gear-seg__btn i { font-size: 1em; }
+
+.rf-gear-seg__btn:hover,
+.rf-gear-seg__btn:focus-visible {
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+.rf-gear-seg__btn:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-gear-seg__btn.is-on {
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+}
+
+/* ---- Grouped: a part for each kind ------------------------------------------- */
+.rf-gear-invsecs {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+}
+
+/* measured only (js/rf-gear.js): the columns a row of tiles has at this width and tile size */
+.rf-gear-invprobe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.rf-gear-invsec {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-gear-invsec + .rf-gear-invsec {
+    padding-top: var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-gear-invsec__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    min-height: 2.4rem;
+}
+
+.rf-gear-invsec__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-heading);
+    font-weight: 800;
+}
+
+.rf-gear-invsec__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-left: calc(var(--rf-space-2) * -1);
+    padding: var(--rf-space-1) var(--rf-space-3) var(--rf-space-1) var(--rf-space-2);
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--rf-transition);
+}
+
+.rf-gear-invsec__toggle:hover,
+.rf-gear-invsec__toggle:focus-visible {
+    background: var(--rf-surface-2);
+    outline: none;
+}
+
+.rf-gear-invsec__toggle:focus-visible { box-shadow: var(--rf-focus); }
+
+.rf-gear-invsec__chev {
+    width: 1em;
+    color: var(--rf-ink-muted);
+    font-size: 0.8em;
+    transition: transform var(--rf-transition);
+}
+
+.rf-gear-invsec.is-closed .rf-gear-invsec__chev { transform: rotate(-90deg); }
+
+.rf-gear-invsec__icon {
+    color: var(--rf-gold);
+    font-size: 0.9em;
+}
+
+.rf-gear-invsec__count {
+    padding: 0.05em 0.55em;
+    border-radius: 999px;
+    background: var(--rf-surface-3);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-gear-invsec.is-closed .rf-gear-invsec__title { color: var(--rf-ink-muted); }
+
+.rf-gear-invsec__picked {
+    color: var(--rf-gold-bright);
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rf-gear-invsec__head > .rf-btn { flex: none; }
+
+.rf-gear-invsec__more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: 100%;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    background: none;
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-gear-invsec__more:hover,
+.rf-gear-invsec__more:focus-visible {
+    border-style: solid;
+    border-color: var(--rf-line-gold);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    outline: none;
+}
+
+.rf-gear-invsec__more i { font-size: 0.85em; }
+
+/* ---- Quieter tiles ------------------------------------------------------------
+   A bag is many tiles at once: a thin rarity edge, and the socket rings only where a gem sits in one, or on the
+   tile that is picked, pointed at or focused. Worn, better and enchanted marks stay. */
+.rf-gear-grid--inv .rf-gear-tile {
+    border-width: 1px;
+    border-color: color-mix(in srgb, currentColor 58%, transparent);
+}
+
+.rf-gear-grid--inv .rf-gear-tile.rf-rarity-common { border-color: var(--rf-line-strong); }
+.rf-gear-grid--inv .rf-gear-tile:hover,
+.rf-gear-grid--inv .rf-gear-tile:focus-visible { border-color: currentColor; }
+.rf-gear-grid--inv .rf-gear-tile.rf-rarity-common:hover,
+.rf-gear-grid--inv .rf-gear-tile.rf-rarity-common:focus-visible { border-color: var(--rf-ink-muted); }
+.rf-gear-grid--inv .rf-gear-tile.is-picked,
+.rf-gear-grid--inv .rf-gear-tile.is-chosen { border-color: var(--rf-gold); }
+
+.rf-gear-grid--inv .rf-gear-tile > .rf-gear-dots:not(.has-gem) {
+    opacity: 0;
+    transition: opacity var(--rf-transition);
+}
+
+.rf-gear-grid--inv .rf-gear-tile:hover > .rf-gear-dots,
+.rf-gear-grid--inv .rf-gear-tile:focus-visible > .rf-gear-dots,
+.rf-gear-grid--inv .rf-gear-tile.is-picked > .rf-gear-dots {
+    opacity: 1;
+}
+
+/* ---- Big tiles: fewer on a row, marks to match --------------------------------- */
+.rf-gear-inv.is-big .rf-gear-grid--inv {
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.8rem;
+}
+
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-mark--worn { font-size: 0.9rem; }
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-tile > .rf-gear-mark--worn { top: 5px; left: 5px; }
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-tile__marks { top: 5px; right: 5px; gap: 3px; }
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-tile > .rf-gear-dots { left: 7px; bottom: 7px; gap: 4px; }
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-dot { width: 0.75rem; height: 0.75rem; }
+
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-tile__amount {
+    right: 5px;
+    bottom: 5px;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.95rem;
+}
+
+.rf-gear-inv.is-big .rf-gear-grid--inv .rf-gear-tile__check {
+    left: 5px;
+    bottom: 5px;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.85rem;
 }
 
 /* ---- The picked item, beside the grid --------------------------------------- */
@@ -2732,6 +2987,23 @@ body.rf-gear-dragging * {
     .rf-gear-grid--inv {
         grid-template-columns: repeat(auto-fill, minmax(4.1rem, 1fr));
     }
+
+    .rf-gear-inv.is-big .rf-gear-grid--inv {
+        grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+        gap: var(--rf-space-2);
+    }
+
+    /* three lines: the search; the sort with the coins; the two switches side by side */
+    .rf-gear-invtools__find,
+    .rf-gear-invtools__view {
+        display: contents;
+    }
+
+    .rf-gear-invtools .rf-search { flex: 1 1 100%; order: 1; }
+    .rf-gear-invtools .rf-gear-sort { order: 2; }
+    .rf-gear-invtools .rf-gear-coins { order: 3; }
+    .rf-gear-invtools .rf-gear-seg { order: 4; }
+    .rf-gear-invtools .rf-gear-seg__btn { padding: 0 var(--rf-space-2); }
 
     .rf-gear-coins {
         font-size: var(--rf-size-body);
