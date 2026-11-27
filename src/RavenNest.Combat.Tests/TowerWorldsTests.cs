@@ -294,11 +294,18 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void HiddenThingsTakeLongerToFindHigherUp()
+        public void HiddenThingsTakeAboutThreeMinutesALittleLongerHigherUp()
         {
-            Assert.True(Tower.FindSeconds(Tower.FirstStep(1)) >= 120);
+            // about three minutes of fighting each (the owner, 2026-11-26), so a part's finds are done well inside its
+            // 20 to 30 minutes
+            Assert.InRange(Tower.FindSeconds(Tower.FirstStep(1)), 150, 180);
             Assert.True(Tower.FindSeconds(Tower.FirstStep(2)) > Tower.FindSeconds(Tower.FirstStep(1)));
             Assert.True(Tower.FindSeconds(Tower.FirstStep(3)) > Tower.FindSeconds(Tower.FirstStep(2)));
+            Assert.InRange(Tower.FindSeconds(Tower.FirstStep(3)), 180, 210);
+            Assert.True(Tower.FindSeconds(1000) <= 240);
+            foreach (var part in Tower.Floors)
+                foreach (var q in part.Objectives.Where(q => q.Kind == TowerObjectiveKind.Find))
+                    Assert.True(q.Amount * Tower.FindSeconds(part.Number) <= 20 * 60, part.Label);
             Assert.InRange(Tower.FindFarShare, 0.05, 1);
         }
 
@@ -361,17 +368,23 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void TheAmountsSetAPaceThatGrowsWithTheClimb()
+        public void TheAmountsSetPartsOfTwentyToThirtyMinutes()
         {
-            // kills a part asks for: more on every floor, and the first part is the gentlest of all
+            // the owner, 2026-11-26: a part takes five players about 20 to 30 minutes (25 on average), the first of a
+            // floor the shortest and its last the longest. Five players make about 21 kills a minute (bots, 2026-11-27),
+            // and players go for the kind the part needs most, so its kill objectives fill together
+            const double killsAMinute = 21;
             int Kills(TowerFloorDefinition p) => p.Objectives.Where(q => q.Kind == TowerObjectiveKind.Kill).Sum(q => q.Amount);
-            var first = Kills(Tower.Get(1));
-            foreach (var part in Tower.Floors) Assert.True(Kills(part) >= first, part.Label);
-            for (var floor = 1; floor < Tower.FloorCount; ++floor)
+            bool Gathers(TowerFloorDefinition p) => p.Objectives.Any(q => q.Kind == TowerObjectiveKind.Gather);
+            foreach (var part in Tower.Floors)
             {
-                var here = Tower.Floors.Where(p => p.Floor == floor).Average(p => (double)Kills(p));
-                var above = Tower.Floors.Where(p => p.Floor == floor + 1).Average(p => (double)Kills(p));
-                Assert.True(above > here * 1.2, "floor " + (floor + 1));
+                var minutes = Kills(part) / killsAMinute / (Gathers(part) ? 0.8 : 1);
+                Assert.InRange(minutes, 14, 34);
+            }
+            for (var floor = 1; floor <= Tower.FloorCount; ++floor)
+            {
+                var parts = Tower.Floors.Where(p => p.Floor == floor && !Gathers(p)).ToList();
+                Assert.True(Kills(parts.First()) < Kills(parts.Last()), "floor " + floor);
             }
             // a gather objective is more than the part's kills alone bring in while its kill objectives fill, so the
             // stream's gatherers shorten the part, and no more than twice that, so fighting alone still gets there
@@ -379,7 +392,7 @@ namespace RavenNest.Combat.Tests
             {
                 foreach (var q in part.Objectives.Where(q => q.Kind == TowerObjectiveKind.Gather))
                 {
-                    var killsMeanwhile = part.Objectives.Where(k => k.Kind == TowerObjectiveKind.Kill).Max(k => k.Amount) * part.Enemies.Length;
+                    var killsMeanwhile = Kills(part);
                     Assert.True(q.Amount > killsMeanwhile, part.Label);
                     Assert.True(q.Amount <= killsMeanwhile * 2, part.Label);
                 }
@@ -621,13 +634,17 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
-        public void FewPlayersKillsCountForMoreAndACrowdsForLess()
+        public void FewPlayersKillsCountForMoreAndACrowdsForWhatItsTougherMonstersTake()
         {
             for (var floor = 1; floor <= 6; ++floor)
             {
-                Assert.InRange(TowerPace.KillWeight(floor, 2), 1.3, 1.6);
-                Assert.InRange(TowerPace.KillWeight(floor, 10), 0.65, 0.95);
-                Assert.InRange(TowerPace.KillWeight(floor, 30), 0.45, 0.95);
+                // with packs on every spot a kill is mostly fighting (TowerPace.FightShare): two players kill faster
+                // a head than five, so their kills count a little more; a crowd meets monsters with more health the
+                // higher the floor, so its kills come slower and count for less on floor 1 and more from floor 3 up
+                Assert.InRange(TowerPace.KillWeight(floor, 2), 1.0, 1.4);
+                Assert.InRange(TowerPace.KillWeight(floor, 10), 0.75, 1.15);
+                Assert.InRange(TowerPace.KillWeight(floor, 30), 0.65, 1.5);
+                Assert.True(TowerPace.KillWeight(floor, 2) > 1);
                 // a lone player is one head at least, however weak: nothing to gain below it
                 Assert.Equal(TowerPace.KillWeight(floor, 1), TowerPace.KillWeight(floor, 0.25), 6);
             }

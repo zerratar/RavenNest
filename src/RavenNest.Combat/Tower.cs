@@ -463,43 +463,46 @@ namespace RavenNest.Combat
 
             // The parts' objectives (docs/tower-worlds-proposal.md section 12): two kill objectives each, the simplest
             // case, and on a few parts of every floor a gather or a find that one of the floor's townspeople asks for
-            // (after the boss in the call). The amounts set the pace: see the table in section 12.
+            // (after the boss in the call). The amounts set the pace (section 15, the owner 2026-11-26): five players
+            // need about 20 minutes for a floor's first part and 30 for its last, 25 on average, at the kills a minute
+            // bots made with packs on every spot (21 on floors 1 and 2, 23.5 on floor 3); on a gather part the kill
+            // objectives take 80% of that and the gather amount is 120% of the kills made meanwhile.
             var list = new List<TowerFloorDefinition>
             {
                 Part(1, "The Burrows", "Something has been digging under the first hall. A lot of somethings.",
-                    new[] { bunny, goblin }, Defeat(bunny, 240), Defeat(goblin, 190),
+                    new[] { bunny, goblin }, Defeat(bunny, 220), Defeat(goblin, 175),
                     new TowerBoss { Name = "Nibbles the Vicious", Model = "home-bunny", Scale = 4f, Family = EnemyFamily.Beast, Edge = 1.05, Line = "Run away! Run away!" }),
                 Part(2, "Goblin Market", "The goblins trade in stolen boots and very old cheese.",
-                    new[] { goblin, bunny }, Defeat(goblin, 360), Defeat(bunny, 290),
+                    new[] { goblin, bunny }, Defeat(goblin, 235), Defeat(bunny, 185),
                     new TowerBoss { Name = "Warchief Grubnose", Model = "ravebridge-goblin", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.05, PowerScale = 1.15 },
                     Find("boots", "Stolen Boot", "Stolen Boots", 3, "mossbeard", "The goblins trade in boots, and half of them came off the feet of Old Mossbeard's guests. He wants them back before anyone goes home barefoot.")),
                 Part(3, "The Nest", "Eggs the size of barrels, and the mothers who laid them.",
-                    new[] { greenMetalon, goblin, bogApothecary }, Defeat(greenMetalon, 240), Defeat(goblin, 190),
+                    new[] { greenMetalon, goblin, bogApothecary }, Defeat(greenMetalon, 180), Defeat(goblin, 145),
                     new TowerBoss { Name = "The Brood Mother", Model = "home-metalon-green", Scale = 2.6f, Family = EnemyFamily.Insect, Edge = 0.95, SpitShare = 1.0, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsCount = 3 },
-                    Gather("herbs", "herbs", 1100, "bramble", "Bramble brews antivenom for everyone the Brood Mother's children bite. She takes any herbs and greens the stream brings in.", "Gathering", "Farming")),
+                    Gather("herbs", "herbs", 445, "bramble", "Bramble brews antivenom for everyone the Brood Mother's children bite. She takes any herbs and greens the stream brings in.", "Gathering", "Farming")),
                 Part(4, "Hall of Bones", "The roots grew through the old graves, and the graves did not like it.",
-                    new[] { risen, skeleton, risenSoldier }, Defeat(skeleton, 320), Defeat(risen, 260),
+                    new[] { risen, skeleton, risenSoldier }, Defeat(skeleton, 235), Defeat(risen, 190),
                     // the Dark Fortress's Necromancer (2026-11-23, was the Rootbound King): a caster who raises the dead,
                     // three Risen Dead at three quarters, half and a quarter of its health
                     new TowerBoss { Name = "Mortimer Bonewhistle", Model = "df-necromancer", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.05, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 3, SlamEvery = 0, SpitEvery = 5, Line = "Rise, my darlings. Supper has arrived.",
                         Trophies = new[] { "Bonewhistle Staff", "Grinning Skull" } }),
                 Part(5, "Thornwood", "The trees here have thorns as long as swords, and so do the Metalons.",
-                    new[] { purpleMetalon, goblin, antlerReaver }, Defeat(purpleMetalon, 270), Defeat(goblin, 220),
+                    new[] { purpleMetalon, goblin, antlerReaver }, Defeat(purpleMetalon, 195), Defeat(goblin, 160),
                     new TowerBoss { Name = "Old Thornback", Model = "home-metalon-purple", Scale = 2.8f, Family = EnemyFamily.Insect, Edge = 1.2, HealthPool = 1.1 },
-                    Gather("timber", "timber", 1200, "elm", "The thorns have eaten the stair to the pasture. Warden Elm wants timber to lay a new one over them.", "Woodcutting")),
+                    Gather("timber", "timber", 490, "elm", "The thorns have eaten the stair to the pasture. Warden Elm wants timber to lay a new one over them.", "Woodcutting")),
                 Part(6, "The Pasture", "A peaceful meadow with cows. The cows are watching you.",
-                    new[] { cow, bunny }, Defeat(cow, 550), Defeat(bunny, 425),
+                    new[] { cow, bunny }, Defeat(cow, 285), Defeat(bunny, 220),
                     new TowerBoss { Name = "The Moo-tant", Model = "home-cow", Scale = 3.2f, Family = EnemyFamily.Beast, Edge = 0.95, Element = Element.Poison, ElementShare = 0.6, SpitEvery = 4, Line = "Moooo." },
                     Find("carrots", "Lost Carrot", "Lost Carrots", 4, "pip", "Pip left carrots all over the meadow in case Nibbles came back. The cows have not found them all yet.")),
                 Part(7, "Goblin Keep", "Every goblin you met so far had a cousin. They all live here.",
-                    new[] { goblin, skeleton, graveKnight }, Defeat(goblin, 300), Defeat(skeleton, 240),
+                    new[] { goblin, skeleton, graveKnight }, Defeat(goblin, 215), Defeat(skeleton, 170),
                     // the Dark Fortress's Colossus (2026-11-23, was King Grubnose the Second): slow, heavy swings and a
                     // ground slam every third one; the keep's goblins come running at half its health
                     new TowerBoss { Name = "Big Gorp, the Keep Colossus", Model = "df-colossus", Scale = 2.4f, Family = EnemyFamily.Humanoid, Edge = 1.25, PowerScale = 1.15, HealthPool = 1.0, AttackInterval = 3, SlamEvery = 3, SlamShare = 0.6, AddsAt = new[] { 0.5 }, AddsCount = 4, Line = "King Grubnose says: no visitors.",
                         Trophies = new[] { "Colossus Cleaver", "Keepward Shield" } },
-                    Gather("iron", "iron ore", 1350, "elm", "The keep's gate is goblin work and will not hold. Warden Elm wants iron to bar it behind the climbers.", "Mining")),
+                    Gather("iron", "iron ore", 535, "elm", "The keep's gate is goblin work and will not hold. Warden Elm wants iron to bar it behind the climbers.", "Mining")),
                 Part(8, "Blighted Grove", "The rot starts here. The red Metalons carry it, and the dead walk in it.",
-                    new[] { plague, redMetalon, purpleMetalon }, Defeat(redMetalon, 400), Defeat(plague, 320),
+                    new[] { plague, redMetalon, purpleMetalon }, Defeat(redMetalon, 280), Defeat(plague, 225),
                     // the Dark Fortress's Plague Lord (2026-11-23, was Redshell the Blighted): poison clouds every third
                     // swing (the spit's marked circle), and its Plague Walkers at half its health
                     new TowerBoss { Name = "Lord Pestilus", Model = "df-plague-lord", Scale = 2.3f, Family = EnemyFamily.Undead, Edge = 0.95, Style = AttackStyle.Magic, PowerScale = 0.9, Element = Element.Poison, ElementShare = 0.6, HealthPool = 1.1, SpitEvery = 3, SpitShare = 1.3, AddsAt = new[] { 0.5 }, Line = "Breathe deep, little ones. It is good for you.",
@@ -508,12 +511,12 @@ namespace RavenNest.Combat
                 // the Behemoth since 2026-11-23 (was the Gardener, a big skeleton): the same fight and numbers, a body
                 // that fits the rot, a name and a line of its own, and trophies
                 Part(9, "The Deep Roots", "Everything that lives in the halls comes down here to hide, and something down here tends to it.",
-                    new[] { corpse, cryptWraith, redMetalon }, Defeat(corpse, 340), Defeat(cryptWraith, 270),
+                    new[] { corpse, cryptWraith, redMetalon }, Defeat(corpse, 235), Defeat(cryptWraith, 185),
                     new TowerBoss { Name = "Old Rotbelly", Model = "df-behemoth", Scale = 2.3f, Family = EnemyFamily.Undead, Edge = 1.2, Style = AttackStyle.Magic, PowerScale = 0.6, HealthPool = 0.9, Element = Element.Poison, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Fresh compost! Come closer. Closer.",
                         Trophies = new[] { "Rotbelly Bonesaw", "Rotreaper" } },
-                    Gather("provisions", "provisions", 1500, "mossbeard", "Nobody faces what sleeps above on an empty stomach. Old Mossbeard is cooking for the whole climb and needs fish and crops.", "Fishing", "Farming")),
+                    Gather("provisions", "provisions", 580, "mossbeard", "Nobody faces what sleeps above on an empty stomach. Old Mossbeard is cooking for the whole climb and needs fish and crops.", "Fishing", "Farming")),
                 Part(10, "The Verdant Throne", "At the top of the halls, on a throne of moss, sleeps the one who made it all grow.",
-                    new[] { redMetalon, purpleMetalon, fallenInquisitor }, Defeat(redMetalon, 450), Defeat(purpleMetalon, 350),
+                    new[] { redMetalon, purpleMetalon, fallenInquisitor }, Defeat(redMetalon, 305), Defeat(purpleMetalon, 240),
                     new TowerBoss { Name = "Viridia, the Verdant Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-green", Scale = 1.6f, Family = EnemyFamily.Dragon, Element = Element.Poison, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You climbed all this way to become compost." }),
             };
 
@@ -531,41 +534,41 @@ namespace RavenNest.Combat
             list.AddRange(new[]
             {
                 Part(11, "The Frostgate", "The stairs come out into the cold. Somebody has built a gate here, and somebody else is raiding it.",
-                    new[] { raider, hare }, Defeat(raider, 775), Defeat(hare, 625),
+                    new[] { raider, hare }, Defeat(raider, 215), Defeat(hare, 175),
                     new TowerBoss { Name = "Jarl Rimebeard", Model = "iceheim-viking-chief", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.2, PowerScale = 1.1, Line = "Shut the door! You are letting the warm in." }),
                 Part(12, "Hare Hollow", "Burrows in the snow, and the hares have heard what happened on the first floor.",
-                    new[] { hare, raider }, Defeat(hare, 800), Defeat(raider, 650),
+                    new[] { hare, raider }, Defeat(hare, 225), Defeat(raider, 185),
                     new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, Edge = 1.2, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." },
                     Find("feathers", "Duck Feather", "Duck Feathers", 3, "ylva", "Ylva's duck flew up the tower and left feathers behind. Each one found tells her he came this way.")),
                 Part(13, "The Bone Glacier", "The ice is full of bones. Some of them are still moving.",
-                    new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 675), Defeat(wraith, 550),
+                    new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 190), Defeat(wraith, 155),
                     new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Edge = 1.05, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 },
-                    Gather("coal", "coal and ore", 2000, "hilda", "The cold up here cracks steel. Hilda needs coal and ore to keep the forge lit and the climbers' blades whole.", "Mining")),
+                    Gather("coal", "coal and ore", 435, "hilda", "The cold up here cracks steel. Hilda needs coal and ore to keep the forge lit and the climbers' blades whole.", "Mining")),
                 Part(14, "Hall of Whispers", "Every sound comes back colder than it left.",
-                    new[] { wraith, frozenSkeleton }, Defeat(wraith, 875), Defeat(frozenSkeleton, 700),
+                    new[] { wraith, frozenSkeleton }, Defeat(wraith, 255), Defeat(frozenSkeleton, 200),
                     new TowerBoss { Name = "The Wailing Matron", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Edge = 1.4, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, AddsAt = new[] { 0.66, 0.33 }, Line = "Shhhhh." }),
                 Part(15, "The Frozen Pond", "A pond frozen solid, and on it a lot of very small ducks with very sharp beaks.",
-                    new[] { quackling, hare }, Defeat(quackling, 725), Defeat(hare, 575),
+                    new[] { quackling, hare }, Defeat(quackling, 215), Defeat(hare, 170),
                     new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, Edge = 0.95, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." },
-                    Gather("fish", "fish", 2150, "tove", "Old Tove says the ducks have scared every fish out of the pond. He needs fish from anywhere to stock Rimeholt for the winter.", "Fishing")),
+                    Gather("fish", "fish", 480, "tove", "Old Tove says the ducks have scared every fish out of the pond. He needs fish from anywhere to stock Rimeholt for the winter.", "Fishing")),
                 Part(16, "Raiders' Mead Hall", "The raiders' long hall. The mead is warm, the welcome is not.",
-                    new[] { raider, thane }, Defeat(raider, 925), Defeat(thane, 750),
+                    new[] { raider, thane }, Defeat(raider, 275), Defeat(thane, 225),
                     new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, Edge = 1.05, PowerScale = 1.2, Line = "Mead first. Then I break you." },
                     Find("barrels", "Mead Barrel", "Mead Barrels", 4, "gunnhild", "The raiders drink Big Gunnhild's mead, and they did not pay for it. She wants her barrels back, full or not.")),
                 Part(17, "The Drake Roost", "Nests of ice on every ledge. The drakes do not share.",
-                    new[] { drake, quackling }, Defeat(drake, 775), Defeat(quackling, 625),
+                    new[] { drake, quackling }, Defeat(drake, 230), Defeat(quackling, 185),
                     new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 1.1, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
-                    Gather("firewood", "firewood", 2300, "gunnhild", "Drake breath has frozen every hearth below the roost. Big Gunnhild needs firewood to thaw the mead hall out.", "Woodcutting")),
+                    Gather("firewood", "firewood", 525, "gunnhild", "Drake breath has frozen every hearth below the roost. Big Gunnhild needs firewood to thaw the mead hall out.", "Woodcutting")),
                 Part(18, "The Shiver Mines", "Old mines cut into the ice, and something frozen in the deepest shaft is waking up.",
-                    new[] { ronin, frozenSkeleton }, Defeat(ronin, 1000), Defeat(frozenSkeleton, 800),
+                    new[] { ronin, frozenSkeleton }, Defeat(ronin, 300), Defeat(frozenSkeleton, 240),
                     new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "A thousand winters I waited for a worthy duel. You will have to do." },
                     Find("lanterns", "Miner's Lantern", "Miner's Lanterns", 4, "hilda", "Hilda's grandfather dug these mines and never came out. His crew's lanterns are still down there somewhere.")),
                 Part(19, "Cold Storage", "Somebody keeps their cows up here. To keep them fresh. They did not stay fresh.",
-                    new[] { frostCow, drake }, Defeat(frostCow, 825), Defeat(drake, 650),
+                    new[] { frostCow, drake }, Defeat(frostCow, 250), Defeat(drake, 200),
                     new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Edge = 0.95, SpitShare = 1.0, Element = Element.Ice, ElementShare = 0.4, SpitEvery = 4, Line = "Mooooo. Brrrr." },
-                    Gather("stew", "food for the stew", 2450, "tove", "Before the last climb of the vault, Old Tove makes his stew. It takes a lot of crops, and anything that grows wild.", "Farming", "Gathering")),
+                    Gather("stew", "food for the stew", 570, "tove", "Before the last climb of the vault, Old Tove makes his stew. It takes a lot of crops, and anything that grows wild.", "Farming", "Gathering")),
                 Part(20, "The Rime Throne", "At the top of the vault, on a throne of ice, the cold itself has a name.",
-                    new[] { drake, thane }, Defeat(drake, 1050), Defeat(thane, 850),
+                    new[] { drake, thane }, Defeat(drake, 325), Defeat(thane, 260),
                     new TowerBoss { Name = "Glacius, the Winter Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
             });
 
@@ -585,41 +588,41 @@ namespace RavenNest.Combat
             list.AddRange(new[]
             {
                 Part(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbor of planks and rope. The ships moored here are not friendly.",
-                    new[] { skyPirate, staticHare }, Defeat(skyPirate, 1150), Defeat(staticHare, 900),
+                    new[] { skyPirate, staticHare }, Defeat(skyPirate, 250), Defeat(staticHare, 195),
                     new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.2, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
                 Part(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",
-                    new[] { staticHare, skyPirate }, Defeat(staticHare, 1150), Defeat(skyPirate, 925),
+                    new[] { staticHare, skyPirate }, Defeat(staticHare, 260), Defeat(skyPirate, 210),
                     new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, Edge = 1.05, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." },
                     Find("wool", "Tuft of Wool", "Tufts of Wool", 4, "tessa", "Woolly floated through here on his cloud and the hares kept what he shed. Tessa wants every tuft.")),
                 Part(23, "The Wind Bridges", "Stone bridges between drifting rocks, and on every one of them someone who wants you off it.",
-                    new[] { stormNinja, skyPirate }, Defeat(stormNinja, 950), Defeat(skyPirate, 775),
+                    new[] { stormNinja, skyPirate }, Defeat(stormNinja, 220), Defeat(skyPirate, 180),
                     new TowerBoss { Name = "Master Kaze", Model = "kyojin-ninja", Scale = 2.3f, Family = EnemyFamily.Humanoid, Edge = 1.05, AddsCount = 2, SlamEvery = 6, PowerScale = 0.95, AttackInterval = 2, Line = "You cannot hit the wind." },
-                    Gather("planks", "planks", 2900, "brisa", "Half the bridges end in mid-air. Captain Brisa wants timber to plank them before somebody walks off one.", "Woodcutting")),
+                    Gather("planks", "planks", 500, "brisa", "Half the bridges end in mid-air. Captain Brisa wants timber to plank them before somebody walks off one.", "Woodcutting")),
                 Part(24, "The Wisp Gallery", "A long hall inside the spire where the lightning lives. It hums. It hums back.",
-                    new[] { wisp, stormNinja }, Defeat(wisp, 1250), Defeat(stormNinja, 975),
+                    new[] { wisp, stormNinja }, Defeat(wisp, 295), Defeat(stormNinja, 230),
                     new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, SpitShare = 1.0, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." },
                     Find("bottles", "Lightning Bottle", "Lightning Bottles", 4, "volt", "Tinker Volt left bottles in the gallery to catch the wisps' sparks. He would like them back, carefully.")),
                 Part(25, "The Duck Deck", "A ship's deck moored on a cloud, crewed entirely by ducks. They have a captain.",
-                    new[] { duckling, corsair }, Defeat(duckling, 1000), Defeat(corsair, 800),
+                    new[] { duckling, corsair }, Defeat(duckling, 245), Defeat(corsair, 195),
                     new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, SpitShare = 0.9, SpitEvery = 4, Line = "Arr. QUACK." },
-                    Gather("rations", "rations", 3000, "hob", "A crew of ducks eats a ship's stores in a day. Skipper Hob needs fish and crops to feed the climbers instead.", "Fishing", "Farming")),
+                    Gather("rations", "rations", 550, "hob", "A crew of ducks eats a ship's stores in a day. Skipper Hob needs fish and crops to feed the climbers instead.", "Fishing", "Farming")),
                 Part(26, "The Arena of Winds", "A ring of stone open to the storm, and a crowd that came to see you lose.",
-                    new[] { gladiator, sentinel }, Defeat(gladiator, 1300), Defeat(sentinel, 1050),
+                    new[] { gladiator, sentinel }, Defeat(gladiator, 315), Defeat(sentinel, 255),
                     new TowerBoss { Name = "Champion Voltus", Model = "atria-gladiator", Scale = 2.4f, Family = EnemyFamily.Humanoid, Edge = 1.05, PowerScale = 1.2, Line = "The crowd wants a show. Try not to disappoint them." }),
                 Part(27, "The Drake Eyrie", "Nests on the floating rocks, and drakes that dive out of the thunderclouds.",
-                    new[] { stormDrake, duckling }, Defeat(stormDrake, 1050), Defeat(duckling, 850),
+                    new[] { stormDrake, duckling }, Defeat(stormDrake, 265), Defeat(duckling, 215),
                     new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 1.1, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
-                    Gather("copper", "copper ore", 3150, "volt", "Tinker Volt wants lightning rods on every rock of the eyrie, so the drakes get the storm and you do not. Rods take copper.", "Mining")),
+                    Gather("copper", "copper ore", 600, "volt", "Tinker Volt wants lightning rods on every rock of the eyrie, so the drakes get the storm and you do not. Rods take copper.", "Mining")),
                 Part(28, "The Sentinel Spire", "The last stair inside the spire, held by elves who swore the storm an oath.",
-                    new[] { sentinel, gladiator }, Defeat(sentinel, 1350), Defeat(gladiator, 1100),
+                    new[] { sentinel, gladiator }, Defeat(sentinel, 345), Defeat(gladiator, 280),
                     new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Edge = 1.1, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." },
                     Find("stones", "Oath Stone", "Oath Stones", 5, "brisa", "The sentinels swore their oath on five stones. Captain Brisa thinks the storm will let you pass if you carry them up.")),
                 Part(29, "The Lightning Pasture", "Somebody grazes cows on a cloud. The lightning found them first.",
-                    new[] { chargedCow, stormDrake }, Defeat(chargedCow, 1100), Defeat(stormDrake, 875),
+                    new[] { chargedCow, stormDrake }, Defeat(chargedCow, 290), Defeat(stormDrake, 230),
                     new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Edge = 1.1, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." },
-                    Gather("fodder", "fodder", 3300, "tessa", "Charged cows calm down when they eat. Tessa needs hay and herbs, a lot of both.", "Farming", "Gathering")),
+                    Gather("fodder", "fodder", 650, "tessa", "Charged cows calm down when they eat. Tessa needs hay and herbs, a lot of both.", "Farming", "Gathering")),
                 Part(30, "The Eye of the Storm", "At the very top of the spire the storm turns around one point, and something lives in it.",
-                    new[] { stormDrake, gladiator }, Defeat(stormDrake, 1400), Defeat(gladiator, 1150),
+                    new[] { stormDrake, gladiator }, Defeat(stormDrake, 370), Defeat(gladiator, 305),
                     new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
             });
             return list;
@@ -861,9 +864,11 @@ namespace RavenNest.Combat
         ///     where its monsters are (within <see cref="FindNearMeters"/> of one of the part's monster spots), and
         ///     <see cref="FindFarShare"/> of one while the players on the part are away from them (at the arrival,
         ///     waiting, getting back up). So a group that fights finds a thing in about this time, wherever on the
-        ///     part it fights. Longer higher up.
+        ///     part it fights. About three minutes (the owner, 2026-11-26, with parts of about 25 minutes: it was four
+        ///     on floor 1, five on floor 2 and six on floor 3), a little longer higher up: 2.75 minutes on floor 1, 3
+        ///     on floor 2, 3.25 on floor 3, at most 4.
         /// </summary>
-        public static int FindSeconds(int step) => 240 + 60 * Math.Max(0, FloorOf(step) - 1);
+        public static int FindSeconds(int step) => Math.Min(240, 165 + 15 * Math.Max(0, FloorOf(step) - 1));
         public const double FindNearMeters = 9;
         public const double FindFarShare = 0.25;
 

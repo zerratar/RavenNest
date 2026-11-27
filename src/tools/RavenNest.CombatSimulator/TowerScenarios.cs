@@ -147,14 +147,21 @@ namespace RavenNest.CombatSimulator
             values == null || values.Length == 0 ? 1 : values[Math.Min(values.Length, Math.Max(1, floor)) - 1];
 
         /// <summary>
-        ///     Seconds a player spends between kills: walking to the next monster, turning to it, blows wasted on one
-        ///     that others are already finishing. Set so that five players make the 12 kills a minute measured in the
-        ///     game on floor 1, part 6 (2026-11-24); the simulator's own fights would say 20.
+        ///     Seconds a player spends between kills walking to the next monster. It was 14 when every spot held one
+        ///     monster that stood still (five players made 12 kills a minute on floor 1, part 6, 2026-11-24); with packs
+        ///     on every spot that wander and come for the players (2026-11-27) five make about 21 a minute on floors 1
+        ///     and 2 and the walk is a small share of a kill (TowerPace.FightShare).
         /// </summary>
-        private const double WalkSeconds = 14;
+        private const double WalkSeconds = 2;
 
-        /// <summary>Monster spots on a part (the layouts have about this many).</summary>
-        private const int Spots = 24;
+        /// <summary>A kill takes this much longer than one player's blows alone: turning to it, blows on one that others are finishing.</summary>
+        private const double FightSlowdown = 1.2;
+
+        /// <summary>Monsters on a part: about 24 spots with a pack of two or three on each (TowerFloor.PackSize).</summary>
+        private const int Monsters = 60;
+
+        /// <summary>The game keeps no more than this share of a part's monsters down, bringing them back sooner (5 s at least).</summary>
+        private const double DownShare = 0.25, MinRespawnSeconds = 5;
 
         /// <summary>A veteran: every point of a tree's passives a level 999 character has (the Might tree's, a damage dealer's).</summary>
         private const string VeteranBuild = "brute-force:5;rend:5;executioner:5;titan:1;keen-eye:5;sharp-edge:5;deadly:5;swift:5";
@@ -228,10 +235,11 @@ namespace RavenNest.CombatSimulator
 
         /// <summary>
         ///     Minutes a group needs for a part's kill objectives: every player kills one monster after another (its
-        ///     health by the pressure), walks to the next, and the part gives no more monsters than its spots bring back.
-        ///     The part's kinds stand on the spots in turn, so each kind is its share of the kills. Each kill counts what
-        ///     it is worth for the group (TowerPace.KillWeight); <paramref name="raw"/> is the minutes with every kill
-        ///     counting one.
+        ///     health by the pressure), walks to the next, and the part gives no more monsters than come back. Players go
+        ///     for the kind the part needs most (the game's TowerFloor), so the kill objectives fill together: their sum
+        ///     over the kills a minute, a tenth more with a kind on the spots that no objective asks for. Each kill counts
+        ///     what it is worth for the group (TowerPace.KillWeight); <paramref name="raw"/> is the minutes with every
+        ///     kill counting one.
         /// </summary>
         private static double PartMinutes(TowerFloorDefinition floor, CombatSheet player, int players, double pressure, ICombatRandom random, int runs, out double raw)
         {
@@ -247,18 +255,21 @@ namespace RavenNest.CombatSimulator
                     var health = (double)sheet.MaxHealth;
                     while (health > 0) { health -= CombatMath.Attack(player, AttackStyle.Melee, sheet, random).Total; swings++; }
                 }
-                perKind[k] = swings / runs * swing + WalkSeconds;
+                perKind[k] = swings / runs * swing * FightSlowdown + WalkSeconds;
                 seconds += perKind[k];
             }
             // kills a minute: what the players can do, and what the spots give
             var cycle = seconds / floor.Enemies.Length;
-            var rate = Math.Min(players * 60.0 / cycle, Spots * 60.0 / TowerPressure.RespawnSeconds(floor.Floor, pressure));
-            var minutes = 0.0;
+            var rate = Math.Min(players * 60.0 / cycle, Monsters * DownShare * 60.0 / MinRespawnSeconds);
+            var kills = 0.0;
+            var kinds = 0;
             foreach (var q in floor.Objectives)
             {
                 if (q.Kind != TowerObjectiveKind.Kill) continue;
-                minutes = Math.Max(minutes, q.Amount / (rate / floor.Enemies.Length));
+                kills += q.Amount;
+                kinds++;
             }
+            var minutes = kills / rate * (floor.Enemies.Length > kinds ? 1.1 : 1.0);
             raw = minutes;
             return minutes / TowerPace.KillWeight(floor.Floor, players);
         }
