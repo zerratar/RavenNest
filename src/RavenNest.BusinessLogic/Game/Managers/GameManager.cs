@@ -458,7 +458,7 @@ namespace RavenNest.BusinessLogic.Game
                 rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.DungeonCounts(tier) ? RavenNest.Combat.LegendarySource.Dungeon : (RavenNest.Combat.LegendarySource?)null));
                 // Substitution's rare finds (docs/substitution-escape-idea.md): a Legendary dungeon's boss
                 if (RavenNest.Combat.Substitution.DungeonCounts(tier))
-                    rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.DungeonBoss, dropList));
+                    rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.DungeonBoss));
 
                 PayVillage(gameSession, VillageCoinRewards.ForDungeon(tier, CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();
@@ -633,10 +633,10 @@ namespace RavenNest.BusinessLogic.Game
         {
             var rewards = legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.TowerCounts(floor) ? RavenNest.Combat.LegendarySource.Tower : (RavenNest.Combat.LegendarySource?)null);
             // Substitution's rare finds (docs/substitution-escape-idea.md): the chests from floor 2 up and every floor boss,
-            // the find made from the chest's own table
+            // the piece at or below the part's synced level
             var source = RavenNest.Combat.Substitution.TowerSource(floor);
             if (source == null) return rewards;
-            var found = substitutions.BossFell(gameSession, characters, source.Value, GetDungeonDropList(Math.Clamp((floor - 1) / 3, 0, 4)));
+            var found = substitutions.BossFell(gameSession, characters, source.Value, RavenNest.Combat.Tower.SyncLevel(floor));
             return found.Length == 0 ? rewards : rewards.Concat(found).ToArray();
         }
 
@@ -794,7 +794,7 @@ namespace RavenNest.BusinessLogic.Game
                 // the Legendaries: every raid boss awakens the worn ones and may find one
                 rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.LegendarySource.Raid));
                 // and Substitution's rare finds (docs/substitution-escape-idea.md)
-                rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.RaidBoss, dropList));
+                rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.RaidBoss));
 
                 PayVillage(gameSession, VillageCoinRewards.ForRaid(CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();

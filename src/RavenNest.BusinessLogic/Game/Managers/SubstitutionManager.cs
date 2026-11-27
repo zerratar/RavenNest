@@ -36,10 +36,10 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>
         ///     A source's boss fell with these characters in the fight: each rolls for the attribute and for the gem.
-        ///     <paramref name="pool"/> is the gear the find is made from (the source's own drop table; any piece in it the
-        ///     character can wear, the best of them most likely).
+        ///     <paramref name="levelCap"/>: the highest item level the attribute's piece may have (a tower part's synced
+        ///     level), 0 for none (raids and dungeons: the best the character can wear).
         /// </summary>
-        public EventItemReward[] BossFell(GameSession session, Guid[] characterIds, SubstitutionSource source, IReadOnlyList<ItemDrop> pool)
+        public EventItemReward[] BossFell(GameSession session, Guid[] characterIds, SubstitutionSource source, int levelCap = 0)
         {
             var rewards = new List<EventItemReward>();
             if (session == null || characterIds == null || characterIds.Length == 0) return rewards.ToArray();
@@ -51,14 +51,14 @@ namespace RavenNest.BusinessLogic.Game
                 try
                 {
                     var forced = Forced(character.Id);
-                    if (forced == "gem" || rng.NextDouble() < Substitution.GemChance(source))
+                    if (forced.Contains("gem") || rng.NextDouble() < Substitution.GemChance(source))
                     {
                         var gem = GiveGem(character, source);
                         if (gem != null) rewards.Add(gem);
                     }
-                    if (forced == "attribute" || rng.NextDouble() < Substitution.AttributeChance(source))
+                    if (forced.Contains("attribute") || rng.NextDouble() < Substitution.AttributeChance(source))
                     {
-                        var piece = GiveAttribute(character, source, pool);
+                        var piece = GiveAttribute(character, source, levelCap);
                         if (piece != null) rewards.Add(piece);
                     }
                 }
@@ -88,26 +88,26 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
-        ///     A piece of gear with Substitution on it (35 to 50% by the piece's level), named "... of Substitution". Picked
-        ///     from the source's gear the character can wear, among the five best of it; none when the pool has no gear.
-        ///     Not soulbound: a rare drop like any other, until it is enchanted.
+        ///     A piece of gear with Substitution on it (35 to 50% by the piece's level), named "... of Substitution": one
+        ///     the character can wear, of a random kind (a helmet, a sword, a ring), among the five best of that kind at or
+        ///     below <paramref name="levelCap"/>, so the find is gear for where they are, not a level 20 piece from a
+        ///     chest's table. Not soulbound: a rare drop like any other, until it is enchanted.
         /// </summary>
-        private EventItemReward GiveAttribute(Character character, SubstitutionSource source, IReadOnlyList<ItemDrop> pool)
+        private EventItemReward GiveAttribute(Character character, SubstitutionSource source, int levelCap)
         {
             var skills = gameData.GetCharacterSkills(character.SkillsId);
-            var gear = (pool ?? Array.Empty<ItemDrop>())
-                .Select(x => x != null ? gameData.GetItem(x.ItemId) : null)
-                .Where(IsGear)
-                .Distinct()
+            if (skills == null) return null;
+            var gear = gameData.GetItems()
+                .Where(x => IsGear(x) && PlayerInventory.CanEquipItem(x, skills) && (levelCap <= 0 || GameMath.GetItemLevel(x) <= levelCap))
                 .ToList();
-            var wearable = gear.Where(x => skills != null && PlayerInventory.CanEquipItem(x, skills)).ToList();
-            var from = (wearable.Count > 0 ? wearable : gear).OrderByDescending(GameMath.GetItemLevel).Take(5).ToList();
-            if (from.Count == 0)
+            var kinds = gear.Select(x => x.Type).Distinct().ToList();
+            if (kinds.Count == 0)
             {
-                logger.LogWarning("Substitution: {Character} had a find from a {Source}, but its pool has no gear.", character.Name, source);
+                logger.LogWarning("Substitution: {Character} had a find from a {Source}, but no gear fits them.", character.Name, source);
                 return null;
             }
-
+            var kind = kinds[Math.Min(kinds.Count - 1, (int)(rng.NextDouble() * kinds.Count))];
+            var from = gear.Where(x => x.Type == kind).OrderByDescending(GameMath.GetItemLevel).Take(5).ToList();
             var item = from[Math.Min(from.Count - 1, (int)(rng.NextDouble() * from.Count))];
             var chance = Substitution.AttributeChance(GameMath.GetItemLevel(item));
             var enchantment = Substitution.Enchantment(chance);
@@ -117,40 +117,46 @@ namespace RavenNest.BusinessLogic.Game
             return new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = item.Id, InventoryItemId = stack.Id, Enchantment = enchantment };
         }
 
-        // a piece the attribute can be on: weapons, armor that takes gems (no hats or looks), rings and amulets; no Legendary
+        // a piece the attribute can be on: weapons, armor that takes gems (no hats or looks), rings and amulets with a combat
+        // stat; no Legendary, nothing the vendor gives nothing for (a price of 0 or 1 marks event and test pieces)
         private static bool IsGear(DataModels.Item item)
         {
-            if (item == null || Legendary.IsLegendary(item.Id) || Gems.IsGem(item.Id)) return false;
+            if (item == null || Legendary.IsLegendary(item.Id) || Gems.IsGem(item.Id) || item.ShopSellPrice <= 1) return false;
             var category = (ItemCategory)item.Category;
             if (category != ItemCategory.Weapon && category != ItemCategory.Armor && category != ItemCategory.Ring && category != ItemCategory.Amulet) return false;
+            if (item.WeaponPower + item.WeaponAim + item.MagicPower + item.MagicAim + item.RangedPower + item.RangedAim + item.ArmorPower <= 0) return false;
             return GemManager.TryGetSlot(item, out _);
         }
 
         /// <summary>
-        ///     Development only: a line "id attribute" or "id gem" in generated-data/substitution-force.txt gives that
-        ///     character the find at its next source boss (the line is taken off), so both can be tested without weeks of
-        ///     raids. Returns "attribute", "gem" or null.
+        ///     Development only: lines "id attribute" and "id gem" in generated-data/substitution-force.txt give that
+        ///     character those finds at its next source boss (its lines are taken off), so both can be tested without
+        ///     weeks of raids. Returns what is forced: "attribute", "gem", both or none.
         /// </summary>
-        private static string Forced(Guid characterId)
+        private static HashSet<string> Forced(Guid characterId)
         {
+            var forced = new HashSet<string>();
             try
             {
-                if (!string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)) return null;
+                if (!string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)) return forced;
                 var path = Path.Combine("generated-data", "substitution-force.txt");
-                if (!File.Exists(path)) return null;
+                if (!File.Exists(path)) return forced;
                 var lines = File.ReadAllLines(path).Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
-                var mine = lines.FindIndex(x => Guid.TryParse(x.Split(' ')[0], out var g) && g == characterId);
-                if (mine < 0) return null;
-                var parts = lines[mine].Split(' ', 2);
-                lines.RemoveAt(mine);
-                File.WriteAllLines(path, lines);
-                var what = parts.Length > 1 ? parts[1].Trim().ToLowerInvariant() : "attribute";
-                return what.StartsWith("gem") ? "gem" : "attribute";
+                var left = new List<string>();
+                foreach (var line in lines)
+                {
+                    var parts = line.Split(' ', 2);
+                    if (!Guid.TryParse(parts[0], out var g) || g != characterId) { left.Add(line); continue; }
+                    var what = parts.Length > 1 ? parts[1].Trim().ToLowerInvariant() : "attribute";
+                    forced.Add(what.StartsWith("gem") ? "gem" : "attribute");
+                }
+                if (forced.Count > 0) File.WriteAllLines(path, left);
             }
             catch
             {
-                return null;
+                forced.Clear();
             }
+            return forced;
         }
     }
 }
