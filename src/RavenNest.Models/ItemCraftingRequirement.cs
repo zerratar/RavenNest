@@ -16,6 +16,13 @@ namespace RavenNest.Models
         /// one (v0.9.7), and the game says so when it announces the drop.
         /// </summary>
         public string Sockets { get; set; }
+
+        /// <summary>
+        /// The enchantment the item came with, in the inventory item's text form; null for most. A rare find comes with
+        /// the magical attribute Substitution already on it (SUBSTITUTION:42%, RavenNest.Combat.Substitution, v0.9.7),
+        /// and the game says so when it announces the drop.
+        /// </summary>
+        public string Enchantment { get; set; }
     }
 
     public class ItemCraftingRequirement

@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly GameData gameData;
         private readonly LegendaryManager legendaries;
+        private readonly SubstitutionManager substitutions;
 
         private readonly Guid expScrollId;
         private readonly Guid dungeonScrollId;
@@ -30,7 +31,8 @@ namespace RavenNest.BusinessLogic.Game
             SessionManager sessionManager,
             PlayerInventoryProvider inventoryProvider,
             GameData gameData,
-            LegendaryManager legendaries)
+            LegendaryManager legendaries,
+            SubstitutionManager substitutions)
         {
             this.logger = logger;
             this.serverManager = serverManager;
@@ -38,6 +40,7 @@ namespace RavenNest.BusinessLogic.Game
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
             this.legendaries = legendaries;
+            this.substitutions = substitutions;
 
             var items = gameData.GetKnownItems();
 
@@ -453,6 +456,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 // the Legendaries (docs/legendary-design.md): every boss awakens the worn ones; a heroic dungeon's may find one
                 rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.DungeonCounts(tier) ? RavenNest.Combat.LegendarySource.Dungeon : (RavenNest.Combat.LegendarySource?)null));
+                // Substitution's rare finds (docs/substitution-escape-idea.md): a Legendary dungeon's boss
+                if (RavenNest.Combat.Substitution.DungeonCounts(tier))
+                    rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.DungeonBoss, dropList));
 
                 PayVillage(gameSession, VillageCoinRewards.ForDungeon(tier, CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();
@@ -624,7 +630,15 @@ namespace RavenNest.BusinessLogic.Game
 
         /// <summary>A tower boss fell (TowerManager): the worn Legendaries awaken, and a boss of the top band may give one.</summary>
         public EventItemReward[] TowerBossFell(DataModels.GameSession gameSession, int floor, Guid[] characters)
-            => legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.TowerCounts(floor) ? RavenNest.Combat.LegendarySource.Tower : (RavenNest.Combat.LegendarySource?)null);
+        {
+            var rewards = legendaries.BossFell(gameSession, characters, RavenNest.Combat.Legendary.TowerCounts(floor) ? RavenNest.Combat.LegendarySource.Tower : (RavenNest.Combat.LegendarySource?)null);
+            // Substitution's rare finds (docs/substitution-escape-idea.md): the chests from floor 2 up and every floor boss,
+            // the find made from the chest's own table
+            var source = RavenNest.Combat.Substitution.TowerSource(floor);
+            if (source == null) return rewards;
+            var found = substitutions.BossFell(gameSession, characters, source.Value, GetDungeonDropList(Math.Clamp((floor - 1) / 3, 0, 4)));
+            return found.Length == 0 ? rewards : rewards.Concat(found).ToArray();
+        }
 
         /// <summary>
         ///     A tower boss's trophies (RavenNest.Combat.TowerBoss.Trophies, the game's docs/dark-fortress-design.md): on
@@ -779,6 +793,8 @@ namespace RavenNest.BusinessLogic.Game
 
                 // the Legendaries: every raid boss awakens the worn ones and may find one
                 rewards.AddRange(legendaries.BossFell(gameSession, characters, RavenNest.Combat.LegendarySource.Raid));
+                // and Substitution's rare finds (docs/substitution-escape-idea.md)
+                rewards.AddRange(substitutions.BossFell(gameSession, characters, RavenNest.Combat.SubstitutionSource.RaidBoss, dropList));
 
                 PayVillage(gameSession, VillageCoinRewards.ForRaid(CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();

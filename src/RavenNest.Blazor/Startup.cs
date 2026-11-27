@@ -626,6 +626,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<MangroveManager>();
             services.AddSingleton<BottleManager>();
             services.AddSingleton<LegendaryManager>();
+            services.AddSingleton<SubstitutionManager>();
             services.AddSingleton<QuestManager>();
             services.AddSingleton<StreamQuestManager>();
             services.AddSingleton<AchievementManager>();

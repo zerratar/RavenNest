@@ -46,11 +46,19 @@ namespace RavenNest.BusinessLogic.Game
                     return ItemEnchantmentResult.Error();
                 }
 
+                // the rare attribute Substitution came with the item (never enchanted): it stays, and with nothing else on
+                // the item there is nothing to take off
+                var rolled = RavenNest.Combat.Substitution.WithoutAttribute(invItem.Enchantment, out var substitution);
+                if (string.IsNullOrEmpty(rolled))
+                {
+                    return ItemEnchantmentResult.Error();
+                }
+
                 if (inventory.RemoveItem(item, 1))
                 {
                     // everything but the enchantment stays: a Legendary's awakening (the tag), the gems, the look, the name
                     var disenchantedItem = inventory.AddItem(item.ItemId, amount: 1, equipped: item.Equipped, tag: invItem.Tag, soulbound: invItem.Soulbound,
-                        name: invItem.Name, transmogrificationId: invItem.TransmogrificationId, flags: invItem.Flags, sockets: invItem.Sockets).FirstOrDefault();
+                        enchantment: substitution, name: invItem.Name, transmogrificationId: invItem.TransmogrificationId, flags: invItem.Flags, sockets: invItem.Sockets).FirstOrDefault();
                     return new ItemEnchantmentResult
                     {
                         EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(disenchantedItem),
@@ -200,7 +208,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 var enchantmentAttributes = inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount);
                 enchantedItem.Soulbound = true;
-                enchantedItem.Enchantment = FormatEnchantment(enchantmentAttributes);
+                // the rare attribute Substitution is the item's own (found, never rolled): enchanting keeps it
+                RavenNest.Combat.Substitution.WithoutAttribute(enchantedItem.Enchantment, out var keptSubstitution);
+                enchantedItem.Enchantment = RavenNest.Combat.Substitution.WithAttribute(FormatEnchantment(enchantmentAttributes), keptSubstitution);
 
                 var itemName = gameData.GetItem(item.ItemId)?.Name;
 

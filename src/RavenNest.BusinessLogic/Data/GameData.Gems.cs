@@ -47,6 +47,9 @@ namespace RavenNest.BusinessLogic.Data
             });
         }
 
+        /// <summary>A Chipped Shadowstone's vendor price; each tier doubles it.</summary>
+        private const long ShadowstoneBasePrice = 20_000;
+
         private void EnsureGems()
         {
             var mining = RavenNest.Models.Skill.Mining;
@@ -60,16 +63,22 @@ namespace RavenNest.BusinessLogic.Data
             var created = 0;
             foreach (GemKind kind in Enum.GetValues(typeof(GemKind)))
             {
-                var raw = GetOrCreateItem(items.Entities, Gems.RawName(kind), ItemCategory.Resource, ItemType.Mining);
-                var basePrice = Math.Max(10, raw.ShopSellPrice);
+                // the Shadowstone has no raw gem: it is only found (RavenNest.Combat.Substitution), and sells for more
+                var craftable = Gems.IsCraftable(kind);
+                var raw = craftable ? GetOrCreateItem(items.Entities, Gems.RawName(kind), ItemCategory.Resource, ItemType.Mining) : null;
+                var basePrice = craftable ? Math.Max(10, raw.ShopSellPrice) : ShadowstoneBasePrice;
                 foreach (GemTier tier in Enum.GetValues(typeof(GemTier)))
                 {
                     var id = Gems.ItemId(kind, tier);
                     var name = Gems.Name(kind, tier);
-                    var description = "An enchanted " + kind.ToString().ToLowerInvariant() + ", ready for a socket. In a weapon: "
-                        + Gems.Describe(kind, tier, GemSlot.Weapon) + ". In armor: " + Gems.Describe(kind, tier, GemSlot.Armor)
-                        + ". In a ring or amulet: " + Gems.Describe(kind, tier, GemSlot.Jewellery) + ".";
-                    var price = basePrice * (long)Math.Pow(3, (int)tier);
+                    var description = craftable
+                        ? "An enchanted " + kind.ToString().ToLowerInvariant() + ", ready for a socket. In a weapon: "
+                            + Gems.Describe(kind, tier, GemSlot.Weapon) + ". In armor: " + Gems.Describe(kind, tier, GemSlot.Armor)
+                            + ". In a ring or amulet: " + Gems.Describe(kind, tier, GemSlot.Jewellery) + "."
+                        : "A rare find, dark as a moonless night: it cannot be made or combined. In armor, Substitution: "
+                            + Gems.Describe(kind, tier, GemSlot.Armor) + " (slams and spits), as a shadow sliding out of the ring."
+                            + " Taken out of its socket it always comes back.";
+                    var price = craftable ? basePrice * (long)Math.Pow(3, (int)tier) : basePrice * (long)Math.Pow(2, (int)tier);
                     var item = GetItem(id);
                     if (item == null)
                     {

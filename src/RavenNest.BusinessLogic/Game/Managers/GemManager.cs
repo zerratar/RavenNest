@@ -140,7 +140,7 @@ namespace RavenNest.BusinessLogic.Game
         private GemResult Socket(Character character, Guid inventoryItemId, int kind, int tier, int socket, bool confirm, Guid? confirmedGem, out Guid socketedItemId)
         {
             socketedItemId = inventoryItemId;
-            if (!Valid(kind)) return GemResult.Fail(GemResultStatus.NoGem);
+            if (!ValidAny(kind)) return GemResult.Fail(GemResultStatus.NoGem);
             if (character == null) return GemResult.Fail(GemResultStatus.Error);
             lock (socketMutex)
             {
@@ -149,6 +149,8 @@ namespace RavenNest.BusinessLogic.Game
                 if (item.IsNull() || item.Item == null) return GemResult.Fail(GemResultStatus.NoSuchItem);
                 if (inventory.IsLocked(item.Id)) return GemResult.Fail(GemResultStatus.Busy);
                 if (!TryGetSlot(item.Item, out var slot)) return new GemResult { Status = GemResultStatus.NotSocketable, ItemName = NameOf(item) };
+                // a Shadowstone works in armor only (Substitution); the game and the website say so before they ask
+                if (!Gems.FitsIn((GemKind)kind, slot)) return new GemResult { Status = GemResultStatus.NotSocketable, Kind = kind, ItemName = NameOf(item) };
                 var count = SocketCount(item, slot);
                 if (count == 0) return new GemResult { Status = GemResultStatus.NoSockets, ItemName = NameOf(item) };
 
@@ -172,8 +174,9 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 if (gemTier < 0) return new GemResult { Status = GemResultStatus.NoGem, Kind = kind, Tier = tier };
 
-                // socketing over a gem destroys it unless the keep roll succeeds: said first, done when confirmed
-                if (sockets[index].HasValue && !Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
+                // socketing over a gem destroys it unless the keep roll succeeds: said first, done when confirmed (a
+                // Shadowstone always comes back, so there is nothing to confirm)
+                if (sockets[index].HasValue && !Gems.IsShadowstone(sockets[index].Value) && !Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
 
                 var result = new GemResult { Status = GemResultStatus.Ok, Kind = kind, Tier = gemTier, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
                 var target = inventory.Get(item, true);
@@ -232,7 +235,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 if (index < 0 || index >= count) return new GemResult { Status = count == 0 ? GemResultStatus.NoSockets : GemResultStatus.NoSuchSocket, ItemName = NameOf(item), SocketCount = count };
                 if (!sockets[index].HasValue) return new GemResult { Status = GemResultStatus.EmptySocket, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
-                if (!Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
+                if (!Gems.IsShadowstone(sockets[index].Value) && !Confirmed(confirm, confirmedGem, sockets[index].Value)) return NeedsConfirm(character, item, sockets[index].Value, index, count);
 
                 var result = new GemResult { Status = GemResultStatus.Ok, ItemName = NameOf(item), Socket = index + 1, SocketCount = count };
                 var target = inventory.Get(item, true);
@@ -279,13 +282,18 @@ namespace RavenNest.BusinessLogic.Game
             return Gems.KeepChance(ClanEnchantingLevel(character), salvager);
         }
 
+        /// <summary>
+        ///     A gem comes out of its socket: kept or crumbled by the keep roll. A Shadowstone always comes back: it is a
+        ///     found-only chase item that cannot be made again, and a player who levels up must be able to move it into
+        ///     their next armor; a roll that could destroy it would keep it stuck in old gear (docs/substitution-escape-idea.md).
+        /// </summary>
         private void Remove(Character character, PlayerInventory inventory, Guid gemId, GemResult result)
         {
             if (!Gems.TryGetGem(gemId, out var kind, out var tier)) return;
             result.OldKind = (int)kind;
             result.OldTier = (int)tier;
-            result.KeepChance = KeepChance(character);
-            result.Kept = random.NextDouble() < result.KeepChance;
+            result.KeepChance = kind == GemKind.Shadowstone ? 1.0 : KeepChance(character);
+            result.Kept = kind == GemKind.Shadowstone || random.NextDouble() < result.KeepChance;
             if (result.Kept) AddGem(inventory, kind, tier, 1);
         }
 
@@ -442,7 +450,11 @@ namespace RavenNest.BusinessLogic.Game
 
         private static string NameOf(ReadOnlyInventoryItem item) => string.IsNullOrEmpty(item.Name) ? item.Item?.Name : item.Name;
 
-        private static bool Valid(int kind) => kind >= 0 && kind < Gems.KindCount;
+        // the gems that are made (enchanted and combined): not the found-only Shadowstone
+        private static bool Valid(int kind) => kind >= 0 && kind < Gems.KindCount && Gems.IsCraftable((GemKind)kind);
+
+        // any gem, for sockets
+        private static bool ValidAny(int kind) => kind >= 0 && kind < Gems.AllKindCount;
 
         private Character GetCharacter(SessionToken token, Guid characterId)
         {

@@ -179,8 +179,8 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var kinds = Enum.GetValues(typeof(GemKind));
-            var kind = (GemKind)kinds.GetValue(rng.Next(kinds.Length));
+            // one of the seven made gems (never the found-only Shadowstone)
+            var kind = (GemKind)rng.Next(Gems.KindCount);
             var gemId = Gems.ItemId(kind, Legendary.EchoGemTier);
             var gem = inventory.AddItem(gemId, 1).FirstOrDefault();
             if (gem == null) return null;
