@@ -232,8 +232,12 @@ namespace RavenNest.Combat
         /// <summary>The highest level a skill counts at on a floor.</summary>
         public static int SyncLevel(int floor) => (int)Math.Ceiling(Level(floor) * SyncMargin);
 
-        // the best gear wearable at a level (the simulator's gearcaps, from the item list, 2026-11-08): level, melee
-        // power, melee accuracy, ranged power, ranged accuracy, magic power, magic accuracy, armour
+        // the best gear wearable at a level (the simulator's "gearcaps all", from its item list of 2026-11-07): level,
+        // melee power, melee accuracy, ranged power, ranged accuracy, magic power, magic accuracy, armour. Every level
+        // where the best gear changes (2026-11-27): the table had rows at 200, 300 and 500 only, so a player synced to
+        // 280 to 299 counted as wearing level 200 gear and one synced to 340 to 499 as wearing level 280 gear, though
+        // the Ancient (340) and Atlarus (400) sets are there. Floor 3 at its levels of 265 to 400 fell in that gap.
+        // Not in it yet: the Dreadforged weapons (450), first worn on floor 4.
         private static readonly int[,] GearSteps =
         {
             { 1, 118, 113, 92, 77, 92, 77, 100 },
@@ -249,8 +253,22 @@ namespace RavenNest.Combat
             { 120, 185, 180, 180, 165, 180, 165, 572 },
             { 150, 211, 186, 206, 191, 206, 191, 653 },
             { 200, 246, 216, 238, 223, 238, 223, 743 },
-            { 300, 289, 253, 278, 263, 278, 263, 843 },
+            { 280, 289, 253, 278, 263, 278, 263, 843 },
+            { 340, 348, 288, 328, 313, 328, 313, 955 },
+            { 400, 416, 342, 390, 375, 390, 375, 1080 },
             { 500, 587, 479, 546, 531, 546, 531, 1600 },
+            { 525, 613, 499, 569, 554, 569, 554, 1678 },
+            { 550, 638, 520, 592, 577, 592, 577, 1755 },
+            { 600, 651, 530, 604, 589, 604, 589, 1795 },
+            { 650, 664, 540, 616, 601, 616, 601, 1833 },
+            { 700, 690, 561, 639, 624, 639, 624, 1912 },
+            { 750, 716, 581, 663, 648, 663, 648, 1991 },
+            { 800, 741, 602, 686, 671, 686, 671, 2067 },
+            { 825, 767, 622, 709, 694, 709, 694, 2146 },
+            { 850, 793, 643, 733, 718, 733, 718, 2225 },
+            { 875, 824, 668, 761, 746, 761, 746, 2319 },
+            { 900, 855, 692, 789, 774, 789, 774, 2413 },
+            { 950, 885, 717, 817, 802, 817, 802, 2505 },
             { 999, 927, 750, 854, 839, 854, 839, 2631 },
         };
 
@@ -297,8 +315,35 @@ namespace RavenNest.Combat
             CapGear(sheet, level);
         }
 
-        /// <summary>The combat level a floor is made for: ten per floor, so floor 100 is made for level 1,000.</summary>
-        public static int Level(int floor) => Math.Max(1, floor * 10);
+        /// <summary>
+        ///     The combat level a part is made for, by its step (the owner, 2026-11-26, from where today's characters
+        ///     are: 42% under level 100, 20% at 100 to 249, 8% at 250 to 399): floor 1's parts at levels 10 to 100 (ten a
+        ///     part), floor 2's at 115 to 250 and floor 3's at 265 to 400 (fifteen a part), then a curve that flattens
+        ///     toward 999 around floor 10 (steps 91 to 100 are 982 to 999), so floors added later follow it without
+        ///     anyone changing numbers. A stream has to level up before the higher floors. 999 from step 100 on: going
+        ///     past it is a later design.
+        /// </summary>
+        public static int Level(int floor)
+        {
+            if (floor <= FirstCurveStep) return Math.Max(1, floor * 10);
+            if (floor <= SteepUntilStep) return LevelAtFirstCurve + 15 * (floor - FirstCurveStep);
+            if (floor >= TopLevelStep) return MaxLevel;
+            // from 400 at step 30 to 999 at step 100, rising fifteen a step at first (as floors 2 and 3) and flat at the top
+            var left = (TopLevelStep - floor) / (double)(TopLevelStep - SteepUntilStep);
+            return (int)Math.Round(MaxLevel - (MaxLevel - LevelAtSteepEnd) * Math.Pow(left, CurveBend));
+        }
+
+        /// <summary>The last step at ten levels a part (floor 1's last part, level 100).</summary>
+        private const int FirstCurveStep = 10;
+        private const int LevelAtFirstCurve = 100;
+        /// <summary>The last step at fifteen levels a part (floor 3's last part, level 400).</summary>
+        private const int SteepUntilStep = 30;
+        private const int LevelAtSteepEnd = 400;
+        /// <summary>The step the curve reaches the level cap (floor 10's last part).</summary>
+        private const int TopLevelStep = 100;
+        private const int MaxLevel = 999;
+        /// <summary>How the curve bends: 1.75 makes it rise fifteen a step where it starts, as the steps before it.</summary>
+        private const double CurveBend = 1.75;
 
         // gear an enemy of a combat level has, fitted to today's island enemies (their definitions after the enemy gear
         // tuning: armour 70 + 2 per level, power 15 + 0.22, accuracy 12 + 0.18 per level)
@@ -538,38 +583,38 @@ namespace RavenNest.Combat
                     new TowerBoss { Name = "Jarl Rimebeard", Model = "iceheim-viking-chief", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.2, PowerScale = 1.1, Line = "Shut the door! You are letting the warm in." }),
                 Part(12, "Hare Hollow", "Burrows in the snow, and the hares have heard what happened on the first floor.",
                     new[] { hare, raider }, Defeat(hare, 225), Defeat(raider, 185),
-                    new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, Edge = 1.2, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." },
+                    new TowerBoss { Name = "Snowball, Nibbles' Big Sister", Model = "home-bunny", Scale = 4.6f, Family = EnemyFamily.Beast, Edge = 1.1, PowerScale = 1.1, Line = "You defeated my little brother. Prepare to be nibbled." },
                     Find("feathers", "Duck Feather", "Duck Feathers", 3, "ylva", "Ylva's duck flew up the tower and left feathers behind. Each one found tells her he came this way.")),
                 Part(13, "The Bone Glacier", "The ice is full of bones. Some of them are still moving.",
                     new[] { frozenSkeleton, wraith }, Defeat(frozenSkeleton, 190), Defeat(wraith, 155),
-                    new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Edge = 1.05, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 },
+                    new TowerBoss { Name = "The Frozen Warden", Model = "ravebridge-skeleton", Scale = 2.6f, Family = EnemyFamily.Undead, Edge = 1.2, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Ice, ElementShare = 0.5, SpitEvery = 4 },
                     Gather("coal", "coal and ore", 435, "hilda", "The cold up here cracks steel. Hilda needs coal and ore to keep the forge lit and the climbers' blades whole.", "Mining")),
                 Part(14, "Hall of Whispers", "Every sound comes back colder than it left.",
                     new[] { wraith, frozenSkeleton }, Defeat(wraith, 255), Defeat(frozenSkeleton, 200),
-                    new TowerBoss { Name = "The Wailing Matron", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Edge = 1.4, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, AddsAt = new[] { 0.66, 0.33 }, Line = "Shhhhh." }),
+                    new TowerBoss { Name = "The Wailing Matron", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Edge = 1.2, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, AddsAt = new[] { 0.66, 0.33 }, Line = "Shhhhh." }),
                 Part(15, "The Frozen Pond", "A pond frozen solid, and on it a lot of very small ducks with very sharp beaks.",
                     new[] { quackling, hare }, Defeat(quackling, 215), Defeat(hare, 170),
-                    new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, Edge = 0.95, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." },
+                    new TowerBoss { Name = "Emperor Quackers", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, Edge = 0.9, HealthPool = 1.1, SpitEvery = 4, Line = "QUACK." },
                     Gather("fish", "fish", 480, "tove", "Old Tove says the ducks have scared every fish out of the pond. He needs fish from anywhere to stock Rimeholt for the winter.", "Fishing")),
                 Part(16, "Raiders' Mead Hall", "The raiders' long hall. The mead is warm, the welcome is not.",
                     new[] { raider, thane }, Defeat(raider, 275), Defeat(thane, 225),
-                    new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, Edge = 1.05, PowerScale = 1.2, Line = "Mead first. Then I break you." },
+                    new TowerBoss { Name = "Sigrid the Unthawed", Model = "iceheim-viking-chief", Scale = 2.5f, Family = EnemyFamily.Humanoid, Edge = 1, PowerScale = 1.2, Line = "Mead first. Then I break you." },
                     Find("barrels", "Mead Barrel", "Mead Barrels", 4, "gunnhild", "The raiders drink Big Gunnhild's mead, and they did not pay for it. She wants her barrels back, full or not.")),
                 Part(17, "The Drake Roost", "Nests of ice on every ledge. The drakes do not share.",
                     new[] { drake, quackling }, Defeat(drake, 230), Defeat(quackling, 185),
-                    new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 1.1, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
+                    new TowerBoss { Name = "Hoarfang", Model = "ironhill-dragon-white", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 0.9, Element = Element.Ice, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
                     Gather("firewood", "firewood", 525, "gunnhild", "Drake breath has frozen every hearth below the roost. Big Gunnhild needs firewood to thaw the mead hall out.", "Woodcutting")),
                 Part(18, "The Shiver Mines", "Old mines cut into the ice, and something frozen in the deepest shaft is waking up.",
                     new[] { ronin, frozenSkeleton }, Defeat(ronin, 300), Defeat(frozenSkeleton, 240),
-                    new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, PowerScale = 1.1, Line = "A thousand winters I waited for a worthy duel. You will have to do." },
+                    new TowerBoss { Name = "The Thawed Ronin", Model = "kyojin-samurai", Scale = 2.3f, Family = EnemyFamily.Humanoid, Edge = 0.9, PowerScale = 1.1, Line = "A thousand winters I waited for a worthy duel. You will have to do." },
                     Find("lanterns", "Miner's Lantern", "Miner's Lanterns", 4, "hilda", "Hilda's grandfather dug these mines and never came out. His crew's lanterns are still down there somewhere.")),
                 Part(19, "Cold Storage", "Somebody keeps their cows up here. To keep them fresh. They did not stay fresh.",
                     new[] { frostCow, drake }, Defeat(frostCow, 250), Defeat(drake, 200),
-                    new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Edge = 0.95, SpitShare = 1.0, Element = Element.Ice, ElementShare = 0.4, SpitEvery = 4, Line = "Mooooo. Brrrr." },
+                    new TowerBoss { Name = "The Moo-tant, Refrozen", Model = "home-cow", Scale = 3.4f, Family = EnemyFamily.Beast, Edge = 0.8, SpitShare = 1.0, Element = Element.Ice, ElementShare = 0.4, SpitEvery = 4, Line = "Mooooo. Brrrr." },
                     Gather("stew", "food for the stew", 570, "tove", "Before the last climb of the vault, Old Tove makes his stew. It takes a lot of crops, and anything that grows wild.", "Farming", "Gathering")),
                 Part(20, "The Rime Throne", "At the top of the vault, on a throne of ice, the cold itself has a name.",
                     new[] { drake, thane }, Defeat(drake, 325), Defeat(thane, 260),
-                    new TowerBoss { Name = "Glacius, the Winter Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
+                    new TowerBoss { Name = "Glacius, the Winter Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-white", Scale = 1.7f, Family = EnemyFamily.Dragon, Edge = 0.8, Element = Element.Ice, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "Climb all you like. Up here, everything stops." }),
             });
 
             // the third band, the Storm Spire (2026-11-19): lightning, weak to poison; sky pirates, storm ninjas, the arena
@@ -589,10 +634,10 @@ namespace RavenNest.Combat
             {
                 Part(21, "The Cloud Docks", "The stairs come out above the clouds, onto a harbor of planks and rope. The ships moored here are not friendly.",
                     new[] { skyPirate, staticHare }, Defeat(skyPirate, 250), Defeat(staticHare, 195),
-                    new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.2, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
+                    new TowerBoss { Name = "Captain Gale Blackwind", Model = "away-pirate-captain", Scale = 2.2f, Family = EnemyFamily.Humanoid, Edge = 1.25, PowerScale = 1.1, Line = "Welcome aboard. Mind the drop." }),
                 Part(22, "The Static Burrows", "Hares up here have fur that crackles. The family resemblance is shocking.",
                     new[] { staticHare, skyPirate }, Defeat(staticHare, 260), Defeat(skyPirate, 210),
-                    new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, Edge = 1.05, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." },
+                    new TowerBoss { Name = "Zap, Nibbles' Shocking Cousin", Model = "home-bunny", Scale = 4.8f, Family = EnemyFamily.Beast, Edge = 1.15, PowerScale = 1.1, Element = Element.Lightning, ElementShare = 0.5, Line = "The family sends its regards. All of it." },
                     Find("wool", "Tuft of Wool", "Tufts of Wool", 4, "tessa", "Woolly floated through here on his cloud and the hares kept what he shed. Tessa wants every tuft.")),
                 Part(23, "The Wind Bridges", "Stone bridges between drifting rocks, and on every one of them someone who wants you off it.",
                     new[] { stormNinja, skyPirate }, Defeat(stormNinja, 220), Defeat(skyPirate, 180),
@@ -600,30 +645,30 @@ namespace RavenNest.Combat
                     Gather("planks", "planks", 500, "brisa", "Half the bridges end in mid-air. Captain Brisa wants timber to plank them before somebody walks off one.", "Woodcutting")),
                 Part(24, "The Wisp Gallery", "A long hall inside the spire where the lightning lives. It hums. It hums back.",
                     new[] { wisp, stormNinja }, Defeat(wisp, 295), Defeat(stormNinja, 230),
-                    new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, SpitShare = 1.0, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." },
+                    new TowerBoss { Name = "Mother Squall", Model = "ravebridge-tormented-soul", Scale = 2.6f, Family = EnemyFamily.Spirit, Edge = 1.15, SpitShare = 1.0, Style = AttackStyle.Magic, PowerScale = 0.7, HealthPool = 0.95, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "Listen. The storm is singing." },
                     Find("bottles", "Lightning Bottle", "Lightning Bottles", 4, "volt", "Tinker Volt left bottles in the gallery to catch the wisps' sparks. He would like them back, carefully.")),
                 Part(25, "The Duck Deck", "A ship's deck moored on a cloud, crewed entirely by ducks. They have a captain.",
                     new[] { duckling, corsair }, Defeat(duckling, 245), Defeat(corsair, 195),
-                    new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, SpitShare = 0.9, SpitEvery = 4, Line = "Arr. QUACK." },
+                    new TowerBoss { Name = "Captain Quackbeard", Model = "ironhill-lord-quackers", Scale = 1.5f, Family = EnemyFamily.Beast, Edge = 1.1, SpitShare = 0.9, SpitEvery = 4, Line = "Arr. QUACK." },
                     Gather("rations", "rations", 550, "hob", "A crew of ducks eats a ship's stores in a day. Skipper Hob needs fish and crops to feed the climbers instead.", "Fishing", "Farming")),
                 Part(26, "The Arena of Winds", "A ring of stone open to the storm, and a crowd that came to see you lose.",
                     new[] { gladiator, sentinel }, Defeat(gladiator, 315), Defeat(sentinel, 255),
-                    new TowerBoss { Name = "Champion Voltus", Model = "atria-gladiator", Scale = 2.4f, Family = EnemyFamily.Humanoid, Edge = 1.05, PowerScale = 1.2, Line = "The crowd wants a show. Try not to disappoint them." }),
+                    new TowerBoss { Name = "Champion Voltus", Model = "atria-gladiator", Scale = 2.4f, Family = EnemyFamily.Humanoid, Edge = 1, PowerScale = 1.2, Line = "The crowd wants a show. Try not to disappoint them." }),
                 Part(27, "The Drake Eyrie", "Nests on the floating rocks, and drakes that dive out of the thunderclouds.",
                     new[] { stormDrake, duckling }, Defeat(stormDrake, 265), Defeat(duckling, 215),
-                    new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 1.1, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
+                    new TowerBoss { Name = "Skyfang", Model = "ironhill-dragon-purple", Scale = 1.3f, Family = EnemyFamily.Dragon, Edge = 0.95, Element = Element.Lightning, ElementShare = 0.6, HealthPool = 1.1, AttackInterval = 3, SpitEvery = 3 },
                     Gather("copper", "copper ore", 600, "volt", "Tinker Volt wants lightning rods on every rock of the eyrie, so the drakes get the storm and you do not. Rods take copper.", "Mining")),
                 Part(28, "The Sentinel Spire", "The last stair inside the spire, held by elves who swore the storm an oath.",
                     new[] { sentinel, gladiator }, Defeat(sentinel, 345), Defeat(gladiator, 280),
-                    new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Edge = 1.1, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." },
+                    new TowerBoss { Name = "High Warden Aerin", Model = "eldara-elven-soldier", Scale = 2.3f, Family = EnemyFamily.Humanoid, Edge = 1.05, Style = AttackStyle.Magic, PowerScale = 0.7, Element = Element.Lightning, ElementShare = 0.5, SpitEvery = 4, AddsAt = new[] { 0.66, 0.33 }, Line = "None pass the spire without the storm's leave." },
                     Find("stones", "Oath Stone", "Oath Stones", 5, "brisa", "The sentinels swore their oath on five stones. Captain Brisa thinks the storm will let you pass if you carry them up.")),
                 Part(29, "The Lightning Pasture", "Somebody grazes cows on a cloud. The lightning found them first.",
                     new[] { chargedCow, stormDrake }, Defeat(chargedCow, 290), Defeat(stormDrake, 230),
-                    new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Edge = 1.1, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." },
+                    new TowerBoss { Name = "The Moo-tant, Supercharged", Model = "home-cow", Scale = 3.5f, Family = EnemyFamily.Beast, Edge = 0.9, Element = Element.Lightning, ElementShare = 0.6, SpitEvery = 4, Line = "MOOOOO. Zzzt." },
                     Gather("fodder", "fodder", 650, "tessa", "Charged cows calm down when they eat. Tessa needs hay and herbs, a lot of both.", "Farming", "Gathering")),
                 Part(30, "The Eye of the Storm", "At the very top of the spire the storm turns around one point, and something lives in it.",
                     new[] { stormDrake, gladiator }, Defeat(stormDrake, 370), Defeat(gladiator, 305),
-                    new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
+                    new TowerBoss { Name = "Fulmina, the Thunder Wyrm", Group = FloorBossGroup, Model = "ironhill-dragon-blue", Scale = 1.8f, Family = EnemyFamily.Dragon, Edge = 0.8, Element = Element.Lightning, ElementShare = 0.7, HealthPool = 1.25, PowerScale = 1.2, AttackInterval = 3, SpitEvery = 3, AddsAt = new[] { 0.75, 0.5, 0.25 }, AddsCount = 4, EnrageSeconds = 420, Line = "You wanted to touch the sky. The sky touches back." }),
             });
             return list;
         }

@@ -26,13 +26,15 @@ namespace RavenNest.Combat.Tests
         [InlineData(3, 2)]    // level 30: the second tier's level exactly
         [InlineData(6, 2)]
         [InlineData(7, 3)]    // level 70
-        [InlineData(11, 3)]
-        [InlineData(12, 4)]   // level 120
-        [InlineData(19, 4)]
-        [InlineData(20, 5)]   // level 200
-        [InlineData(30, 5)]
-        [InlineData(39, 5)]
-        [InlineData(40, 6)]   // level 400
+        [InlineData(11, 3)]   // level 115
+        [InlineData(12, 4)]   // level 130
+        [InlineData(16, 4)]   // level 190
+        [InlineData(17, 5)]   // level 205
+        [InlineData(20, 5)]   // level 250
+        [InlineData(29, 5)]   // level 385
+        [InlineData(30, 6)]   // level 400: floor 3's floor boss
+        [InlineData(39, 6)]
+        [InlineData(40, 6)]
         [InlineData(65, 7)]
         [InlineData(90, 8)]
         [InlineData(100, 8)]

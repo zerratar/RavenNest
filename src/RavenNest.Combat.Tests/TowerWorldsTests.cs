@@ -294,6 +294,50 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void ThePartsLevelsFollowTheCurveTowardTheCap()
+        {
+            // the owner, 2026-11-26: floor 1 at levels 1 to 100, floor 2 at 100 to 250, floor 3 at 250 to 400, then
+            // flattening toward 999 around floor 10
+            Assert.Equal(10, Tower.Level(1));
+            Assert.Equal(100, Tower.Level(10));
+            Assert.Equal(115, Tower.Level(11));
+            Assert.Equal(130, Tower.Level(12));
+            Assert.Equal(250, Tower.Level(20));
+            Assert.Equal(265, Tower.Level(21));
+            Assert.Equal(400, Tower.Level(30));
+            Assert.InRange(Tower.Level(91), 975, 990);
+            Assert.Equal(999, Tower.Level(100));
+            Assert.Equal(999, Tower.Level(250));
+            Assert.Equal(1, Tower.Level(0));
+            for (var step = 1; step < 120; ++step)
+            {
+                var rise = Tower.Level(step + 1) - Tower.Level(step);
+                Assert.InRange(rise, 0, 15);
+                // past floor 3 the curve only flattens (a level of rounding either way)
+                if (step > 30) Assert.True(rise <= Tower.Level(step) - Tower.Level(step - 1) + 1, "step " + step);
+            }
+            // every floor's parts are in its band
+            foreach (var part in Tower.Floors)
+            {
+                var (lo, hi) = part.Floor == 1 ? (1, 100) : part.Floor == 2 ? (100, 250) : (250, 400);
+                Assert.InRange(part.Level, lo, hi);
+            }
+        }
+
+        [Fact]
+        public void SyncedGearIsTheBestWearableAtTheLevel()
+        {
+            // the Ancient (340) and Atlarus (400) sets count on floor 3: the table jumped from 280 to 500 before
+            var at = new CombatSheet();
+            at.Melee.Power = 100000; at.Melee.Accuracy = 100000; at.Armor = 100000;
+            Tower.CapGear(at, 440);
+            Assert.Equal(416, at.Melee.Power);
+            Assert.Equal(Tower.MaxArmor(440), at.Armor);
+            Assert.True(Tower.MaxArmor(340) > Tower.MaxArmor(339));
+            Assert.True(Tower.MaxArmor(280) > Tower.MaxArmor(279));
+        }
+
+        [Fact]
         public void HiddenThingsTakeAboutThreeMinutesALittleLongerHigherUp()
         {
             // about three minutes of fighting each (the owner, 2026-11-26), so a part's finds are done well inside its
@@ -522,7 +566,7 @@ namespace RavenNest.Combat.Tests
             var boss = Tower.Boss(part);
             var crowd = Tower.Boss(part, TowerPressure.Of(30, 1.0));
             Assert.Equal(TowerPressure.Scale(boss.Health, 5.0), crowd.Health);
-            Assert.InRange(crowd.DamageScale / TowerPressure.Fury(part.Floor, false), 1.01, 1 + TowerPressure.MaxBlows);
+            Assert.InRange(crowd.DamageScale / (TowerPressure.Fury(part.Floor, false) * part.Boss.Edge), 1.01, 1 + TowerPressure.MaxBlows);
             // the fury of a floor: more than nothing everywhere, and a rule beyond the floors that exist
             for (var floor = 1; floor <= 12; floor++)
             {

@@ -64,7 +64,7 @@ namespace RavenNest.CombatSimulator
                     BossScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var bf) ? bf : 200, args.Contains("tuned"));
                     return 0;
                 case "gearcaps":
-                    foreach (var lv in new[] { 1, 5, 10, 11, 15, 20, 22, 25, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110, 120, 150, 200, 300, 500, 999 })
+                    foreach (var lv in args.Contains("all") ? Enumerable.Range(1, 999).ToArray() : new[] { 1, 5, 10, 11, 15, 20, 22, 25, 30, 33, 40, 44, 50, 55, 60, 66, 70, 77, 80, 88, 90, 99, 100, 110, 120, 150, 200, 300, 340, 400, 500, 999 })
                     {
                         var m = gear.Melee(lv); var r = gear.Ranged(lv); var g = gear.Magic(lv);
                         Console.WriteLine($"{lv} melee {m.WeaponPower}/{m.WeaponAim}/{m.ArmorPower} ranged {r.RangedPower}/{r.RangedAim}/{r.ArmorPower} magic {g.MagicPower}/{g.MagicAim}/{g.ArmorPower}");
