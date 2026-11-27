@@ -14,9 +14,10 @@ namespace RavenNest.BusinessLogic.Data
     /// before deploying.
     /// </summary>
     /// <remarks>
-    /// It only ever adds, except for the columns in <see cref="Widened"/>. It never drops or renames a column,
-    /// and never touches data. A string column narrower than the model is only logged, so it is known before a
-    /// save fails on it (widening a big table at startup can take a long time). The model
+    /// It only ever adds or widens. It never drops or renames a column, never narrows one and never touches
+    /// data. A string column narrower than the model is widened to the model's type (2026-11-27: 27 columns were
+    /// narrower and would have failed to save a longer value; widening is a short change even on the bigger
+    /// tables, and a column that cannot be widened, an indexed one for instance, is logged and left). The model
     /// comes from EF (RavenfallDbContext, including its OnModelCreating overrides), so the column types are
     /// the ones EF expects when it loads. A new nullable column is added as NULL. A new column that cannot
     /// be null gets a default (0, an empty string, an empty id or a fixed date), so existing rows stay
@@ -99,7 +100,19 @@ namespace RavenNest.BusinessLogic.Data
                         {
                             if (lengths.TryGetValue(schema + "." + table.Name + "." + column.Name, out var length) && ModelLength(column.StoreType) > length)
                             {
-                                narrower.Add(table.Name + "." + column.Name + " (" + length + ")");
+                                // widened to the model's type with its own nullability; one that fails stays as it was
+                                try
+                                {
+                                    var started = DateTime.UtcNow;
+                                    WidenColumn(connection, schema, table.Name, column);
+                                    logger.LogWarning("Database schema: widened {Schema}.{Table}.{Column} from {Length} to {Type} in {Ms} ms",
+                                        schema, table.Name, column.Name, length, column.StoreType, (int)(DateTime.UtcNow - started).TotalMilliseconds);
+                                    changes++;
+                                }
+                                catch (Exception exc)
+                                {
+                                    narrower.Add(table.Name + "." + column.Name + " (" + length + ": " + exc.Message + ")");
+                                }
                             }
 
                             continue;
@@ -121,7 +134,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 if (narrower.Count > 0)
                 {
-                    logger.LogWarning("Database schema: {Count} column(s) are narrower than the model and fail to save longer values: {Columns}",
+                    logger.LogError("Database schema: {Count} column(s) are narrower than the model and could not be widened; longer values fail to save: {Columns}",
                         narrower.Count, string.Join(", ", narrower));
                 }
 
@@ -132,6 +145,33 @@ namespace RavenNest.BusinessLogic.Data
                 // Loading will fail with its own error if something is still missing; this keeps the reason visible.
                 logger.LogError("Database schema check failed: " + exc);
             }
+        }
+
+        /// <summary>
+        /// ALTER COLUMN to the model's type. A default constraint on the column (the ones this class adds to a new NOT
+        /// NULL column) blocks that, so it is taken off and put back with the same name and value, all in one
+        /// transaction: the column is never left without its default.
+        /// </summary>
+        private static void WidenColumn(System.Data.SqlClient.SqlConnection connection, string schema, string table, IColumn column)
+        {
+            using var transaction = connection.BeginTransaction();
+            string name = null, definition = null;
+            using (var find = connection.CreateCommand())
+            {
+                find.Transaction = transaction;
+                find.CommandText = "SELECT dc.name, dc.definition FROM sys.default_constraints dc " +
+                    "JOIN sys.columns c ON c.object_id = dc.parent_object_id AND c.column_id = dc.parent_column_id " +
+                    "WHERE dc.parent_object_id = OBJECT_ID(@table) AND c.name = @column";
+                find.Parameters.AddWithValue("@table", "[" + schema + "].[" + table + "]");
+                find.Parameters.AddWithValue("@column", column.Name);
+                using var reader = find.ExecuteReader();
+                if (reader.Read()) { name = reader.GetString(0); definition = reader.GetString(1); }
+            }
+
+            if (name != null) Execute(connection, $"ALTER TABLE [{schema}].[{table}] DROP CONSTRAINT [{name}]", 30, transaction);
+            Execute(connection, $"ALTER TABLE [{schema}].[{table}] ALTER COLUMN {ColumnDefinition(column, forNewColumn: false)}", 600, transaction);
+            if (name != null) Execute(connection, $"ALTER TABLE [{schema}].[{table}] ADD CONSTRAINT [{name}] DEFAULT {definition} FOR [{column.Name}]", 30, transaction);
+            transaction.Commit();
         }
 
         private static string CreateTable(string schema, ITable table)
@@ -181,10 +221,12 @@ namespace RavenNest.BusinessLogic.Data
             return null;
         }
 
-        private static void Execute(System.Data.SqlClient.SqlConnection connection, string sql)
+        private static void Execute(System.Data.SqlClient.SqlConnection connection, string sql, int timeoutSeconds = 30, System.Data.SqlClient.SqlTransaction transaction = null)
         {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = sql;
+            command.CommandTimeout = timeoutSeconds;
             command.ExecuteNonQuery();
         }
     }
