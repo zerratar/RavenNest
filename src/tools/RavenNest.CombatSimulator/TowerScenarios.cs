@@ -45,6 +45,70 @@ namespace RavenNest.CombatSimulator
         public static double[] TryFury, TrySlam;
         public static double TryFloorBossPool = -1, TryFloorBossFury = -1;
 
+        /// <summary>
+        ///     Substitution (the game's docs/substitution-escape-idea.md): a player of the group (by index; 0 holds the
+        ///     guardian) with the power escapes its slams and spits by its chance and cooldown, as the game rolls it; the
+        ///     damage each player took, from area attacks and in all, and what the escapes saved, are counted. Null: nobody has it.
+        /// </summary>
+        public static SubstitutionPower[] Substitutions;
+        public static double[] TakenArea, TakenAll, Saved;
+        public static int[] Escaped, AreaBlows;
+
+        // a blow on player i: counted; an area attack can be escaped
+        private static void Hit(double[] health, int i, double damage, bool area, double time, double[] lastEscape, ICombatRandom random)
+        {
+            if (area && Substitutions != null && i < Substitutions.Length && Substitution.Escapes(Substitutions[i], lastEscape[i], time, random.Next()))
+            {
+                lastEscape[i] = time;
+                if (Saved != null) { Saved[i] += damage; Escaped[i]++; AreaBlows[i]++; }
+                return;
+            }
+            health[i] -= damage;
+            if (TakenAll == null) return;
+            TakenAll[i] += damage;
+            if (area) { TakenArea[i] += damage; AreaBlows[i]++; }
+        }
+
+        /// <summary>
+        ///     "substitution [fights]": five fresh players against each floor's guardians, the second (who does not hold the
+        ///     guardian, so spits come for them too) with no Substitution, the attribute at 43% (a level 370 piece), and a
+        ///     Chipped and a Perfect Shadowstone: the damage that player takes from slams and spits and in all, the blows
+        ///     escaped, and the group's wins.
+        /// </summary>
+        public static void RunSubstitution(GearPicker gear, int fights)
+        {
+            var powers = new (string Name, SubstitutionPower Power)[]
+            {
+                ("none", default),
+                ("attribute 43%", Substitution.FromAttribute(Substitution.AttributeChance(370))),
+                ("Chipped Shadowstone", Substitution.FromGem(GemTier.Chipped)),
+                ("Perfect Shadowstone", Substitution.FromGem(GemTier.Perfect)),
+            };
+            Console.WriteLine($"Substitution: five fresh players, player 2 with the power; {fights} fights a cell. Area: damage from slams and spits; all: every blow; escaped: area blows escaped of those that reached them.");
+            foreach (var step in new[] { 5, 10, 15, 20, 25, 30 })
+            {
+                var floor = Tower.Get(step);
+                if (floor == null || (floor.Boss.SlamEvery <= 0 && floor.Boss.SpitEvery <= 0)) continue;
+                var (player, strength) = Players(floor, gear, false);
+                var baseArea = 0.0;
+                var baseAll = 0.0;
+                foreach (var (name, power) in powers)
+                {
+                    Substitutions = new[] { default, power, default, default, default };
+                    TakenArea = new double[5]; TakenAll = new double[5]; Saved = new double[5]; Escaped = new int[5]; AreaBlows = new int[5];
+                    var (won, minutes) = Rate(floor, player, strength, 5, fights, step);
+                    var area = TakenArea[1] / fights;
+                    var all = TakenAll[1] / fights;
+                    if (name == "none") { baseArea = area; baseAll = all; }
+                    var escaped = AreaBlows[1] > 0 ? Escaped[1] / (double)AreaBlows[1] : 0;
+                    Console.WriteLine($"{Tower.Short(step),6} {floor.Boss.Name,-34} {name,-20} area {area,9:N0} ({Less(area, baseArea),4}) all {all,9:N0} ({Less(all, baseAll),4}) escaped {escaped,4:P0} of {AreaBlows[1] / (double)fights,4:0.0} a fight | won {won,4:P0} in {minutes,4:0.0} min");
+                }
+            }
+            Substitutions = null; TakenArea = TakenAll = Saved = null; Escaped = AreaBlows = null;
+        }
+
+        private static string Less(double v, double baseline) => baseline <= 0 ? "-" : (v >= baseline ? "+" : "-") + Math.Abs(1 - v / baseline).ToString("P0");
+
         // the players of a row: fresh synced ones in the best gear for the part, or veterans (a tree's passives on top)
         private static (CombatSheet Player, double Strength) Players(TowerFloorDefinition floor, GearPicker gear, bool vet)
         {
@@ -347,6 +411,8 @@ namespace RavenNest.CombatSimulator
             // knocked out players recover by the entrance and come back (TowerRecovery): when each is back
             var backAt = new double[players];
             var down = new bool[players];
+            // Substitution's last escape for each player (seconds; -1 never)
+            var lastEscape = Enumerable.Repeat(-1.0, players).ToArray();
 
             // the adds: the floor's first monster at its level, called at each share of the boss's health
             var addDef = pressure < 0 ? Tower.Enemy(floor, floor.Enemies[0]) : Tower.Enemy(floor, floor.Enemies[0], pressure, true);
@@ -405,7 +471,7 @@ namespace RavenNest.CombatSimulator
                 if (addWho >= 0)
                 {
                     var target = random.Next() < 0.5 ? Array.FindIndex(health, h => h > 0) : RandomStanding(health, random);
-                    if (target >= 0) health[target] -= CombatMath.Attack(add, addDef.Style, player, random).Total;
+                    if (target >= 0) Hit(health, target, CombatMath.Attack(add, addDef.Style, player, random).Total, false, time, lastEscape, random);
                     adds[addWho] = (adds[addWho].Health, time + addDef.AttackInterval);
                     if (health.All(h => h <= 0)) return new Result { Won = false, Time = time };
                     continue;
@@ -439,7 +505,7 @@ namespace RavenNest.CombatSimulator
                 if (def.SlamEvery > 0 && swings % def.SlamEvery == 0)
                 {
                     for (var i = 0; i < players; ++i)
-                        if (health[i] > 0) health[i] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SlamShare * ByFloor(TrySlam, floor.Floor);
+                        if (health[i] > 0) Hit(health, i, CombatMath.Attack(striker, def.Style, player, random).Total * def.SlamShare * ByFloor(TrySlam, floor.Floor), true, time, lastEscape, random);
                 }
                 else if (def.SpitEvery > 0 && swings % def.SpitEvery == 0)
                 {
@@ -447,12 +513,12 @@ namespace RavenNest.CombatSimulator
                     var tank = Array.FindIndex(health, h => h > 0);
                     var target = RandomStanding(health, random, tank);
                     if (target < 0) target = tank;
-                    if (target >= 0) health[target] -= CombatMath.Attack(striker, def.Style, player, random).Total * def.SpitShare;
+                    if (target >= 0) Hit(health, target, CombatMath.Attack(striker, def.Style, player, random).Total * def.SpitShare, true, time, lastEscape, random);
                 }
                 else
                 {
                     var target = Array.FindIndex(health, h => h > 0);
-                    if (target >= 0) health[target] -= CombatMath.Attack(striker, def.Style, player, random).Total;
+                    if (target >= 0) Hit(health, target, CombatMath.Attack(striker, def.Style, player, random).Total, false, time, lastEscape, random);
                 }
                 if (health.All(h => h <= 0)) return new Result { Won = false, Time = time };
                 nextBoss = time + bossSwing;

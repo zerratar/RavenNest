@@ -122,6 +122,10 @@ namespace RavenNest.CombatSimulator
                     // docs/taming-gear-design.md); "taminggear 200 PET_POWER=3:40" tries other numbers
                     TamingGearScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var tg) ? tg : 200, args.Skip(2).ToArray());
                     return 0;
+                case "substitution":
+                    // Substitution against the floors' guardians (docs/substitution-escape-idea.md): what a player with it takes less
+                    TowerScenarios.RunSubstitution(gear, args.Length > 1 && int.TryParse(args[1], out var sf) ? sf : 200);
+                    return 0;
                 case "legendary":
                     // the Legendaries against the best normal item of their type, rank 1 and rank 5 (docs/legendary-design.md)
                     LegendaryScenarios.Run(gear, args.Length > 1 && int.TryParse(args[1], out var lr) ? lr : 200, args.Skip(2).ToArray());

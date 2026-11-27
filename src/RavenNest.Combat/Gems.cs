@@ -5,7 +5,10 @@ using System.Text;
 
 namespace RavenNest.Combat
 {
-    /// <summary>The seven gems (docs/gems-design.md in the game repo).</summary>
+    /// <summary>
+    ///     The gems (docs/gems-design.md in the game repo): the seven made from raw gems, then the Shadowstone, which is
+    ///     only ever found (docs/substitution-escape-idea.md): it cannot be enchanted from a raw gem or combined.
+    /// </summary>
     public enum GemKind
     {
         Ruby,
@@ -15,6 +18,8 @@ namespace RavenNest.Combat
         Diamond,
         Onyx,
         Amethyst,
+        /// <summary>Found only, socket-ready, in armor only: the Substitution power with the shadow phase look (<see cref="Substitution"/>).</summary>
+        Shadowstone,
     }
 
     /// <summary>A gem's tier: each one roughly doubles the bonus of the one before.</summary>
@@ -45,7 +50,10 @@ namespace RavenNest.Combat
     /// </summary>
     public static class Gems
     {
+        /// <summary>The gems made from raw gems (enchanted by a clan, combined): Ruby to Amethyst. A random gem is one of these.</summary>
         public const int KindCount = 7;
+        /// <summary>Every gem kind, the found-only Shadowstone too (item ids, sockets).</summary>
+        public const int AllKindCount = 8;
         public const int TierCount = 5;
 
         /// <summary>How much more each tier gives than Chipped.</summary>
@@ -67,12 +75,12 @@ namespace RavenNest.Combat
         public const double KeepPerSalvagerRank = 0.05;
         public const double KeepMax = 0.55;
 
-        private static readonly Guid[,] ids = new Guid[KindCount, TierCount];
+        private static readonly Guid[,] ids = new Guid[AllKindCount, TierCount];
         private static readonly Dictionary<Guid, (GemKind Kind, GemTier Tier)> byId = new Dictionary<Guid, (GemKind, GemTier)>();
 
         static Gems()
         {
-            for (var k = 0; k < KindCount; ++k)
+            for (var k = 0; k < AllKindCount; ++k)
             {
                 for (var t = 0; t < TierCount; ++t)
                 {
@@ -112,12 +120,22 @@ namespace RavenNest.Combat
 
         public static bool IsGem(Guid itemId) => byId.ContainsKey(itemId);
 
+        /// <summary>Can this kind be enchanted from a raw gem and combined: every kind but the found-only Shadowstone.</summary>
+        public static bool IsCraftable(GemKind kind) => kind != GemKind.Shadowstone;
+
+        /// <summary>Can a gem of this kind go in this kind of item: the Shadowstone fits armor only, the others anything with sockets.</summary>
+        public static bool FitsIn(GemKind kind, GemSlot slot) => kind != GemKind.Shadowstone || slot == GemSlot.Armor;
+
+        /// <summary>Is this item a Shadowstone (any tier).</summary>
+        public static bool IsShadowstone(Guid itemId) => TryGetGem(itemId, out var kind, out _) && kind == GemKind.Shadowstone;
+
         /// <summary>The enchanted gem's item name: "Flawless Ruby".</summary>
         public static string Name(GemKind kind, GemTier tier) => tier + " " + kind;
 
         /// <summary>
         ///     The raw gem item each kind is enchanted from (its name in the item list): Ruby, Sapphire, Topaz and Emerald
-        ///     are mined; Diamond, Onyx and Amethyst are new.
+        ///     are mined; Diamond, Onyx and Amethyst are new. The Shadowstone has none (<see cref="IsCraftable"/>): its name
+        ///     here only names pictures.
         /// </summary>
         public static string RawName(GemKind kind) => kind.ToString();
 
@@ -180,6 +198,7 @@ namespace RavenNest.Combat
                     }
                     else g[GearStat.CooldownReduction] = 0.015 * s;
                     break;
+                // the Shadowstone's power is no gear stat: Substitution.FromSockets reads it (a chance and a cooldown that never add up)
             }
             return g;
         }
@@ -310,6 +329,8 @@ namespace RavenNest.Combat
         /// <summary>The bonus in a few words for tooltips and chat: "+18% Fire Damage".</summary>
         public static string Describe(GemKind kind, GemTier tier, GemSlot slot)
         {
+            if (kind == GemKind.Shadowstone)
+                return slot == GemSlot.Armor ? Substitution.Describe(Substitution.FromGem(tier)) : "only works in armor";
             var g = Bonus(kind, tier, slot);
             if (kind == GemKind.Amethyst && slot == GemSlot.Armor)
                 return "+" + Percent(g[GearStat.FireResistance]) + " to every resistance";

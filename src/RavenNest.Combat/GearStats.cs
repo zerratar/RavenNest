@@ -164,6 +164,14 @@ namespace RavenNest.Combat
         // Legendaries (2026-11-23, the game's docs/legendary-design.md)
         /// <summary>Iron Aegis: thorns answer ranged and magic blows too, not only melee (any value above 0).</summary>
         ThornsAllStyles,
+
+        // Substitution (2026-11-27, the game's docs/substitution-escape-idea.md)
+        /// <summary>
+        ///     The magical attribute SUBSTITUTION: the chance to escape a boss's area attack as it lands (the smoke step).
+        ///     Found pre-rolled on rare drops only, never enchanted. It never adds up: <see cref="Substitution"/> takes the
+        ///     best source, so a sheet ignores it.
+        /// </summary>
+        Substitution,
     }
 
     /// <summary>
@@ -175,7 +183,7 @@ namespace RavenNest.Combat
     [Serializable]
     public sealed class GearStats
     {
-        public const int Count = (int)GearStat.ThornsAllStyles + 1;
+        public const int Count = (int)GearStat.Substitution + 1;
 
         private static readonly string[] Keys;
         private static readonly Dictionary<string, GearStat> ByKey = new Dictionary<string, GearStat>(StringComparer.OrdinalIgnoreCase);
@@ -510,6 +518,7 @@ namespace RavenNest.Combat
             sheet.KillRush += this[GearStat.KillRush];
             // Legendaries
             sheet.ThornsAllStyles += this[GearStat.ThornsAllStyles];
+            // Substitution is left out on purpose: a chance and a cooldown from the best source, never a sum (Substitution.Of)
             // health: the share is of the pool the sheet already holds (the game adds it to the Health pool itself)
             if (this[GearStat.MaxHealthBonus] != 0) sheet.MaxHealth = (int)(sheet.MaxHealth * (1 + this[GearStat.MaxHealthBonus]));
 
