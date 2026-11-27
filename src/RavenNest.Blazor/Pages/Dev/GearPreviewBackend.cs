@@ -117,7 +117,8 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Priest Cowl", worn: true, sockets: Sockets((GemKind.Diamond, GemTier.Polished)));
             Add("Archmages Pendant", worn: true);
             Add("Priest Vestment", worn: true, enchantment: "ARMOR:12%;HEALING:4%");
-            Add("Rune Gloves", worn: true);
+            // Substitution (the game's docs/substitution-escape-idea.md): a found piece with the attribute, worn
+            Add("Rune Gloves", worn: true, enchantment: "SUBSTITUTION:44%");
             Add("Priest Tabard", worn: true);
             Add("Dragon Boots", worn: true, sockets: Sockets((GemKind.Ruby, GemTier.Flawed)));
             Add("Dragon Katana", worn: true, sockets: Sockets((GemKind.Ruby, GemTier.Polished)));
@@ -173,7 +174,7 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Abraxas Helmet", enchantment: "ARMOR:8%");
             Add("Dragon Helmet", 2);
             Add("Phantom Chest", sockets: Sockets(null, (GemKind.Emerald, GemTier.Chipped)));
-            Add("Dragon Chest");
+            Add("Dragon Chest", sockets: Sockets((GemKind.Shadowstone, GemTier.Flawless)));
             Add("Dragon Leggings");
             Add("Rune Boots", 3);
             Add("Dragon Shield");
@@ -213,6 +214,7 @@ namespace RavenNest.Blazor.Pages.Dev
             Add("Flawless Sapphire");
             Add("Flawed Emerald", 2);
             Add("Chipped Diamond", 7);
+            Add("Polished Shadowstone");
             Add("Chipped Topaz", 4);
             Add("Salmon", 19);
             Add("Bass", 12);
@@ -808,19 +810,22 @@ namespace RavenNest.Blazor.Pages.Dev
 
             if (!newGem.HasValue && !old.HasValue) return Answer(GemResult.Fail(GemResultStatus.EmptySocket), stackId);
             if (newGem.HasValue && !bag.Any(x => !x.Equipped && x.ItemId == newGem.Value && x.Amount > 0)) return Answer(GemResult.Fail(GemResultStatus.NoGem), stackId);
+            if (newGem.HasValue && GemManager.TryGetSlot(item, out var slot) && !Gems.FitsIn((GemKind)kind, slot)) return Answer(new GemResult { Status = GemResultStatus.NotSocketable, ItemName = item.Name }, stackId);
 
             if (old.HasValue)
             {
                 Gems.TryGetGem(old.Value, out var oldKind, out var oldTier);
                 result.OldKind = (int)oldKind;
                 result.OldTier = (int)oldTier;
-                if (confirmedGem != old.Value)
+                // a Shadowstone always comes back: nothing to confirm (the server's GemManager)
+                if (Gems.IsShadowstone(old.Value)) result.KeepChance = 1;
+                else if (confirmedGem != old.Value)
                 {
                     result.Status = GemResultStatus.NeedsConfirm;
                     return Answer(result, stackId);
                 }
 
-                result.Kept = random.NextDouble() < keep;
+                result.Kept = Gems.IsShadowstone(old.Value) || random.NextDouble() < keep;
                 if (result.Kept) Give(old.Value, 1);
             }
 

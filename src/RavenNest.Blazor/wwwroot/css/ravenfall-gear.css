@@ -18,6 +18,13 @@
 .is-gem-diamond { --gem: 214, 232, 244; }
 .is-gem-onyx { --gem: 124, 118, 140; }
 .is-gem-amethyst { --gem: 176, 112, 232; }
+.is-gem-shadowstone { --gem: 138, 92, 220; }
+
+/* Substitution (docs/substitution-escape-idea.md in the game): the Legendary block's shape in the power's violet */
+.rf-gear-subst { --legend: #b9a0ff; }
+.rf-gempick__note--rare { color: #d6c8ff; }
+.rf-gempick__note--rare i { color: #b9a0ff; margin-right: var(--rf-space-1); }
+.rf-badge--subst { color: #d6c8ff; background: rgba(138, 92, 220, 0.22); border-color: rgba(185, 160, 255, 0.55); }
 
 .rf-gear,
 .rf-gear *,

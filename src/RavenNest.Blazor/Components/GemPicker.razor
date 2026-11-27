@@ -251,9 +251,30 @@
                                 }
                             </ul>
 
-                            @if (same)
+                            @if (selected.Kind == GemKind.Shadowstone)
+                            {
+                                @* Substitution's gem (docs/substitution-escape-idea.md in the game): found only, armor only, never lost *@
+                                <p class="rf-gempick__note rf-gempick__note--rare">
+                                    <i class="fa-solid fa-wind" aria-hidden="true"></i>
+                                    A rare find: it can't be made or combined, and it always comes back when taken out.
+                                    With more than one Substitution the best chance and the shortest wait count.
+                                </p>
+                            }
+
+                            @if (!Gems.FitsIn(selected.Kind, Slot))
+                            {
+                                <p class="rf-gempick__warn">
+                                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                                    <span>A Shadowstone only works in armor. Pick a chest, helmet, legs, gloves, boots or shield.</span>
+                                </p>
+                            }
+                            else if (same)
                             {
                                 <p class="rf-gempick__note">This gem is already in the socket.</p>
+                            }
+                            else if (Current != null && Current.Kind == GemKind.Shadowstone)
+                            {
+                                <p class="rf-gempick__note">The @Current.Name in this socket goes back to your bag.</p>
                             }
                             else if (Current != null)
                             {
@@ -266,7 +287,7 @@
                                 </p>
                             }
 
-                            <button type="button" class="rf-btn rf-btn--primary rf-btn--block" disabled="@same"
+                            <button type="button" class="rf-btn rf-btn--primary rf-btn--block" disabled="@(same || !Gems.FitsIn(selected.Kind, Slot))"
                                     @onclick="() => OnSocket.InvokeAsync(selected)">
                                 @(Current != null ? "Replace gem" : "Socket it")
                             </button>

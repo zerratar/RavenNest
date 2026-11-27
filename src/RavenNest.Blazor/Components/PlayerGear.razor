@@ -1631,7 +1631,7 @@ else
         var rows = against != null ? Compare(e, against) : null;
         var stats = against == null ? StatsOf(e) : null;
         var armorHealth = RavenNest.Combat.CombatMath.IsArmorPiece((int)item.Type) ? RavenNest.Combat.CombatMath.ArmorHealth(item.ArmorPower) : 0;
-        var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
+        var enchantments = ListedEnchantments(e);
         var skin = e.Stack.TransmogrificationId != null ? ItemService.GetItem(e.Stack.TransmogrificationId.Value) : null;
         <div class="rf-gear-tipcard @(e.Stack.Equipped ? "is-worn" : "is-bag")">
             <div class="rf-gear-tipcard__label">@AgainstLabel(e)</div>
@@ -1688,6 +1688,14 @@ else
                 </div>
             }
 
+            @if (e.Substitution.Has)
+            {
+                <div class="rf-gear-legend rf-gear-subst">
+                    <div class="rf-gear-legend__head"><b>Substitution</b> <span>rare find</span></div>
+                    <p>@SubstitutionText(e.Substitution)</p>
+                </div>
+            }
+
             @if (e.Sockets.Count > 0 || enchantments != null || skin != null)
             {
                 <div class="rf-gear-tipcard__more">
@@ -1701,7 +1709,7 @@ else
                             }
                             else
                             {
-                                <span><b>@socket.Name</b> <em class="is-good">@socket.Bonus</em></span>
+                                <span><b>@socket.Name</b> <em class="is-good">@SocketBonus(socket)</em></span>
                             }
                         </div>
                     }
@@ -1771,7 +1779,7 @@ else
             : (e.Slot != EquipmentSlot.None && !e.Stack.Equipped && worn.TryGetValue(e.Slot, out var w) ? w : null);
         var fromOutfit = ActiveView == "equipment" && wornNow != null && SkillTab && LooksAtOutfit && !StaysAsWorn(e.Slot);
         var stats = StatsOf(e);
-        var enchantments = e.Enchanted ? ItemService.GetItemEnchantments(e.Stack) : null;
+        var enchantments = ListedEnchantments(e);
         var requirements = Requirements(item);
         var line = GearRules.LineOf(item);
         var armorHealth = RavenNest.Combat.CombatMath.IsArmorPiece((int)item.Type) ? RavenNest.Combat.CombatMath.ArmorHealth(item.ArmorPower) : 0;
@@ -1801,6 +1809,10 @@ else
                         {
                             <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
                         }
+                        @if (e.Substitution.Has)
+                        {
+                            <span class="rf-badge rf-badge--subst"><i class="fa-solid fa-wind" aria-hidden="true"></i> Substitution</span>
+                        }
                         @if (skin != null)
                         {
                             <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-mask" aria-hidden="true"></i> Skin: @skin.Name</span>
@@ -1829,6 +1841,15 @@ else
                     <p><b>@e.Legend.PowerName.</b> @RavenNest.Combat.Legendary.Describe(e.Legend.Power, e.LegendRank)</p>
                     <div class="rf-gear-legend__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(share * 100))"><i style="width: @((share * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
                     <p class="rf-gear-legend__awake">@RavenNest.Combat.Legendary.DescribeAwakening(e.LegendKills). Bosses fought with it on awaken it: stronger numbers and power, a 4th gem socket at rank 3, a 5th and a full glow at rank 5.</p>
+                </div>
+            }
+
+            @if (e.Substitution.Has)
+            {
+                <div class="rf-gear-block rf-gear-legend rf-gear-subst">
+                    <h4 class="rf-gear-block__title">Substitution: a rare find</h4>
+                    <p><b>@SubstitutionText(e.Substitution)</b></p>
+                    <p class="rf-gear-legend__awake">@SubstitutionLook(e.Substitution) Only against telegraphed area attacks, never a plain swing. With more than one piece the best chance and the shortest wait count; they never add up.</p>
                 </div>
             }
 
@@ -1910,7 +1931,7 @@ else
                             @foreach (var socket in e.Sockets)
                             {
                                 var number = socket.Number;
-                                <GemSocketButton Number="number" Name="@socket.Name" Bonus="@socket.Bonus"
+                                <GemSocketButton Number="number" Name="@socket.Name" Bonus="@SocketBonus(socket)"
                                                  Icon="@(socket.Empty ? null : ItemService.GetItemImage(socket.GemId.Value))"
                                                  OnClick="() => OpenGemPicker(number)" />
                             }
@@ -1929,7 +1950,7 @@ else
                                     }
                                     else
                                     {
-                                        <b>@socket.Name <em class="is-good">@socket.Bonus</em></b>
+                                        <b>@socket.Name <em class="is-good">@SocketBonus(socket)</em></b>
                                     }
                                 </div>
                             }

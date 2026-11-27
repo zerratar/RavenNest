@@ -79,6 +79,11 @@ namespace RavenNest.Blazor.Components
             /// <summary>A Legendary (docs/legendary-design.md in the game): which, and boss kills worn (its awakening); null for any other piece.</summary>
             public RavenNest.Combat.LegendaryInfo Legend;
             public int LegendKills;
+            /// <summary>
+            ///     Substitution (docs/substitution-escape-idea.md in the game): its rare attribute and the Shadowstones in
+            ///     its sockets, the best of them; empty for most pieces.
+            /// </summary>
+            public RavenNest.Combat.SubstitutionPower Substitution;
             /// <summary>Why it cannot leave this character (a Legendary stays with its finder), null when it can.</summary>
             public string WhyStays;
             public int LegendRank => RavenNest.Combat.Legendary.RankOf(LegendKills);
@@ -350,8 +355,11 @@ namespace RavenNest.Blazor.Components
                     Picture = ItemService.GetInventoryItemImage(stack.TransmogrificationId ?? stack.ItemId, stack.Tag),
                     Rarity = ItemService.GetRarity(item),
                     RarityClass = ItemService.GetRarityClass(item),
-                    Enchanted = !string.IsNullOrEmpty(stack.Enchantment),
+                    // the rare attribute Substitution is no enchanting: a piece with nothing else on it is not "Enchanted"
+                    Enchanted = !string.IsNullOrEmpty(RavenNest.Combat.Substitution.WithoutAttribute(stack.Enchantment, out _)),
                     Sockets = GemManager.SocketsOf(item, stack.Sockets, stack.Tag),
+                    Substitution = RavenNest.Combat.Substitution.FromItem(stack.Enchantment, stack.Sockets,
+                        GemManager.TryGetSlot(item, out var gemSlot) ? gemSlot : (RavenNest.Combat.GemSlot?)null),
                     Legend = legend,
                     LegendKills = legendKills,
                     // a Legendary never leaves the character that found it: no stash, no other character, no vendor
@@ -635,6 +643,28 @@ namespace RavenNest.Blazor.Components
             var filled = e.Sockets.Count(x => !x.Empty);
             return filled + " of " + Plural(e.Sockets.Count, "gem socket") + " filled";
         }
+
+        /// <summary>The enchantments to list: the rolled ones, not the rare Substitution (it has a block of its own).</summary>
+        private IReadOnlyList<ItemEnchantment> ListedEnchantments(Entry e)
+        {
+            if (!e.Enchanted) return null;
+            var list = ItemService.GetItemEnchantments(e.Stack).Where(x => !string.Equals(x.Name, RavenNest.Combat.Substitution.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+            return list.Count > 0 ? list : null;
+        }
+
+        /// <summary>A socket's bonus; a Shadowstone in armor says only "Substitution" (its numbers are in the item's Substitution block).</summary>
+        private static string SocketBonus(GemManager.SocketView socket) =>
+            !socket.Empty && socket.Kind == RavenNest.Combat.GemKind.Shadowstone && socket.Bonus != null && !socket.Bonus.StartsWith("only") ? "Substitution" : socket.Bonus;
+
+        /// <summary>"45% chance to escape a boss's slam or spit as it lands, at most once every 27 s".</summary>
+        private static string SubstitutionText(RavenNest.Combat.SubstitutionPower power) =>
+            Math.Round(power.Chance * 100) + "% chance to escape a boss's slam or spit as it lands, taking nothing from it; at most once every "
+            + Math.Round(power.Cooldown) + " s.";
+
+        private static string SubstitutionLook(RavenNest.Combat.SubstitutionPower power) =>
+            power.Look == RavenNest.Combat.SubstitutionLook.ShadowPhase
+                ? "From a Shadowstone: they turn into a shadow and slide out of the ring."
+                : "Smoke step: a puff of smoke, a log where they stood, and they are out of the ring.";
 
         private static string EnchantmentName(ItemEnchantment enchantment)
         {
