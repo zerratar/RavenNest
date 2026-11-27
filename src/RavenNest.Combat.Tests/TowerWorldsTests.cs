@@ -325,6 +325,16 @@ namespace RavenNest.Combat.Tests
         }
 
         [Fact]
+        public void EveryFloorGivesFivePercentMoreExperienceWithNoCap()
+        {
+            Assert.Equal(0.05, Tower.ExpBonus(1), 9);
+            Assert.Equal(0.15, Tower.ExpBonus(3), 9);
+            Assert.Equal(0.50, Tower.ExpBonus(10), 9);
+            Assert.Equal(1.00, Tower.ExpBonus(20), 9);
+            Assert.Equal(0.0, Tower.ExpBonus(0), 9);
+        }
+
+        [Fact]
         public void SyncedGearIsTheBestWearableAtTheLevel()
         {
             // the Ancient (340) and Atlarus (400) sets count on floor 3: the table jumped from 280 to 500 before

@@ -345,6 +345,16 @@ namespace RavenNest.Combat
         /// <summary>How the curve bends: 1.75 makes it rise fifteen a step where it starts, as the steps before it.</summary>
         private const double CurveBend = 1.75;
 
+        /// <summary>
+        ///     More experience a floor gives on its parts (the owner, 2026-11-26): 5% a floor, with no cap ("they wont
+        ///     reach +50% until floor 10"). For combat skills and Healing, on everything earned on a part of the floor (the
+        ///     climb's or a cleared one: kills, heals and the island's top-up); never in a town. The game applies it.
+        /// </summary>
+        public const double ExpPerFloor = 0.05;
+
+        /// <summary>The share more experience a floor's parts give: 0.05 on floor 1, 0.15 on floor 3, nothing below floor 1.</summary>
+        public static double ExpBonus(int floor) => floor > 0 ? ExpPerFloor * floor : 0;
+
         // gear an enemy of a combat level has, fitted to today's island enemies (their definitions after the enemy gear
         // tuning: armour 70 + 2 per level, power 15 + 0.22, accuracy 12 + 0.18 per level)
         public static int ArmorAt(int level) => 70 + 2 * level;

@@ -43,6 +43,10 @@
             if everyone falls, the stream regroups for @(Tower.BossRetrySeconds / 60) minutes before the next try.
             Whoever lands the last blow on a floor boss earns a title.
             A floor, and each of its parts, stays a mystery until some stream reaches it.
+            <b>Climbing pays:</b> on a part your combat skills and Healing never earn less than they would on your
+            island (a boss fight, its countdown, getting back up and the walk to the next monster included), and every
+            floor gives @((int)Math.Round(Tower.ExpPerFloor * 100))% more on top: @((int)Math.Round(Tower.ExpBonus(1) * 100))% on the first floor, @((int)Math.Round(Tower.ExpBonus(3) * 100))% on the third.
+            The towns pay what your island does.
         </p>
         <p class="rf-tower__rules">
             <b>In chat:</b> <b>!tower</b> goes in, <b>!tower info</b> says where the stream is, <b>!tower boss</b> challenges
@@ -75,6 +79,8 @@
                 <p>@band.Description</p>
                 <div class="rf-badges">
                     <span class="rf-badge">@band.Parts parts</span>
+                    <span class="rf-badge">Levels @Tower.Level(band.FirstFloor) to @Tower.Level(band.LastFloor)</span>
+                    <span class="rf-badge">+@((int)Math.Round(Tower.ExpBonus(band.Number) * 100))% experience</span>
                     <span class="rf-badge" style="--element: @ElementColor(band.Element)">Its monsters strike with @band.Element.ToString().ToLowerInvariant()</span>
                     @foreach (var weak in Weaknesses(band.Resistance))
                     {
