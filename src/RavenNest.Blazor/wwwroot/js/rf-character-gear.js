@@ -57,6 +57,19 @@ const HEAD_TYPES = new Set([Type.Helmet, Type.Mask, Type.Hat, Type.HeadCovering]
 // the body's own parts, by what they are: a piece of armor takes the place of the ones of its kind
 const BODY_KIND = /^Chr_(Torso|ArmUpperRight|ArmUpperLeft|ArmLowerRight|ArmLowerLeft|HandRight|HandLeft|Hips|LegLeft|LegRight)_/;
 
+// The crown (head attachment 7) in a gear line's own metal and gem: the game's ClassGearCrown, change both together.
+// With the Mage's and the Monk's tier colors it came out the same gold crown as the Tank's Aegis. The shader paints its
+// band in the plate color, its rims and points in the metal trim, the gem in the cloth trim. Other lines keep their
+// tier's own colors.
+const CROWN = 7;
+const CROWNS = [
+    // Mage: silver, the gem the mint green of the Starcaller robe's glow
+    { names: ['Apprentice', 'Adept', 'Conjurer', 'Sorcerer', 'Warlock', 'Archmage', 'Voidweaver', 'Starcaller'], band: '#9EA8B6', rims: '#E2E7EE', gem: '#6CF0A4' },
+    // Monk: antique bronze with a carnelian
+    { names: ['Novice', 'Disciple', 'Ascetic', 'Sage', 'Mystic', 'Enlightened', 'Transcendent', 'Celestial'], band: '#A8773F', rims: '#6E4A26', gem: '#E0642A' },
+];
+const crownOf = name => CROWNS.find(c => c.names.includes(name)) || null;
+
 function modelIds(text) {
     // "27,20,20,0": the main part first (the game's ItemManager.ParseModelIds). A token of -1000 or less names a part
     // games before 0.9.7 do not have: -(1000 * (position + 1) + index) takes that position's place (the Dark Fortress
@@ -179,7 +192,7 @@ function dress(g, m, a, outfit) {
                 // a helmet is a whole head of its own and hides everything unless it says what; a hat sits on the head
                 let hides = mask & Hides.All;
                 if (piece.type === Type.Helmet && hides === 0) hides = Hides.All;
-                head = { file, mat, hides, hat: from === 'hats' ? index : -1, attachments: more.map(i => at('headAttachments', i)).filter(Boolean) };
+                head = { file, mat, hides, hat: from === 'hats' ? index : -1, attachments: more.map(i => ({ file: at('headAttachments', i), crown: i === CROWN })).filter(x => x.file) };
                 break;
             }
 
@@ -196,7 +209,7 @@ function dress(g, m, a, outfit) {
     // the helmet toggle (!toggle helmet): a head piece that is switched off shows nothing and hides nothing
     if (head && outfit.helmet !== false) {
         if (head.file) groups.set('head', { file: head.file, mat: head.mat });
-        for (const f of head.attachments) extra.push({ file: f, mat: head.mat });
+        for (const f of head.attachments) extra.push({ file: f.file, mat: f.crown && head.mat && crownOf(head.mat) ? head.mat + '|crown' : head.mat });
         hide.head = !!(head.hides & Hides.Head);
         hide.brows = !!(head.hides & Hides.Brows);
         hide.beard = !!(head.hides & Hides.Beard);
@@ -548,9 +561,17 @@ export async function attach(designer, stage, onBusy) {
 
     const materials = new Map();
     const materialOf = (name, skin) => {
-        const info = name ? g.materials[name] : null;
+        // "<tier>|crown": the tier's material with its line's crown colors (CROWNS)
+        const crown = name && name.endsWith('|crown') ? crownOf(name.slice(0, -6)) : null;
+        const base = crown ? name.slice(0, -6) : name;
+        let info = base ? g.materials[base] : null;
         // no material of its own (a look without a tier): the body's
         if (!info) return stage.material;
+        if (crown) {
+            const c = info.c.slice();
+            c[C.metal1] = crown.band; c[C.metal2] = crown.rims; c[C.secondary] = crown.gem;
+            info = { ...info, c };
+        }
         const key = name + (skin ? '|skin' : '');
         if (!materials.has(key)) {
             const mat = gearMaterial(THREE, g, m, info);
